@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "252206110575927296",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "RAG优化字典：20种RAG优化方法全解析",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694687&idx=1&sn=933681fb58bd38e6af584388def1516a",
+      "date": "2026-03-05T00:45:00.362Z",
+      "chars": 41194,
+      "text": "原创\n李鑫阳\n2026-03-05 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n本文系统性地梳理了 RAG（Retrieval-Augmented Generation，检索增强生成）系统从基础到高级的 20 种优化方法，涵盖分块策略、检索增强、查询优化、生成质量控制等多个维度。每种方法均附带核心代码实现（含简要注释），便于读者按需选型与落地实践。\n01\n语义分块\n核心思路：按句子级嵌入相似度切\n分，\n而非固定\n字符数。\n当相邻句子\n语义相似度低于阈值时在此处切块，\n从而保留\n语义完整性。\n断点计算方法：\n百分位法（Percentile）：相似度低于某\n百分位的位置作为断点\n标准差法（Standard Deviation）：相似度\n低于「\n均\n值 −\n标准\n差」\n的位\n置\n四分位距法（IQR）：用四分位距检\n测异常低的相似度作为断点\n# ========== 方法1：语义分块 ==========\n# 根据相邻句子的嵌入相似度找“语义断点”，在断点处切块，保证块内语义连贯\ndef\ncompute_breakpoints\n(\nsimilarities, method=\n\"percentile\"\n, threshold=\n90\n):\n\"\"\"\n根据相似度序列计算断点索引：相似度突降处 = 语义边界。\nmethod: percentile / standard_deviation / interquartile\n\"\"\"\nbreakpoints = []\nif\nmethod ==\n\"percentile\"\n:\n# 低于 (100-threshold) 分位数的位置视为断点\nthreshold_value = np.percentile(similarities,\n100\n- threshold)\nfor\ni, sim\nin\nenumerate\n(similarities):\nif\nsim < threshold_value:\nbreakpoints.append(i)\nelif\nmethod ==\n\"standard_deviation\"\n:\n# 低于「均值 - 1 个标准差」的位置视为断点\nmean_sim = np.mean(similarities)\nstd_sim = np.std(similarities)\nthreshold_value = mean_sim - std_sim\nfor\ni, sim\nin\nenumerate\n(similarities):\nif\nsim < threshold_value:\nbreakpoints.append(i)\nelif\nmethod ==\n\"interquartile\"\n:\n# IQR 法：低于 Q1 - 1.5*IQR 的视为异常低，作为断点\nq1 = np.percentile(similarities,\n25\n)\nq3 = np.percentile(similarities,\n75\n)\niqr = q3 - q1\nthreshold_value = q1 -\n1.5\n* iqr\nfor\ni, sim\nin\nenumerate\n(similarities):\nif\nsim < threshold_value:\nbreakpoints.append(i)\nreturn\nbreakpoints\ndef\nsplit_into_chunks\n(\nsentences, breakpoints\n):\n\"\"\"按断点把句子序列切成多段，每段拼成一块文本\"\"\"\nchunks = []\nstart =\n0\nfor\nbp\nin\nbreakpoints:\nchunk =\n\" \"\n.join(sentences[start:bp +\n1\n])\nchunks.append(chunk)\nstart = bp +\n1\nif\nstart <\nlen\n(sentences):\nchunks.append(\n\" \"\n.join(sentences[start:]))\nreturn\nchunks\n02\n切块大小评估\n核心思路：对多种切\n块大小（\n如 12\n8、\n25\n6、\n51\n2\n字\n符）\n分别做检\n索与生成，\n用忠实度（回复是否\n紧扣上下文）\n和相关性（是否答\n到点上）\n等指标\n对比，\n数据驱动选\n出最优切块参数。\n优势与局限：\n优势：避免拍\n脑袋定\nchu\nnk\nsi\nze，\n有评估\n依据；\n适合新语料\n或新场景的调参。\n局限：需要标注或\n可自动评估的测试集，\n且评估有一\n定计算成本。\n适用场景：上线前\n调参、\n不同\n领域/\n文档类型\n单独优化。\n# ========== 方法2：切块大小评估 ==========\n# 对多种 chunk size 分别建索引、检索、生成，用忠实度/相关性选最优大小\nchunk_sizes = [\n128\n,\n256\n,\n512\n]\n# 按每种大小切块并保存，便于后续统一评估\ntext_chunks_dict = {\nsize: chunk_text(extracted_text, size, size\n// 5)\nfor\nsize\nin\nchunk_sizes\n}\n# 对每种切块大小：建嵌入 → 检索 → 生成 → 算指标\nfor\nsize\nin\nchunk_sizes:\nchunks = text_chunks_dict[size]\nembeddings = create_embeddings(chunks)\nfor\nquestion\nin\ntest_questions:\nresults = semantic_search(question, chunks, embeddings)\ncontext = results[\n0\n][\n0\n]\nresponse = generate_response(question, context)\n# 忠实度：回复是否严格基于上下文，有无幻觉\nfaithfulness = evaluate_faithfulness(response, context)\n# 相关性：回复是否切题、有用\nrelevancy = evaluate_relevancy(response, question)\n03\n上下文增强检索\n核心思路：检索到最\n相关的块后，\n同时带上其前、后相邻块一起作为\n上下文，避免\n“孤岛片段”\n缺少前文/后文而导致理解不全。\n优势与局限：\n优势：\n实现简单，无需改索引；能明显改善需要前后文才能理解的内容（如列表、步骤、对比）。\n局限：\n会引入与问题无关的相邻块，可能增加噪声和 token 消耗。\n适用场景：\n分块较细、上下文连贯性重要的场景。\n# ========== 方法3：上下文增强检索 ==========\n# 先按相似度找到 top-k 块，再对每个块扩展其前后 context_size 块，合并后返回\ndef\ncontext_enriched_search\n(\nquery, text_chunks, embeddings, k=\n1\n, context_size=\n1\n):\n\"\"\"\n检索：取相似度最高的 k 个块，每个块向左右各扩展 context_size 块并拼接。\n这样返回的是「中心块 + 前后文」的连续窗口，而非单块。\n\"\"\"\nquery_embedding = create_embeddings(query)\nsimilarities = [cosine_similarity(query_embedding, emb)\nfor\nemb\nin\nembeddings]\nsorted_indices = np.argsort(similarities)[::-\n1\n]\nresults = []\nfor\nidx\nin\nsorted_indices[:k]:\n# 以当前块为中心，向左右各取 context_size 块\nstart =\nmax\n(\n0\n, idx - context_size)\nend =\nmin\n(\nlen\n(text_chunks), idx + context_size +\n1\n)\ncontext_window =\n\" \"\n.join(text_chunks[start:end])\nresults.append({\n\"text\"\n: context_window,\n\"similarity\"\n: similarities[idx],\n\"center_chunk\"\n: idx\n})\nreturn\nresults\n04\n上下文片段标题提取（CCH）\n核心思路：\n用 LLM 为每个文本块生成简短描述性标题，建索引时同时存\n「块文本嵌入」\n和\n「标题嵌入」\n。检索时用查询分别与文本、标题算相似度，再取平均（或加权）作为该块得分，从而多一个\n“主题维度”\n提升检索精度。\n优势与局限：\n优势：\n标题浓缩主题，对概括性、概念型查询更友好；可与现有向量检索无缝结合。\n局限：\n预处理阶段要为每块调用 LLM 生成标题，成本和延迟增加。\n适用场景：\n块较长、需要“主题级”匹配的知识库。\n# ========== 方法4：上下文片段标题提取（CCH） ==========\n# 为每块生成标题并嵌入，检索时用 (文本相似度 + 标题相似度) 综合排序\ndef\ngenerate_chunk_header\n(\nchunk\n):\n\"\"\"用 LLM 为单个文本块生成一句简洁标题，概括该块主题\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n:\n\"为以下文本生成一个简洁的描述性标题。\"\n},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: chunk}\n]\n)\nreturn\nresponse.choices[\n0\n].message.content.strip()\ndef\nsearch_with_headers\n(\nquery, chunks, text_embeddings, header_embeddings\n):\n\"\"\"检索：查询与「块文本」和「块标题」分别算相似度，取平均作为该块得分\"\"\"\nquery_embedding = create_embeddings(query)\nresults = []\nfor\ni\nin\nrange\n(\nlen\n(chunks)):\nsim_text = cosine_similarity(query_embedding, text_embeddings[i])\nsim_header = cosine_similarity(query_embedding, header_embeddings[i])\navg_similarity = (sim_text + sim_header) /\n2\nresults.append({\n\"text\"\n: chunks[i],\n\"similarity\"\n: avg_similarity})\nresults.sort(key=\nlambda\nx: x[\n\"similarity\"\n], reverse=\nTrue\n)\nreturn\nresults\n05\n文档增强RAG（问题生成）\n核心思路：\n为每个文本块用 LLM 生成若干“该块能回答的问题”，把\n「问题 + 对应块」\n一并写入向量库。用户查询时，既匹配块内容，也匹配这些预生成问题，从而拉近“问句”与“陈述句”的语义距离。\n优势与局限：\n优势：\n显著缓解 query（问句）与 document（陈述）之间的表述差异，提高召回。\n局限：\n建库时每块要生成多条问题，成本和存储都增加；问题质量依赖模型与 prompt。\n适用场景：\nFAQ、知识问答、用户常以问句形式提问的场景。\n# ========== 方法5：文档增强RAG（问题生成） ==========\n# 为每块生成“该块能回答的问题”，问题与块一起入向量库，检索时 query 可匹配问题或块\ndef\ngenerate_questions\n(\ntext_chunk, num_questions=\n5\n):\n\"\"\"根据块内容，用 LLM 生成若干该块能回答的问题，用于后续检索匹配\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n:\nf\"基于以下文本，生成\n{num_questions}\n个该文本能够回答的问题。\"\n},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: text_chunk}\n]\n)\nquestions = response.choices[\n0\n].message.content.strip().split(\n\"\\n\"\n)\nreturn\n[q.strip()\nfor\nq\nin\nquestions\nif\nq.strip()]\n# 建库：块本身 + 其对应问题都写入向量库，并记录问题→块的映射\nvector_store = SimpleVectorStore()\nfor\nchunk\nin\nchunks:\nchunk_embedding = create_embeddings(chunk)\nvector_store.add_item(chunk, chunk_embedding, metadata={\n\"type\"\n:\n\"chunk\"\n})\nquestions = generate_questions(chunk)\nfor\nquestion\nin\nquestions:\nq_embedding = create_embeddings(question)\nvector_store.add_item(\nquestion, q_embedding,\nmetadata={\n\"type\"\n:\n\"question\"\n,\n\"source_chunk\"\n: chunk}\n)\n06\n查询转换\n核心思路：\n在检索前对用户原始查询做变换，使检索更准或更全。常用三种策略：\n查询重写：\n把模糊、口语化查询改写成更具体、更贴近文档表述的形式\n回退提示（Step-back）：\n生成一个更宽泛的“背景问题”，先检索背景再结合原问题\n子查询分解：\n把多子问题的复杂查询拆成 2～4 个简单子查询，分别检索再合并\n优势与局限：\n优势：\n不改索引即可提升检索表现，尤其适合表述不规范或复杂的用户问句。\n局限：\n多一次（或多次）LLM 调用，延迟与成本增加；重写/分解质量依赖 prompt。\n适用场景：\n开放域问答、复杂多步问题、需要“先背景后细节”的检索。\n# ========== 方法6：查询转换 ==========\n# 在检索前对 query 做改写 / 回退 / 分解，再用转换后的查询去检索\ndef\nrewrite_query\n(\noriginal_query\n):\n\"\"\"把模糊或口语化查询重写成更具体、更利于检索的表述（不改变意图）\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n:\n\"\"\"你是一个查询重写专家。\n将用户查询重写为更具体、更清晰的形式。\n只输出重写后的查询，不要添加任何解释。\"\"\"},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: original_query}\n]\n)\nreturn\nresponse.choices[\n0\n].message.content.strip()\ndef\ngenerate_step_back_query\n(\noriginal_query\n):\n\"\"\"生成一个更宽泛的“回退”问题，用于先检索背景知识，再结合原问题作答\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n:\n\"\"\"你是一个查询生成专家。\n为给定查询生成一个更广泛的\"回退\"问题，以帮助获取相关背景知识。\n只输出回退查询，不要添加解释。\"\"\"},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: original_query}\n]\n)\nreturn\nresponse.choices[\n0\n].message.content.strip()\ndef\ndecompose_query\n(\noriginal_query\n):\n\"\"\"将复杂问题拆成 2～4 个简单子问题，便于分别检索后综合答案\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n:\n\"\"\"将以下复杂问题分解为2-4个更简单的子问题。\n每个子问题单独一行。只输出子问题，不要编号或解释。\"\"\"},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: original_query}\n]\n)\nsub_queries = response.choices[\n0\n].message.content.strip().split(\n\"\\n\"\n)\nreturn\n[q.strip()\nfor\nq\nin\nsub_queries\nif\nq.strip()]\n07\n重排序\n（Reranking）\n核心思路：\n两阶段检索——先用向量（或 BM25）快速召回一批候选文档，再用更精细的模型对\n「查询-文档」\n对打分并重排，只保留最相关的若干条送入生成。常用实现：LLM 打 0–10 分，或专用 reranker 模型（如 Cross-Encoder）。\n优势与局限：\n优势：\n在不扩大首阶段召回量的前提下显著提升 top-k 精度，减少无关上下文注入。\n局限：\n第二阶段要对每条候选调用模型，延迟和成本随候选数增加。\n适用场景：\n对准确率要求高、候选数可控（如 top-20 内 rerank）。\n# ========== 方法7：重排序（Reranking） ==========\n# 一阶段粗检索得到候选列表，二阶段用 LLM 对「查询-文档」打相关性分并重排\ndef\nrerank_with_llm\n(\nquery, documents, model=\n\"gpt-3.5-turbo\"\n):\n\"\"\"对候选文档逐一用 LLM 打 0-10 相关性分，再按分数降序重排\"\"\"\nreranked = []\nfor\ndoc\nin\ndocuments:\nresponse = client.chat.completions.create(\nmodel=model,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n:\n\"\"\"你是一个相关性评估专家。\n对给定文档与查询的相关性进行0-10打分。\n只输出数字分数。\"\"\"},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\nf\"查询:\n{query}\n\\n\\n文档:\n{doc[\n'text'\n]}\n\"\n}\n],\ntemperature=\n0\n)\nscore =\nfloat\n(response.choices[\n0\n].message.content.strip())\nreranked.append({**doc,\n\"rerank_score\"\n: score})\nreranked.sort(key=\nlambda\nx: x[\n\"rerank_score\"\n], reverse=\nTrue\n)\nreturn\nreranked\n08\n相关段落提取（RSE）\n核心思路：\n不为单块打分后简单取 top-k，而是为连续块序列算\n“价值和”\n：每块价值 = 相似度 − 惩罚项，再用最大子数组（Kadane）思想找价值和最大的连续段落。这样返回的是一整段连贯文本，而不是零散块。\n优势与局限：\n优势：\n上下文连贯、边界更自然，适合需要“一整段话”才能答好的问题。\n局限：\n依赖块顺序与相似度曲线质量；实现和调参（惩罚、最小长度等）略复杂。\n适用场景：\n长文档、叙述性强，且希望按“段落”而非“单块”呈现。\n# ========== 方法8：相关段落提取（RSE） ==========\n# 为每块算「相似度 - 惩罚」作为价值，用最大子数组找“价值和最大”的连续段落\ndef\ncalculate_chunk_values\n(\nsimilarities, irrelevant_chunk_penalty=\n0.2\n):\n\"\"\"把相似度转为价值：相关块为正，不相关块减去惩罚后为负，便于后续求连续最大和\"\"\"\nvalues = []\nfor\nsim\nin\nsimilarities:\nvalue = sim - irrelevant_chunk_penalty\nvalues.append(value)\nreturn\nvalues\ndef\nfind_best_segments\n(\nvalues, max_segments=\n3\n, min_segment_length=\n1\n):\n\"\"\"Kadane 思想：在 value 序列上找最多 max_segments 段连续区间，使每段和最大\"\"\"\nsegments = []\nn =\nlen\n(values)\nfor\n_\nin\nrange\n(max_segments):\nbest_sum =\nfloat\n(\n'-inf'\n)\nbest_start = best_end =\n0\ncurrent_sum =\n0\ncurrent_start =\n0\nfor\ni\nin\nrange\n(n):\ncurrent_sum += values[i]\nif\ncurrent_sum > best_sum\nand\n(i - current_start +\n1\n) >= min_segment_length:\nbest_sum = current_sum\nbest_start = current_start\nbest_end = i\nif\ncurrent_sum <\n0\n:\ncurrent_sum =\n0\ncurrent_start = i +\n1\nif\nbest_sum >\n0\n:\nsegments.append((best_start, best_end, best_sum))\nfor\ni\nin\nrange\n(best_start, best_end +\n1\n):\nvalues[i] =\n0\nreturn\nsegments\ndef\nreconstruct_segments\n(\nchunks, segments\n):\n\"\"\"根据 (start, end) 区间把对应块拼成完整段落文本\"\"\"\nreconstructed = []\nfor\nstart, end, score\nin\nsegments:\nsegment_text =\n\" \"\n.join(chunks[start:end +\n1\n])\nreconstructed.append({\n\"text\"\n: segment_text,\n\"start\"\n: start,\n\"end\"\n: end,\n\"score\"\n: score\n})\nreturn\nreconstructed\n09\n上下文压缩\n核心思路：\n检索得到多块文本后，不直接全部塞给 LLM，而是先对每块做“压缩”：只保留与当前查询强相关的内容，去掉无关句子或整段，从而减少噪声、节省 token、提高生成质量。\n三种压缩策略：\n选择性（Selective）：\n从原文中筛选与查询相关的句子，保持原句、原序\n摘要（Summary）：\n针对查询写一段只含相关信息的摘要\n抽取（Extraction）：\n按查询抽取关键事实或结构化信息\n优势与局限：\n优势：\n显著减少无关上下文，降低幻觉与 token 消耗；可与任意检索方式组合。\n局限：\n每块都要过一次 LLM，延迟与成本增加；过度压缩可能丢细节。\n适用场景：\n检索结果偏长、噪声多，或上下文窗口紧张时。\n# ========== 方法9：上下文压缩 ==========\n# 对每个检索到的块，用 LLM 按 query 只保留相关部分（选择性保留/摘要/抽取）\ndef\ncompress_chunk\n(\nchunk, query, compression_type=\n\"selective\"\n, model=\n\"gpt-3.5-turbo\"\n):\n\"\"\"根据 compression_type：选择性保留相关句 / 写相关摘要 / 抽取关键信息\"\"\"\nif\ncompression_type ==\n\"selective\"\n:\nsystem_prompt =\n\"\"\"You are an expert at information filtering.\nYour task is to analyze a document chunk and extract ONLY the sentences\nor paragraphs that are directly relevant to the user's query.\nRemove all irrelevant content.\nYour output should:\n1. ONLY include text that helps answer the query\n2. Preserve the exact wording of relevant sentences (do not paraphrase)\n3. Maintain the original order of the text\n4. Include ALL relevant content, even if it seems redundant\n5. EXCLUDE any text that isn't relevant to the query\"\"\"\nelif\ncompression_type ==\n\"summary\"\n:\nsystem_prompt =\n\"\"\"You are an expert at summarization.\nCreate a concise summary of the provided chunk that focuses ONLY on\ninformation relevant to the user's query.\"\"\"\nelse\n:\n# extraction\nsystem_prompt =\n\"\"\"You are an expert at information extraction.\nExtract key facts and information relevant to the query.\"\"\"\nresponse = client.chat.completions.create(\nmodel=model,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\nf\"Query:\n{query}\n\\n\\nDocument chunk:\\n\n{chunk}\n\"\n}\n],\ntemperature=\n0\n)\nreturn\nresponse.choices[\n0\n].message.content\n10\n上下文压缩\n核心思路：\n把用户对回复的评分/反馈纳入闭环：记录\n「查询–回复–评分」\n，用 LLM 判断历史反馈与当前查询/文档是否相关，据此动态调整文档相关性得分，并把高质量问答对写入知识库，使系统越用越准。\n核心组件：\n反馈收集 → 相关性调整（按历史反馈修正检索分数）→ 知识积累（优质 Q&A 入向量库）。\n优势与局限：\n优势：\n可持续利用真实用户信号，适合客服、知识库等有稳定反馈的场景。\n局限：\n依赖高质量、足量反馈；反馈噪声或冷启动会影响调整效果。\n适用场景：\n有评分/点赞/纠错等用户反馈的在线系统。\n# ========== 方法10：反馈回路RAG（摘自 11_反馈回路机制的rag.ipynb）==========\ndef\nassess_feedback_relevance\n(\nquery, doc_text, feedback\n):\n\"\"\"\n使用LLM评估过去的反馈是否与当前查询和文档相关。\n参数:\nquery (str): 当前用户需要信息检索的查询\ndoc_text (str): 正在评估的文档文本内容\nfeedback (Dict): 包含'query'和'response'键的过去反馈数据\n返回:\nbool: 如果反馈被认为与当前查询/文档相关，则返回True，否则返回False\n\"\"\"\nsystem_prompt =\n\"\"\"You are an AI system that determines if a past feedback is relevant to a current query and document.\nAnswer with ONLY 'yes' or 'no'. Your job is strictly to determine relevance, not to provide explanations.\"\"\"\nuser_prompt =\nf\"\"\"\nCurrent query:\n{query}\nPast query that received feedback:\n{feedback[\n'query'\n]}\nDocument content:\n{doc_text[:\n500\n]}\n... [truncated]\nPast response that received feedback:\n{feedback[\n'response'\n][:\n500\n]}\n... [truncated]\nIs this past feedback relevant to the current query and document? (yes/no)\n\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: user_prompt}\n],\ntemperature=\n0\n)\nanswer = response.choices[\n0\n].message.content.strip().lower()\nreturn\n'yes'\nin\nanswer\ndef\nadjust_relevance_scores\n(\nquery, results, feedback_data\n):\n\"\"\"\n根据历史反馈调整文档相关性得分，以提高检索质量。\n参数:\nquery (str): 当前用户的查询\nresults (List[Dict]): 带有原始相似度得分的检索到的文档\nfeedback_data (List[Dict]): 包含用户评分的历史反馈数据\n返回:\nList[Dict]: 调整后相关性得分的结果，按新的得分排序\n\"\"\"\nif\nnot\nfeedback_data:\nreturn\nresults\nprint\n(\n\"Adjusting relevance scores based on feedback history...\"\n)\nfor\ni, result\nin\nenumerate\n(results):\ndocument_text = result[\n\"text\"\n]\nrelevant_feedback = []\nfor\nfeedback\nin\nfeedback_data:\nis_relevant = assess_feedback_relevance(query, document_text, feedback)\nif\nis_relevant:\nrelevant_feedback.append(feedback)\nif\nrelevant_feedback:\navg_relevance =\nsum\n(f[\n'relevance'\n]\nfor\nf\nin\nrelevant_feedback) /\nlen\n(relevant_feedback)\nmodifier =\n0.5\n+ (avg_relevance /\n5.0\n)\noriginal_score = result[\n\"similarity\"\n]\nadjusted_score = original_score * modifier\nresult[\n\"original_similarity\"\n] = original_score\nresult[\n\"similarity\"\n] = adjusted_score\nresult[\n\"relevance_score\"\n] = adjusted_score\nresult[\n\"feedback_applied\"\n] =\nTrue\nresult[\n\"feedback_count\"\n] =\nlen\n(relevant_feedback)\nprint\n(\nf\"  Document\n{i+\n1\n}\n: Adjusted score from\n{original_score:\n.4\nf}\nto\n{adjusted_score:\n.4\nf}\nbased on\n{\nlen\n(relevant_feedback)}\nfeedback(s)\"\n)\nresults.sort(key=\nlambda\nx: x[\n\"similarity\"\n], reverse=\nTrue\n)\nreturn\nresults\ndef\ngenerate_response\n(\nquery, context, model=\n\"gpt-3.5-turbo\"\n):\n\"\"\"\n根据查询和上下文生成回复。\n参数:\nquery (str): 用户查询\ncontext (str): 来自检索到的文档的上下文文本\nmodel (str): 要使用的LLM模型\n返回:\nstr: 生成的回复\n\"\"\"\nsystem_prompt =\n\"\"\"You are a helpful AI assistant. Answer the user's question based only on the provided context. If you cannot find the answer in the context, state that you don't have enough information.\"\"\"\nuser_prompt =\nf\"\"\"\nContext:\n{context}\nQuestion:\n{query}\nPlease provide a comprehensive answer based only on the context above.\n\"\"\"\nresponse = client.chat.completions.create(\nmodel=model,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: user_prompt}\n],\ntemperature=\n0\n)\nreturn\nresponse.choices[\n0\n].message.content\ndef\nrag_with_feedback_loop\n(\nquery, vector_store, feedback_data, k=\n5\n, model=\n\"gpt-3.5-turbo\"\n):\n\"\"\"\n完整的RAG管道，结合反馈循环。\n参数:\nquery (str): 用户查询\nvector_store (SimpleVectorStore): 包含文档片段的向量存储\nfeedback_data (List[Dict]): 历史反馈数据\nk (int): 检索的文档数量\nmodel (str): 用于回复生成的语言模型\n返回:\nDict: 结果字典，包括查询、检索到的文档和回复\n\"\"\"\nprint\n(\nf\"\\n=== Processing query with feedback-enhanced RAG ===\"\n)\nprint\n(\nf\"Query:\n{query}\n\"\n)\nquery_embedding = create_embeddings(query)\nresults = vector_store.similarity_search(query_embedding, k=k)\nadjusted_results = adjust_relevance_scores(query, results, feedback_data)\nretrieved_texts = [result[\n\"text\"\n]\nfor\nresult\nin\nadjusted_results]\ncontext =\n\"\\n\\n---\\n\\n\"\n.join(retrieved_texts)\nprint\n(\n\"Generating response...\"\n)\nresponse = generate_response(query, context, model)\nresult = {\n\"query\"\n: query,\n\"retrieved_documents\"\n: adjusted_results,\n\"response\"\n: response\n}\nprint\n(\n\"\\n=== Response ===\"\n)\nprint\n(response)\nreturn\nresult\n11\n自适应检索\n核心思路：\n先对用户查询做类型分类（事实型 分析型 观点型 / 情境型），再根据类型选用不同检索策略（如事实型偏精确匹配、分析型多召回再压缩等），实现“因问施策”。\n优势与局限：\n优势：\n同一套系统可兼顾多类问题，检索更有的放矢。\n局限：\n分类与各策略设计依赖领域知识；分类错误会传导到检索。\n适用场景：\n混合类型问答、客服/咨询等。\n# ========== 方法11：自适应检索 ==========\n# 先对 query 做类型分类，再按类型选择不同检索策略（事实/分析/观点/情境）\ndef\nclassify_query\n(\nquery, model=\n\"gpt-3.5-turbo\"\n):\n\"\"\"用 LLM 将查询归为四类之一：Factual / Analytical / Opinion / Contextual\"\"\"\nsystem_prompt =\n\"\"\"Classify the given query into exactly one of these categories:\n- Factual: Queries seeking specific, verifiable information.\n- Analytical: Queries requiring comprehensive analysis or explanation.\n- Opinion: Queries about subjective matters or seeking diverse viewpoints.\n- Contextual: Queries that depend on user-specific context.\nReturn ONLY the category name.\"\"\"\nresponse = client.chat.completions.create(\nmodel=model,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\nf\"Classify this query:\n{query}\n\"\n}\n],\ntemperature=\n0\n)\ncategory = response.choices[\n0\n].message.content.strip()\nvalid_categories = [\n\"Factual\"\n,\n\"Analytical\"\n,\n\"Opinion\"\n,\n\"Contextual\"\n]\nfor\nvalid\nin\nvalid_categories:\nif\nvalid\nin\ncategory:\nreturn\nvalid\nreturn\n\"Factual\"\ndef\nadaptive_retrieval\n(\nquery, vector_store, k=\n4\n, user_context=\nNone\n):\n\"\"\"按分类结果调用对应检索策略：事实型/分析型/观点型/情境型各有实现\"\"\"\nquery_type = classify_query(query)\nif\nquery_type ==\n\"Factual\"\n:\nresults = factual_retrieval_strategy(query, vector_store, k)\nelif\nquery_type ==\n\"Analytical\"\n:\nresults = analytical_retrieval_strategy(query, vector_store, k)\nelif\nquery_type ==\n\"Opinion\"\n:\nresults = opinion_retrieval_strategy(query, vector_store, k)\nelif\nquery_type ==\n\"Contextual\"\n:\nresults = contextual_retrieval_strategy(query, vector_store, k, user_context)\nelse\n:\nresults = factual_retrieval_strategy(query, vector_store, k)\nreturn\nresults\n12\nSelf-RAG（自适应RAG）\n核心思路：\n在\n「检索 → 生成」\n全流程中插入多个反思与决策点：是否要检索、检索到的文档是否相关、生成的回复是否被上下文支撑、回复是否实用等，从而在运行时自适应地决定是否检索、是否重试、是否标注“无依据”。\n六个关键组件：\n检索决策：\n判断当前查询是否需要检索\n文档检索：\n需要时做向量检索\n相关性评估：\n评估每个检索文档与查询是否相关\n回复生成：\n基于相关上下文生成回复\n支持评估：\n评估回复是否被上下文充分支持\n效用评估：\n对回复的整体实用性打 1–5 分\n优势与局限：\n优势：\n可减少无谓检索与幻觉，输出更可控、可解释。\n局限：\n多次 LLM 调用，延迟与成本高；依赖各环节 prompt 设计。\n适用场景：\n对准确性与可追溯性要求高的场景。\n# ========== 方法12：Self-RAG ==========\n# 流程：是否需要检索 → 检索 → 评估文档相关性 → 生成回复 → 评估支持度与效用 → 选最佳回复\nimport\nre\n# rate_utility 中解析评分用\ndef\ndetermine_if_retrieval_needed\n(\nquery\n):\n\"\"\"判断给定查询是否需要检索。事实/具体信息类答 Yes，常识或主观类答 No。\"\"\"\nsystem_prompt =\n\"\"\"You are an AI assistant that determines if retrieval is necessary to answer a query.\nFor factual questions, specific information requests, or questions about events, people, or concepts, answer \"Yes\".\nFor opinions, hypothetical scenarios, or simple queries with common knowledge, answer \"No\".\nAnswer with ONLY \"Yes\" or \"No\".\"\"\"\nuser_prompt =\nf\"Query:\n{query}\n\\n\\nIs retrieval necessary to answer this query accurately?\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: user_prompt}\n],\ntemperature=\n0\n)\nanswer = response.choices[\n0\n].message.content.strip().lower()\nreturn\n\"yes\"\nin\nanswer\ndef\nevaluate_relevance\n(\nquery, context\n):\n\"\"\"评估上下文与查询的相关性。返回 'relevant' 或 'irrelevant'。\"\"\"\nsystem_prompt =\n\"\"\"You are an AI assistant that determines if a document is relevant to a query.\nConsider whether the document contains information that would be helpful in answering the query.\nAnswer with ONLY \"Relevant\" or \"Irrelevant\".\"\"\"\nmax_context_length =\n2000\nif\nlen\n(context) > max_context_length:\ncontext = context[:max_context_length] +\n\"... [truncated]\"\nuser_prompt =\nf\"\"\"Query:\n{query}\nDocument content:\n{context}\nIs this document relevant to the query? Answer with ONLY \"Relevant\" or \"Irrelevant\".\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: user_prompt}\n],\ntemperature=\n0\n)\nreturn\nresponse.choices[\n0\n].message.content.strip().lower()\ndef\nassess_support\n(\nresponse, context\n):\n\"\"\"判断生成的回复是否由上下文充分支持。返回 'fully supported' / 'partially supported' / 'no support'。\"\"\"\nsystem_prompt =\n\"\"\"You are an AI assistant that determines if a response is supported by the given context.\nEvaluate if the facts, claims, and information in the response are backed by the context.\nAnswer with ONLY one of these three options:\n- \"Fully supported\": All information in the response is directly supported by the context.\n- \"Partially supported\": Some information in the response is supported by the context, but some is not.\n- \"No support\": The response contains significant information not found in or contradicting the context.\"\"\"\nmax_context_length =\n2000\nif\nlen\n(context) > max_context_length:\ncontext = context[:max_context_length] +\n\"... [truncated]\"\nuser_prompt =\nf\"\"\"Context:\n{context}\nResponse:\n{response}\nHow well is this response supported by the context? Answer with ONLY \"Fully supported\", \"Partially supported\", or \"No support\".\"\"\"\napi_response = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: user_prompt}\n],\ntemperature=\n0\n)\nreturn\napi_response.choices[\n0\n].message.content.strip().lower()\ndef\nrate_utility\n(\nquery, response\n):\n\"\"\"对回复的实用性打 1–5 分。\"\"\"\nsystem_prompt =\n\"\"\"You are an AI assistant that rates the utility of a response to a query.\nConsider how well the response answers the query, its completeness, correctness, and helpfulness.\nRate the utility on a scale from 1 to 5. Answer with ONLY a single number from 1 to 5.\"\"\"\nuser_prompt =\nf\"\"\"Query:\n{query}\n\\nResponse:\\n\n{response}\n\\n\\nRate the utility of this response on a scale from 1 to 5:\"\"\"\nresp = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: user_prompt}\n],\ntemperature=\n0\n)\nrating = resp.choices[\n0\n].message.content.strip()\nrating_match = re.search(\nr'[1-5]'\n, rating)\nreturn\nint\n(rating_match.group())\nif\nrating_match\nelse\n3\ndef\ngenerate_response\n(\nquery, context=\nNone\n):\n\"\"\"根据查询和可选上下文生成回复。无 context 时仅凭模型自身知识回答。\"\"\"\nsystem_prompt =\n\"\"\"You are a helpful AI assistant. Provide a clear, accurate, and informative response to the query.\"\"\"\nif\ncontext:\nuser_prompt =\nf\"\"\"Context:\\n\n{context}\n\\n\\nQuery:\n{query}\n\\n\\nPlease answer the query based on the provided context.\"\"\"\nelse\n:\nuser_prompt =\nf\"\"\"Query:\n{query}\n\\n\\nPlease answer the query to the best of your ability.\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: user_prompt}\n],\ntemperature=\n0.2\n)\nreturn\nresponse.choices[\n0\n].message.content.strip()\ndef\nself_rag\n(\nquery, vector_store, top_k=\n3\n):\n# 第一步：确定是否需要检索\nprint\n(\n\"Step 1: Determining if retrieval is necessary...\"\n)\nretrieval_needed = determine_if_retrieval_needed(query)\n# 初始化跟踪Self-RAG过程的指标\nmetrics = {\n\"retrieval_needed\"\n: retrieval_needed,\n\"documents_retrieved\"\n:\n0\n,\n\"relevant_documents\"\n:\n0\n,\n\"response_support_ratings\"\n: [],\n\"utility_ratings\"\n: []\n}\nbest_response =\nNone\nbest_score = -\n1\nif\nretrieval_needed:\n# 第二步：检索相关文档\nprint\n(\n\"\\nStep 2: Retrieving relevant documents...\"\n)\nquery_embedding = create_embeddings(query)\nresults = vector_store.similarity_search(query_embedding, k=top_k)\nmetrics[\n\"documents_retrieved\"\n] =\nlen\n(results)\nprint\n(\nf\"Retrieved\n{\nlen\n(results)}\ndocuments\"\n)\n# 第三步：评估每个文档的相关性\nprint\n(\n\"\\nStep 3: Evaluating document relevance...\"\n)\nrelevant_contexts = []\nfor\ni, result\nin\nenumerate\n(results):\ncontext = result[\n\"text\"\n]\nrelevance = evaluate_relevance(query, context)\nprint\n(\nf\"Document\n{i+\n1\n}\nrelevance:\n{relevance}\n\"\n)\nif\nrelevance ==\n\"relevant\"\n:\nrelevant_contexts.append(context)\nmetrics[\n\"relevant_documents\"\n] =\nlen\n(relevant_contexts)\nprint\n(\nf\"Found\n{\nlen\n(relevant_contexts)}\nrelevant documents\"\n)\nif\nrelevant_contexts:\n# 第四步：处理每个相关上下文\nprint\n(\n\"\\nStep 4: Processing relevant contexts...\"\n)\nfor\ni, context\nin\nenumerate\n(relevant_contexts):\nprint\n(\nf\"\\nProcessing context\n{i+\n1\n}\n/\n{\nlen\n(relevant_contexts)}\n...\"\n)\n# 基于上下文生成回复\nprint\n(\n\"Generating response...\"\n)\nresponse = generate_response(query, context)\n# 评估回复在多大程度上由上下文支持\nprint\n(\n\"Assessing support...\"\n)\nsupport_rating = assess_support(response, context)\nprint\n(\nf\"Support rating:\n{support_rating}\n\"\n)\nmetrics[\n\"response_support_ratings\"\n].append(support_rating)\n# 对回复的实用性进行评分\nprint\n(\n\"Rating utility...\"\n)\nutility_rating = rate_utility(query, response)\nprint\n(\nf\"Utility rating:\n{utility_rating}\n/5\"\n)\nmetrics[\n\"utility_ratings\"\n].append(utility_rating)\n# 计算总体分数（支持度和实用性越高，分数越高）\nsupport_score = {\n\"fully supported\"\n:\n3\n,\n\"partially supported\"\n:\n1\n,\n\"no support\"\n:\n0\n}.get(support_rating,\n0\n)\noverall_score = support_score *\n5\n+ utility_rating\nprint\n(\nf\"Overall score:\n{overall_score}\n\"\n)\n# 跟踪最佳回复\nif\noverall_score > best_score:\nbest_response = response\nbest_score = overall_score\nprint\n(\n\"New best response found!\"\n)\n# 如果没有找到相关上下文或所有回复得分都很低\nif\nnot\nrelevant_contexts\nor\nbest_score <=\n0\n:\nprint\n(\n\"\\nNo suitable context found or poor responses, generating without retrieval...\"\n)\nbest_response = generate_response(query)\nelse\n:\n# 不需要检索，直接生成回复\nprint\n(\n\"\\nNo retrieval needed, generating response directly...\"\n)\nbest_response = generate_response(query)\n# 最终指标\nmetrics[\n\"best_score\"\n] = best_score\nmetrics[\n\"used_retrieval\"\n] = retrieval_needed\nand\nbest_score >\n0\nprint\n(\n\"\\n=== Self-RAG Completed ===\"\n)\nreturn\n{\n\"query\"\n: query,\n\"response\"\n: best_response,\n\"metrics\"\n: metrics\n}\n13\n命题分块\n核心思路：\n不按字符或句子切块，而是把文本拆成原子化、自包含的“命题”（一句一事实，可独立理解）。用命题做检索单元，实现更细粒度的 query–content 匹配。\n优势与局限：\n优势：\n检索粒度细，适合事实型、实体型问题；命题可复用、可组合。\n局限：\n建库需对每块做命题抽取，成本高；命题过多时索引与检索开销增大。\n适用场景：\n知识密集型、强调“单事实”准确性的 QA。\n# ========== 方法13：命题分块 ==========\n# 把文本块拆成「单事实、自包含」的命题句，以命题为单元建索引与检索\ndef\ngenerate_propositions\n(\nchunk\n):\n\"\"\"用 LLM 将一块文本拆成多条原子命题：每句一个事实、可独立理解、含主谓结构\"\"\"\nsystem_prompt =\n\"\"\"Break down the following text into simple, self-contained propositions.\nEach proposition should:\n1. Express a Single Fact\n2. Be Understandable Without Context\n3. Use Full Names, Not Pronouns\n4. Include Relevant Dates/Qualifiers\n5. Contain One Subject-Predicate Relationship\nOutput ONLY the list of propositions.\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\nf\"Text to convert:\\n\\n\n{chunk[\n'text'\n]}\n\"\n}\n],\ntemperature=\n0\n)\nraw_propositions = response.choices[\n0\n].message.content.strip().split(\n'\\n'\n)\n# 去掉编号、列表符，过滤过短无效句\nclean_propositions = []\nfor\nprop\nin\nraw_propositions:\ncleaned = re.sub(\nr'^\\s*(\\d+\\.|\\-|\\*)\\s*'\n,\n''\n, prop).strip()\nif\ncleaned\nand\nlen\n(cleaned) >\n10\n:\nclean_propositions.append(cleaned)\nreturn\nclean_propositions\ndef\nprocess_document_into_propositions\n(\npdf_path, chunk_size=\n800\n, chunk_overlap=\n100\n,\nquality_thresholds=\nNone\n):\n# 如果未提供质量阈值，则设置默认值\nif\nquality_thresholds\nis\nNone\n:\nquality_thresholds = {\n\"accuracy\"\n:\n7\n,\n\"clarity\"\n:\n7\n,\n\"completeness\"\n:\n7\n,\n\"conciseness\"\n:\n7\n}\n# 从PDF文件中提取文本\ntext = extract_text_from_pdf(pdf_path)\n# 从提取的文本创建块\nchunks = chunk_text(text, chunk_size, chunk_overlap)\n# 初始化一个列表来存储所有命题\nall_propositions = []\nprint\n(\n\"Generating propositions from chunks...\"\n)\nfor\ni, chunk\nin\nenumerate\n(chunks):\nprint\n(\nf\"Processing chunk\n{i+\n1\n}\n/\n{\nlen\n(chunks)}\n...\"\n)\n# 为当前块生成命题\nchunk_propositions = generate_propositions(chunk)\nprint\n(\nf\"Generated\n{\nlen\n(chunk_propositions)}\npropositions\"\n)\n# 处理每个生成的命题\nfor\nprop\nin\nchunk_propositions:\nproposition_data = {\n\"text\"\n: prop,\n\"source_chunk_id\"\n: chunk[\n\"chunk_id\"\n],\n\"source_text\"\n: chunk[\n\"text\"\n]\n}\nall_propositions.append(proposition_data)\n# 评估生成的命题的质量\nprint\n(\n\"\\nEvaluating proposition quality...\"\n)\nquality_propositions = []\nfor\ni, prop\nin\nenumerate\n(all_propositions):\nif\ni %\n10\n==\n0\n:\n# 每10个命题更新一次状态\nprint\n(\nf\"Evaluating proposition\n{i+\n1\n}\n/\n{\nlen\n(all_propositions)}\n...\"\n)\n# 评估当前命题的质量\nscores = evaluate_proposition(prop[\n\"text\"\n], prop[\n\"source_text\"\n])\nprop[\n\"quality_scores\"\n] = scores\n# 检查命题是否通过质量阈值\npasses_quality =\nTrue\nfor\nmetric, threshold\nin\nquality_thresholds.items():\nif\nscores.get(metric,\n0\n) < threshold:\npasses_quality =\nFalse\nbreak\nif\npasses_quality:\nquality_propositions.append(prop)\nelse\n:\nprint\n(\nf\"Proposition failed quality check:\n{prop[\n'text'\n][:\n50\n]}\n...\"\n)\nprint\n(\nf\"\\nRetained\n{\nlen\n(quality_propositions)}\n/\n{\nlen\n(all_propositions)}\npropositions after quality filtering\"\n)\nreturn\nchunks, quality_propositions\n14\n多模态RAG\n核心思路：\n从 PDF 等文档中同时提取文本与图像，用视觉模型为每张图生成文本描述（caption），将\n「正文 + 图像描述」\n统一嵌入并写入同一向量库，实现“以文搜文+以文搜图”的联合检索。\n# ========== 方法14：多模态RAG ==========\n# PDF 中同时抽文本与图像，图像用 VLM 生成 caption，文本+caption 一起入向量库统一检索\ndef\nextract_content_from_pdf\n(\npdf_path, output_dir=\nNone\n):\n\"\"\"按页从 PDF 抽取文本块和图像，图像保存到 output_dir 并记录路径与页码\"\"\"\ntext_data = []\nimage_paths = []\nwith\nfitz.\nopen\n(pdf_path)\nas\npdf_file:\nfor\npage_number\nin\nrange\n(\nlen\n(pdf_file)):\npage = pdf_file[page_number]\ntext = page.get_text().strip()\nif\ntext:\ntext_data.append({\n\"content\"\n: text,\n\"metadata\"\n: {\n\"page\"\n: page_number +\n1\n,\n\"type\"\n:\n\"text\"\n}})\nfor\nimg_index, img\nin\nenumerate\n(page.get_images(full=\nTrue\n)):\nxref = img[\n0\n]\nbase_image = pdf_file.extract_image(xref)\nif\nbase_image:\nimg_path = os.path.join(output_dir,\nf\"page_\n{page_number+\n1\n}\n_img_\n{img_index+\n1\n}\n.\n{base_image[\n'ext'\n]}\n\"\n)\nwith\nopen\n(img_path,\n\"wb\"\n)\nas\nf:\nf.write(base_image[\n\"image\"\n])\nimage_paths.append({\n\"path\"\n: img_path,\n\"metadata\"\n: {\n\"page\"\n: page_number +\n1\n,\n\"type\"\n:\n\"image\"\n}})\nreturn\ntext_data, image_paths\ndef\ngenerate_image_caption\n(\nimage_path\n):\n\"\"\"用多模态模型（如 LLaVA）为图像生成文字描述，便于与文本一起嵌入检索\"\"\"\nbase64_image = encode_image(image_path)\nresponse = client.chat.completions.create(\nmodel=\n\"llava-hf/llava-1.5-7b-hf\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n:\n\"Describe images from academic papers in detail.\"\n},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: [\n{\n\"type\"\n:\n\"text\"\n,\n\"text\"\n:\n\"Describe this image in detail:\"\n},\n{\n\"type\"\n:\n\"image_url\"\n,\n\"image_url\"\n: {\n\"url\"\n:\nf\"data:image/jpeg;base64,\n{base64_image}\n\"\n}}\n]}\n]\n)\nreturn\nresponse.choices[\n0\n].message.content\n15\n融合检索\n核心思路：\n向量检索（语义相似）与 BM25（词匹配）同时做，对两路分数分别 Min-Max 归一化 后按\nalpha\n加权融合：\nfinal_score = alpha * norm_vector + (1-alpha) * norm_bm25\n，再按融合分取 top-k。语义与关键词互补，召回更稳。\n# ========== 方法15：融合检索 ==========\n# 向量检索 + BM25 双路打分，归一化后加权融合，再取 top-k\ndef\nbm25_search\n(\nbm25, chunks, query, k=\n5\n):\n\"\"\"BM25 关键词检索：对 query 分词后算各 chunk 的 BM25 分，按分排序取 top-k\"\"\"\nquery_tokens = query.split()\nscores = bm25.get_scores(query_tokens)\nresults = []\nfor\ni, score\nin\nenumerate\n(scores):\nmetadata = chunks[i].get(\n\"metadata\"\n, {}).copy()\nmetadata[\n\"index\"\n] = i\nresults.append({\n\"text\"\n: chunks[i][\n\"text\"\n],\n\"metadata\"\n: metadata,\n\"bm25_score\"\n:\nfloat\n(score)})\nresults.sort(key=\nlambda\nx: x[\n\"bm25_score\"\n], reverse=\nTrue\n)\nreturn\nresults[:k]\ndef\nfusion_retrieval\n(\nquery, chunks, vector_store, bm25_index, k=\n5\n, alpha=\n0.5\n):\n\"\"\"融合：向量与 BM25 各算一版分数 → Min-Max 归一化 → 加权合并 → 按最终分取 top-k\"\"\"\nepsilon =\n1e-8\nquery_embedding = create_embeddings(query)\nvector_results = vector_store.similarity_search_with_scores(query_embedding, k=\nlen\n(chunks))\nbm25_results = bm25_search(bm25_index, chunks, query, k=\nlen\n(chunks))\nvector_scores_dict = {r[\n\"metadata\"\n][\n\"index\"\n]: r[\n\"similarity\"\n]\nfor\nr\nin\nvector_results}\nbm25_scores_dict = {r[\n\"metadata\"\n][\n\"index\"\n]: r[\n\"bm25_score\"\n]\nfor\nr\nin\nbm25_results}\nvector_scores = np.array([vector_scores_dict.get(i,\n0.0\n)\nfor\ni\nin\nrange\n(\nlen\n(chunks))])\nbm25_scores = np.array([bm25_scores_dict.get(i,\n0.0\n)\nfor\ni\nin\nrange\n(\nlen\n(chunks))])\nv_min, v_max = vector_scores.\nmin\n(), vector_scores.\nmax\n()\nb_min, b_max = bm25_scores.\nmin\n(), bm25_scores.\nmax\n()\nnorm_vector = (vector_scores - v_min) / (v_max - v_min + epsilon)\nnorm_bm25 = (bm25_scores - b_min) / (b_max - b_min + epsilon)\nfinal_scores = alpha * norm_vector + (\n1\n- alpha) * norm_bm25\ntop_indices = np.argsort(final_scores)[::-\n1\n][:k]\nreturn\n[{\n\"text\"\n: chunks[i][\n\"text\"\n],\n\"score\"\n: final_scores[i]}\nfor\ni\nin\ntop_indices]\n16\n图RAG（Graph RAG\n）\n核心思路：\n从每个文本块中抽取概念/实体，以块为节点、以共享概念 + 语义相似度为边权建知识图谱。检索时先命中部分节点，再通过图上的边扩展关联节点，从而把跨多块的相关信息一并拉取。\n优势与局限：\n优势：\n能利用“概念共现”“实体关系”做关联扩展，适合概念密集、关系复杂的领域。\n局限：\n建图与概念抽取成本高；图规模大时遍历与索引设计更复杂。\n适用场景：\n知识图谱、领域百科、多实体关系推理。\n# ========== 方法16：图RAG（Graph RAG） ==========\n# 块→节点，块内概念→属性；共享概念+语义相似度→边；检索时可沿边扩展关联块\ndef\nbuild_knowledge_graph\n(\nchunks\n):\n\"\"\"为每个 chunk 抽概念、建节点；根据共享概念与嵌入相似度建边，得到知识图谱\"\"\"\ngraph = nx.Graph()\ntexts = [chunk[\n\"text\"\n]\nfor\nchunk\nin\nchunks]\nembeddings = create_embeddings(texts)\nfor\ni, chunk\nin\nenumerate\n(chunks):\nconcepts = extract_concepts(chunk[\n\"text\"\n])\n# LLM 抽取概念/实体\ngraph.add_node(i, text=chunk[\n\"text\"\n], concepts=concepts, embedding=embeddings[i])\nfor\ni\nin\nrange\n(\nlen\n(chunks)):\nnode_concepts =\nset\n(graph.nodes[i][\n\"concepts\"\n])\nfor\nj\nin\nrange\n(i +\n1\n,\nlen\n(chunks)):\nother_concepts =\nset\n(graph.nodes[j][\n\"concepts\"\n])\nshared_concepts = node_concepts.intersection(other_concepts)\nif\nshared_concepts:\nsimilarity = np.dot(embeddings[i], embeddings[j]) / (\nnp.linalg.norm(embeddings[i]) * np.linalg.norm(embeddings[j]))\nconcept_score =\nlen\n(shared_concepts) /\nmin\n(\nlen\n(node_concepts),\nlen\n(other_concepts))\nedge_weight =\n0.7\n* similarity +\n0.3\n* concept_score\nif\nedge_weight >\n0.6\n:\ngraph.add_edge(i, j, weight=edge_weight, shared_concepts=\nlist\n(shared_concepts))\nreturn\ngraph, embeddings\n17\n分层检索RAG\n核心思路：\n建两层索引——摘要层（如每页/每章一个摘要）和详细层（页内细粒度块）。检索时先查摘要层锁定相关页/章，再只在对应页内查详细块，从而在保证相关性的前提下缩小搜索范围、提升效率。\n优势与局限：\n优势：\n适合超长文档、十亿级规模；先筛范围再精查，延迟与算力更可控。\n局限：\n摘要质量与粒度影响第一层召回；若相关分布在多页，需合理设置 k_summaries。\n适用场景：\n长篇报告、书籍、法规、多章节文档。\n# ========== 方法17：分层检索RAG ==========\n# 第一层：页/章摘要向量库；第二层：页内详细块向量库。先搜摘要定范围，再在范围内搜块\ndef\nprocess_document_hierarchically\n(\npdf_path, chunk_size=\n1000\n, chunk_overlap=\n200\n):\n\"\"\"建两层索引：每页摘要入 summary_store，每页内细块入 detailed_store\"\"\"\npages = extract_text_from_pdf(pdf_path)\nsummaries = []\nfor\ni, page\nin\nenumerate\n(pages):\nsummary_text = generate_page_summary(page[\n\"text\"\n])\nsummaries.append({\n\"text\"\n: summary_text,\n\"metadata\"\n: {**page[\n\"metadata\"\n],\n\"is_summary\"\n:\nTrue\n}})\ndetailed_chunks = []\nfor\npage\nin\npages:\npage_chunks = chunk_text(page[\n\"text\"\n], page[\n\"metadata\"\n], chunk_size, chunk_overlap)\ndetailed_chunks.extend(page_chunks)\nsummary_store = SimpleVectorStore()\ndetailed_store = SimpleVectorStore()\n# 分别为 summary 与 detailed_chunks 建嵌入并写入对应 store\nreturn\nsummary_store, detailed_store\ndef\nretrieve_hierarchically\n(\nquery, summary_store, detailed_store, k_summaries=\n3\n, k_chunks=\n5\n):\n\"\"\"先按 query 在摘要层检索出 k_summaries 个相关页，再仅在这些页的详细块里检索\"\"\"\nquery_embedding = create_embeddings(query)\nsummary_results = summary_store.similarity_search(query_embedding, k=k_summaries)\nrelevant_pages = [r[\n\"metadata\"\n][\n\"page\"\n]\nfor\nr\nin\nsummary_results]\ndef\npage_filter\n(\nmetadata\n):\nreturn\nmetadata[\n\"page\"\n]\nin\nrelevant_pages\ndetailed_results = detailed_store.similarity_search(\nquery_embedding, k=k_chunks *\nlen\n(relevant_pages), filter_func=page_filter\n)\nreturn\ndetailed_results\n18\n假设文档嵌入（HyDE）\n核心思路：\n用户查询往往很短，与长文档在嵌入空间里距离较远。HyDE 的做法是：先用 LLM 根据问题生成一段“假设的”答案文档（风格、长度接近真实文档），再用这段假设文档的嵌入（而非原始 query 的嵌入）去检索真实文档，从而拉近 query 与 document 的表示距离。\n优势与局限：\n优势：\n能把短 / 抽象问句补成伪文档，大幅提升检索相关性；不用重建索引，只在检索侧增强 query。\n局限：\n多一次 LLM 生成与嵌入调用；假设文档若偏离真实文档风格，可能引入噪声。\n适用场景：\n短查询、知识问答、知识库规整、关键词匹配差的 RAG 场景。\n# ========== 方法18：假设文档嵌入（HyDE） ==========\n# 用 query 生成一段“假设答案”文档，用该文档的嵌入去检索，而非用 query 嵌入\ndef\ngenerate_hypothetical_document\n(\nquery, desired_length=\n1000\n):\n\"\"\"根据问题生成一段“像标准答案”的假设文档，长度与风格接近真实文档\"\"\"\nsystem_prompt =\nf\"\"\"You are an expert document creator.\nGiven a question, generate a detailed document that would directly answer this question.\nThe document should be approximately\n{desired_length}\ncharacters long.\nWrite as if from an authoritative source. Include specific details and facts.\nDo not mention that this is a hypothetical document.\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\nf\"Question:\n{query}\n\\n\\nGenerate a document:\"\n}\n],\ntemperature=\n0.1\n)\nreturn\nresponse.choices[\n0\n].message.content\ndef\nhyde_rag\n(\nquery, vector_store, k=\n5\n):\n\"\"\"HyDE 流程：生成假设文档 → 用假设文档嵌入检索 → 用真实检索结果生成最终答案\"\"\"\nhypothetical_doc = generate_hypothetical_document(query)\nhypothetical_embedding = create_embeddings([hypothetical_doc])[\n0\n]\nretrieved_chunks = vector_store.similarity_search(hypothetical_embedding, k=k)\nresponse = generate_response(query, retrieved_chunks)\nreturn\n{\n\"query\"\n: query,\n\"hypothetical_document\"\n: hypothetical_doc,\n\"retrieved_chunks\"\n: retrieved_chunks,\n\"response\"\n: response}\n19\n动态纠正RAG（CRAG）\n核心思路：\n检索完成后先评估这批文档与 query 的相关性（如 0–1 分），再按分数区间做分支：高相关则只用本地文档；低相关则放弃本地、改用网络搜索；中等则本地 + 网络一起用。从而在“知识不足”时自动纠偏，避免硬用无关文档生成。\n优势与局限：\n优势：\n降低“检索到无关文档仍强行生成”的幻觉与错误；适合知识边界不固定、需时效信息的场景。\n局限：\n需要可靠的相关性评估（LLM 或 reranker）和网络搜索接口；阈值需调参。\n适用场景：\n开放域问答、时效性强的场景、本地库覆盖不全时。\n# ========== 方法19：动态纠正RAG（CRAG） ==========\n# 检索 → 评估相关性 → 高/中/低分分别采用「仅本地 / 本地+网络 / 仅网络」\ndef\nevaluate_document_relevance\n(\nquery, document\n):\n\"\"\"用 LLM 对「query-文档」打 0–1 相关性分，用于 CRAG 分支决策\"\"\"\nsystem_prompt =\n\"\"\"Rate how relevant the given document is to the query\non a scale from 0 to 1. Provide ONLY the score as a float.\"\"\"\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-3.5-turbo\"\n,\nmessages=[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\nf\"Query:\n{query}\n\\n\\nDocument:\n{document}\n\"\n}\n],\ntemperature=\n0\n, max_tokens=\n5\n)\nscore_text = response.choices[\n0\n].message.content.strip()\nscore_match = re.search(\nr'(\\d+(\\.\\d+)?)'\n, score_text)\nreturn\nfloat\n(score_match.group(\n1\n))\nif\nscore_match\nelse\n0.5\ndef\ncrag_process\n(\nquery, vector_store, k=\n3\n):\n\"\"\"CRAG：检索 → 对 top 文档打相关性分 → 按最高分选策略（仅本地/仅网络/混合）→ 生成\"\"\"\nquery_embedding = create_embeddings(query)\nretrieved_docs = vector_store.similarity_search(query_embedding, k=k)\nrelevance_scores = []\nfor\ndoc\nin\nretrieved_docs:\nscore = evaluate_document_relevance(query, doc[\n\"text\"\n])\nrelevance_scores.append(score)\ndoc[\n\"relevance\"\n] = score\nmax_score =\nmax\n(relevance_scores)\nif\nrelevance_scores\nelse\n0\nif\nmax_score >\n0.7\n:\nfinal_knowledge = retrieved_docs[relevance_scores.index(max_score)][\n\"text\"\n]\nelif\nmax_score <\n0.3\n:\nweb_results, web_sources = perform_web_search(query)\nfinal_knowledge = refine_knowledge(web_results)\nelse\n:\nbest_doc = retrieved_docs[relevance_scores.index(max_score)][\n\"text\"\n]\nweb_results, _ = perform_web_search(query)\nfinal_knowledge = refine_knowledge(best_doc) +\n\"\\n\"\n+ refine_knowledge(web_results)\nresponse = generate_response(query, final_knowledge)\nreturn\nresponse\n20\n强化学习增强RAG\n核心思路：\n把 RAG 流程看成强化学习：状态（当前 query、已选上下文、历史回复与奖励）、动作（重写 query、扩展/过滤上下文、生成回复）、奖励（如生成回复与标准答案的语义相似度）。用 epsilon-greedy 等策略根据状态选动作，用奖励迭代优化，使检索与生成策略逐步变好。\n优势与局限：\n优势：\n可端到端利用标注或用户反馈优化整条管道；理论上能学到复杂策略。\n局限：\n需要奖励信号（标注答案或用户反馈）、训练循环与稳定性调参。\n适用场景：\n有充足标注或反馈、希望长期自动优化效果的场景。\n# ========== 方法20：强化学习增强RAG ==========\n# 状态-动作-奖励建模；用奖励（如回复与标准答案的相似度）驱动策略选择\ndef\ncalculate_reward\n(\nresponse:\nstr\n, ground_truth:\nstr\n) ->\nfloat\n:\n\"\"\"奖励函数：回复与标准答案的嵌入余弦相似度，范围约 [-1, 1]\"\"\"\nresponse_embedding = generate_embeddings([response])[\n0\n]\nground_truth_embedding = generate_embeddings([ground_truth])[\n0\n]\nsimilarity = cosine_similarity(response_embedding, ground_truth_embedding)\nreturn\nsimilarity\ndef\nexpand_context\n(\nquery, current_chunks, top_k=\n3\n):\n\"\"\"动作之一：在已有 chunks 基础上再检索若干相关块并追加\"\"\"\nadditional_chunks = retrieve_relevant_chunks(query, top_k=top_k +\nlen\n(current_chunks))\nnew_chunks = [chunk\nfor\nchunk\nin\nadditional_chunks\nif\nchunk\nnot\nin\ncurrent_chunks]\nreturn\ncurrent_chunks + new_chunks[:top_k]\ndef\nfilter_context\n(\nquery, context_chunks\n):\n\"\"\"动作之一：按与 query 的相似度只保留最相关的若干块\"\"\"\nquery_embedding = generate_embeddings([query])[\n0\n]\nchunk_embeddings = [generate_embeddings([chunk])[\n0\n]\nfor\nchunk\nin\ncontext_chunks]\nrelevance_scores = [cosine_similarity(query_embedding, emb)\nfor\nemb\nin\nchunk_embeddings]\nsorted_chunks = [x\nfor\n_, x\nin\nsorted\n(\nzip\n(relevance_scores, context_chunks), reverse=\nTrue\n)]\nreturn\nsorted_chunks[:\nmin\n(\n5\n,\nlen\n(sorted_chunks))]\ndef\npolicy_network\n(\nstate, action_space, epsilon=\n0.2\n):\n\"\"\"epsilon-greedy：以概率 epsilon 随机探索，否则按启发式选动作（重写/扩展/过滤/生成）\"\"\"\nif\nnp.random.random() < epsilon:\naction = np.random.choice(action_space)\nelse\n:\nif\nlen\n(state[\n\"previous_responses\"\n]) ==\n0\n:\naction =\n\"rewrite_query\"\nelif\nstate[\n\"previous_rewards\"\n]\nand\nmax\n(state[\n\"previous_rewards\"\n]) <\n0.7\n:\naction =\n\"expand_context\"\nelif\nlen\n(state[\n\"context\"\n]) >\n5\n:\naction =\n\"filter_context\"\nelse\n:\naction =\n\"generate_response\"\nreturn\naction\n方法总结对比\n编\n号\n方\n法\n优化\n维度\n核心\n思想\n1\n语义\n分块\n分\n块\n基于语义相\n似度的智能分割\n2\n切块大\n小评估\n分\n块\n数据驱动选\n择最优切块参数\n3\n上下文增\n强检索\n检\n索\n返回匹配块\n及其相邻块\n4\n上下文标\n题提取（\nCC\nH）\n检\n索\n标\n题+\n文本双维\n度匹配\n5\n文档增强\nRAG\n索\n引\n预生成问题\n弥补语义鸿沟\n6\n查询\n转换\n查\n询\n重\n写/\n回\n退/\n分解\n查询\n7\n重排\n序\n检\n索\n两阶\n段：\n粗检\n索+\n精排\n序\n8\n相关段\n落提取（\nRS\nE）\n检\n索\n最大子数组\n找连续最优段落\n9\n上下文\n压缩\n后处\n理\n压缩检索结\n果去除噪声\n1\n0\n反馈\n回路\n系\n统\n用户反馈动\n态调整系统\n1\n1\n自适应\n检索\n检\n索\n按查询类\n型选策略\n1\n2\nSe\nlf-\nRA\nG\n生\n成\n多维度反\n思评估机制\n1\n3\n命题\n分块\n分\n块\n原子化事实\n陈述作为检索单元\n1\n4\n多模态\nRAG\n索\n引\n图文联\n合检索\n1\n5\n融合\n检索\n检\n索\n向\n量+\nB\nM\n2\n5\n加权\n融合\n1\n6\n图R\nAG\n检\n索\n知识图谱\n关联发现\n1\n7\n分层\n检索\n检\n索\n摘\n要→\n详细的两\n级检索\n1\n8\nHy\nDE\n查\n询\n假设文档嵌\n入替代查询嵌入\n1\n9\nCR\nAG\n系\n统\n动态评估并\n纠正检索质量\n2\n0\nRL增强\nRAG\n系\n统\n强化学习\n优化全流程\n优化方法选择指南\n分块优化：\n检索不够精准时，优先考虑语义分块（1）、命题分块（13）或切块大小评估（2）。\n检索增强：\n融合检索（15）性价比高、易落地；图RAG（16）适合概念与关系密集的领域。\n查询优化：\nHyDE（18）对短查询、抽象问句效果好；查询转换（6）适合复杂、多子问题查询。\n后处理：\n重排序（7）+ 上下文压缩（9）能明显提升最终回复质量与可控性。\n系统级：\nCRAG（19）适合对可靠性、时效性要求高的场景；反馈回路（10）适合有持续用户反馈的产品。\n端到端：\nSelf-RAG（12）与 RL 增强（20）能力最全面，实现与调参成本也更高，可按需选用。\n-End-\n原创作者｜\n李鑫阳\n感谢你读到这里，不如关注一下？\n👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。3月12日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.37,
+        "peripheral": 0.13,
+        "irrelevant": 0.5,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.75,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.21,
+        "2": 0.75,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.2,
+      "probabilities": {
+        "0": 0.84,
+        "1": 0.13,
+        "2": 0.02,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.47,
+      "probabilities": {
+        "0": 0.69,
+        "1": 0.18,
+        "2": 0.1,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.06,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.93,
+        "3": 0.07,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.94,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.03,
+        "4": 0.86,
+        "5": 0.08
+      }
+    },
+    "anti_hype": {
+      "score": 2.49,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.05,
+        "2": 0.35,
+        "3": 0.55,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 19980,
+    "outputTokens": 173,
+    "totalTokens": 20153
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.37,
+        "relevance": 0.82,
+        "grounding": 0.87,
+        "decision_action": 0.69,
+        "evidence": 0.95,
+        "actionability": 0.86,
+        "anti_hype": 0.62
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180031577,
+                "endTime": 1791180031862,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00083916",
+      "marketCost": "0.00083916",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00083916",
+      "inferenceCost": "0.00083916",
+      "inputInferenceCost": "0.00083916",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACHJ7TV9VGBS5EGSTCCPN"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:31 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::h699r-1791180029663-6668091898d1"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.37,
+            "peripheral": 0.13,
+            "irrelevant": 0.5,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.75,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.21,
+            "2": 0.75,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.2,
+          "probabilities": {
+            "0": 0.84,
+            "1": 0.13,
+            "2": 0.02,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.47,
+          "probabilities": {
+            "0": 0.69,
+            "1": 0.18,
+            "2": 0.1,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.06,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.93,
+            "3": 0.07,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.94,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.03,
+            "4": 0.86,
+            "5": 0.08
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.49,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.05,
+            "2": 0.35,
+            "3": 0.55,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 19980,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.37,
+            "relevance": 0.82,
+            "grounding": 0.87,
+            "decision_action": 0.69,
+            "evidence": 0.95,
+            "actionability": 0.86,
+            "anti_hype": 0.62
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180031577,
+                    "endTime": 1791180031862,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00083916",
+          "marketCost": "0.00083916",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00083916",
+          "inferenceCost": "0.00083916",
+          "inputInferenceCost": "0.00083916",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACHJ7TV9VGBS5EGSTCCPN"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:31.087Z"
+  }
+}

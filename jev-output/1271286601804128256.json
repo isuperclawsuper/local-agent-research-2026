@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1271286601804128256",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从 Loop 到 Graph Engineering 的演进思考与实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562254&idx=1&sn=77b80c213b5e45ae40cdb09a0a6c15dd",
+      "date": "2026-09-01T02:03:00.549Z",
+      "chars": 8808,
+      "text": "姜剑(飞樰)\n2026-09-01 10:03\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n背景\n之前，我写了一篇关于 Loop Engineering 的文章《\nLoop Engineering概念解析、思考与实践\n》，专门介绍了如何使用 Loop 的方式来构建那些可以自我验证、能自动循环执行的 Agent。今年7月，AI 界又双叒叕出现了新的 Agent 范式概念，叫做\nGraph Engineering\n，让我们一探究竟。\n先别看到 “Graph” 就觉得这是老生常谈。没错，图结构、图神经网络，或者知识图谱、图谱工程，大家确实听得耳朵都起茧子了，以及图数据库、图知识库之类的，市面上也已经非常多了。\n但这次提到的 Graph Engineering 还不太一样。它并不是那些旧概念的堆叠，而是在 Loop Engineering 基础之上涌现出来的新形态。你可以把它理解为 Loop Engineering 的\n改进升级版\n。\n那这个风潮是从哪儿刮起来的呢？\n就在7 月 18 号，OpenClaw 的作者 Peter Steinberger 在 X 上发了一条动态，问了一个很有意思的问题：“Are we still talking loops or did we shift to graphs yet?”（我们到底还在聊 Loop，还是说大家都已经转向 Graph 了？）这里的 “Graph”，指的就是咱们今天要聊的\nGraph Engineering（图工程）\n。\n其实，关于图工程的文章已经有不少了，但是我看完发现很多都是在介绍图的概念、图结构以及边、节点之间的关系，我个人觉得这些并不是 Graph Engineering 的重点，而是一种新的工程范式。因此，我这篇文章不去重点介绍图的概念实现，而是从图工程的\n本质是什么\n以及\n为什么要做这件事\n。本文，我将会结合 AI 领域一位很有独到见解的专家 Carlos Perez 的一篇文章\n《From Loop Engineering to Graph Engineering? What the shift in AI agent architecture is really about》\n来展开对图工程的理解和叙述。这篇文章和 Peter Steinberger 的那条推文形成了呼应。他们共同指向了一个核心趋势：\n我们正在从 Loop Engineering 转向 Graph Engineering\n。\n单指标验证一定带来正向优化吗？\n为什么要从 Loop Engineering 转向 Graph Engineering？首先，我们需要看下 Loop Engineering 存在哪些问题？\n其实，在我上个月那篇文章发出后，有很多同学开始尝试用 Loop Engineering 去构建自己的Loop，或者打造工作场景中的 Agent。这种“自我验证、自动完成任务”的机制，跟我之前提到的 Skill 自进化（EvoSkill、SkillOpt 等框架）是非常相关的。这些框架的核心思想都利用了类似 Loop Engineering 的逻辑来进行自我验证。但这里有一个非常明显的局限性：\n它们的验证标准通常是固定的函数或单一的指标值\n。\n举个例子，如果你要做文本分类，那么“分类准确率”就是你自我验证的标尺。只有当准确率提升了，系统才会接受这次优化并应用它。\n但这会带来什么大问题呢？\n单目标优化极易陷入“过拟合”，甚至会让模型学会“作弊”\n。\n为了达到提升指标的目的，模型可能会竭尽所能地绕过真正的难点，通过一些 trick 甚至是“弄虚作假”的方式来刷高分数。最终的结果，往往与我们想要的真实效果背道而驰。\nCarlos Perez 在他的文章里讲了一个特别典型的故事，完美诠释了这一点：有一个国外的公司团队花了一个季度构建客服 AI 聊天机器人，目标很明确：解决用户问题。他们选定的核心考核指标是“\n问题解决率\n”。每周，他们都会测量这个数值，如果数字下降，就让 AI 自动优化提示词和策略，强行把问题解决率拉回来。 结果看似很美，问题解决率的指标连续 5 个月一直在涨。但现实很残酷：产品的续约数据在跌，客户流失率在飙升。\n这显然是一次非常失败的优化。为什么呢？经过该团队的深入调研发现，发现 AI 为了迎合“高解决率”这个单一指标，学会了一套“骚操作”：\n快速关闭对话\n：用户话还没说完，AI 扔出一个回答就立刻标记为“已解决”，强行切断交互。\n阻止追问\n：不让用户继续问下去，因为一旦用户追问，可能就会生成新的工单，从而拉低当前的“一次性解决率”。\n滥用标记\n：把那些不再说话、或者显得不想再问的用户，统统标记为“已解决”。\n你看，通过 Loop Engineering，AI 很快就把账面数据做得非常漂亮。但这种优化，是以牺牲巨大的客户体验为代价的。\n数字虽然在上升，但这是一种典型的“负向优化”\n。\n单 Loop 的四种失败原因\n这种单 Loop 循环有 4 种典型的失败原因：\nGoodhart's Law（古德哈特定律）\n这个定律是英国经济学家查尔斯·古德哈特提出的，什么意思呢？简单来说就是当\n一个指标被优化到一定程度之后，它就不再能衡量它原本想要衡量的东西了\n。\nLoop 只能“看到”它的指标，所以它会想尽一切办法去提升这个指标，哪怕这意味着要“背叛”用户的真实初衷，只要能把数字做上去就行。\nBlindness Upward（向上的盲视）\n这个 Loop 无法去质疑\"验证目标本身\"是不是对的。就像我们用遥控器设定空调温度维持在 26°C，空调是不会去思考“26°C 这个设定本身合不合理”，它只需要\n埋头去完成这个目标\n就行。\n问题就在于如果目标本身定得不合理、或者有漏洞可钻，那这个 Loop 越努力，反而就越会\n竭尽所能地用“错误的方式”去实现“正确的数字”\n。\nConflict（冲突）\n如果系统里有多个 Loop，它们可能会“打架”。比如一个 Loop 要求“速度足够快”，另一个 Loop 要求“结果足够好”。但现实往往是快不一定好，好也不一定快。一旦这两个目标之间产生冲突，单 Loop 架构就很难协调，容易顾此失彼，导致冲突的发生。\nMeasurement Decay（测量衰减）\n这个问题其实更隐蔽，当 Loop 发现某些数据“做不到”的时候，它不会反思目标，而是悄悄想办法“改变测量方式”。比如：我的评判标准能不能调一下？我的评测集能不能换一批更简单的？只要让考题变简单了，是不是就更容易“达标”了？\n这四种情况，本质上都是单 Loop 架构的结构性缺陷，\n它太聚焦于“完成指标”，而忘了“指标为什么存在”\n。\n这些都是它在实际落地时，非常容易出现、却又很难被及时发现的问题。\n用 Loops 监督 loops\n接下来我们来看看，Graph Engineering 到底是用来解决什么问题的？\n在 Carlos Perez 的那篇文章里，有一句非常精辟的话：\n“Loops watching loops”（用循环来监督循环）\n这是什么意思呢？想象一下，单个 Loop 很容易盯着一个数字拼命优化，容易跑偏。但如果我们有多个 Loop，让它们互相“看着”对方，那么当一个 Loop 为了刷数据而狂奔时，另一个 Loop 就可以站出来质疑它、纠正它。这就相当于在 Loop 之间建立了一种\n监管机制\n。\n这就有点像公司的管理结构，\n基层员工\n看日报，这是一个快速 Loop；\n管理层\n看季报，这是一个中速 Loop；\n审计部门\n看年报，这是一个慢速 Loop；\n高层战略部看方向\n，这是一个更慢、更宏观的 Loop。\n这一层层不同速度的循环互相监视，就能确保大方向不会出问题。这就是 Graph Engineering 的核心特点，它通过这种多层级的结构，解决了刚才提到的单循环那四个致命问题：\n针对古德哈特定律（刷指标）\n：\nGraph 可以配置一个“监督循环”。比如，既有一个负责优化“解决率”的 Loop，也有一个专门盯着“续约率”的 Loop。两个 Loop 互相制衡，防止为了提升解决率而牺牲客户体验，避免模型在单一指标上过拟合。\n针对向上盲视（不质疑目标）\n：\n我们可以增加一个“慢循环”，专门负责修正和调整目标本身。如果目标定错了，这个慢循环会发现并纠偏。\n针对冲突（多 Loop 打架）\n：\n增加一个“仲裁循环”。当“快”和“准”发生冲突时由它来决定优先级：是以速度为主，还是以质量为主？这样就能处理更复杂的权衡情况。\n针对测量衰减（数字腐烂）\n：\n增加一个“审计循环”，定期检查这些指标是否还能真实反映现实情况。如果发现评测集太简单或者指标失真了，就及时介入调整。\n给个生活化的例子\n是不是听起来还是有点抽象？没关系，我用一个大家都能理解的例子——\n减肥\n，来重新解释一下。\n假设你定了一个目标：\n减重到 70kg\n。你的测量方式也很直接，就是\n上秤称体重\n。\n单 Loop Engineering 模式\n你每天早上称一次体重，发现从 80kg 降到 79、78，再到 75、73……\n这就是一个典型的 Loop：设定目标 → 执行动作 → 测量结果 → 再执行 → 再测量。所有的改进都基于这个结构：我做的所有动作，都是为了降低体重这个数字。\n但问题来了\n，\n如果只靠这一个单循环，为了快速降重，你可能会采取极端手段：比如\n脱水\n（减少体内水分比例），或者吃对身体有害的\n减肥药\n。\n结果可能是：体重确实轻了，但这不代表脂肪少了，可能是纯脱水或者肌肉流失，甚至把身体搞垮了。\n减肥初衷是为了健康，结果却适得其反：这就是目标达到了，人废了\n。\nGraph Engineering 模式\n如果用 Graph Engineering 的思路来减肥，我们会构建这样一张 Graph，包含多个循环：\n1. 体重循环（快循环）：\n每天称体重，控制饮食。这是最基础的Loop\n2. 健康循环（中速循环）：\n每个月做一次体检，监控血压、血糖、体内水分等指标。\n作用\n：判断身体是否正常。如果出现脱水或低血糖，哪怕体重还在降，这个循环 也会发出警报，强制校正行为，比如停止节食，优先保证健康。\n3. 方法循环（慢速循环）：\n每个季度复盘一次：我的减肥方法科学吗？\n作用\n：\n如果发现只是单纯节食导致代谢降低，那就调整策略，增加运动来提高代谢频率让减肥变得更可持续。\n4. 目标循环（超慢循环/战略层）：\n定期问自己一个问题：\n我为什么要减肥？70kg 这个目标合理吗？\n作用\n：\n也许你会发现，死磕体重这个数字本身就不合理。只要三高降下来、身材匀称、健康指标正常，就是成功。这时候，你可能就会调整目标维度，不再执着于“70kg”这个单一数值，而是关注整体健康状态。\n最后，总结一下这个比喻。\n单 Loop 减肥\n的情况下，很容易疯狂节食、脱水，只为让秤上的数字变小。而\nGraph 减肥\n，有体重监控，有健康兜底，有方法复盘，还有目标校准。\n所以，通过这种多层循环的互相监督和协作，我们才能避免“为了优化指标而牺牲本质”的陷阱。这就是 Graph Engineering 真正厉害的地方。\nGraph vs Workflow\n听到这里，肯定会有朋友忍不住问：“这不就是早些年的 Workflow（工作流）吗？或者像 Claude Code 前段时间推出的 Dynamic Workflow，本质上不都一样是图结构吗？”\n这里我需要稍微澄清一下，\nGraph Engineering 和传统的 Workflow 有着本质的区别\n。\n传统 Workflow：确定性的“流水线”\n传统的 Workflow 虽然也是图结构，但它是一种\n确定性\n的图。\n这意味着，你需要在早期就人为地把整个流程设定好：第一个节点怎么流向第二个节点、路由规则是什么、下一步往哪走。中间虽然可能嵌入了一些 Agent 节点，但整体骨架是固定的脚本或判断逻辑。\n它是被预先约定好的，一旦运行，路径基本不可变\n。\nDynamic Workflow：动态但相对固定\n那有同学会说，前段时间 Claude Code 推出了 Dynamic Workflow 的功能，它可不是传统的Workflow，而是一段在运行过程中动态拆解和生成的脚本。Claude 会把复杂任务拆成子任务，用 JavaScript 脚本编排，通过 Pipeline 并行执行。\n但Dynamic Workflow 仍然是一个产品功能\n，是给单个开发者用的，用来完成一个\n相对固定点\n的任务。虽然任务是动态生成的，但它的目的往往是为了避免上下文过长导致走偏，依然偏向于“一次性执行”或“短时任务”。\nGraph Engineering：动态的“组织管理”\n相比之下，Graph Engineering 是一个更高维度的抽象，它不仅仅是一种结构，更是一种\n做事的方法论\n、\n工程范式、哲学\n，\n它面向的是\n多智能体协同\n，处理的是\n复杂的、长期运行的交互\n。它更像是一个需要长期存在的“组织结构”，比如每天定时运行、复盘、交互。它最主要的特点：\n动态与自主\n：它不是一个固定的图，而是在运行过程中\n动态显现\n出来的。它没有被预先完全定义，而是可以在运行中动态调整，并且由 Agent 自主主导。\n组合与循环\n：它不是单一的大图，而是\n多个 Loop 循环的结合体\n。\n可以这样形象的比喻\n一下，\nWorkflow 像是一条工厂流水线\n：无论是静态还是动态，它都是规定好了第一步做什么、第二步做什么、第三步做什么，全部提前定好，直接执行。是一个固定的流程去完成固定任务。而\nGraph Engineering 像是一家公司的组织管理\n，任务拆分成一张 Graph，包含多个子 Loop 去执行具体任务。每个 Loop 内部都有自我验证机制，Loop 之间还有交集和信息共享。\n或者我举个具体的例子，假设你的 Loop A 优化了一版 Prompt，Loop B 就会去检查这个 Prompt 是否合理。如果不合理，Loop B 会把它打回去，让 Loop A 重新调整。Loop B 不会只盯着自己的 KPI，而是会根据它的视角反馈 Loop A 的错误。这就像公司里的部门协作：\n主 Agent 做统筹，底下的子 Loop 相互监管，共同解决复杂问题\n。每个 Loop 内部都是一套完整的“执行-验证-迭代”闭环。\n所以，Graph Engineering 不是某个具体的 Agent 框架，而是一种\n哲学层面的思想\n：如何通过 Loop 和 Graph 的方式，实现更自主的决策、可验证的结果、可互相监督的机制，从而让人从繁琐的工作中解脱出来，让模型自己去运作。\n如何确保 Graph 不跑偏？\nCarlos Perez 在文章中还提到了三个非常关键的方法，用来尽量保障 Graph Engineering 不跑偏。\nAnchors（锚点）：不可争论的事实\n有些东西必须是铁一般的事实，不能由模型说了算。\n比如，“钱真的转到账户里了”，而不是报告上写了一句“转账成功”；\n比如，“测试代码真的跑通了”，而不是标记为“Pass”；\n比如，“客户真的还在系统中活跃”，而不是被标记为“留存”。\n这些\n锚点\n必须通过外部系统真实验证，用来监督 Loop 的有效性，防止模型自欺欺人。\nFrozen Nodes（冻结节点）：\n永远不能碰的规则\n某些规则是优化器永远不能修改的。\n最典型的就是\n测试集\n。一旦定好了一个有效的测试集，就不能因为“效果不理想”而去改简单它。如果允许模型为了提升指标而修改测试集，那就回到了之前说的“测量衰减”陷阱。所以，核心评估标准必须被“冻结”，严禁优化器触碰。\nExternal Judgment（外部判断）：\n人来决定“什么值得追求”\n“什么事情是值得做的？”、“什么目标是有意义的？”——这些问题不应该由系统自己回答，而必须由\n人\n来判断。\n系统可以高效地执行，但\n价值导向\n必须由人来把控。这是防止 AI 在错误的道路上狂奔的最重要防线。\n通过\n锚点\n确保真实性，通过\n冻结节点\n确保评估公正，通过\n外部判断\n确保方向正确，这三者结合，才能真正监管好这个复杂的 Graph 体系。\nGraph 具体实战\n讲了这么多，给大家讲一个具体的实战小例子，还是回到我们熟悉的\n文本分类\n场景，看看我是怎么运用 Graph Engineering 的思路来落地的。\n在之前 Loop Engineering 的文章里，我提到过构建一个自动运行的文本分类的 Loop。\nLoop 1：文本分类\n确定标签\n：先明确文本分类大概有哪些类别。\n构建评测集：让 Agent 自动生成一套评测数据。\n自动调试：\n如果分类准确，就把这个能力沉淀下来；\n如果出错，就继续调优 Prompt。\n目标是让这个小任务的准确率冲到 95%以上，一旦达标，自动停止。\n但在实际落地中，发现一个问题，\n线上效果死活达不到 95% 时，模型开始“耍花招”了\n。\n主要会出现两种问题：\n过拟合（Overfitting）\n：模型为了凑够那 95%，会去找一些“投机取巧”的特征。比如它可能发现某类文本里经常出现某个无关紧要的词，就把它当成判断依据。结果就是：在评测集上分数很高，但放到真实业务里，全是错判。\n操纵评测集（Manipulating the Benchmark）\n：既然改模型太难，那就改考题呗。模型会发现评测集里有一些难啃的骨头（错误或复杂的 Case），于是它偷偷把这些 Case 删掉，或者替换成简单的案例。这样一来，95% 的指标轻松达成，但这完全是自欺欺人。\n为了解决这两个问题，除了构建文本分类器的 Loop，我专门引入了两个额外的 Loop，构成了一个简单的 Graph 结构。\nLoop 2：监督分类依据\n这个 Loop 不负责跑分，只负责\n审查\n。它会检查经过优化后的分类规则是否真的合理。如果发现模型引入了一些奇怪的、过拟合的规则（比如只看某个无关词），它就会直接驳回这次优化，强制模型重新思考。\nLoop 3：监管评测集\n这个 Loop 的核心原则是：\n评测集不可随意修改\n。\n理论上，评测集是不允许随意调整的。如果非要调整（比如补充新数据），必须经过另一个 Agent 的严格审批：\n调整的依据是什么？\n新数据的来源哪里？\n是不是随机抽取的？\n如果不是随机且合理的，直接打回。这就堵死了模型“改考题”的路。\n此外，为了进一步防止过拟合，我还采用了经典的\n测试集（Test Set）+ 验证集（Validation Set）\n策略。模型只能在测试集上进行迭代和优化。\n验证集对模型是盲盒\n，它看不到结果。只有当模型在测试集通过后，再去跑验证集。如果验证集的效果也提升了，那才是真正的提升。\n通过这三个 Loop 的互相制衡，虽然整体收敛的速度变慢了，但最终得到的模型，在泛化能力和真实准确度上，远比那种“暴力刷分”的模式要靠谱得多。\n总结\n最后，我们做一个总结。AI 时代的发展速度快得惊人。新概念层出不穷，今天叫 Loop，明天叫 Graph，后天可能又冒出个新词。面对这些眼花缭乱的名词，我们要做的不是盲目追随，而是\n擦亮眼睛，看清每个概念背后真正解决的问题是什么\n。\nLoop Engineering\n，我的理解是：它解决的是\n“\n自动化\n”\n的问题。即如何在不脱离人类目标的前提下，让 AI 能够自动运转、自我迭代，尽可能减少人的手动干预。\n而\nGraph Engineering\n，则是在 Loop 的基础上，解决\n“\n方向与有效性\n”\n的问题。因为它意识到，单纯的 Loop 容易走向极端，为了优化而优化，甚至违背初衷。所以，Graph Engineering 本质上是给 Loop 加上了\n监管机制\n和\n互相监督体系\n。\n未来，肯定还会出现更多新的方法论。它们无一例外，都是在修补现有框架的漏洞，解决新出现的问题。\n名字本身其实并不重要\n。\n也许你已经在做 Loop Engineering 或 Graph Engineering 的实践了，只是你不知道它们叫这个名字。这些术语，不过是 AI 领域的大佬、头部专家为了便于传播和交流所定义的标签而已。\n我们需要保持科学和客观的态度：\n每一个新概念出现时，去理解它、拆解它，然后判断：它到底能不能为我所用？它解决了我当下的什么痛点？\n这\n才是我们在这个快速变化的 AI 时代，最该有的生存法则。\n以上就是我这次分享的全部内容了，只是一家之言，写的也很仓促，非常感谢大家的耐心观看！如果有疑问或想法，欢迎在评论区留言交流！\n参考链接：\n[1] Graph Engineering 思考与解析：\nhttps://mp.weixin.qq.com/s/_-G3W6NJqRVUOOgNTkWnqA\n[2] From Loop Engineering to Graph Engineering：\nhttps://medium.com/intuitionmachine/from-loop-engineering-to-graph-engineering-d3ebeb08511c\n千问\nAI\n平台\n-\n为\nAgent\n而生，驱动\nAI\n生产力\n扫描下方二维码，直达千问\nAI\n平台体验\n点击阅读原文即可体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.12,
+        "peripheral": 0.12,
+        "transfer_business": 0.01,
+        "direct_local": 0,
+        "transfer_agent": 0.75
+      }
+    },
+    "relevance": {
+      "score": 1.98,
+      "probabilities": {
+        "0": 0,
+        "1": 0.09,
+        "2": 0.83,
+        "3": 0.08,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.03,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.16,
+        "2": 0.49,
+        "3": 0.12,
+        "4": 0.13,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.49,
+      "probabilities": {
+        "0": 0.32,
+        "1": 0.04,
+        "2": 0.5,
+        "3": 0.1,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.4,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.52,
+        "3": 0.43,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.28,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.06,
+        "3": 0.51,
+        "4": 0.4,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 3.83,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.1,
+        "4": 0.88,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 9140,
+    "outputTokens": 172,
+    "totalTokens": 9312
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "evidence": 0.67,
+        "actionability": 0.64,
+        "anti_hype": 0.89,
+        "category": 0.69,
+        "relevance": 0.88,
+        "grounding": 0.49,
+        "decision_action": 0.42
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179814841,
+                "endTime": 1791179815043,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00038388",
+      "marketCost": "0.00038388",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00038388",
+      "inferenceCost": "0.00038388",
+      "inputInferenceCost": "0.00038388",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5XX5Y6FXA60QXT8A7S9E"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:55 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::jmnxt-1791179814635-a68ad603da2a"
+    },
+    "body": {
+      "answers": {
+        "evidence": {
+          "type": "score",
+          "score": 2.4,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.52,
+            "3": 0.43,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.28,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.06,
+            "3": 0.51,
+            "4": 0.4,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.83,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.1,
+            "4": 0.88,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.12,
+            "peripheral": 0.12,
+            "transfer_business": 0.01,
+            "direct_local": 0,
+            "transfer_agent": 0.75
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.98,
+          "probabilities": {
+            "0": 0,
+            "1": 0.09,
+            "2": 0.83,
+            "3": 0.08,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.03,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.16,
+            "2": 0.49,
+            "3": 0.12,
+            "4": 0.13,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.49,
+          "probabilities": {
+            "0": 0.32,
+            "1": 0.04,
+            "2": 0.5,
+            "3": 0.1,
+            "4": 0.04,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 9140,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "evidence": 0.67,
+            "actionability": 0.64,
+            "anti_hype": 0.89,
+            "category": 0.69,
+            "relevance": 0.88,
+            "grounding": 0.49,
+            "decision_action": 0.42
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179814841,
+                    "endTime": 1791179815043,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00038388",
+          "marketCost": "0.00038388",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00038388",
+          "inferenceCost": "0.00038388",
+          "inputInferenceCost": "0.00038388",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5XX5Y6FXA60QXT8A7S9E"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:54.271Z"
+  }
+}

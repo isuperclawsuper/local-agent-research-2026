@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1132646940832468992",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "OpenClaw与Hermes：源码里的 AI Agent 架构知识大复盘",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801805&idx=1&sn=9c7e3936218bba9c8d0ee6c04afb1615",
+      "date": "2026-05-29T09:36:00.904Z",
+      "chars": 6500,
+      "text": "需实现 4 个必选 + 5 个可选。\nChannel ↔ Gateway 的 5 种交互模式\n模式\n方向\n说明\n入站消息\nChannel → Gateway → Agent\nChannel inbound 归一化 → Gateway 路由到 Agent\n出站回复\nAgent → Gateway → Channel\nAgent 出 turn → Gateway 派单 → Channel outbound\n客户端控制\nClient → Gateway → Channel\nWS\nmethod: \"telegram.send\"\n→ ChannelGatewayAdapter.handle\n反向工具\nChannel → Agent\nagentTools 注册到 Agent tool registry（Telegram 提供查群成员、Discord 提供加 reaction 等）\n反向通知\nChannel → Gateway → Client\nevent:presence\n/\nevent:tick\n推到所有连 Gateway 的客户端\n所有 5 种模式都走同一个 WS Schema。\nPer-channel Streaming Adapter\n是 Channel 的核心价值——LLM 流式输出的\"语义\"在每个 IM 协议里完全不同（Telegram 用\neditMessageText\n反复编辑同一条消息、Discord 用\ninteraction.followUp\n, iMessage 不支持流式退化为分段发送），Channel 把这些差异封装掉。\nChannel Docking\n是 OpenClaw 的独门能力——跨 Channel 会话迁移。用户 Alice 在 Telegram 发起会话后想切到 Discord 继续，发\n/dock_discord\n，Gateway 验证\nidentityLinks\n确认两个账号属于同一用户后，保留 session 上下文不变，只换投递地址。不重建 session——相当于\"AI 会话的呼叫转移\"。\n精细化热重载\n：每个 Channel 声明自己关心哪些 config prefix（如\ntelegram.bot.*\n），Gateway 只在对应配置变更时重启该 Channel，不重启整个进程。\nChannel 的核心价值就在这里\n—— 把\"流式 LLM 输出\"翻译成每个 IM 协议的最佳呈现。\n反向能力：Channel → LLM 工具\nagentTools?: ChannelAgentToolFactory\n——\nChannel 可以反向给 LLM 提供工具\n：\nTelegram Channel 提供\ntelegram_get_chat_members\n工具 → LLM 可以查群成员\nDiscord Channel 提供\ndiscord_react\n工具 → LLM 可以加 reaction\nSlack Channel 提供\nslack_pin_message\n工具 → LLM 可以钉消息\nChannel 不只是消息通道，\n还是 LLM 的能力扩展源\n。\nChannel Docking — 跨 Channel 会话迁移（独门能力）\n源码\ndocs/concepts/channel-docking.md\n：\n用户 Alice 同时在 Telegram 和 Discord 用 OpenClaw\n↓\nidentityLinks: { alice: [\n\"telegram:123\"\n,\n\"discord:456\"\n] }\n↓\nAlice 在 Telegram 发起会话 → active session 路由到 telegram:123\n↓\nAlice 想切到 Discord 继续 → 在 Telegram 发\n\"/dock_discord\"\n↓\nOpenClaw 验证：telegram:123 和 discord:456 都属于 alice？是 → 允许\n↓\n保留 session 上下文不变 → 改路由 → 后续回复发到 discord:456\n实现机制\n：\nGateway 自动为每个 Channel 插件生成\n/dock-{channel}\n和\n/dock_{channel}\n命令（\nauto-reply/commands-registry.data.ts:22\n）\nSession 层有\nidentityLinks\n配置\n不重建 session\n—— 只换\"投递地址\"\n**这是 Hermes, Claude Code 等单 channel 框架做不到的\"call forwarding for AI session\"**。\n精细化热重载\nreload: { configPrefixes: [\n\"telegram.bot.\"\n] }\n这告诉 Gateway\n：当用户修改\ntelegram.bot.*\n任何配置时，\n只重启 telegram channel，不重启整个 Gateway\n—— 精细化热重载。\n对照：OpenClaw Channel vs Hermes Channel\n维度\nHermes Channel\nOpenClaw Channel\n抽象层级\n函数式 send/recv\n25+ 个可选槽位的完整契约\nSetup 流程\n改源码、手填配置\nSetupWizard + Schema + UI 引导\n认证\nAPI Key 写文件\nAuth + Pairing + Security + Approval + Elevated 5 层\nStreaming\n单一实现\nPer-channel Streaming Adapter\nDocking\n❌\n✅ Cross-channel session forwarding\nDoctor\n❌\n✅ 自诊断\n热重载\n重启\n✅ 精细化 reload prefix\n反向工具\n❌\n✅ Channel 给 LLM 提供工具\n设计取舍\n：Hermes 把 Channel 当\n消息收发管道\n——轻量、容易加新平台；OpenClaw 把 Channel 当\n需要长期维护的平台集成点\n——重、但加上之后不用再操心认证/重载/诊断。\n5.3 插件注册模式\n5.4 插件发现与加载\n安全检查：\n路径遍历防护（拒绝\nsource\n逃逸\nrootDir\n）\n文件权限检查（拒绝 world-writable）\n所有权校验（\nuid\n匹配）\n安装时静态代码扫描\n5.5 插件安装安全扫描\n6. Agent 执行引擎\nOpenClaw 的 Agent Runtime 本质是一个**\"调度 + 容错 + 预算\"的编排核\n——它不直接承担\"如何思考\"，而是通过 hook 和插件把具体能力外包出去，自己专注于三件事：\n决定调谁（调度）、失败了怎么办（容错）、花多少资源（预算）**。这让 runtime 核心保持在几千行代码量级，却支撑起了完整的多用户、多通道、多模型的生产级能力。\n** 底层引擎：\n@mariozechner/pi-agent-core\n（ReAct 循环的工程级实现）**\nOpenClaw 的 Agent 执行循环建立在一个独立的底层包\n@mariozechner/pi-agent-core\n之上——由 OpenClaw 创始人 Mario Zechner 维护。\n这个包实现的就是经典的 ReAct（Reason + Act）模式\n：\nagentLoop(prompts, context, config):\nwhile\n(未结束):\nconvertToLlm(context.messages)     → 准备 LLM 可理解的 Message[]\nstreamFn(messages, model, tools)   → 调 LLM，流式返回（Reason）\n解析 assistant response:\n├─ 有 toolCall → beforeToolCall → 执行工具 → afterToolCall → 结果加入 context → 继续（Act）\n└─ 无 toolCall → 结束\n**pi-agent-core 只负责\"循环本身\"**——它不懂预算、不懂容错、不懂通道路由。OpenClaw 在它之上叠加了所有生产级能力：\n层\n谁负责\n做什么\n循环层\npi-agent-core\nReAct 循环、工具调用（parallel/sequential）、流式输出、上下文转换\n编排层\nOpenClaw\npi-embedded-runner/\n预算控制、Auth Profile failover, Compaction, Lane 分车道、Bootstrap 注入\n拦截层\nOpenClaw hooks\nbeforeToolCall\n（审批/安全扫描）、\nafterToolCall\n（截断/日志）、\ntransformContext\n（Compaction）\n能力层\nOpenClaw plugins\n循环本身不提供的外部能力——记忆检索、消息出站、模型适配等，按需调用、可插拔\n关键设计点\n（来自源码\npi-agent-core/dist/types.d.ts\n）：\nAgentMessage ≠ LLM Message\n：内部用自定义的\nAgentMessage\n（支持\ncompactionSummary\n,\nnotification\n,\nsteering\n等非 LLM 消息类型），只在调 LLM 边界才通过\nconvertToLlm\n转成标准\nMessage[]\n。这让 OpenClaw 可以在历史里插入 Compaction 标记、Bootstrap 截断告警等\"Agent 自己看的消息\"而不污染 LLM 输入\nStreamFn 可替换\n：默认用\npi-ai\n的\nstreamSimple\n调 LLM API，但可以换成自定义函数——OpenClaw 的 CLI Backend 就是用这个把 Claude Code 的 stdio 流当作\"LLM 响应\"\nbeforeToolCall, afterToolCall\n：工具执行前后的拦截点——OpenClaw 用\nbeforeToolCall\n实现 Exec Approval（危险命令审批），用\nafterToolCall\n实现 tool result truncation（超 16K 字符截断）\ntransformContext\n：每次调 LLM 前的上下文变换钩子——OpenClaw 用它实现 Compaction（压缩中段历史释放 token 空间）\n和 Hermes 的对比\n：Hermes 的\nAIAgent.run_conversation()\n也是 ReAct 循环，但\n循环和编排耦合在同一个万行类里\n——没有独立的\"循环层\"。OpenClaw 把循环抽成独立包的好处是：升级 ReAct 策略（如从 sequential 改 parallel tool call）不需要动编排逻辑，反之亦然。\n6.1 分层执行架构\nOpenClaw 的 Agent 入站有三条路径，最终都汇聚到同一条执行链路上：\n关于入站层的两点澄清\n：\nACP Server 是\"经 Gateway 入站\"的\n——\nopenclaw acp\n启动一个 ACP 前端（供 Zed, Copilot CLI 等 IDE 连接），但它收到\nsession/prompt\n后会通过\ngateway.request(\"chat.send\", ...)\n把请求\n转发到 Gateway\n（见\nsrc/acp/translator.ts\n），和 QQ Bot、飞书走同一条入站路径。所以 ACP 不是\"另一个入口平行于 Gateway\"，而是\"Gateway 的一个前端协议适配器\"——这就是第 22 章说的\nACP Bridge 模式\n。\nCLI 有两种模式\n——\nopenclaw tui\n默认\n通过 WS 连接 Gateway\n（和 Control UI / Mobile App 走同一条路径），而\nopenclaw chat\n（\ntui\n的别名）默认启用\n--local\n，在进程内启动嵌入式 Agent 运行时（\nEmbeddedTuiBackend\n），不经过 Gateway RPC。Local 模式让开发调试不需要先拉起 Gateway，但代价是不受 Gateway 上的审批/速率限制策略管控（local 模式走本地 TUI 审批）。\n关于 Provider 层的三路分叉\n：注意这里的\nDECIDE\n不是\"会话类型\"而是\"provider 类型\"——Hermes 的 ACP 客户端（\ncopilot_acp_client.py\n）和 OpenClaw 的\nacpManager.runTurn\n做的是同一件事：\n把 ACP 反过来当 LLM provider 用\n。当你想用 GitHub Copilot 订阅额度跑 Agent 时，就会走这条分支（不是 ACP server 入站）。\n三层错误边界\n：\n内层（runEmbeddedAttempt）\n：LLM 调用 + 工具执行的一次尝试，失败时抛\nFailoverError\n中层（runEmbeddedPiAgent）\n：接住\nFailoverError\n，决定是\n换 Auth Profile 重试\n还是\n向上抛\n外层（runWithModelFallback）\n：最终接住不可恢复的 FailoverError，遍历\nmodel.fallbacks[]\n切换模型\n这是 OpenClaw 容错设计的核心——\n可恢复错误的处理是静态可证明的，不靠 LLM 猜\n。\nrunEmbeddedPiAgent 主循环深入剖析\nrunEmbeddedPiAgent\n（\nsrc/agents/pi-embedded-runner/run.ts\n，约 1000 行）是 6.1 架构图中\n核心层的中央\n——非 CLI/ACP provider 的所有请求最终都汇聚到这里。名字里的\nEmbedded\n表示\"直接调 Provider SDK、不 spawn 子进程\"，\nPi\n表示构建在\n@mariozechner/pi-agent-core\n之上——OpenClaw 没有自己写 Agent 核心循环，而是包装 pi-agent-core 并在外面套多 provider 适配 + 容错降级 + Hook 触发 + 缓存追踪。\n三段结构\nexport\nasync\nfunction\nrunEmbeddedPiAgent\n(\nparams\n):\nPromise\n<\nEmbeddedPiRunResult\n>\n{\n// ─── 阶段 1: 一次性初始化（循环外，高成本 IO 只做一次）───\nconst\nsessionLane = resolveSessionLane(params.sessionKey);\nconst\nglobalLane = resolveGlobalLane(params.lane);\nconst\nauthController = createEmbeddedRunAuthController({ ... });\nawait\nauthController.initializeAuthProfile();\nconst\ncontextEngine =\nawait\nresolveContextEngine(params.config);\n// 跨重试复用\n// ─── 阶段 2: 预算常量与计数器 ───\nconst\nMAX_RUN_LOOP_ITERATIONS = reso",
+      "fulltext_obtained": true,
+      "chunk_index": 3,
+      "chunk_count": 18
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0,
+        "irrelevant": 0.22,
+        "direct_local": 0,
+        "transfer_agent": 0.78,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.81,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.13,
+        "2": 0.84,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.43,
+      "probabilities": {
+        "0": 0.77,
+        "1": 0.08,
+        "2": 0.11,
+        "3": 0.03,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.16,
+      "probabilities": {
+        "0": 0.6,
+        "1": 0.06,
+        "2": 0.05,
+        "3": 0.14,
+        "4": 0.15,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.82,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.17,
+        "3": 0.83,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.29,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.04,
+        "2": 0.05,
+        "3": 0.2,
+        "4": 0.63,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.38,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.2,
+        "2": 0.14,
+        "3": 0.61,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.75,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5505,
+    "outputTokens": 172,
+    "totalTokens": 5677
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.72,
+        "relevance": 0.87,
+        "grounding": 0.72,
+        "decision_action": 0.22,
+        "evidence": 0.88,
+        "actionability": 0.52,
+        "anti_hype": 0.55
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180432220,
+                "endTime": 1791180432362,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00023121",
+      "marketCost": "0.00023121",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00023121",
+      "inferenceCost": "0.00023121",
+      "inputInferenceCost": "0.00023121",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARRTF6KKA5N71M4PF7HZW"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:12 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::mmtr4-1791180432200-c52fdcd0761d"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0,
+            "irrelevant": 0.22,
+            "direct_local": 0,
+            "transfer_agent": 0.78,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.81,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.13,
+            "2": 0.84,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.43,
+          "probabilities": {
+            "0": 0.77,
+            "1": 0.08,
+            "2": 0.11,
+            "3": 0.03,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.16,
+          "probabilities": {
+            "0": 0.6,
+            "1": 0.06,
+            "2": 0.05,
+            "3": 0.14,
+            "4": 0.15,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.82,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.17,
+            "3": 0.83,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.29,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.04,
+            "2": 0.05,
+            "3": 0.2,
+            "4": 0.63,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.38,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.2,
+            "2": 0.14,
+            "3": 0.61,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.75
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5505,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.72,
+            "relevance": 0.87,
+            "grounding": 0.72,
+            "decision_action": 0.22,
+            "evidence": 0.88,
+            "actionability": 0.52,
+            "anti_hype": 0.55
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180432220,
+                    "endTime": 1791180432362,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00023121",
+          "marketCost": "0.00023121",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00023121",
+          "inferenceCost": "0.00023121",
+          "inputInferenceCost": "0.00023121",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARRTF6KKA5N71M4PF7HZW"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:11.599Z"
+  }
+}

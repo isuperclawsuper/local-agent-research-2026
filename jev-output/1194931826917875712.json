@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1194931826917875712",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "限流比降 10 倍：百炼网关如何用 RocketMQ LiteTopic 重构大模型限流",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561434&idx=1&sn=f93af04c3958ccf69d495d3296503a29",
+      "date": "2026-07-10T03:35:00.828Z",
+      "chars": 6731,
+      "text": "原创\n不铭、文婷、稚柳\n2026-07-10 11:35\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n百炼\n是阿里云的大模型服务平台，承载百万级用户同时调用千问等数十种大模型。作为国内最大的公有云模型推理入口之一，百炼网关每天处理海量异构推理请求——\n每一次限流误判，都意味着用户侧的超时、重试，甚至业务中断；每一次过载放行，都意味着稀缺 GPU 算力的浪费和其他租户的体验劣化\n。\n当平台用户从千级增长到百万级，限流系统面临的已不再是“防刷”这种老问题，而是“\n如何在有限 GPU 池中实现百万租户各自独立、按需弹性的精细化流量治理\n”。百炼网关团队用一次端到端重构回答了这个问题——核心技术选型是 RocketMQ LiteTopic。方案上线后，限流比降低了 10 倍，限流导致的用户可感知异常大幅收敛。\n以下是这次重构的完整技术复盘。\n1. 大模型时代，限流从粗放走向精细化\n过去十年，CPU、内存、带宽都能在分钟级甚至秒级弹起来，互联网应用的限流主要解决“防刷”和“防雪崩”，处理比较直接。\n进入大模型时代，\nGPU 扩容周期长、单价高，供给还受制于硬件交付节奏\n。对公有云模型服务而言，“GPU 池子有多大”几乎直接决定“今天能服务多少客户、能承诺多高的 SLA”。\n作为模型服务的流量入口，百炼网关要在有限的 GPU 池里同时兑现三件事：\n租户级流量隔离\n：各租户请求流量相互隔离，有效防止多租户间的资源争抢与相互干扰，避免个别租户的突发流量影响其他租户的正常使用。\n精细化配额限流\n：支持租户维度的差异化配额管理，仅对超额请求进行限流退避，未达配额的租户不受任何限制。\n平滑突发与资源统筹\n：通过流量整形削峰填谷，在有限的GPU资源池内进行合理统筹与分配，保障服务体验平稳、低抖动。\n要同时做好这三件事，传统“一个限流器卡在网关上”的范式已经不够用。百炼网关团队在过去几个月对限流算法到底层消息队列做了一次\n端到端重构——把 RocketMQ LiteTopic 作为漏桶（Leaky Bucket）的物理载体\n，构建出一套面向大模型场景的精细化限流体系。本文分享其中的设计取舍与工程经验。\n2. 为什么传统限流模式不够用了？\n百炼面对的并非单一限流场景，而是三类叠加：\n基于 SLA 承诺的基础限流\n：需要稳定、可计量、可观测；\n用户之间及客户内部多账号的细粒度管控\n：要在 User + Model 维度做交叉约束；\n超大客户的扩容与突发承接\n：额度调到很大之后，一旦突发真的来，GPU 在扩容到位前根本顶不住——硬限会大面积返回 503 影响体验，放过去又会让 GPU 过载、殃及其他租户。\n三者交织，意味着限流不只是“决定放不放过”，更要回答“放过去之后以什么节奏喂给后端”。百炼网关在算法上最终选定\n固定窗口 + 漏桶\n：\n固定窗口而非滑动窗口\n：\n滑动窗口更加严格，边界处的突发也会被精确计算；固定窗口则对短期波动更加宽容。\n漏桶而非令牌桶\n：\n漏桶“匀速放行”更契合 GPU 这种稳态友好、尖峰敏感的下游，而令牌桶天然允许突发，恰恰是 GPU 最怕的形态。\n方案选定后，新问题随之而来：超大客户的突发流量如果堆在网关进程内存里，\n几十万请求会立刻把网关本身打挂\n。漏桶必须\n从进程内搬到进程外\n，用一个足够大、足够隔离的外部存储承接缓冲，把“接住请求”和“按节奏放行”在物理上拆开。这是 LiteTopic 进入视野的起点。\n3. 传统 Topic/Group\n无法撑起平台级漏桶\n只看“用 MQ 做漏桶”这一步，传统 RocketMQ Topic 也能做——百炼最早就是这么落地的：为每个 User + Model 单独建 Topic 与 Consumer Group，再部署一组消费机器专门负责这条链路。但随着头部客户陆续接入，三个痛点很快暴露。\n元数据重、生效慢\n：\n传统 Topic/Group 需要预先创建，生效时间在几十秒量级，新用户突发流量到来时会出现短时间异常。\n机器利用率低、成本随客户数膨胀\n：\n共享消费模型要求同一个 Consumer Group 下的客户端订阅完全相同的 Topic 集合，否则会出现订阅不一致导致的堆积甚至丢失。要隔离客户流量，就必须给每个客户单独建 Group、甚至单独切机器；哪怕客户今天一条消息都没有，名下的那组机器仍要常驻。\n单 Topic 暴涨的株连效应\n：\n若硬把多客户数据塞进同一 Topic，一旦某个用户消息激增，几乎所有消费线程都被它占据，其他用户消息全部被阻塞。团队最终不得不退回到“一客户一组机器”，用机器规模换隔离强度。\n事实是：传统方案能服务“少数几个头部突发客户”，但无法支撑“任意中大型客户都能自动接入漏桶”。\n当限流要从“个别 VIP 待遇”变成“平台基础能力”时，底层架构必须重新设计。\n4. LiteTopic：\n把限流的“重资产”变成“轻资产”\nLiteTopic 是 RocketMQ 5.x 引入的轻量级队列形态，与传统 Topic 最关键的三个差异正好对应上面那三个痛点。\n轻量元数据\n：\n单 Broker 支撑\n百万级 LiteTopic\n，运行时按需创建、按 TTL 自动回收。客户端往不存在的 LiteTopic 上发消息即可自动建出，无活动一段时间后由 Broker 自动清理。\n差异化订阅\n：\n同一 Consumer Group 下，不同消费实例可订阅不同的 LiteTopic 子集，且不会引发堆积或丢失。订阅关系从“刚性约束”变成“按需路由”。\nSuspend 消费控制\n：\n业务在消费回调中返回\nSuspend N\n（毫秒），即可让 Broker 在 N 毫秒内暂停对该 LiteTopic 的拉取，且\n不影响其他 LiteTopic 的拉取节奏\n。这是漏桶在 Broker 层落地的关键开关。\n基于这三点，百炼网关限流架构被重构如下：\n发送侧\n：\n通过基础限流校验后，按 User + Model 写入对应 LiteTopic，User 与 Model 信息直接编进名字，\n天然多租户物理隔离\n。\n消费侧\n：\n将原来按客户切分的几十组机器合并为统一一组 Pod，通配符订阅全部 LiteTopic，新增客户时发送侧自动建、消费侧自动拉，\n无需改代码、无需重启、无需扩机器\n。\n限流逻辑\n：\n收敛到消费线程内几行判断——命中则返回\nSuspend N\n，否则转发模型并 ACK。Broker 在指定毫秒内不再投递该 LiteTopic，到期自动恢复。\n可以把这套机制理解为一个\n“分布式漏桶矩阵”\n：每个 User + Model 拥有一个独立漏桶，桶容量由 LiteTopic 堆积上限与 TTL 决定，出水速率由消费侧 Suspend 时长动态决定。整个矩阵共享同一组消费机器，资源池随总流量伸缩，而非按客户数线性增长。\n5. LiteTopic 为何是漏桶的天然载体？\n把 LiteTopic 当作漏桶的物理载体，并不只是“换一个队列实现”，它在三个维度上恰好对上了“GPU 稀缺 + 多租户 + 突发尖峰”的场景。\n桶的容量在工程意义上近似无限\n：\n传统漏桶以进程内队列实现，容量是一个写死的数字，桶满即拒。LiteTopic 数据持久化到 Broker 磁盘，单实例承载百万级队列，堆积上限远超进程内队列，且彼此物理隔离。客户尖峰被\n“\n接住、攒起来、按节奏放行\n”\n，“等几秒再处理”几乎在所有场景下都优于“被 429”。\n每个 User + Model 各拥有独立漏桶\n：\nLiteTopic 把租户隔离变成简单的“命名规则”问题——客户 A 的 Model X 进入 liteTopic-A-X，客户 B 的 Model X 进入 liteTopic-B-X，桶与桶在 Broker 层物理隔离，A 链路堵了不会通过任何共享资源传染到 B。租户隔离从“靠业务代码维护”变成\n“\n靠基础设施天然提供\n”\n。\n每个漏桶速率可独立、动态调整\n：\n这是最关键的一项能力。Suspend N 完全由业务策略实时计算，百炼据此可在毫秒级调整任意一个漏桶的放行速度：重要客户在模型负载高时仍能拿到较高节奏；模型扩容到位后矩阵速率同步上调；某款模型出现拥塞苗头，单独把对应那一列漏桶收紧即可，不拖累其他模型。整个过程\n不重启消费组、不改 LiteTopic 配置、不需要客户感知\n。\n三点结合，本质上把漏桶从“被动的削峰工具”升级为\n多租户友好、容量近似无限、速率可调度\n的基础设施。\n6. 最小改造：\n发送、订阅、限流各一段代码\n核心改动可以浓缩成三段（以下为简化示意，展示核心调用逻辑）：\n1.发送\n：构造消息时设置 LiteTopic，按客户维度自动路由，LiteTopic 不存在时由 Broker 自动创建。\n// 网关侧：把请求按 user + model 路由到对应的 LiteTopic\nMessage\nmsg\n=\nnew\nMessage\n(parentTopic, payload);\nmsg.setLiteTopic(buildLiteTopicName(user, model));\n// 新增的一行\nproducer.send(msg);\n2.消费\n：启动时通配符订阅 ParentTopic 下的全部 LiteTopic，新客户与新 LiteTopic 由消费组自动感知，无需维护清单、无需重启。\n// 消费侧：一次订阅，覆盖当前和未来所有 LiteTopic\nPushConsumer\nconsumer\n=\nnew\nPushConsumer\n(\n\"bailian-rate-limit-group\"\n);\nconsumer.subscribe(\n\"bailian-rate-limit-parent\"\n,\n\"*\"\n);\n// 通配符订阅\nconsumer.start();\n3.限流逻辑\n：消费回调里几行代码，命中策略则 Suspend（N），未命中则正常调用模型并 ACK。\n@Override\npublic\nConsumeResult\nconsume\n(\nMessageView\nmsg\n) {\nString\nliteTopic = msg.\ngetLiteTopic\n();\nlong suspendMs = rateLimitPolicy.\nacquireOrSuspend\n(liteTopic);\nif\n(suspendMs >\n0\n) {\n// 仅暂停该 LiteTopic 的拉取，其余 LiteTopic 不受影响\nreturn\nConsumeResult\n.\nSuspend\n(suspendMs);\n}\ninvokeModel\n(msg);\nreturn\nConsumeResult\n.\nSUCCESS\n;\n}\n7. 几个关键的工程技术细节\n1.海量LiteTopic下的消费性能\n同时几十万 User + Model 并发是日常态。若沿用“对每个订阅的 LiteTopic 各发起一个独立 Pull 循环”的传统做法，开销随订阅数线性增长——本质上和\nselect/poll\n一样：每次调用都要遍历全量集合，大部分遍历无效。\nLiteTopic 在 Broker 侧引入了\n就绪集合（Ready Set）\n事件驱动机制，思路类似\nepoll\n：只有真正有新消息写入的 LiteTopic 才进入就绪集合，Pull 时 Broker 只读取就绪 LiteTopic，集合为空则长轮询等待事件触发（新消息到达、ACK 后仍有未消费消息、顺序锁释放等）。Pull 开销因此只与\n“\n当前时刻就绪的 LiteTopic 数量\n”\n成正比，而非“总订阅数”。\nPOC 压测中，单 Broker 承载\n200 客户端 × 1 万 LiteTopic（共 200 万队列）\n，平均消费延迟稳定在\n12ms\n；同等订阅量下传统逐 Topic 轮询，消息稀疏时 CPU 高出数倍且随订阅数恶化。\n2.Suspend的精度\n当前最小粒度为\n30 毫秒\n，更细的速率控制需要消费侧自己做局部 Sleep。这个台阶对绝大多数模型推理场景够用，推理本身就是百毫秒到秒级；但若业务目标速率非常高，需要把 Suspend 步长和并发线程数放在一起算实际放行速率，避免阶梯感传导到 P99 RT。\n3.Suspend vs消费线程Sleep\n多租户共享消费组下，所有 LiteTopic 共用同一线程池（POC 中 50 线程），限流方式直接决定其他 LiteTopic 是否会被“误伤”。\nPOC 对比：订阅 50 个 LiteTopic、前 5 个随机触发 300ms 限流。\nThread.sleep(300)\n时：被限流的 LiteTopic 各占住一个线程不释放，当被限流数增至 40 个时线程池几乎被耗尽，剩下 10 个正常 LiteTopic 拿不到线程而全部堆积——限流“传染”到了不该被限流的租户。\nSuspend 300\n时：消费线程返回后\n立即释放回线程池\n，\n转头服务其他 LiteTopic；被 Suspend 的 LiteTopic 由 Broker 在 N 毫秒后重投，整个过程\n不占客户端任何线程\n，结果是仅被限流的 5 个堆积、其余 45 个正常。\n本质区别：Sleep 是\n线程级阻塞\n，会通过共享线程池扩散到无关租户；Suspend 是\nBroker 级拉取流控\n，与其他漏桶在线程层面完全解耦。在“大量用户同时被限流、少数用户正常放行”的常态下，Suspend 的非阻塞特性保证了公平性——无论多少 User + Model 正在被限流，剩余用户始终有空闲线程可用。\n8. 写在最后\n回过头看这次重构，百炼网关从“进程内漏桶”走到“分布式漏桶矩阵”，核心不是算法多新颖，而是找到了一个能让\n隔离、调速、弹性\n同时成立的工程载体。\n过程中有几条经验，值得同样面对大模型限流挑战的团队参考：\n限流不是单一算法，而是分层组合\n。\n固定窗口管硬上限、漏桶管放行节奏、消息队列管承接缓冲，三层串联缺一不可。\n漏桶的物理载体决定了上限\n。\n当限流额度大到突发流量可能压垮网关进程，漏桶必须从进程内搬到进程外。MQ 是天然候选，但要进一步追问：能否支持百万级队列、能否运行时按需创建、流控粒度是否足够精细。\nLLM 场景对租户隔离的要求更高，但隔离的成本必须更低\n。\n大模型推理一次请求消耗数秒 GPU 时间，被挤占损失的不只是成功率，还有已消耗的昂贵算力，隔离因此成为刚需。但若靠“每个租户切一组独立机器”，成本随客户数乘法膨胀，公有云无法持续。LiteTopic 的方案是：每个 User + Model 拥有物理隔离的队列，所有队列共享同一组消费 Pod，资源池随总流量伸缩而非随客户数膨胀，隔离强度不降、成本从乘法变回加法。\nSuspend 与 Sleep 各有适用场景，关键在于“谁为等待买单”\n。\nSuspend 适合粗粒度、长时间的限流等待——暂停整个 LiteTopic 拉取、线程立即释放、不影响其他租户；Sleep 适合短时间的处理等待——比如 Suspend 30ms 精度不够时做亚毫秒级节奏控制，持续时间极短、对线程池影响可控。百炼实际是两者组合：Suspend 承担主要漏桶调速，Sleep 在极少数亚 30ms 精度场景中补充。\n从业务结果看，LiteTopic 提供的\n“\n轻量队列 + 差异化订阅 + Suspend 控速\n”\n三件套，让百炼网关的\n限流比降低了 10 倍\n。\n而这套方案并非百炼独有的定制工程——任何大模型平台或推理服务，只要面对“GPU 稀缺 + 海量租户 + 突发尖峰”这三个约束，都会遇到同样的限流困境。\n百万级物理隔离队列 + 动态速率调度 + 零运维弹性\n，是一套可直接复用的基础设施范式。\n大模型时代，限流不再是一道防御题，而是一道资源调度题\n。\n当 GPU 成为最稀缺的生产要素，谁能把有限算力更精细、更公平、更弹性地分配给每一个租户，谁就能在体验和成本之间找到最优解。这正是 RocketMQ LiteTopic 在这个时代的价值所在。\n千问云\n-\n为\nAgent\n而生，驱动\nAI\n生产力\n扫描下方二维码，直达千问云体验\n点击阅读原文即可体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.25,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "irrelevant": 0.74,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.36,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.18,
+        "2": 0.59,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.09,
+      "probabilities": {
+        "0": 0.59,
+        "1": 0.1,
+        "2": 0.06,
+        "3": 0.14,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.2,
+      "probabilities": {
+        "0": 0.93,
+        "1": 0.01,
+        "2": 0.03,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 3.85,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.1,
+        "4": 0.88,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.61,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.06,
+        "4": 0.68,
+        "5": 0.13
+      }
+    },
+    "anti_hype": {
+      "score": 2.56,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.05,
+        "2": 0.1,
+        "3": 0.65,
+        "4": 0.08,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7374,
+    "outputTokens": 173,
+    "totalTokens": 7547
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.67,
+        "relevance": 0.57,
+        "grounding": 0.27,
+        "decision_action": 0.86,
+        "evidence": 0.9,
+        "actionability": 0.56,
+        "anti_hype": 0.58
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179822135,
+                "endTime": 1791179822346,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000309708",
+      "marketCost": "0.000309708",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000309708",
+      "inferenceCost": "0.000309708",
+      "inputInferenceCost": "0.000309708",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A65151M2N3BMM76957HXH"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:02 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::hvm9m-1791179821882-acf389d18886"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.25,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "irrelevant": 0.74,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.36,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.18,
+            "2": 0.59,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.09,
+          "probabilities": {
+            "0": 0.59,
+            "1": 0.1,
+            "2": 0.06,
+            "3": 0.14,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.2,
+          "probabilities": {
+            "0": 0.93,
+            "1": 0.01,
+            "2": 0.03,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.85,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.1,
+            "4": 0.88,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.61,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.06,
+            "4": 0.68,
+            "5": 0.13
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.56,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.05,
+            "2": 0.1,
+            "3": 0.65,
+            "4": 0.08,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7374,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.67,
+            "relevance": 0.57,
+            "grounding": 0.27,
+            "decision_action": 0.86,
+            "evidence": 0.9,
+            "actionability": 0.56,
+            "anti_hype": 0.58
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179822135,
+                    "endTime": 1791179822346,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000309708",
+          "marketCost": "0.000309708",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000309708",
+          "inferenceCost": "0.000309708",
+          "inputInferenceCost": "0.000309708",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A65151M2N3BMM76957HXH"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:01.574Z"
+  }
+}

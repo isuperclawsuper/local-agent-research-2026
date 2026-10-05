@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "249443192061072384",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "ICLR 2026 Oral｜火山引擎多媒体实验室提出RALI，探索画质理解大模型泛化性，节约96%开销助力实时部署",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518549&idx=1&sn=b721b51e0f9341fb490b61bfa20014a0",
+      "date": "2026-02-25T09:04:00.700Z",
+      "chars": 3476,
+      "text": "原创\n视频与边缘\n2026-02-25 17:04\n北京\n在多模态大模型（MLLM）席卷底层视觉的今天，基于强化学习（RL）的 IQA 模型虽然性能强悍，却受困于高昂的落地成本。本文中，研究者们不仅回答了“为什么 RL 能提升 IQA 泛化性”这一核心理论问题，更提出了一种全新的轻量化范式 RALI，在应用时可移除思考过程，并保留了思考带来的泛化红利，助力实时场景的使用。\n图像质量评价（Image Quality Assessment, IQA）作为计算机视觉的基础任务，既是监控视频平台用户体验的“守门员”，也是生成式模型（如文生图、文生视频）RLHF 训练中的核心奖励信号。\n近期，随着多模态大语言模型（MLLM）的发展，Q-Insight 等引入视觉强化学习（Visual RL）的方法在 IQA 任务上展现出了卓越的泛化能力。然而，这种性能的提升伴随着巨大的代价：高昂的显存占用和缓慢的思考推理速度，极大地限制了其在端侧设备及实时系统中的应用。\n《REASONING AS REPRESENTATION: RETHINKING VISUAL REINFORCEMENT LEARNING IN IMAGE QUALITY ASSESSMENT》\n对上述问题进行了深入思考和研究，被录用至ICLR 2026 作为口头汇报文章（Oral）。\n字节跳动、北京大学以及香港中文大学的研究人员首先揭示了 RL 提升 IQA 泛化性的本质机制——\n推理即表征（Reasoning as Representation）\n，即通过 Reasoning将冗余的视觉信息压缩为紧凑、跨域对齐的文本表示。基于此发现，作者提出了\nRALI（Reasoning-Aligned Lightweight IQA）\n框架。该框架利用对比学习将图像直接对齐到这种高泛化性的文本空间，在预测的时候可以完全移除 LLM 和推理，仅用 4% 的参数量便实现了与 7B多模态大模型相当的性能。\n图 1：RALI 与主流 IQA 方法在 PLCC/SRCC 及参数量上的对比。RALI 以仅约 Q-Insight 4% 的参数量实现了可比的精度。\n为什么 Visual RL 能在 IQA 中带来泛化性？\n论文先以Q-Insight（经过 Visual RL后的 MLLM）为例，在Visual RL后，IQA 的泛化性与推理（Reasoning）有何关系？推理过程在预测阶段是否是必须的？\n推理文本：打分的核心注意力\n通过分析 Q-Insight预测分数的attention分布，相较于DeQA这类SFT模型，研究者发现模型在评分时的依赖路径发生了根本性转移。如下图所示，在生成分数 Token 时，模型 95% 的注意力权重集中在之前生成的“推理文本”Token上，而非视觉 Token 。这意味着，RL 实际上促使 MLLM 习得了一种\n降维策略\n：将包含 1000 多个 Token 的高维视觉表示，压缩为仅约 100 个 Token 的质量描述文本（Reasoning）表示，并且通过这种低维表示进行画质打分。\n图 2：Q-Insight 生成分数时的 Attention Heatmap，95% 的注意力集中在推理文本上。\n文本：跨域对齐的桥梁\n图 3：文本Token拉近了不同数据集之间的Domain Gap\n更重要的是，这种文本表示具有天然的\n跨域对齐（Cross-domain Alignment）\n属性。在 KonIQ 和 SPAQ 等不同分布的数据集上，经过视觉塔编码后，原始视觉特征存在显著的域差异（Domain Gap），然而在LLM推理后得到的“文本空间”中，这种差异被极大地消除了。\n因此，论文得出一个关键结论\n：IQA 模型的泛化能力很可能源于将视觉信息压缩为对齐的文本表征。\nRALI：无需推理的轻量化框架\n既然“推理文本”是泛化的核心，且仅仅是一种中间表示，那么我们是否可以跳过繁琐的 LLM 推理，直接从图像映射到这种表示空间？\n基于此思路，作者提出了\nRALI（Reasoning-Aligned Lightweight IQA）\n框架。该框架包含三个关键步骤：\n图 4：RALI 框架示意图。包含 (b) 对比对齐、(c) 特征压缩 和 (d) 分数定义三个阶段。\n对比对齐（Contrastive Alignment）：\n利用 RL 训练好的大模型（如 Q-Insight）生成高质量的图文对（Image-Text-Score triplets），通过对比学习微调 CLIP 的视觉编码器，使其输出特征与“质量推理文本”空间对齐。这一步实现了将推理能力“蒸馏”到视觉编码器中。\n特征压缩（Feature Compression）：\n虽然 CLIP 特征维度较高（768维），但包含噪声。作者引入 PCA 降维（至 512 维）和\n分桶 K-means（Bucketed K-means）\n聚类策略，构建了一个紧凑的离散化特征空间。这不仅过滤了与画质无关的信息，还确保了特征在分数空间上的均匀分布。\n分数定义（Scoring Definition）：\n最后，模型通过计算图像特征与一组可学习的基向量（Basis Vectors）的相似度来加权预测分数。在推理阶段，这仅涉及简单的点积运算。\nRACT：跨域训练的新范式\n除了轻量化，论文还探讨了如何解决 IQA 领域棘手的多数据集混合训练问题。由于不同数据集的标注者主观偏好以及方式不同（Annotator Bias），直接强化学习混合训练往往导致模型难以收敛。\n基于“推理即表征”的发现，作者提出了\nRACT（Reasoning-Aligned Cross-domain Training）：\n首先在各单数据集上进行 RL 训练，获得各自的推理能力。\n利用推理模块将所有图像转化为客观的\n质量描述文本\n，形成统一的跨域标签。\n使用对齐后的图文对进行跨域 SFT 训练，仅使用单数据集的分数进行监督，避免了主观评分偏差的干扰。\n图 5：RACT训练框架，包含(a)单数据集强化学习，(b)跨域标签对齐，(c)跨域SFT训练。\n实验结果：速度与精度的双重突破\n实验结果表明，RALI 在保持极低资源消耗的同时，达到了 SOTA 级别的性能。\n精度对比\n在 KonIQ、SPAQ 等多个主流数据集上，RALI 的性能（PLCC/SRCC）不仅显著优于 CLIP-IQA+、MUSIQ 等非 MLLM 方法，甚至能够与 Q-Insight、Q-Align 等 7B 参数量的 MLLM 方法媲美。\n表 1：单域训练设置下的性能对比。RALI 表现出与 Sota MLLM 模型相当的性能。\n效率对比\n效率是 RALI 的最大亮点。测试显示，RALI 的推理速度相比 Q-Insight 提升了 95% 以上，显存占用降低了 85% 以上。当 Batch Size 为 16 时，RALI 仅需 Q-Insight 3.4% 的推理时间和 14.7% 的显存。\n图 6：RALI 与 Q-Insight 的推理开销对比。\n跨域泛化\n在跨域测试中，基于 RACT 训练的模型在 CSIQ、LiveW 等未见数据集上取得了最佳的泛化性能，证明了通过文本表示对齐域分布的有效性 。\n表 2：跨域训练设置下的性能对比。RACT 表现出Sota泛化性能。\n结语\n该研究不仅在实现上提供了一个高效、可落地的 IQA 解决方案，更在理论层面深刻阐释了多模态大模型在低层视觉任务中泛化能力的来源。\n“推理即表示”\n这一观点，指出了复杂的推理（Reasoning）在感知任务中本质上是一种高效的信息压缩与特征对齐机制。RALI 证明了我们完全可以在不牺牲性能的前提下，在推理的时候摆脱对重型 LLM 的依赖，这为未来的端侧画质增强与实时评价以及在线强化学习奖励函数设计开辟了新的道路。\n相关链接\n📄RALI:\nhttps://arxiv.org/abs/2510.11369\n团队介绍\n多媒体实验室是字节跳动旗下的研究团队，致力于探索多媒体领域的前沿技术，参与国际标准化工作，其众多创新算法及软硬件解决方案已经广泛应用在抖音、西瓜视频等产品的多媒体业务，并向火山引擎的企业级客户提供技术服务。实验室成立以来，多篇论文入选国际顶会和旗舰期刊，并获得数项国际级技术赛事冠军、行业创新奖及最佳论文奖。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.96,
+        "peripheral": 0.02,
+        "transfer_agent": 0.02,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 0.95,
+      "probabilities": {
+        "0": 0.34,
+        "1": 0.37,
+        "2": 0.29,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.16,
+      "probabilities": {
+        "0": 0.89,
+        "1": 0.08,
+        "2": 0.02,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.05,
+      "probabilities": {
+        "0": 0.97,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.76,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.02,
+        "2": 0.05,
+        "3": 0.03,
+        "4": 0.89,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.86,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.1,
+        "2": 0.03,
+        "3": 0.12,
+        "4": 0.55,
+        "5": 0.03
+      }
+    },
+    "anti_hype": {
+      "score": 0.66,
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.29,
+        "2": 0.13,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.88,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4714,
+    "outputTokens": 173,
+    "totalTokens": 4887
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.95,
+        "relevance": 0.58,
+        "grounding": 0.9,
+        "decision_action": 0.97,
+        "evidence": 0.84,
+        "actionability": 0.21,
+        "anti_hype": 0.56
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179935415,
+                "endTime": 1791179935548,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000197988",
+      "marketCost": "0.000197988",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000197988",
+      "inferenceCost": "0.000197988",
+      "inputInferenceCost": "0.000197988",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9KN3N4BFZHP24CHMZMF8"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:55 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::fqdd2-1791179935385-3dbbab9888d2"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.96,
+            "peripheral": 0.02,
+            "transfer_agent": 0.02,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.95,
+          "probabilities": {
+            "0": 0.34,
+            "1": 0.37,
+            "2": 0.29,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.16,
+          "probabilities": {
+            "0": 0.89,
+            "1": 0.08,
+            "2": 0.02,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.05,
+          "probabilities": {
+            "0": 0.97,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.76,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.02,
+            "2": 0.05,
+            "3": 0.03,
+            "4": 0.89,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.86,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.1,
+            "2": 0.03,
+            "3": 0.12,
+            "4": 0.55,
+            "5": 0.03
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.66,
+          "probabilities": {
+            "0": 0.55,
+            "1": 0.29,
+            "2": 0.13,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.88
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4714,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.95,
+            "relevance": 0.58,
+            "grounding": 0.9,
+            "decision_action": 0.97,
+            "evidence": 0.84,
+            "actionability": 0.21,
+            "anti_hype": 0.56
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179935415,
+                    "endTime": 1791179935548,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000197988",
+          "marketCost": "0.000197988",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000197988",
+          "inferenceCost": "0.000197988",
+          "inputInferenceCost": "0.000197988",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9KN3N4BFZHP24CHMZMF8"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:54.811Z"
+  }
+}

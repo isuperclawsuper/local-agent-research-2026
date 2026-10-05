@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1234262770652839936",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "参数化 Memory 漫谈（纯干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511041&idx=1&sn=037ffb3529df30ea5b8b30b966a526bf",
+      "date": "2026-08-07T10:18:00.229Z",
+      "chars": 6500,
+      "text": "ntext 里\"学习\"到一个新东西（在不调参的情况下）。\n6.3 ICL 是一种怎样的学习算法？\n6.3.1 ICL 蕴含线性优化算法\nTransformer 做 ICL 时，内部隐式跑的是哪个已知学习算法？\n我们不妨假设（What learning algorithm is in-context learning?（Akyürek et al., ICLR 2023，高引论文来自 MIT、Google Search、Stanford））：\nin-context learner 在激活里编码了一个更小的模型，随着 context 里示例的到来，在前向传播中\"训练\"这个隐式模型。\n前向传播可以看成一种直线程序：无循环、无分支，指令按顺序执行。这套思路和 RASP 一脉相承，即把 Transformer 形式化为可编程模型。( PMLR ) 沿着这个思路，原则上可以用线性方程来表达直线程序（不懂可以问 AI），再用线性回归作为探针问题来验证命题。因此，ICL 算法学习的问题可以被转化为线性回归问题：函数类是\n，其中\n，损失是平方误差。序列排成：\n预\n测\n编码上把\n和\n拼成\n维向量\n，\n。\n正\n则\n线\n性\n回\n归\n的\n闭\n式\n解\n是\n大\n家\n熟\n的\nw^* = (X^\\top X + \\lambda I)^{-1} X^\\top y\n，\n是 OLS，\n是岭回归（可赋予贝叶斯解释）。\nTransformer 能实现哪些算法呢？先从\"能不能\"（表达能力，构造性上界）开始构造： 构造靠四个可用单层 Transformer 实现的基本算子：mov（列间搬运）、mul（列内矩阵乘）、div（除以某标量）、aff（仿射变换）。举个例子，mov 可以用 attention 机制来实现；mul 可以用位置内做乘法（内积、矩阵向量积、外积）来实现；div 可以用位置内除以某坐标里存的标量来实现等。\nGD 的更新写成\n，用上面这四个基础算子拼出来。所以 GD 也可以构造出来。\n岭回归也能构造出来，闭式解是\n，用上面四个基础算子拼出来。\n得到阶段性结论：\n一步梯度下降\n：对 d 维回归，用\nO(d) 的 hidden size + 常数层数\n，Transformer 可实现一步 GD（具体的构造细节可以看论文）。\n岭回归闭式更新\n：用\nO(d²) 的 hidden size + 常数层数\n，可实现\"把一个新观测并入岭回归解\"的更新（具体的构造细节可以看论文）。\nn 步算法 → 大致 n 倍的层数。\n它证明了该问题的存在的可能性：Transformer 的前向传播可以实现已知的学习算法（GD、岭回归、OLS），并且可以在 context 里\"训练\"一个隐式模型。\n这是\n存在性\n证明——\"能实现\"不等于\"训练后真的学到了这个\"。这一点后来 von Oswald 专门补刀（见 6.3.5）。\n6.3.4 行为对比：训练出来的模型到底像谁\n作者构造了\"学习规则欠定\"的回归问题（不同合法学习规则会在留出数据上给不同预测），然后比 trained transformer 的预测跟 GD、岭回归、精确最小二乘、贝叶斯估计器谁最接近。核心结论是\n随深度和噪声发生\"算法相变\"\n：\n在无噪线性回归下，ICL 与 OLS 的吻合度显著高于 kNN、GD、SGD 等——说明存在\n指向 OLS 式解的特定 inductive bias\n，不是泛泛地逼近\"某个学习算法\"。\n6.3.5 probing：能不能从隐藏态里解码出中间量\n6.3.4 的行为对比只到输入输出为止——但是，两套内部机制完全不同的系统，也可能给出一样的预测，内部过程却无从窥视。想再进一步，得打开模型看内部：假如 Transformer 真在前向传播里跑 GD / 岭回归，这些算法沿途会算出一批中间量——权重估计\n，\n以\n及\n矩\n统\n计\n量\n（\n，\n例\n如\nX^\\top X\n、\n）。它们要是真出现在隐藏态里，证据就强了一截。probing 干的就是这件事。\n探针的操作流程：冻结训练好的 Transformer（参数不再动），取第\n层的隐藏态\n，\n在\n外\n面\n单\n独\n训\n练\n一\n个\n小\n读\n出\n模\n型\ng\n（\n叫\n探\n针\n，\n）\n，\n任\n务\n是\ng(h_\\ell) \\to z\n，\n从\n隐\n藏\n态\n预\n测\n目\n标\n量\nz\n。\n预测得准，就称\"第\n层的隐藏态编码了\n\"。\n探针分两档，对应两种\"编码\"的说法：\n线性探针 ：\n。它读得出 →\n被\"线性编码\"；\nMLP 探针 ：\n是个两层小网络。线性探针读不出、MLP 探针读得出 →\n被\"非线性编码\"。\nAkyürek 的 probing 给出两条结果，各自回答一个独立的问题。\n第一条，信息出现在第几层。\n和这些矩统计量要到 后段层 （late layers）才解码得出来，前段层读不出。放回 6.3.1 的直线程序视角看，顺理成章：中间量按程序执行顺序逐层出现，\n是程序后半段的产物，前几层还没算到那一步，信息压根不在隐藏态里，换多强的探针都没用。\n第二条，需要多强的探针。\n线性探针精度差很多，MLP 探针才读得出。按上面的术语，这些量在隐藏态里属于\"非线性编码\"。\n容易误解的点：\"非线性编码\"的\"非线性\"，描述的是信息在隐藏态里的存放格式和读出方式。它对 Transformer 各层的计算过程没有任何断言——Transformer 每一层本来就含非线性计算（softmax、GeLU、LayerNorm），前后段在这点上没有区别。第一条结果比的是信息\"有没有\"，第二条比的是\"以什么格式存放\"。\n两条结果合起来，把证据从\"行为像某算法\"往\"内部真在算这个算法的中间量\"推了一步。但这一步的分量要打折扣，折扣来自探针本身：\n探针越强，不可解释性越强，证据越弱\n。MLP 探针自带算力，于是留下另一种解释——\n隐藏态里放的只是原始素材（\n、\n的某种表示），\n是探针拿到素材后当场自己算出来的，模型内部未必显式表示过它。证据强度排序大致是：\n线性探针成功 > MLP 探针成功 > 仅行为匹配\nAkyürek 落在中档，这也是作者把 probing 部分标为 preliminary 的原因。\n一句话收束 Akyürek 全篇：\n至少在线性情形，ICL 可以用算法语言理解，Transformer 可能是从纯序列建模里\"重新发现\"了标准估计算法\n；具体跑的是哪个，看深度、宽度和数据噪声。\n6.4 基于梯度下降的 ICL\nAkyürek 证了\"能实现 GD\"，但没证明\"优化真的会找到这个解\"。von Oswald (Transformers learn in-context by gradient descent（von Oswald et al., ICML 2023）)把构造做到极简，并证明\n训练真的会收敛到它\n。命题如下：\n一层 linear self-attention（LSA，去掉 softmax）的前向更新，可以精确等价于对 in-context 样本做一步梯度下降。\nLSA 层去掉 softmax 后的更新是：\nᵀ\n回归损失\n，即，一步 GD： 换一个视角来看，一步 GD 既可以看成\"改权重\"，也可以看成\"改数据\"——GD 后的损失等价于把目标\n更新成\n，其中\n。也就是说， 不显式算出 ΔW，而是让每个 token 的 y 分量被就地更新一步 。\n具体权重构造 token 排成\n，分块矩阵形式：\nW_K\n= W_Q = [[I_x,\n0\n],\n[\n0\n,\n0\n]]\n# 只在 x-块放单位阵：负责用 x_i、x_j 做点积\nW_V\n= [[\n0\n,\n0\n],\n[W_0, −I_y]]\n# 底行算出 (W_0 x_i − y_i)，即残差\nP\n= (η/N) · I\n# 学习率 η 通过整体缩放进入\n代进去，逐 token 的更新恰好是：\n即\n只有\n分量变，变的量正好是一步 GD 引起的\n。\n查询 token 也遵循同样动力学：把\n的\n分量初始化成\n，更新后乘 −1 就读出预测\n。\n单个 attention head 就够，同时更新训练目标和测试预测。\n注解：\n非唯一性 ：\n只需乘积\n和\n匹配构造即可；任意标量缩放\n（\n与\n）给等价结果——所以对比训练权重和构造权重时要先做标量校正。\n学习率是被 meta-learn 的 ：\n跨一族任务训练时，\n会被隐式学到，使得固定步数下平均 loss 下降最优。\n6.4.1 训练真的收敛到这个构造吗\n定义完 ICL 的 token 更新策略后，不禁要问：训练真的会收敛到这个构造吗？会。\n在线性回归数据上训练 LSA-only Transformer，训练出来的权重乘积（做完标量校正后）与手工构造\n几乎完全重合\n（论文 Fig. 9 的权重可视化）。\n三个对齐度量：预测差的 L2 范数、模型敏感度\n的\n余弦相似度\n、敏感度差的 L2。单层 LSA vs 一步 GD 的余弦相似度升到约 1.00；GD、训练后的 TF、以及两者插值权重\nθ\nθ\nθ\n达到\n相同的 loss\n（该合成设定下\"目标 GD loss\"约 0.2）。\n分布内、分布外验证任务上都对齐。\n6.4.2 多层 = 多步 GD，以及 GD++\nK 层 ≈ K 步 GD：堆叠 K 层，读出变成\n，对应 K 步梯度下降的轨迹。\nGD++（改进版）：深层 / 循环 LSA Transformer 会超过朴素 GD，靠一个额外的\n曲率修正（curvature correction）\n项。构造上\n的左上块从 0 变成\n，\n的 x-块加了\nγ\n，于是更新变成：\ny 分量照做 GD，x 分量额外乘一个 (\nγ\n)——相当于对数据做\n预条件（preconditioning）\n，改善损失 Hessian\n的条件数，加速收敛。作者从训练好的循环 2 层 Transformer 里反解出的 γ 值（如\n时约 0.099）跟解析最优值吻合。这一步的\"为什么有效\"作者标注为启发式解释（Neumann 级数逼近\n⁻\n¹\n）。\n6.4.3 与 Akyürek 的关系与区别\n作者明确说这是并行工作：\nAkyürek 用一串 Transformer 层（含 MLP）构造一步\"带权重衰减的 GD\"；但\n没证明优化会找到与其构造一致的权重。\nvon Oswald 的构造更简单（一层 LSA 就够），且\n证明了训练确实会收敛到该构造\n（Proposition 1 的经验部分），还能顺带解释 Olsson 研究的浅层两层 Transformer。\n一句话：Akyürek 偏\"能实现哪些算法 + 行为像谁 + probe 中间量\"，von Oswald 偏\"最简构造 + 训练真收敛到它 + 多层=多步 GD + 超越 GD 的 GD++\"。\n6.4.4 softmax vs linear，以及适用范围 / 局限\n等价性只在 linear attention 上精确成立\n。真实 LLM 用的是 softmax attention，去掉 softmax 是本文\"唯一但关键\"的偏离。\n有意思的是，作者做双层 SA 复现 induction 时，\n第一层必须保留 softmax\n才训得动：softmax 层学到 copying，把相邻的输入/输出 token 合并成 Proposition 1 需要的 (x, y) 拼接 token，第二层再做 GD。作者由此把\ninduction head 解释成\"GD 式 ICL 的一个特例 / 前置步骤\"\n——copying 是使能机制，下游才是 GD。\n作者自己非常克制：\"我们预期在 linear self-attention-only Transformer 上的发现只能解释复杂过程的一小部分，它可能只是产生 ICL 的众多机制之一。\"\n任务局限：只在线性回归（及深表示上的非线性回归）这种合成任务上，不是自然语言。\n6.5 三篇的脉络，两条路线\n参数不变时模型如何学习？\n机制可解释性路线（Olsson）\n─ 看电路：ICL 靠 induction heads 做 [A][B]…[A]→[B] 的匹配+复制\n─ 大模型里升级成 fuzzy / nearest-neighbor 版模式补全\n─ 强项：真实 LM、真实训练、相变现象；弱项：大模型只有相关证据\n隐式优化算法路线（Akyürek / von Oswald）\n─ 看算法：ICL 在前向传播里隐式跑 GD / 岭回归 / OLS / 贝叶斯\n─ von Oswald：一层 LSA = 一步 GD，K 层 = K 步 GD，训练真收敛到构造\n─ Akyürek：深度/噪声决定像哪个算法，隐藏态能 probe 出 w 和 moment matrix\n─ 强项：数学精确、可验证；弱项：合成任务 + linear attention\n交汇点：von Oswald 用 copying(softmax) + GD(linear) 把两条路线接上\n→ induction\nhead\n是\n\"GD 式 ICL\"\n的一个特例\n两条路线不冲突，是同一现象的不同分辨率：一个说\"在 token 空间做模式补全\"，一个说\"在激活空间跑优化算法\"。共同结论：\n参数冻结 ≠ 不学习。学习被搬到了前向传播的激活空间。\n6.6 后续工作与争议\n6.6.1 Dai et al.（2022/2023）：GPT 的 ICL ≈ 隐式 finetuning\n\"Why Can GPT Learn In-Context? Language Models Implicitly Perform Gradient Descent as Meta-Optimizers\" (\nACL Anthology\n)。借 Irie et al. (2022) (\nPMLR\n) / Aizerman et al. (1964) (\nMathNet\n) 的\"线性层 GD 与 linear attention 的对偶形式\"，把 attention 写成\n其中\n= 初始（zero-shot）参数，\n= 示例产生的\"meta-gradient\"更新\n主张：GPT 先根据示例产生 meta-gradient，再通过 attention 作用回模型，等价于一次隐式 finetuning。并在真实任务上比较 ICL 与显式 finetuning，说两者在预测、表示、attention 行为多个层面相似。还据此设计了 momentum-based attention 佐证。\n注意区别：von Oswald / Akyürek 的 GD 是对 in-context 数据里一个\n小回归模型\n做的；Dai 的 GD 是对Transformer 自身做的。二者不是一回事，别混。\n6.6.2 批评与反驳\n此外，ICL 这个方向也有被质疑得很凶，大家可以客观地看待：\nShen, Mishra, Khashabi（arXiv:2310.08540，后收 ICML 2024）\"Do pretrained Transformers Really Learn In-context by Gradient Descent?\"\n(\nPMLR\n)：直指前述工作的实验设定离真实差太远——(1) 它们用\"ICL objective\"专门训练模型做 ICL，而真实 LLM 的 ICL 是自然涌现的；(2) 手工构造的权重性质（如稀疏性）跟真实 LLM 对不上。他们在\n在自然数据上预训练的 LLaMA-7B\n上测，发现\nICL 与 GD 对示例顺序的敏感度不同\n（ICL 对顺序很敏感，full-batch GD 不敏感），且两者改动输出分布的方式不一致。摘要结论逐字为：\"the equival",
+      "fulltext_obtained": true,
+      "chunk_index": 5,
+      "chunk_count": 11
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.66,
+        "direct_local": 0,
+        "peripheral": 0.03,
+        "transfer_business": 0,
+        "transfer_agent": 0.31
+      }
+    },
+    "relevance": {
+      "score": 0.92,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.71,
+        "2": 0.1,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.05,
+      "probabilities": {
+        "0": 0.98,
+        "1": 0.02,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.05,
+      "probabilities": {
+        "0": 0.97,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.12,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.04,
+        "2": 0.08,
+        "3": 0.05,
+        "4": 0.69,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.25,
+      "probabilities": {
+        "0": 0.33,
+        "1": 0.43,
+        "2": 0.06,
+        "3": 0.04,
+        "4": 0.13,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.59,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.14,
+        "2": 0.15,
+        "3": 0.46,
+        "4": 0.18,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.8,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6875,
+    "outputTokens": 173,
+    "totalTokens": 7048
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.57,
+        "relevance": 0.8,
+        "grounding": 0.96,
+        "decision_action": 0.97,
+        "evidence": 0.41,
+        "actionability": 0.4,
+        "anti_hype": 0.46
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180414898,
+                "endTime": 1791180415090,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00028875",
+      "marketCost": "0.00028875",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00028875",
+      "inferenceCost": "0.00028875",
+      "inputInferenceCost": "0.00028875",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AR7WPWQ86B01KVQ8MCZHB"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:55 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::6qt47-1791180414804-01fefa8c31f4"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.66,
+            "direct_local": 0,
+            "peripheral": 0.03,
+            "transfer_business": 0,
+            "transfer_agent": 0.31
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.92,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.71,
+            "2": 0.1,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.05,
+          "probabilities": {
+            "0": 0.98,
+            "1": 0.02,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.05,
+          "probabilities": {
+            "0": 0.97,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.12,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.04,
+            "2": 0.08,
+            "3": 0.05,
+            "4": 0.69,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.25,
+          "probabilities": {
+            "0": 0.33,
+            "1": 0.43,
+            "2": 0.06,
+            "3": 0.04,
+            "4": 0.13,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.59,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.14,
+            "2": 0.15,
+            "3": 0.46,
+            "4": 0.18,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.8
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6875,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.57,
+            "relevance": 0.8,
+            "grounding": 0.96,
+            "decision_action": 0.97,
+            "evidence": 0.41,
+            "actionability": 0.4,
+            "anti_hype": 0.46
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180414898,
+                    "endTime": 1791180415090,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00028875",
+          "marketCost": "0.00028875",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00028875",
+          "inferenceCost": "0.00028875",
+          "inputInferenceCost": "0.00028875",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AR7WPWQ86B01KVQ8MCZHB"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:54.324Z"
+  }
+}

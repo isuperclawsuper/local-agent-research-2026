@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "251120552848114688",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "2026年AI趋势全面预测，全球科技巨头与顶尖机构研判",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800448&idx=1&sn=5de78e382a2029bd8a8d31813f2f1e90",
+      "date": "2026-02-27T09:36:00.513Z",
+      "chars": 5017,
+      "text": "2026-02-27 17:36\n广东\n开年干货\n作者：bingbingxu\n近期包括Anthropic / Google / 微软 在内的科技巨头 发布了对2026年AI发展的预测，本文收集8家大厂预测报告，看看他们是怎么看2026年AI发展趋势的。\n一、前言\n2025 年是人工智能从 “技术实验” 迈向 “规模化落地” 的关键一年。经过一年的快速迭代，AI 不再局限于 “\n回答问题\n” 或 “\n生成内容\n”，而是向“\n实体执行\n”的深层维度演进。而近期全球科技巨头、顶尖研究机构纷纷发布了2026年的AI的趋势研判：\n组织\n趋势报告\nAnthropic\n2026 Agentic Coding Trends Report\nGoogle\nAI Agent trends 2026\n微软\nWhat’s next in AI: 7 trends to watch in 2026\nNVIDIA\nCES 2026 主题演讲：\"物理 AI 时代到来\"\nIBM\n2026 年五大趋势\n斯坦福 HAI\nAI Experts Predict What Will Happen in 2026\nMIT Technology Review\nWhat's next for AI in 2026\n央视-工信部\n2026年人工智能十大趋势\n从这些报告中， 我们一起看看\n新的一年AI 又会发展成什么样子\n？\n二、报告汇总\n热点图\n首先来一张\n词汇热点图\n，看看各大厂的报告中都在关注什么：\n这些关键词大概分为4类：基础设施、 AI技术、应用场景、安全规范 。\n基础设施\n、\nAI技术\n保持了25年的延续性，依然是最大的热点。此外值得关注的，\n应用场景\n方面，重点提到Coding、健康、购物、搜索、科研等关键词；\n安全规范\n方面，重点提到安全、监管、伦理、法律等关键词。\n量化指标\n接下来我们再看\n一组数据\n，看看各大厂的报告中都有什么可量化的指标：\n这些指标大概分为3类，依次为：\n开发、部署、应用\n阶段的数据：\n开发阶段\n：Anthropic内部开发工作约60%交给AI，其中低于20%的工作AI够独立完成。\n部署阶段\n：52%使用AI的企业已部署AI Agent至生产环境，主要用在客户服务、营销、技术支持、生产力提升场景。\n应用阶段\n：48% 的员工表示能够接受 AI 的协同工作，56%消费者愿容忍AI服务瑕疵以换取前沿体验。\n观点共识\n接下来，我们再一起看看，各个报告有哪些\n观点共识\n：\nAI Agents依然是核心\n：几乎大家都再强调AI Agent从工具演变为主动合作伙伴或同事，应用于员工生产力、工作流自动化、客户服务和安全等领域。同时可能会出现：员工专属Agent、Agent并行协同、超长运行时间、以及泛岗位普及的趋势。\n安全、伦理与监管加强\n：微软、IBM、MIT等均提到AI内生安全、数据透明度、监管冲突，同时使用方要求AI可解释性。\nAI在泛行业场景的落地\n：微软、NVIDIA、央视、斯坦福 HAI 等突出AI在垂类场景的落地，的尤其是应用于医疗、制造、交通、科研、终端硬件、法律等行业。\n人力资源与技能转型\n：Google、IBM、斯坦福等强调员工需提升技能以适应AI，投资学习文化；AI赋能员工而非替代。\n基础设施\n：AI基础设施可能会朝着超大规模、分布式网络2个方向发展，同时结合量子计算融合 构建新的AI基础设施。\n三、各厂核心观点\n以下是各个厂商的详细观点数据：\nAnthropic\n2026 Agentic Coding Trends Report\n关键词：Vibe-Coding、并行协同、超长时间、破圈、AI安全\n软件开发生命周期剧变\nAI驱动的开发、自动化测试、嵌入式文档将研发周期从数周压缩至数小时，推动企业动态人才配置，消除传统人员调配的生产力低谷。\nAgent 进化为并行协同\nAgent的串行工作模式被多Agent分层架构替代：由核心编排Agent(Opus-4.6)协调多个专业子Agent并行工作，再将结果整合统一输出。\nAgent的超长时间运行能力\nAgent从处理 “数分钟的单次任务”（如修 bug、写函数），进化为可自主运行数天 / 数周的长时任务，仅在关键节点需要人类监督。\nAgent协作实现人性化监督\nAgent学会 “主动求助”，借助 “AI 管 AI” 的规模化质控，人类仅在必要时介入，让人类注意力聚焦关键环节，而非全面审查。\nVibe-Coding拓展新场景、新用户\n支持 COBOL、Fortran 等小众 / 遗留语言，解决传统工具难以维护的遗留系统；同时各领域人员借助 AI 拓展能力边界，让 “全栈” 成为各岗位的普遍特征。\n生产力提升重塑软件研发经济\n，AI 带来提升的核心是产出量增加，研发周期压缩、工程师能力被增强，让软件研发的总拥有成本降低，投资回报率显著提升。\nVibe-Coding在非技术团队的快速普及\n销售、市场、法务、运营等非技术团队，可借助智能编码自主自动化工作流、搭建工具，无需或极少需要工程师介入，实验性工作流的尝试成本大幅降低。\nAgent 需安全优先的架构\n需从Agent系统设计的最早期阶段嵌入安全架构，搭建自动化的Agent网络防御系统。\nGoogle\nAI Agent trends 2026\n关键词：专属Agent、AI协作、AI主动服务、人才变革\n每位员工的专属 Agent\n：以员工为中心的转型，为每个岗位配置专业 Agent，赋能个体实现峰值生产力。\n工作流的 多Agent 协同\n：构建 “数字装配线”，通过多 Agent 协同实现核心业务流程的端到端自动化，成为企业默认的架构模式。\n礼宾式超个性化服务\n：从被动的 FAQ 机器人，转向主动的、基于客户数据的超个性化服务，建立 服务新标准。\nAI 安全\n：AI Agent 实现自动化的威胁检测与响应，推动企业安全从 “被动告警” 转向 “主动行动”。\nAI 劳动力培养\n：需要对员工开启持续的AI学习计划，让非技术员工也能构建、管理 Agent，转为 Agent 治理者。\n微软\nWhat’s next in AI: 7 trends to watch in 2026\n关键词：AI赋能、AI安全、AI医疗、AI科研、基础设施、Vibe-Coding、量子计算\nAI 赋能人类协同增效\n：AI 智能体将成为数字同事，小团队完成大型项目的比例会逐渐增多。\nAI Agent安全\nAgent需要内置的安全管理能力，限制其可以访问的信息和系统。\nAI 缩小全球医疗差距\nAI 将从单一诊断能力，延伸至症状分诊、治疗规划等全流程。\nAI 加速科研突破\nAI 提出新的实验建议、甚至执行部分实验。有望加速科研进程。\nAI 基础设施迈向分布式\nAI 发展不再追求 “更大的数仓”，而是聚焦算力的高效利用，通过高密度分布式算力网络、动态调度实现算力零闲置。\nAI 代码能力增强\nAI 将突破代码编写，能分析代码仓库的规律，理解代码的关联关系、修改原因和逻辑适配性，成为软件开发的核心协作方。\n量子计算会加速突破\nAI + 超级计算机 + 量子计算 的混合计算模式将实现 “量子优势”。\nNVIDIA\nCES 2026 主题演讲：\"物理 AI 时代到来\"\n关键词： 物理 AI、AI医疗、AI制造\n物理 AI 的 “ChatGPT 时刻” 已至，成 AI 发展全新阶段\n，物理 AI 其是生成式 AI 后的核心发展方向，生成式 AI 已成过去，未来属于 “Agent AI + 物理 AI”；物理 AI 不仅是技术升级，更将深度赋能千行百业，与机器人技术共同开启新一轮工业革命。\nAI 演进分为四阶段\n：感知 AI→生成 AI→Agent AI→物理 AI；物理 AI 区别于生成式 AI 的 “表达能力”，核心是赋予机器 “指挥行动的能力”；并从真实反馈中持续纠错、自我进化，而非仅在封闭环境完成单一任务。\n物理 AI 将重塑多产业格局\n， 最可能率先落地智能科学发现、智能工业制造，同时在自动驾驶、医疗等领域实现突破。\nIBM\n2026 年五大趋势\n关键词：拥抱AI、信任AI、AI安全、量子计算\n主动拥抱不确定性\n智能体 AI 是在变局中识别机遇、做出快速明智决策的核心支撑，而实时运营能力是企业保持竞争优势的关键，无此能力则难以在市场中立足。\n员工对AI的期待持续提升\n， 员工对 AI 技术的接纳度远高于抵触度，更像是 “赋能工具” 而非 “替代者”；员工不仅接受与 AI 协作，甚至愿意接受 AI 的管理，AI 对重复性工作的替代，能让员工聚焦于高价值的战略性工作。\n透明与知情是 客户使用AI核心\n，不苛求 AI 服务的完美性，愿意为前沿 AI 服务接受一定瑕疵，但知情权和选择权是底线；企业需清晰说明 AI 的数据使用方式、赋予用户数据控制权。\nAI 离不开本地安全防护网\n， 需将AI 安全（对自身 AI 系统、数据、基础架构的掌控与治理能力）纳入核心战略，这是保障业务连续性的关键。\n量子计算机加速发展\n，2026 年底有望迎来真正的量子优势（量子计算机在AI特定问题上的解决方案显著优于传统方法）。\n斯坦福 HAI\nAI Experts Predict What Will Happen in 2026\n关键词：模型、AI 医疗、AI 泡沫\n模型发展遇 “瓶颈期”\n大模型发展遇天花板，可能会出现小模型性能反超大模型的现象，行业将转向 “精修小而优的数据集”，而非追求大模型规模。\n医疗 AI 迎来 “ChatGPT 时刻”\n2026 年将出现训练规模媲美 ChatGPT 的生物医学基础模型，大幅提升医疗 AI 准确性，还能实现罕见病的诊断。\n以人为本\n拒绝 大模型的 “谄媚性”，2026 年将重点发展以人为中心的 AI 系统，跳出 “短期互动 / 满意度优化”，聚焦 AI 对人类长期发展、幸福感的影响。\n央视\n2026年人工智能十大趋势\n关键词：全球治理、算力基建、多模态、AI医疗、AI科研、物理AI、AI安全\nAI 治理全球化\n人工智能普惠共享成为全球发展议程核心。\n智能算力规模化\n算力成为 AI 核心产业要素，万卡级集群成为大模型训练主流载体，超大规模集群技术突破，算力发展兼顾高速互联与绿色低碳；“东数西算” 工程实现算力资源协同调度，大幅提升算力普惠性。\nAI 应用垂直化\nAI 应用发展范式从追求通用能力转向解决垂直领域行业痛点。\nAI模型\n国产大模型实现 “高性能、低成本” 突破，大幅降低 AI 应用门槛和成本；全球算力升级支撑百万级 Token 长上下文处理，整合文本、图像、3D 点云等多源数据，推动人机交互向 “所见即所得” 的多模态演进。\n原生 AI 终端硬件普及化\nAI 手机、AI 硬件成为行业增长关键；新一代 AI 手机、PC、XR 设备与多模态大模型深度融合。\n物理AI\n2026 年智能机器人将在制造、仓储、家庭服务等领域推出标志性产品，并进入规模化试用阶段。 -\nAI + 科学\n“AI + 科学（AI for Science）” 成为科研范式变革核心，AI 大模型与科学计算结合，可自主提出假设、设计并验证实验，在生命科学、材料科学、天体物理等领域加速 “从 0 到 1” 突破。\nAI 医疗\n脑科学与人工智能深度交叉融合成为创新方向；类脑技术受脑科学启发，推动 AI 算法优化，赋能自动驾驶、智能医疗等应用。\n能源问题显性化\nAI 巨量能耗成为行业发展重要挑战，清洁能源供给能力成为地区吸引 AI 投资的结构性优势。\n安全与对抗白热化\n数据投毒、对抗性攻击、深度伪造成为 AI 现实安全威胁，安全防护成为 AI 模型开发的内生需求；筑牢安全防线，兼顾技术创新与产业健康发展。\n趋势跟踪工具\n最后给大家推荐几个AI趋势的跟踪平台\n前沿突破：\nhttps://arxiv.org/\n工程落地：\nhttps://trendingrepos.glup3.dev/?time=daily\n商业应用：\nhttps://www.itjuzi.comhttps://www.itjuzi.com/\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "transfer_agent": 0.01,
+        "transfer_business": 0,
+        "peripheral": 0.84,
+        "irrelevant": 0.15,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.18,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.85,
+        "2": 0.08,
+        "3": 0.06,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.63,
+      "probabilities": {
+        "0": 0.39,
+        "1": 0.59,
+        "2": 0.02,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.62,
+      "probabilities": {
+        "0": 0.63,
+        "1": 0.16,
+        "2": 0.19,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.82,
+      "probabilities": {
+        "0": 0.2,
+        "1": 0.79,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.11,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.58,
+        "2": 0.25,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.16,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.5,
+        "2": 0.32,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6139,
+    "outputTokens": 174,
+    "totalTokens": 6313
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.81,
+        "relevance": 0.86,
+        "grounding": 0.72,
+        "decision_action": 0.59,
+        "evidence": 0.86,
+        "actionability": 0.72,
+        "anti_hype": 0.66
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179981295,
+                "endTime": 1791179981439,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000257838",
+      "marketCost": "0.000257838",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000257838",
+      "inferenceCost": "0.000257838",
+      "inputInferenceCost": "0.000257838",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB0F14QVVEGG9H25FNBK0"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:41 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::9hkjs-1791179981272-1bd1e74877fc"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "transfer_agent": 0.01,
+            "transfer_business": 0,
+            "peripheral": 0.84,
+            "irrelevant": 0.15,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.18,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.85,
+            "2": 0.08,
+            "3": 0.06,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.63,
+          "probabilities": {
+            "0": 0.39,
+            "1": 0.59,
+            "2": 0.02,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.62,
+          "probabilities": {
+            "0": 0.63,
+            "1": 0.16,
+            "2": 0.19,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.82,
+          "probabilities": {
+            "0": 0.2,
+            "1": 0.79,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.11,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.58,
+            "2": 0.25,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.16,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.5,
+            "2": 0.32,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6139,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.81,
+            "relevance": 0.86,
+            "grounding": 0.72,
+            "decision_action": 0.59,
+            "evidence": 0.86,
+            "actionability": 0.72,
+            "anti_hype": 0.66
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179981295,
+                    "endTime": 1791179981439,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000257838",
+          "marketCost": "0.000257838",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000257838",
+          "inferenceCost": "0.000257838",
+          "inputInferenceCost": "0.000257838",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB0F14QVVEGG9H25FNBK0"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:40.672Z"
+  }
+}

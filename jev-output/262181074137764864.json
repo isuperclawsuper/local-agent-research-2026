@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "262181074137764864",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "淘宝营销会场智能测试平台的AI落地实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543144&idx=1&sn=721c1a6266e58ecc7d383e368a04bebd",
+      "date": "2026-04-01T09:21:00.212Z",
+      "chars": 4857,
+      "text": "原创\n营销质量团队\n2026-04-01 17:21\n浙江\n本文\n介绍了淘宝营销会场智能测试平台的AI落地实践：基于LLM与多模态Agent，实现“所见即所得”渲染校验、价格/内容/交互一致性比对、定投与多端适配自动检测；覆盖需求提测、测试执行、线上回归全流程。达成问题发现率↑、线上风险↓、测试人效提升100%、整体提效40%，推动测试从“人工驱动”迈向“AI智能判定+闭环自治”。后续聚焦需求意图识别、AI造数、智能用例选择等深度智能化方向。\n背景与现状\n▐\n业务演进：测试内容模板化\n目前会场需求测试中，被测对象（页面、组件、数据服务）、技术方案，在支持营销多业务产技需求场景下趋近稳定。测试流程、测试范围、测试手段相对标准化。在过往的测试过程中，关键节点通过自动化工具切入进行提效，但交互、视觉体验等验证领域介入成本较高。\n大促、日常营销导购会场需求测试内容中，围绕着以会场\n主链路测试\n、\n埋点验证\n测试为主，以\n会场性能\n、\n压测\n、\n适配\n、\n兜底容灾\n测试验证保障会场极致用户体验，交付需求测试产物。\n业务需求-》测试执行\n会场测试在“所见所得渲染验证、价格一致性、Tab/Feed 交互、骨架/快照/终态对比、渠道投放一致性、内容异常发现”等多个维度，传统依赖人工肉眼和脚本、难以覆盖且易遗漏。引入 LLM 大模型和测试 Agent ，旨在通过截图比对、多模\n态识别、自动链路拼接和可视化异常发现，实现C端可视化校验、核心交互路径验证、场景体验统一和内容缺失自动识别，达到提升测试质量与效率效果。\n▐\n会场测试：传统测试工具下保障会场极致体验\n会场主链路测试\n会场主链路功能测试\n页面与楼层交互功能\n会场（上、下游）一致性验证\n会场状态切换、定投渲染验证\n·\n会场页面结构完整性测试\n·\n页面渲染方式：csr、ssr、快照、骨架\n·\n验证点：页面结构符合预期、内容渲染正常\n1.上下、左右手势滑动\n·页面头下滑搜索头展开\n·会场feeds下滑吸顶\n·会场下滑软刷新\n·会场左右滑动\n2.页面与楼层交互功能\n具体一致性检查点包含但不限于以下内容\n1.业务实体（品、店、内容、直播间等）承接正确，\n2.业务实体数据表达（价格，名称，利益点，素材，氛围等）符合预期\n1. 随大促里程碑、业务需求变更，页面结构、内容、氛围随排期切换\n2. 页面、楼层设置定投实验\n3. 手淘终端渠道渲染\n4. 其他终端渠道渲染（其他淘内app与非淘内app）\n·打开渲染、内嵌半屏渲染\n用户极致体验验证\n服务端压测\n兜底容灾验证\n适配验证\n会场性能测试\n业务流量模型梳理-》OPM模型流量录入-》压测报告与数据沉淀\n多层的容灾兜底场景下服务异常且不影响C端用户的正常浏览访问\n通过覆盖同一张H5会场在不同型号、系统版本、尺寸、分辨率及DPR（设备像素比）下内容、样式正确性表达，来确保视觉一致性与操作可用性。\n通过\n简单的图片纹理canny算子计算边缘纹理，计算会场渲染过程中终帧与首帧加载时间耗时，计算会场渲染首帧响应时长\n▐\nAgent在测试中应用机会\n期望在会场测试经验全面、基建完善的当前基础上，应用AI大模型能力，在\n需求提测、需求测试、线上回归\n阶段\n，\n提供会场业务智能测试解决方案，提高会场需求测试整体效率。\n实现方案\n在既有测UI自动化能力基础上，接入AI多模态\n偏差检测与智能纠错判定能力\n，覆盖相对大促会场巡检、会场需求AI测试测试流程节点，构建基于AI大模型的会场智能测试平台。\n🔍 过去是“任务驱动”——人定义规则、工具执行\nVS\n💡 现在是“AI驱动”——模型理解意图、\n自主判断结果。\n测试工具执行-进化->Agent测试\n▐\n测试Agent：被测对象信息解析->测试工具执行->结果解析判断\n示例1：（轻）流程+工具执行；（轻）测试判断\n测试数据获取-》LLM信息解读-》测试工具执行-》LLM结果判断\n示例2：（重）流程+工具执行；（轻）测试判断\n测试数据获取-》LLM信息解读-》测试工具执行-》LLM结果判断\n示例3：\n（轻）流程+工具执行；（重）多模态判断\n测试数据获取-》LLM信息解读-》测试工具执行-》LLM结果判断\n▐\n测试基建Agent管理与执行：工厂模式，模型供应方调用兼容与封装\n会场测试后台：\n需求-测试过程-测试报告记录\n测试Agent触发执行流程图\n构建 AI Agent的\nmultiAgent\n框架，借鉴了\nald\n-lamp沉淀solution执行框架，将其扩展为支持多种Agent管理调用与Agent实时、异步调用的执行引擎。这不仅避免了重复造轮子，更确保了复杂场景下，AI测试Agent的执行具备稳定的技术追踪、稳定运维能力。\n预解决的核心问题\n1. 模型管理问题\n多模型统一管理\n：通过工厂模式统一管理不同的LLM模型实例\n动态模型注册\n：基于注解自动发现和注册模型服务\n模型生命周期管理\n：统一的模型初始化、调用和销毁流程\n2. 调用方式问题\n同步调用支持\n：提供实时响应的同步调用接口\n异步流式调用\n：支持流式输出的异步调用模式\n消息驱动处理\n：基于\nMetaQ\n实现异步消息处理\n3. 扩展性问题\n插件化架构\n：新模型只需继承基类并添加注解即可接入\n统一接口标准\n：所有模型遵循相同的调用协议和数据格式\nAgent统一管理技术流程\nAgent 测试模型请求入口\n模型注册\n模型同步调用\n模型异步调用\n1. IdealLabLLMAbstractBase\n(抽象基类)\n职责\n：\n定义统一的模型调用接口\n提供通用的API调用方法\n规范子类必须实现的抽象方法\n2. AgentFactory\n(工厂类)\n职责\n：\n管理所有LLM模型实例\n基于Spring Bean后处理器自动注册模型\n提供模型实例获取接口\n核心功能\n：\n包路径过滤：只扫描指定包下的模型\n注解驱动：基于@AgentParser注解自动注册\n实例管理：维护\nappCode\n到模型实例的映射\n3. IdeaLabLLMConsumer\n(消息消费者)\n职责\n：\n监听\nIdealLab\n平台的异步消息\n分发消息到对应的模型处理器\n处理模型执行开始/完成事件\n消息类型\n：\nidealab_ideas_finish_tag\n: 模型执行完成\nanswer\n: 模型回答消息\nstart\n: 模型开始执行\n4. AgentParser\n(注解)\n职责\n：\n标记LLM模型实现类\n提供模型元数据信息\n支持工厂自动发现和注册\nAgent动态扩展机制\n新模型接入步骤\n：\n继承\nIdealLabLLMAbstractBase\n添加\n@AgentParser\n注解配置\n实现抽象方法\n放置在指定包路径下 (\ncom.alibaba.bqc.llm\n或\ncom.app.auto.llm\n)\n示例\n：\n@AgentParser\n(appCode =\n\"text-generator\"\n,\nname =\n\"文本生成模型\"\n,\ndescription =\n\"用于生成创意文本内容\"\n)\n@Component\npublic\nclass\nTextGeneratorLLM\nextends\nIdealLabLLMAbstractBase\n{\n@Override\npublic\nvoid\nfinishHandler\n(\nIdeaLabMessage\nmessage\n) {\n// 处理完成回调\nlog.\ninfo\n(\n\"Model execution finished: {}\"\n, message.\ngetSessionId\n());\n}\n@Override\npublic\nvoid\nstartHandler\n(\nIdeaLabMessage\nmessage\n) {\n// 处理开始回调\nlog.\ninfo\n(\n\"Model execution started: {}\"\n, message.\ngetSessionId\n());\n}\n@Override\npublic\nvoid\ncallback\n(\nObject\n[] args) throws\nException\n{\n// 异步回写逻辑\n}\n@Override\npublic\nIdealabRunIdeasRequest\nbuildRequest\n(\nObject\n[] args\n) {\n// 构建请求参数\nIdealabRunIdeasRequest\nrequest =\nnew\nIdealabRunIdeasRequest\n();\nrequest.\nsetAppCode\n(\ngetAppCode\n());\nrequest.\nsetQuestion\n((\nString\n) args[\n0\n]);\nreturn\nrequest;\n}\n@Override\npublic\nCompletionRequest\nbuildCompletionRequest\n(\nObject\n[] args\n) {\n// 构建OpenAI兼容请求\nreturn\nnew\nCompletionRequest\n();\n}\n}\nAgent执行容错机制\n异常隔离\n：单个模型异常不影响其他模型\n消息重试\n：\nMetaQ\n消息处理失败自动重试\n降级处理\n：API调用失败时返回错误信息\n日志监控\n：完整的调用链路日志记录\n结果\n▐\nLLM大模型、测试Agent应用后质量提升点\n▐\n业务上成果与收货\n会场智能测试平台实现从“人工测试”到“AI驱动智能测试判定”：构建覆盖全链路、贯穿全流程的智能化质量守护体系；在大促\n会场巡检中提高100%人效。\n质量上：问题发现率↑82%，线上风险↓。\n边界上：从“工具为主人工为辅”走向“AI驱动智能测试判定”。\n效率上：会场测试整体提效40%，人力成本降低。（会场需求测试线上支持辅助回归验证）。\n总结与规划\n当前不足\n1. 自动化深度不足\n问题暴露后仍依赖人工确认与复现\n2. 兜底验证能力有待补充\n页面渲染异常（如闪烁）识别准确率需提升\nTab切换等动态交互体验检测能力不完善\n3. 功能覆盖不够全面\n巡检范围需进一步扩展（如复杂交互、个性化推荐）\n快照能力、诊断时效性、多端一致性校验待增强\n4. 定投策略验证能力不足\n缺少对「用户分群定向展示」的自动化校验手段\n无法自动识别“应展示未展示”或“非目标人群误展”问题\n需支持基于标签（如会员等级、地域、设备）的模拟请求与结果比对\n5. 功能或产品能力可以更加的产品化一些，让需要的开发产品运营也能方便的使用\n用户反馈闭环缺失：期望增加对用户问题通知、跟进机制\n后续规划\n在上述不足之处建设并改进。\nLLM、多模态、Agent在会场领域测试专项中落地通过串联复杂工具，多模态判断起到一定效果，但实际需求测试环节中需求理解、数据构造、测试用例识别（测试内容选择）上更多靠人工辅助判断。预期将智能体Agent在会场领域落地朝向“需求意图Agent识别”、“测试数据AI构造”、“测试用例AI选择”方向探索。\n在AIGC技术爆发、市场剧烈波动、技术栈快速迭代、模型架构多样化的行业背景下，我们在会场AI模型的业务会场测试中进行了一些探索。实践是检验真理的唯一标准，期待与各位专家学者深度交流，共同推动营销导购智能测试的演进。欢迎批评指正。\n团队介绍\n本文作者沈芃，来自淘天集团-营销质量团队。一支深耕淘天营销域的技术质量团队，保障价格模型、营销工具、营销运营等电商核心链路稳定，全面守护业务质量与用户体验。我们以AI为核心驱动力，深度运用Agent评测、优化等前沿技术，构建智能化质量保障体系，致力于为数亿消费者提供精准无误的优惠计算、清晰直观的权益表达及极致顺滑的活动体验。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.45,
+        "direct_local": 0,
+        "transfer_agent": 0.48,
+        "peripheral": 0.01,
+        "transfer_business": 0.06
+      }
+    },
+    "relevance": {
+      "score": 1.87,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.09,
+        "2": 0.87,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.47,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.08,
+        "2": 0.1,
+        "3": 0.51,
+        "4": 0.16,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.33,
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.04,
+        "2": 0.07,
+        "3": 0.23,
+        "4": 0.09,
+        "5": 0.02
+      }
+    },
+    "evidence": {
+      "score": 2.7,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.49,
+        "3": 0.32,
+        "4": 0.19,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.29,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.03,
+        "2": 0.08,
+        "3": 0.22,
+        "4": 0.59,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.93,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.27,
+        "3": 0.5,
+        "4": 0.22,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5823,
+    "outputTokens": 172,
+    "totalTokens": 5995
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.35,
+        "relevance": 0.89,
+        "grounding": 0.43,
+        "decision_action": 0.12,
+        "evidence": 0.53,
+        "actionability": 0.5,
+        "anti_hype": 0.66
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179896016,
+                "endTime": 1791179896261,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000244566",
+      "marketCost": "0.000244566",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000244566",
+      "inferenceCost": "0.000244566",
+      "inputInferenceCost": "0.000244566",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8D598GG0YWNYZEMN67X7"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:16 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::4lzxd-1791179895959-83d89c27178d"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.45,
+            "direct_local": 0,
+            "transfer_agent": 0.48,
+            "peripheral": 0.01,
+            "transfer_business": 0.06
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.87,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.09,
+            "2": 0.87,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.47,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.08,
+            "2": 0.1,
+            "3": 0.51,
+            "4": 0.16,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.33,
+          "probabilities": {
+            "0": 0.55,
+            "1": 0.04,
+            "2": 0.07,
+            "3": 0.23,
+            "4": 0.09,
+            "5": 0.02
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.7,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.49,
+            "3": 0.32,
+            "4": 0.19,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.29,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.03,
+            "2": 0.08,
+            "3": 0.22,
+            "4": 0.59,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.93,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.27,
+            "3": 0.5,
+            "4": 0.22,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5823,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.35,
+            "relevance": 0.89,
+            "grounding": 0.43,
+            "decision_action": 0.12,
+            "evidence": 0.53,
+            "actionability": 0.5,
+            "anti_hype": 0.66
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179896016,
+                    "endTime": 1791179896261,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000244566",
+          "marketCost": "0.000244566",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000244566",
+          "inferenceCost": "0.000244566",
+          "inputInferenceCost": "0.000244566",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8D598GG0YWNYZEMN67X7"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:15.489Z"
+  }
+}

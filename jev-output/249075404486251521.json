@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "249075404486251521",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "上新！阿里云Coding Plan支持千问3.5、GLM-4.7、Kimi-K2.5等模型",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558445&idx=1&sn=9ad45971cfa80fa50a107452a2da68f1",
+      "date": "2026-02-22T09:50:00.306Z",
+      "chars": 395,
+      "text": "2026-02-22 17:50\n黑龙江\n刚刚，阿里云Coding Plan订阅服务上新Qwen 3.5-Plus、GLM-4.7、Kimi-K2.5等编程模型，用户订阅后即可自由切换模型。\n即日起，新用户首月首购享两折优惠，18000次请求额度仅需7.9元，90000次请求仅需39.9元。\n阿里云Coding Plan订阅服务共有Lite基础版和Pro高级版两个套餐。\n其中，Lite基础套餐可享受每月最多18000次请求，新用户购买首月仅需7.9元；Pro高级套餐可享受每月90000次请求，可完成数千次复杂任务，新用户首月仅需39.9元，极大地降低高频次编码需求场景的成本。\n用户可在Qwen Code、Claude Code、Cline、OpenClaw等主流AI工具使用阿里云Coding Plan订阅服务。\n/ END /\n点击\n阅读原文\n，立即体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.18,
+        "transfer_agent": 0,
+        "peripheral": 0.82,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 0.63,
+      "probabilities": {
+        "0": 0.42,
+        "1": 0.53,
+        "2": 0.05,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.08,
+      "probabilities": {
+        "0": 0.93,
+        "1": 0.07,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.03,
+      "probabilities": {
+        "0": 0.97,
+        "1": 0.03,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.92,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.92,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 0.09,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.04,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.01,
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.65,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 2172,
+    "outputTokens": 174,
+    "totalTokens": 2346
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.77,
+        "relevance": 0.69,
+        "grounding": 0.95,
+        "decision_action": 0.98,
+        "evidence": 0.95,
+        "actionability": 0.94,
+        "anti_hype": 1
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179857826,
+                "endTime": 1791179857991,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000091224",
+      "marketCost": "0.000091224",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000091224",
+      "inferenceCost": "0.000091224",
+      "inputInferenceCost": "0.000091224",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A77WDHPX0VCR8WYNYXDKQ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:37 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::zjjd2-1791179857800-bc96356b2690"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.18,
+            "transfer_agent": 0,
+            "peripheral": 0.82,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.63,
+          "probabilities": {
+            "0": 0.42,
+            "1": 0.53,
+            "2": 0.05,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.08,
+          "probabilities": {
+            "0": 0.93,
+            "1": 0.07,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.03,
+          "probabilities": {
+            "0": 0.97,
+            "1": 0.03,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.92,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.92,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 0.09,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.04,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.01,
+          "probabilities": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.65
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 2172,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.77,
+            "relevance": 0.69,
+            "grounding": 0.95,
+            "decision_action": 0.98,
+            "evidence": 0.95,
+            "actionability": 0.94,
+            "anti_hype": 1
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179857826,
+                    "endTime": 1791179857991,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000091224",
+          "marketCost": "0.000091224",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000091224",
+          "inferenceCost": "0.000091224",
+          "inputInferenceCost": "0.000091224",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A77WDHPX0VCR8WYNYXDKQ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:37.218Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1177536629531713536",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "火种&起源：一个运营从0到1搭建CI自动化流水线的实战记录",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561273&idx=1&sn=83a787fddc51bbd9a0b2b268a9f3f00d",
+      "date": "2026-06-29T00:30:00.705Z",
+      "chars": 8255,
+      "text": "原创\n邱悦\n2026-06-29 08:30\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n摘要\n作为一名高德打车的区域运营同学，和常规运营同学一样，日常工作中需要大量时间和精力在盯数据、写日报、做分析上。半年前，我对\"CI/CD\"这个词一无所知，甚至不理解代码库、git存在的意义——认为那些都是开发同学才需要懂的东西。\n但现在，我独立搭建了一套完整的日报自动化流水线：每天定时从ODPS取数、用Qwen大模型生成日报解读、自动推送钉钉群、自动部署到在线站点。整个流程无需人工干预，从数据到阅读只需要10分钟。\n这篇文章不是技术科普，而是一个运营视角的\n真实实战记录\n——我是怎么从零开始，一步步踩坑、一步步用AI解决技术问题，最终把整套系统跑起来的。\n一、背景：为什么运营要搞CI\n1.1 日报的痛点\n运营团队应该都需要有这样一份日报，要覆盖前一天的目标达成、大盘数据、商户异动、城市峰值、分时应答情况等诸多模块。以前这份日报的制作流程是这样的：\n打开ODPS进行SQL取数\n把数据复制到Excel里整理\n手动写分析解读\n排版成文档，发到钉钉群\n如果要留档，还得手动上传到某个地方\n每天至少花1小时\n，而且依赖人工读数和业务经验，分析质量高度依赖处理人的经验和细心程度。\n1.2 团队AI化的契机\n2026年初，我们团队开始全面推进AI工具落地。Qwen Code、提示词工程、自动化流程……大家都在探索怎么用AI把重复性工作自动化。\n我的leader提出了一个想法：\n日报能不能自动化？\n每天的数据结构是固定的，分析框架是固定的，唯一变化的是数字本身——这不就是最适合自动化的场景吗？\n1.3 为什么选Aone CI\n说实话，一开始我根本不知道用什么工具。我尝试过几个方案：\n方案\n优点\n缺点\n本地Python脚本\n简单直接\n每天要手动跑，电脑关了就无法运行\n定时任务（crontab）\n能定时\n依赖某台机器，不透明\nAone CI流水线\n云端运行、有日志、能定时触发\nYAML语法，零基础有学习成本\n最终选Aone CI的原因很简单：\n我们的代码仓库就在Aone上，CI是现成的能力，不用额外搭环境。\n而且团队里已经有同学在用CI做静态站点托管，有现成的经验可以参考。\n二、第一次接触CI：从静态站点开始\n2.1 第一个任务：让HTML能被在线访问\n我的CI之旅不是从日报开始的，而是从一个更简单的需求开始——\n把HTML文件放到在线站点上\n。\n在Aone代码库里有一个静态站点（Aone Pages），可以把HTML文件托管成在线页面。团队里其他同学已经搭好了这个站点，我需要做的是：把我生成的HTML文件推送到仓库的\npublic/\n目录下，它就能自动部署到在线地址。\n听起来很简单对吧？但实际操作起来，坑一个接一个。\n2.2 第一个坑：实战中理解代码库的分支隔离\n我在master分支的\npublic/\n文件夹里放了一个HTML文件，然后发现——\n我自己的分支能看到这个文件夹，但其他同学的分支看不到\n。\n我当时很困惑：明明在master里建了文件夹，为什么别人的分支没有？\n后来问了AI才知道，这是Git分支隔离的正常现象。每个分支是独立的，\npublic/\n文件夹只存在于创建或合并了它的那些分支上。要让别人的分支也有，需要每个人自己执行一次\ngit pull origin master\n。\n2.3 第二个坑：master是保护分支\n更头疼的问题来了。我们仓库的master分支是\n受保护分支\n，不能直接push。每次往\npublic/\n目录合入新的HTML文件，都需要提MR（Merge Request）审核。\n这意味着：\n每次上传HTML → 提MR → 等审核 → 合入master → 手动更新README（生成新的访问链接）\n流程繁琐，效率很低\n2.4 用CI解决：自动更新README\n如果能配置一条流水线，在每次push HTML文件后自动生成README索引并推送回去，不就不用手动更新了吗？\n这是我第一次真正动手配置CI流水线。\n整个过程是在AI的辅助下一步步完成的，大致分为以下几步：\n第一步：申请PAT（个人访问令牌）\nCI容器里要往仓库push代码，需要一个\"通行证\"——PAT（Personal Access Token）。CI自带的Token是只读的，不能push。\n操作路径：打开 code.alibaba-inc.com → 右上角头像 → 设置 → Private Token → 重置并复制。\n第二步：配置Secrets\nPAT不能明文写在YAML里（会泄露到日志中），需要通过仓库的\n变量管理\n配置为Secrets类型。\n类型\n引用语法\n适用场景\nSecrets\n${{ secrets.X }}\n敏感信息（Token、密码、API Key）\nVariables\n${{vars.X}}\n非敏感配置（项目名、端点地址）\n千万别混用\n——用secrets语法引用Variables类型的变量，值会是空字符串。\n第三步：写YAML流水线\n这是我写的第一条YAML流水线（\n.aoneci/update-readme.yaml\n），核心逻辑是：\n检测本次push是否涉及\npublic/*.html\n文件变更\n如果有，执行\nscripts/update-readme.sh\n脚本重新生成README\n用PAT把更新后的README推回当前分支\n写YAML的过程充满了挫折感——语法错误不会报错，只是流水线不触发。比如\ntrigger\n要写成\ntriggers\n（复数），\nrun: |\n要写成数组格式，\ncheckout\n要写成\n- uses: checkout\n而不是\n- checkout\n。这些调试过程全部依赖AI读取运行日志，一步一步和AI共创问题的解决方案。在这个过程中，我深刻体会到网上那个梗——\"我和AI对话的时候，就像绝望的李鸿章，不管他端上来什么，只能无能地点【接受并运行】\"......\n由此我总结出一个经验：不要从零写YAML，先复制仓库里已经跑通的流水线，再改。\n2.5 跑通的那一刻\n当我第一次看到流水线执行成功、README被自动推回分支的时候，那种成就感是真实的。\n[\nINFO\n] 当前分支: qioyue_370902\n[\nINFO\n] Token 长度:\n20\n[\nINFO\n] 检测到 HTML 变更:\npublic\n/test_ci.html\n[\nINFO\n] 推送到 origin/qioyue_370902（用户: judy.qy）\n[\nOK\n] README 已自动推回 qioyue_370902\n虽然只是一个简单的README自动更新，但它让我理解了CI的基本工作原理：\n触发条件 → 执行步骤 → 产出结果\n。这为后面搭建日报流水线打下了基础。\n三、搭建日报自动化流水线\n3.1 整体架构设计\n有了CI的基础认知后，我开始设计日报自动化流水线。整体思路是：\n定时触发 → 取数 → 生成日报 → 转\nHTML\n→ 推钉钉 → 推仓库 → 自动部署\n具体来说，分为7个步骤：\n步骤\n动作\n工具/技术\n1\nFBI数据抓取\nDataClaw API\n2\nODPS SQL执行\nMaxCompute（5个模块各配专属SQL）\n3\nAI生成日报\nQwen大模型（自然语言总结）\n4\nMarkdown转HTML\nPython脚本\n5\n推送钉钉\nWebhook + 加签\n6\nHTML留档\ngit push到个人分支的public/目录\n7\n自动部署\n触发deploy-pages流水线\n3.2 变量配置：一次配好，全仓库共享\n日报流水线需要很多配置：ODPS的AccessKey、Qwen的API Key、钉钉Webhook地址等等。\n好消息是：\n代码库的变量配置是仓库级别共享的\n。\n只要在Aone CI的变量管理中配置一次，同仓库的所有YAML流水线都可以通过相同语法调用。\n我配置的变量包括：\n变量名\n类型\n用途\nODPS_ACCESS_ID\nSecret\nMaxCompute AccessKey ID\nODPS_ACCESS_KEY\nSecret\nMaxCompute AccessKey Secret\nDASHSCOPE_API_KEY\nSecret\nQwen大模型API Key\nDINGTALK_WEBHOOK\nSecret\n钉钉机器人Webhook URL\nGIT_PUSH_TOKEN\nSecret\nPAT（用于HTML推送回仓库）\nODPS_PROJECT\nVariable\nODPS项目名\n这里有一个值得分享的经验：\nODPS权限建议用团队公共账号\n。申请一个公共AccessKey，授权所需的数据表，然后统一配置到仓库Secrets中。这样：\n避免个人AK泄露风险\n人员变动无需更换凭证\n新人上手零配置\n3.3 两条流水线的分离设计\n最终我搭建了两条独立的流水线：\n流水线一：daily-report-auto（日报生成）\n镜像：\npython:3.11\n触发：工作日10:30定时 + 个人分支push\n职责：取数 → 生成日报 → 推钉钉 → 推HTML到public/\n流水线二：deploy-pages（站点部署）\n镜像：\nalios-8u\n（自带jq + git）\n触发：push到public/时实时触发 + 每天17:00定时兜底\n职责：合并所有分支的public/内容 → 部署到生产站点\n为什么要拆成两条？因为Aone CI的\nuses:\n组件运行在隔离容器中，python:3.11镜像缺少deploy-pages需要的jq工具，而且无法在流水线中补装。所以把\"生成\"和\"发布\"拆开，各用各的镜像，互不干扰。\n四、并发问题：多人协作的终极挑战\n日报流水线跑通后，我以为大功告成了。但很快遇到了一个更棘手的问题——\n多人协作时HTML互相覆盖\n。\n4.1 问题是怎么发生的\n我们团队只有一个Aone Pages静态站点，\ndeploy-pages\n每次部署是\n全量替换\n（不是增量追加）。\n场景还原：\n我在个人分支生成了日报HTML → 推到\npublic/daily-report/\n→ 触发部署 → 站点上有了日报 ✅\n其他同学往master分支合入了一个活动页面 → 触发master的deploy-pages → 用master的\npublic/\n全量替换站点\n我的日报消失了 ❌（因为master的\npublic/\n里没有我的\ndaily-report/\n）\n核心矛盾：所有人都在各自分支生成HTML，但站点只有一份，每次部署都是全量替换。\n4.2 解决方案：每次部署前合并所有分支\n思路很明确：\n每次部署前，先把所有远程分支的\n**public/**\n内容合并到一起，再部署完整集合。\n具体实现是在\ndeploy-pages.yaml\n的部署步骤前加一个\"合并\"环节：\n# 动态发现所有远程分支\ngit fetch origin --depth=1\nALL_BRANCHES=$(git branch -r | grep -v\n'HEAD'\n| sed\n's|origin/||'\n|\ntr\n-d\n' '\n)\n# 逐一拉取每个分支的public/内容\nfor\nbranch\nin\n$ALL_BRANCHES\n;\ndo\ngit fetch origin\n$branch\n--depth=12>/dev/null ||\ntrue\ngit checkout origin/\n$branch\n-- public/ 2>/dev/null ||\ntrue\ndone\n# 当前触发分支的内容最后覆盖（保证最新变更优先）\ngit checkout HEAD -- public/ 2>/dev/null ||\ntrue\n这样无论谁触发部署，所有人的HTML都会先合并进来，再一起部署。\n4.3 为什么每个分支都要有deploy-pages.yaml\nAone CI读取的是\n被推送分支上的YAML\n。如果你的分支上没有\ndeploy-pages.yaml\n，你推\npublic/\n时不会触发任何部署。\n好消息是：\n所有分支的YAML内容完全一样，不用各自定制\n。\n如果你是从master新建的分支，这个文件已经自动继承了。\n4.4 防护机制\n我设计了几层防护，确保系统健壮：\n异常场景\n防护措施\n新分支没放yaml\n不会触发部署，不会覆盖别人（无害）\n新分支放了正确yaml\n自动合并所有分支内容后部署（安全）\n新分支放了错误yaml\n下次正确分支部署时自动恢复\n站点被意外覆盖\n每天17:00定时部署自动恢复完整内容\n17:00的定时任务是一个兜底机制\n，应对极端情况。正常情况下，每次push触发的实时部署就已经包含了所有分支的内容。\n4.5 为什么不用[skip ci]防循环\n最初我想用\n[skip ci]\n标记来防止部署流水线重复触发，但后来发现\n[skip ci]\n会\n杀死所有流水线\n（包括日报生成流水线）。\n更好的方案是用\npaths\n过滤：只在\npublic/**\n有变更时才触发deploy-pages。这样不该跑的流水线不会被误杀。\n五、经验总结与可复用模板\n5.1 新人接入最容易踩的坑（实战总结）\n以下是搭建CI流水线过程中真实踩过的坑，涵盖语法陷阱、环境隔离和平台机制差异，按配置流程顺序排列：\n#\n坑点\n现象\n根因\n正确做法\n1\nYAML触发器关键字写错\npush后流水线列表无新任务\n必须写\ntriggers:\n（复数），写成\ntrigger:\n不报错但不生效\ntriggers:\n固定复数，下面嵌套\npush:\n/\ns\nch\nedule:\n2\nSecrets/Variables语法混用\n环境变量为空，脚本报\"key not found\"\n两种类型引用语法不同，混用取空\nSecrets用\n${{ secrets.X }}\n，Variables用\n${{ vars.X }}\n；Variables需在YAML中显式export\n3\ngit push报403\nfatal: The requested URL returned error: 403\n阿里内网不支持\noauth2:TOKEN\n格式\n必须用\nhttps://用户名:PAT@code.alibaba-inc.com/repo.git\\\n格式\n4\nuses:组件看不到前面装的工具\napt install jq\n成功但\nuses: deploy-pages\n报 \"jq: command not found\"\nuses:\n运行在\n完全隔离的容器\n，不继承run步骤的环境\n拆成两条流水线，各用各的镜像\n5\n$CI_COMMIT_BRANCH不存在\nfatal: invalid refspec 'HEAD:'\nAone CI没有此内置变量（不是GitLab CI）\n用\ngit rev-parse --abbrev-ref HEAD\n动态获取分支名\n6\n定时任务写在个人分支不触发\ncron配了但到点无反应\nschedule调度器\n只从master分支读取\n配置\nYAML必须push到master；job内\ngit fetch + checkout\n切个人分支执行\n7\ncron时间差8小时\n想10:30触发，凌晨2:30跑了\nAone CI cron按\n北京时间CST\n解释，不是UTC\n直接写北京时间，如\n\"30 10 * * 1-5\"\n8\n[skip ci]杀全局\n循环解决了但日报流水线也不跑了\n[skip ci]\n全局生效，所有流水线都不触发\n用\npaths\n过滤精确控制触发范围，如\ndaily-report/**\n/\npublic/**\n9\n手动重跑用旧配置\n改了YAML但重跑还是旧逻辑\n重跑加载的是\n所选commit对应的YAML\n改完YAML先push新commit（不含[skip ci]），再触发新commit\n10\nrun:多行语法报错\nYAML解析通过但执行报语法错误\nAone CI的\nrun:\n要求\n数组格式\n写成\nrun:\n下接\n- |\n数组元素，不能用\nrun: |\n总结心法： 遇到CI问题别自己死磕。把完整的报错日志复制给AI，让它帮你分析定位。配置CI的效率不取决于你记住了多少语法，而是你能不能快速定位问题。\n5.2 调试CI的正确姿势\n善用\n调试三板斧\n：查官方手册 → 对比已跑通的YAML → 加诊断输出。\n遇到报错不要慌，把完整的日志信息复制给AI，让它帮你分析\n。\n这是我整个CI搭建过程中最高效的调试方式。\n5.3 关键设计决策回顾\n决策\n为什么这么做\n全部部署在个人分支\nmaster有保护，无法直接push；个人分支无限制，PAT即可跑全流程\n用独立流水线做部署\n日报流水线的环境缺少发布所需的工具且无法补装，拆开后互不干扰\n用paths而不是[skip ci]防循环\n[skip ci]会杀死所有流水线；paths只拦不该跑的\n用团队公共ODPS账号\n避免个人AK泄露风险，人员变动无需换凭证，新人零配置\nSQL取数+AI总结\n数据准确性由SQL保证（0幻觉），AI只负责自然语言解读\n5.4 关键代码文件清单\n如果你也想搭建类似的日报自动化流水线，以下是你需要关注的文件：\n文件\n职责\n.aoneci/daily-report-auto.yaml\n主流水线：触发器 + 环境变量注入 + 日报生成全流程\n.aoneci/deploy-pages.yaml\n部署流水线：push public/实时触发 + 定时兜底\ndaily-report/config.py\n统一配置：路径、URL、开关、仓库信息\ndaily-report/generator.py\nODPS SQL执行 + Qwen prompt组装 + Markdown生成\ndaily-report/md&amp;amp;amp;#95;to&amp;amp;amp;#95;html.py\nMarkdown → 自包含HTML转换\ndaily-report/notifier.py\n钉钉Webhook推送（加签 + 精简格式）\ndaily-report/publish&amp;amp;amp;#95;html.py\nHTML推送到public/ + 触发Pages部署\ndaily-report/sql/\n各模块专属SQL文件\ndaily-report/prompts/\n各模块Qwen prompt模板\n写在最后\n回头看这半年的经历，从一个连YAML是什么都不知道的运营，到能独立搭建和维护CI自动化流水线，最大的感触是：\nAI不会替代运营，但会用AI的运营会替代不会用的。\n搭建CI的过程中，我遇到的每一个技术问题——YAML语法、Git认证、ODPS权限、多分支并发——都是在AI的辅助下解决的。我不需要记住每一个技术细节，我只需要知道\n我要实现什么效果\n，然后把报错信息告诉AI，让它帮我找到解决方案。\n当然，有些东西是需要自己理解的：\n业务逻辑\n：\n哪些数据重要、怎么分析、怎么呈现——这是运营的核心能力\n系统设计\n：为什么要拆两条流水线、为什么要合并分支——这些决策需要理解业务场景\n质量把控\n：AI生成的内容需要人工校验，数据准确性需要机制保障\n技术工具在变，但运营的核心价值没变：\n用数据驱动决策，用效率创造价值。\nCI只是帮我把重复性工作自动化了，让我有更多时间去做真正需要人判断的事情。\n如果你也是一个想用技术提效的运营同学，我的建议是：\n不要怕，从最简单的开始，一步步来，遇到问题就问AI，与AI协同找到解决方案。\n你会发现，那些看起来很\"技术\"的东西，其实并没有那么难。\n本文是「火种&起源」系列的一部分，记录一线运营同学在AI工具实践中的真实故事。\n千问云\n-\n为\nAgent\n而生，驱动\nAI\n生产力\n扫描下方二维码，直达千问云体验\n点击阅读原文即可体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.44,
+        "transfer_agent": 0.51,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0.04
+      }
+    },
+    "relevance": {
+      "score": 2.02,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.04,
+        "2": 0.82,
+        "3": 0.1,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.41,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.15,
+        "4": 0.72,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 2.15,
+      "probabilities": {
+        "0": 0.37,
+        "1": 0.04,
+        "2": 0.01,
+        "3": 0.2,
+        "4": 0.38,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.98,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.05,
+        "3": 0.92,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.84,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0,
+        "2": 0,
+        "3": 0.02,
+        "4": 0.85,
+        "5": 0.08
+      }
+    },
+    "anti_hype": {
+      "score": 3.68,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.23,
+        "4": 0.74,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8089,
+    "outputTokens": 172,
+    "totalTokens": 8261
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "evidence": 0.95,
+        "actionability": 0.78,
+        "anti_hype": 0.78,
+        "category": 0.38,
+        "relevance": 0.86,
+        "grounding": 0.6,
+        "decision_action": 0
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179825849,
+                "endTime": 1791179826010,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000339738",
+      "marketCost": "0.000339738",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000339738",
+      "inferenceCost": "0.000339738",
+      "inputInferenceCost": "0.000339738",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A68NBKW8H3DCYHXMTEQ1M"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:06 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::clbj2-1791179825666-6ccc33d04390"
+    },
+    "body": {
+      "answers": {
+        "evidence": {
+          "type": "score",
+          "score": 2.98,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.05,
+            "3": 0.92,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.84,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0,
+            "2": 0,
+            "3": 0.02,
+            "4": 0.85,
+            "5": 0.08
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.68,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.23,
+            "4": 0.74,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.44,
+            "transfer_agent": 0.51,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0.04
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.02,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.04,
+            "2": 0.82,
+            "3": 0.1,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.41,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.15,
+            "4": 0.72,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.15,
+          "probabilities": {
+            "0": 0.37,
+            "1": 0.04,
+            "2": 0.01,
+            "3": 0.2,
+            "4": 0.38,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8089,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "evidence": 0.95,
+            "actionability": 0.78,
+            "anti_hype": 0.78,
+            "category": 0.38,
+            "relevance": 0.86,
+            "grounding": 0.6,
+            "decision_action": 0
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179825849,
+                    "endTime": 1791179826010,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000339738",
+          "marketCost": "0.000339738",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000339738",
+          "inferenceCost": "0.000339738",
+          "inputInferenceCost": "0.000339738",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A68NBKW8H3DCYHXMTEQ1M"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:05.240Z"
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "257070055648372736",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "如何让你的 Agent 更准确：MCP 工具设计技巧",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518900&idx=1&sn=59be28fe7297a2833af1d548464a899a",
+      "date": "2026-03-18T09:03:00.886Z",
+      "chars": 6500,
+      "text": "2026-03-18 17:03\n北京\n本文作者：小夏，TRAE 技术专家\n越来越多的开发者开始为 AI Agent 开发工具，无论是通过 MCP（Model Context Protocol）、Skills 脚本、还是直接使用 OpenAI/Claude 的 function calling。但很快大家发现了一个令人困惑的现象：\n技术上实现完全正确的工具，Agent 却用不好。\n工具能跑通，schema 定义正确，API 调用成功，但是 Agent 总是选错工具，传错参数，或者在明明应该调用工具的时候却回复「我无法完成这个任务」。\n问题出在哪里？问题在于：我们用写 API 的思维在写 Agent 工具。\n当你为人类设计 API 时，你可以假设他们会阅读文档、理解上下文、在出错后调试代码，但 Agent 不一样：\n它只能通过工具的名称、描述和参数 schema 来「理解」这个工具能做什么\n它「试错」的代价很高，每次调用都消耗 token，都可能影响用户体验\n它需要在可能几十上百个工具中，瞬间做出选择\n它有一定的试错能力，但是成本高且不稳定\n这意味着，给 Agent 开发工具的真正挑战\n不是技术实现，而是设计出 Agent 能用好的工具接口，\n这也是我们在开发 TRAE 过程中一直在思考和解决的一个问题。\n核心理念：Agent 工具是 Agent 的用户界面\n这里有一个关键的思维转换：Agent 工具是 AI Agent 的用户界面（User Interface），不是已有 REST API 的封装\n传统 REST API 是为人类开发者设计的，我们假设开发者会阅读文档、理解上下文、在出错后调试代码，但 Agent 是完全不同的「用户」，它不会主动查阅文档，不擅长从上下文中推断隐含信息，每次调用都需要从头开始理解工具的用途。\n换句话说：你不是在写 API，你是在教会一个智能体如何与这个世界交互。\n这个智能体（LLM）有着独特的长处与局限性：\n它\n擅长\n理解自然语言、推理意图、组合信息\n它\n不擅长\n精确计算、记住长上下文、从模糊描述中猜测正确参数\n它\n看不到\n你的代码实现，只能看到你暴露的 schema 和描述\n它\n只具备\n有限的上下文，并且随着上下文被打满工具调用性能会明显下降\n只有理解这个智能体的特性，你才能设计出它真正能用好的工具。本文将以 MCP 为主要切入点，因为它正在成为 Agent 工具开发的主流方式，但文中的设计原则适用于所有 Agent 工具开发场景。那接下来让我们先从工具调用的工作机制开始。\nLLM Tool Calling：完整的调用链路\n要设计好 Agent 工具，首先需要理解它是如何被 Agent 调用的，这条调用链路决定了你的设计将如何被「消费」。\nLLM 原生的 Tool Calling 机制\n让我们从最底层开始：LLM 本身是如何调用工具的？\n一个关键的认知：LLM 本身不会「执行」任何函数。\n它只做一件事：生成文本，所谓的「function calling」或「tool calling」本质上是 LLM 与应用程序之间的一个多轮对话协议：\n┌─────────────┐                              ┌─────────────┐\n│             │  ① 发送请求 + 工具定义         │             │\n│             │ ─────────────────────────────▶│             │\n│             │                              │             │\n│             │  ③ 返回「工具调用请求」         │             │\n│   应用程序   │ ◀─────────────────────────────│     LLM     │\n│             │                              │             │\n│             │  ⑤ 返回工具执行结果            │             │\n│             │ ─────────────────────────────▶│             │\n│             │                              │             │\n│             │  ⑥ 生成最终回复（或继续调用）    │             │\n│             │ ◀─────────────────────────────│             │\n└──────┬──────┘                              └─────────────┘\n│\n│ ④ 执行实际的函数调用\n▼\n┌─────────────┐\n│  外部工具    │\n│ (API/DB/..) │\n└─────────────┘\n② LLM 分析用户请求，决定是否需要调用工具\n第一步：定义工具\n以 OpenAI API 为例，工具通过\ntools\n参数传递给模型。每个工具定义包含三个核心部分：\ntools\n= [\n{\n\"type\"\n:\n\"function\"\n,\n\"name\"\n:\n\"get_weather\"\n,\n# 工具名称\n\"description\"\n:\n\"获取指定城市的当前天气\"\n,\n# 工具描述 - LLM 理解工具用途的关键\n\"parameters\"\n: {\n# 参数的 JSON Schema\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"location\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"城市名称，如：深圳、北京\"\n},\n\"unit\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"enum\"\n: [\n\"celsius\"\n,\n\"fahrenheit\"\n],\n\"description\"\n:\n\"温度单位\"\n}\n},\n\"required\"\n: [\n\"location\"\n]\n}\n}\n]\n这三个部分\n：\nna\nme、description、parameters\n，就是 LLM「看到」的工具的全部信息。它看不到你的代码实现，不知道函数内部做了什么。\n第二步：LLM 决策与返回工具调用\n当用户说「深圳今天天气怎么样？」时，LLM 会分析这个请求，发现需要调用\nget_weather\n工具。但它不会执行任何代码，而是返回一个结构化的「工具调用请求」：\n{\n\"id\"\n:\n\"fc_12345xyz\"\n,\n\"type\"\n:\n\"function_call\"\n,\n\"name\"\n:\n\"get_weather\"\n,\n\"arguments\"\n:\n\"{\n\\\"\nlocation\n\\\"\n:\n\\\"\n深圳\n\\\"\n,\n\\\"\nunit\n\\\"\n:\n\\\"\ncelsius\n\\\"\n}\"\n}\n注意\narguments\n是一个 JSON 字符串，LLM 本质上只是在「生成文本」，只不过这段文本遵循了特定的结构化格式，\n存在返回非法 JSON 格式的可能。\n第三步：应用程序执行函数\n应用程序解析 LLM 返回的工具调用请求，执行实际的函数，这里以 Python 代码进行示例：\nimport json\n# 解析 LLM 返回的工具调用\ntool_call = response.output[\n0\n]\n# 获取第一个工具调用\nargs\n= json.loads(tool_call.arguments)\n# 执行实际的函数（这是你的代码，不是 LLM 执行的）\nweather_result = get_weather(\nargs\n[\n\"location\"\n],\nargs\n.\nget\n(\n\"unit\"\n,\n\"celsius\"\n))\n# 返回: {\"temperature\": 14, \"condition\": \"晴\", \"humidity\": 65}\n第四步：将结果返回给 LLM\n执行结果需要通过\nfunction_call_output\n类型的消息返回给 LLM：\n# 将工具执行结果添加到对话中\ninput_messages.append({\n\"type\"\n:\n\"function_call_output\"\n,\n\"call_id\"\n: tool_call.call_id,\n# 关联到具体的工具调用\n\"output\"\n: json.dumps(weather_result)\n})\n# 再次调用 LLM，让它基于结果生成最终回复\nfinal_response = client.responses.create(\nmodel=\n\"gpt-4\"\n,\ntools=tools,\ninput=input_messages\n)\n第五步：LLM 生成最终回复\nLLM 收到工具执行结果后，会生成用户可读的最终回复：\n\"深圳今天天气晴朗，当前气温 14°C，湿度 65%。\"\n工具定义如何被 LLM「看到」？\n这是一个容易被忽视但非常重要的细节，要理解工具设计的约束，我们需要从 LLM 实现的角度来看工具调用是如何工作的。\n1. JSON 只是中间格式，不是 LLM 真正「看到」的东西\n当你通过 API 传入 JSON 格式的工具定义时，LLM 提供商通常会将其转换为一种内部优化的格式。这是因为\nJSON 对 LLM 来说并不是一个友好的格式：\n边界模糊：\nJSON 使用\n{}\n、\n[]\n、\n\"\n等通用符号标记结构，这些符号在普通文本中也会频繁出现，容易产生歧义\n严格的语法要求：\n少一个逗号、多一个引号就会导致解析失败，而 LLM 生成文本时很容易犯这类错误\n字符串转义的噩梦：\nJSON 字符串中的引号需要转义为\n\\\n\"，反斜杠需要转义为\n\\\\\n，换行需要转义为\n\\n\n。当参数内容包含代码片段时（这在 coding agent 中极为常见），LLM 需要正确处理代码中的所有引号、反斜杠和换行符，这是一个极易出错的环节\n远距离依赖：\n嵌套结构中，匹配的括号可能相隔很远，LLM 需要「记住」开始标记才能正确闭合\n缺乏显式结束标记：\nJSON 只依赖括号匹配，没有像\n</function>\n这样语义明确的结束信号\n相比之下，许多 LLM 提供商内部使用\n类 XML 的格式\n来表示工具调用：\n<\nfunction_calls\n>\n<\ninvoke\nname\n=\n\"get_weather\"\n>\n<\nparameter\nname\n=\n\"location\"\n>\n北京\n</\nparameter\n>\n<\nparameter\nname\n=\n\"unit\"\n>\ncelsius\n</\nparameter\n>\n</\ninvoke\n>\n</\nfunction_calls\n>\n类 XML 格式的优势在于：\n明确的边界：\n开始标签\n<invoke>\n和结束标签\n</invoke>\n清晰地标记了工具调用的范围\n自描述性：\n标签名本身携带语义信息，\n<parameter name=\"location\">\n比\n\"location\":\n更不容易与内容混淆\n训练数据丰富：\nLLM 在预训练时见过大量 HTML/XML 文档，对这种格式更「熟悉」\n容错性更好：\n即使内容中包含类似符号，也不容易与结构标记产生冲突\n实际上，不同提供商采用了不同的内部格式和特殊 token。这些格式在模型训练时就被专门优化过，使模型能够更准确地识别「何时应该调用工具」以及「如何正确构造调用参数」。\n当 LLM 决定调用工具时，它实际上是在生成一系列遵循特定模式的 token。这些 token 随后被 API 层解析还原成 JSON 格式返回给开发者。这个解析过程本身存在一定的失败率，模型可能生成格式不完整或不合法的输出，导致工具调用失败。\n一些 LLM 提供商（如 OpenAI 的 Strict Mode）使用了\nConstrained Decoding\n技术来保证输出一定是合法的 JSON 结构。这种技术在解码时动态限制下一个 token 的候选集，确保生成的序列符合预定义的 schema。但这种约束并非没有代价：它可能影响生成速度，在某些边界情况下也可能影响模型的表达能力。\n2. 工具定义是 System Prompt 的一部分\n工具定义会被注入到 LLM 的 system prompt 中，占用宝贵的 context window。当你定义了 10 个工具，每个工具有详细的描述和参数 schema，这些信息都会序列化后添加到每次请求的 prompt 中，这带来两个重要影响：\n上下文占用：\n工具定义占用的 token 越多，留给实际对话内容的空间就越少。在长对话或需要处理大量代码的场景中，这个问题尤为突出。\nPrompt Caching：\n现代 LLM API 通常会缓存 system prompt 的 KV cache 来加速推理。如果你动态修改工具列表（比如根据用户状态添加或移除工具），就会导致缓存失效，每次请求都需要重新计算，显著增加延迟和成本。\n3. 为什么要用原生的 Function Calling，而不是自己定义格式？\n你可能会想：既然工具定义最终也是放在 prompt 里，我能不能自己在 system prompt 中定义一套工具调用的格式，让 LLM 按照我的格式输出？\n技术上可以，之前也有很多 Agent 实现这样做，但效果会差很多。原因在于：\nLLM 在训练过程中已经对原生的工具调用格式进行了专门的优化。\n模型见过大量使用这种格式的训练数据，对这些特殊 token 有更强的「注意力」和「遵循力」。使用原生格式，模型更容易：\n准确识别何时应该调用工具\n正确选择要调用的工具\n生成符合 schema 的参数\n相比之下，自定义格式需要模型「临时学习」你定义的规则，效果和稳定性都会打折扣。这也是为什么现在主流的 Agent 框架都直接使用各 LLM 提供商原生的 function calling 机制，而不是自己发明一套。\n4. 工具数量对模型效果的影响\n工具数量不仅影响 token 消耗，更直接影响模型的决策质量。这是一个容易被低估的问题。\nToken 消耗的具体数据\n每个 MCP 工具都带有 schema，描述它做什么以及如何使用。这些 schema 被注入到 system prompt 中。假设每个工具定义平均约 250-300 tokens：\n工具数量\n这些数字看起来不大，但有两个关键问题：\n工具定义占据「特权空间」：\nSystem prompt 是上下文中最重要的部分，直接与指令、策略和任务框架竞争位置\n每轮对话都存在：\n这些定义在每一轮对话中都会被发送，即使本轮根本不需要使用任何工具\n认知过载：模型变「笨」了\n当可用工具较少时（比如 5-10 个），模型可以较容易地「记住」每个工具的用途，做出准确的选择。但当工具数量增加到几十甚至上百个时，问题就变得复杂：\n选择困难：\n模型需要在大量相似的工具中做出选择，容易混淆或选错\n注意力稀释：\n模型对每个工具描述的「关注度」会下降，可能忽略关键细节\nPrompt 拥挤：\n大量工具定义挤占上下文空间，影响模型对用户实际请求的理解\n成本也在增加\n所有这些工具开销都要付费，更长的 prompt、更多的调用、更多的步骤都意味着更高的 API 成本， 不仅变慢了，还在为更差的结果花更多的钱。\nOpenAI 官方建议：\n尽量将工具数量控制在 20 个以内。\n这虽然是一个软",
+      "fulltext_obtained": true,
+      "chunk_index": 1,
+      "chunk_count": 8
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.27,
+        "peripheral": 0.19,
+        "transfer_agent": 0.53,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0,
+        "1": 0.13,
+        "2": 0.87,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.46,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.37,
+        "2": 0.44,
+        "3": 0.06,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.93,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.07,
+        "2": 0.42,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.03,
+      "probabilities": {
+        "0": 0,
+        "1": 0.08,
+        "2": 0.81,
+        "3": 0.11,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.92,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.28,
+        "3": 0.39,
+        "4": 0.28,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.83,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.04,
+        "2": 0.12,
+        "3": 0.79,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.8,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6709,
+    "outputTokens": 172,
+    "totalTokens": 6881
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.57,
+        "anti_hype": 0.83,
+        "category": 0.4,
+        "decision_action": 0.38,
+        "evidence": 0.87,
+        "grounding": 0.53,
+        "relevance": 0.9
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "digitalocean",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180427812,
+                "endTime": 1791180428067,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000281778",
+      "marketCost": "0.000281778",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000281778",
+      "inferenceCost": "0.000281778",
+      "inputInferenceCost": "0.000281778",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARMG6NWXYV4VW3JVNM2NX"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:08 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::tg928-1791180427757-e3a58ca040a1"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 2.92,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.28,
+            "3": 0.39,
+            "4": 0.28,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.83,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.04,
+            "2": 0.12,
+            "3": 0.79,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.27,
+            "peripheral": 0.19,
+            "transfer_agent": 0.53,
+            "transfer_business": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.93,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.07,
+            "2": 0.42,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.03,
+          "probabilities": {
+            "0": 0,
+            "1": 0.08,
+            "2": 0.81,
+            "3": 0.11,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.8
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.46,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.37,
+            "2": 0.44,
+            "3": 0.06,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0,
+            "1": 0.13,
+            "2": 0.87,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6709,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.57,
+            "anti_hype": 0.83,
+            "category": 0.4,
+            "decision_action": 0.38,
+            "evidence": 0.87,
+            "grounding": 0.53,
+            "relevance": 0.9
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "digitalocean",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180427812,
+                    "endTime": 1791180428067,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000281778",
+          "marketCost": "0.000281778",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000281778",
+          "inferenceCost": "0.000281778",
+          "inputInferenceCost": "0.000281778",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARMG6NWXYV4VW3JVNM2NX"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:07.297Z"
+  }
+}

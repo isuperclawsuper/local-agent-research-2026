@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1149981053197221888",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "设计模式已死？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695865&idx=1&sn=d300189a3247bb4da82e03c2c1d9e772",
+      "date": "2026-06-10T00:45:00.729Z",
+      "chars": 17033,
+      "text": "原创\n王顺驰\n2026-06-10 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n软件开发进入 AI 时代以后，自动生成、自动补全、自动重构成了一种新潮。年轻程序员们开始学习如何拆分任务，审查 AI 输出，管理上下文，多 Agent 并行；面试也从古法编程的刷题，变成了“如何让 AI 稳定生成可维护代码？”\n于是有老师傅哀叹，设计模式已死。可新人们却无动于衷，因为他们现在关心的是 Harness。可真当你去深入研究多 Agent 系统时，你会发现，AI 自发地演化出了一套类似设计模式的结构，就连 Harness 本身也跟设计模式有莫大的关联性。\n当AI系统拥有足够复杂的任务和自治能力时，它最终会收敛到与人类工程设计相同的底层抽象，某些组织方式，会不可避免地再次出现。这或许对当下的 AI FOMO 焦虑有一种神奇的治愈作用，不管编程范式如何变化，经典始终是经典。\n所以，咱们今天试着沉下心来，抛开 AI 的浮躁，重新去回顾一下，设计模式的经典吧！\n01\n单例模式（Singleton Pattern）\n单例模式是一种创建型设计模式，它限制了实例化类的对象个数，确保在任何情况下，一个类只有一个实例，并且提供一个全局访问点。这种模式在需要全局状态控制或共享资源访问时非常有用。\n特点：\n只有一个实例对象。\n必须自行创建实例对象。\n必须提供一个访问该实例的全局访问点。\n优点：\n确保在应用中，资源或状态的全局唯一性。\n减少系统资源消耗，提高系统效率。\n缺点：\n反模块化，因为单例对象需要被多个客户端引用，这违反了高内聚低耦合的设计原则。\n难以测试，因为单例对象的生命周期与应用相同，这使得在单元测试中进行隔离测试变得困难。\n应用场景：\n配置管理器：\n在应用程序中，配置信息通常只需要一个实例来管理，这样可以保证配置信息的一致性。\n连接池：\n数据库连接池需要限制数据库连接的数量，以避免过多的连接消耗资源。\n日志记录器：\n日志系统通常只需要一个实例来记录应用程序的日志信息，以避免日志信息的冗余和混乱。\n硬件管理器：\n对于某些硬件设备，如打印机或扫描仪，可能只需要一个管理器来控制对它们的访问。\n应用状态管理：\n在某些应用中，需要全局的状态管理，如用户会话管理或权限验证状态。\n// 定义一个结构体Singleton，用于存储单例的实例数据\ntype\nsingleton\nstruct\n{\nvalue\nstring\n// 这里可以存储单例对象的任何数据\n}\n// 定义一个全局变量instance，用于存储单例的实例\nvar\ninstance *singleton\n// getInstance函数用于获取单例的实例\n// 如果instance为nil，则创建一个新的singleton实例\n// 否则，返回已存在的实例\nfunc\ngetInstance\n()\n*singleton {\nif\ninstance ==\nnil\n{\ninstance = &singleton{value:\n\"unique instance\"\n}\n// 这里初始化singleton实例\n}\nreturn\ninstance\n// 返回单例的实例\n}\nfunc\nmain\n()\n{\n// 获取单例的实例\nsingletonInstance := getInstance()\nfmt.Println(singletonInstance.value)\n// 输出: unique instance\n// 再次获取单例的实例，将返回相同的实例\nanotherInstance := getInstance()\nif\nsingletonInstance == anotherInstance {\nfmt.Println(\n\"Both instances are the same\"\n)\n// 输出: Both instances are the same\n}\n}\n在并发环境下如果没有适当的同步机制，多个 goroutine 可能会同时检测到\ninstance\n为\nnil\n并尝试创建新的实例，从而导致创建多个实例。为了解决这个问题，可以使用\nsync.Once\n，它确保在并发环境中只执行一次初始化操作。\n// 定义一个结构体Singleton，用于存储单例的实例数据\ntype\nsingleton\nstruct\n{\nvalue\nstring\n// 这里可以存储单例对象的任何数据\n}\n// 定义一个Once对象，用于确保初始化操作只执行一次\nvar\nonce sync.Once\n// 定义一个全局变量instance，用于存储单例的实例\nvar\ninstance *singleton\n// 初始化函数，由Once.Do调用\nfunc\ninitSingleton\n()\n{\ninstance = &singleton{value:\n\"unique instance\"\n}\n// 这里初始化singleton实例\n}\n// getInstance函数用于获取单例的实例\nfunc\ngetInstance\n()\n*singleton {\n// 执行initSingleton，确保instance只被初始化一次\nonce.Do(initSingleton)\nreturn\ninstance\n// 返回单例的实例\n}\nfunc\nmain\n()\n{\n// 获取单例的实例\nsingletonInstance := getInstance()\nfmt.Println(singletonInstance.value)\n// 输出: unique instance\n// 再次获取单例的实例，将返回相同的实例\nanotherInstance := getInstance()\nif\nsingletonInstance == anotherInstance {\nfmt.Println(\n\"Both instances are the same\"\n)\n// 输出: Both instances are the same\n}\n// 测试并发环境下的单例模式\nvar\nwg sync.WaitGroup\nfor\ni :=\n0\n; i <\n10\n; i++ {\nwg.Add(\n1\n)\ngo\nfunc\n()\n{\ndefer\nwg.Done()\nsingletonInstance := getInstance()\nfmt.Println(singletonInstance.value)\n}()\n}\nwg.Wait()\n}\n02\n工厂模式（Factory Pattern）\n工厂模式是一种创建型设计模式，用于将对象的创建过程封装起来，由子类决定实例化哪一个类。这种模式使得代码结构更加清晰，并且能够轻松替换或扩展产品类。\n特点：\n封装性：将对象的创建过程封装在工厂类中。\n扩展性：通过继承和多态，可以轻松地添加新的产品类。\n抽象性：工厂方法定义了创建对象的接口，但具体对象的创建由子类实现。\n优点：\n将对象的创建和使用分离，提高了模块间的独立性。\n易于扩展，增加新的产品类时不需要修改现有代码，符合开闭原则。\n缺点：\n每增加一个产品类，就需要增加一个具体的工厂类，这可能会导致类的数量急剧增加。\n工厂类集中了所有实例的创建逻辑，可能会导致工厂类过于庞大。\n应用场景：\n数据库连接：\n根据不同的数据库类型，如 MySQL、PostgreSQL，创建相应的数据库连接对象。\nGUI 组件：\n在图形用户界面开发中，不同的操作系统可能需要不同的组件实现，工厂模式可以根据不同平台创建相应的组件。\n支付网关：\n根据不同的支付方式，如信用卡、PayPal、微信支付，创建相应的支付处理对象。\n图像处理：\n在图像处理软件中，根据不同的文件格式，如 JPEG、PNG，创建相应的图像处理器。\n// 定义一个接口Product，它声明了所有具体产品对象必须实现的操作\ntype\nProduct\ninterface\n{\noperation()\n// 产品对象的操作\n}\n// 定义具体产品ConcreteProductA，实现了Product接口\ntype\nConcreteProductA\nstruct\n{}\nfunc\n(p *ConcreteProductA)\noperation() {\nfmt.Println(\n\"Operation of ConcreteProductA\"\n)\n}\n// 定义另一个具体产品ConcreteProductB，也实现了Product接口\ntype\nConcreteProductB\nstruct\n{}\nfunc\n(p *ConcreteProductB)\noperation() {\nfmt.Println(\n\"Operation of ConcreteProductB\"\n)\n}\n// 定义一个抽象工厂Creator，它声明了工厂方法factoryMethod，用于创建产品对象\ntype\nCreator\ninterface\n{\nfactoryMethod() Product\n// 工厂方法，用于创建产品对象\n}\n// 定义具体工厂CreatorA，实现了Creator接口\ntype\nCreatorA\nstruct\n{}\nfunc\n(c *CreatorA)\nfactoryMethod() Product {\nreturn\n&ConcreteProductA{}\n// 具体工厂CreatorA返回ConcreteProductA的实例\n}\n// 定义另一个具体工厂CreatorB，也实现了Creator接口\ntype\nCreatorB\nstruct\n{}\nfunc\n(c *CreatorB)\nfactoryMethod() Product {\nreturn\n&ConcreteProductB{}\n// 具体工厂CreatorB返回ConcreteProductB的实例\n}\nfunc\nmain\n()\n{\n// 创建具体工厂CreatorA的实例\ncreatorA := &CreatorA{}\nproductA := creatorA.factoryMethod()\nproductA.operation()\n// 调用产品A的操作\n// 创建具体工厂CreatorB的实例\ncreatorB := &CreatorB{}\nproductB := creatorB.factoryMethod()\nproductB.operation()\n// 调用产品B的操作\n}\n03\n观察者模式（Observer Pattern）\n观察者模式是一种行为设计模式，它定义了对象间的一种一对多的依赖关系，使得当一个对象改变状态时，所有依赖于它的对象都会得到通知并自动更新。这种模式非常适合于实现分布式事件处理系统。\n特点：\n一对多关系：一个主题可以有多个观察者。\n抽象耦合：观察者和主题之间是抽象耦合的，增加新的观察者不会影响现有的系统。\n动态联动：观察者可以在任何时候加入或退出。\n优点：\n降低了对象之间的耦合度，主题与观察者之间是松散耦合的。\n扩展性好，增加新的观察者或主题类不影响现有的类。\n缺点：\n当观察者对象很多时，通知的分发可能会造成性能问题。\n如果观察者和主题之间的依赖关系过于复杂，会导致系统难以维护。\n应用场景：\n事件监听系统：\n在 GUI 应用程序中，用户界面组件（如按钮、文本框等）可以作为观察者，监听用户的输入事件。\nUI 更新：\n在应用程序中，当数据模型发生变化时，界面需要相应地更新，使用观察者模式可以自动完成这一过程。\n消息系统：\n在即时通讯软件中，当有新消息到达时，所有在线的用户（观察者）都会收到通知。\n股票市场：\n股票价格更新时，所有订阅了该股票的投资者（观察者）都会收到最新价格信息。\n资源监控：\n在系统监控工具中，当系统资源（如 CPU、内存使用率）超过设定阈值时，监控系统（观察者）会收到通知并采取相应措施。\n// 定义Observer接口，它声明了观察者需要实现的Update方法\ntype\nObserver\ninterface\n{\nUpdate(\nstring\n)\n// 当主题状态改变时，此方法会被调用\n}\n// 定义Subject结构体，它包含一个观察者列表和方法来添加或通知观察者\ntype\nSubject\nstruct\n{\nobservers []Observer\n// 存储观察者的列表\n}\n// Attach方法用于将一个观察者添加到观察者列表中\nfunc\n(s *Subject)\nAttach(observer Observer) {\ns.observers =\nappend\n(s.observers, observer)\n}\n// Notify方法用于通知所有观察者主题状态的改变\nfunc\n(s *Subject)\nNotify(message\nstring\n) {\nfor\n_, observer :=\nrange\ns.observers {\nobserver.Update(message)\n// 调用每个观察者的Update方法\n}\n}\n// 定义一个具体观察者ConcreteObserver，它实现了Observer接口\ntype\nConcreteObserverA\nstruct\n{\nname\nstring\n}\n// 实现Observer接口的Update方法\nfunc\n(c *ConcreteObserverA)\nUpdate(message\nstring\n) {\nfmt.Printf(\n\"%s received message: %s\\n\"\n, c.name, message)\n}\nfunc\nmain\n()\n{\n// 创建主题对象\nsubject := &Subject{}\n// 创建具体观察者对象\nobserverA := &ConcreteObserverA{name:\n\"Observer A\"\n}\n// 将观察者添加到主题的观察者列表中\nsubject.Attach(observerA)\n// 当主题状态改变时，通知所有观察者\nsubject.Notify(\n\"State changed to State 1\"\n)\n}\n04\n装饰者模式（Decorator Pattern）\n装饰者模式是一种结构型设计模式，允许用户在不修改对象自身的基础上，通过添加装饰者对象来动态地给对象添加额外的职责或功能。\n特点：\n动态扩展：可以在运行时动态地给对象添加职责。\n透明性：装饰者模式不改变对象的接口，因此对客户端来说是透明的。\n灵活性：可以多个装饰者组合使用，为对象添加多个职责。\n优点：\n增加对象的职责是动态的、可撤销的。\n可以用多个装饰者包装一个对象，添加多个职责。\n装饰者和对象可以独立变化，不会相互耦合。\n缺点：\n过度使用装饰者模式可能会使系统变得复杂，难以理解。\n可能会引起多层装饰者调用，影响性能。\n应用场景：\n日志记录：\n在不修改原有对象的基础上，添加日志记录功能。\n缓存：\n为对象的某些方法添加缓存功能，以提高性能。\n安全控制：\n为对象添加访问控制，如权限检查。\n事务处理：\n为\n数据库操作添加事务管理功能。\n性能监控：\n为对象的方法添加性能监控功能，以分析性能瓶颈。\n资源管理：\n为资源使用添加额外的管理功能，如连接池的管理。\n// 定义Component接口，它是所有组件和装饰者的基类\ntype\nComponent\ninterface\n{\noperation()\n// 组件执行的操作\n}\n// 定义具体组件ConcreteComponent，实现了Component接口\ntype\nConcreteComponent\nstruct\n{}\nfunc\n(c *ConcreteComponent)\noperation() {\nfmt.Println(\n\"ConcreteComponent: performing basic operation\"\n)\n}\n// 定义Decorator抽象结构体，它包含一个Component接口类型的字段\ntype\nDecorator\nstruct\n{\ncomponent Component\n// 用于组合Component接口\n}\n// 实现Decorator的operation方法，调用其Component的operation方法\nfunc\n(d *Decorator)\noperation() {\nif\nd.component !=\nnil\n{\nd.component.operation()\n// 调用被装饰者的operation\n}\n}\n// 定义具体装饰者ConcreteDecoratorA，它嵌入了Decorator结构体\ntype\nConcreteDecoratorA\nstruct\n{\nDecorator\n// 继承Decorator，实现装饰功能\n}\n// 为ConcreteDecoratorA实现operation方法，添加额外的职责\nfunc\n(cda *ConcreteDecoratorA)\noperation() {\ncda.Decorator.operation()\n// 首先调用被装饰者的operation\nfmt.Println(\n\"ConcreteDecoratorA: added additional responsibilities\"\n)\n}\nfunc\nmain\n()\n{\n// 创建具体组件\ncomponent := &ConcreteComponent{}\n// 创建装饰者并关联具体组件\ndecoratorA := &ConcreteDecoratorA{Decorator{component}}\n// 执行装饰后的组件操作\ndecoratorA.operation()\n}\n05\n策略模式（Strategy Pattern）\n策略模式是一种行为设计模式，它定义了一系列的算法，并将每一个算法封装起来，使它们可以互相替换。策略模式让算法独立于使用它的客户端。\n特点：\n封装变化：将变化的部分封装起来，与稳定部分分离。\n多态性：使用多态来实现算法的替换。\n替换性：在运行时选择使用哪个策略。\n优点：\n算法的变化独立于使用算法的客户端。\n容易添加新算法而不影响客户端。\n缺点：\n客户端必须了解所有策略类的差异，以便使用适当的策略。\n应用场景：\n算法选择：\n在应用程序中，根据不同的业务需求选择不同的算法。\n支付方式：\n在电子商务平台，根据用户选择提供不同的支付方式。\n排序算法：\n在数据处理中，根据不同的数据特性选择不同的排序算法。\n路径查找：\n在地图服务中，根据不同的优化标准（如时间最短、距离最短）选择不同的路径查找算法。\n游戏 AI：\n在游戏开发中，不同的敌人或角色使用不同的 AI 策略。\n// 定义Strategy接口，它声明了所有具体策略必须实现的algorithm方法\ntype\nStrategy\ninterface\n{\nalgorithm()\n// 策略的算法方法\n}\n// 定义具体策略ConcreteStrategyA，实现了Strategy接口\ntype\nConcreteStrategyA\nstruct\n{}\nfunc\n(c *ConcreteStrategyA)\nalgorithm() {\nfmt.Println(\n\"Executing Algorithm A\"\n)\n}\n// 定义另一个具体策略ConcreteStrategyB，也实现了Strategy接口\ntype\nConcreteStrategyB\nstruct\n{}\nfunc\n(c *ConcreteStrategyB)\nalgorithm() {\nfmt.Println(\n\"Executing Algorithm B\"\n)\n}\n// 定义Context结构体，它包含一个Strategy接口类型的字段\ntype\nContext\nstruct\n{\nstrategy Strategy\n// 用于存储当前使用的策略\n}\n// 执行策略的方法，通过Context中的strategy字段调用algorithm方法\nfunc\n(c *Context)\nexecuteStrategy() {\nc.strategy.algorithm()\n// 执行当前策略的算法\n}\nfunc\nmain\n()\n{\n// 创建Context对象\ncontext := &Context{}\n// 创建具体策略对象\nstrategyA := &ConcreteStrategyA{}\nstrategyB := &ConcreteStrategyB{}\n// 将Context的策略设置为策略A\ncontext.strategy = strategyA\ncontext.executeStrategy()\n// 输出: Executing Algorithm A\n// 更换策略为策略B\ncontext.strategy = strategyB\ncontext.executeStrategy()\n// 输出: Executing Algorithm B\n}\n06\n适配器模式（Adapter Pattern）\n适配器模式是一种结构型设计模式，用于使原本不兼容的接口能够一起工作。它通常涉及到一个客户端使用一个期望的特定接口，而另一个类或组件提供了一个不同的接口。适配器模式通过创建一个中间层（适配器），将一个类的接口转换成客户端期望的另一个接口。\n特点：\n接口转换：适配器模式提供了将一个类的接口转换成另一种接口的方式。\n兼容性：解决了接口不兼容的问题，使得原本不能一起工作的类可以协同工作。\n优点：\n增加了类的兼容性，使得它们可以一起工作，即使它们的接口不兼容。\n客户端代码不需要修改，通过适配器与目标类交互。\n缺点：\n过度使用适配器模式可能会使系统变得复杂，难以理解和维护。\n适配器可能会引入性能开销，尤其是在需要频繁调用适配器方法的情况下。\n应用场景：\n不同系统的集成：\n当需要将两个使用不同接口的系统集成时，可以使用适配器模式。\n第三方库的集成：\n当使用一个第三方库，但其接口与现有系统不兼容时，可以通过适配器模式进行集成。\n硬件设备控制：\n在硬件设备控制领域，不同的设备可能有不同的控制接口，适配器模式可以用来统一这些接口。\n新旧系统迁移：\n在新旧系统迁移过程中，旧系统中的组件可能需要适配新系统的接口。\n模块化设计：\n在模块化设计中，适配器模式可以用来连接不同模块，即使它们的接口不兼容。\n// 定义Target接口，表示客户端使用的特定领域相关的接口\ntype\nTarget\ninterface\n{\nrequest()\n// 客户端期望调用的方法\n}\n// 定义一个已经存在的类Adaptee，它有自己的接口\ntype\nAdaptee\nstruct\n{}\nfunc\n(a *Adaptee)\nspecificRequest() {\nfmt.Println(\n\"Adaptee performs a specific request\"\n)\n}\n// 定义Adapter结构体，它作为Target接口和Adaptee类之间的桥梁\ntype\nAdapter\nstruct\n{\nadaptee *Adaptee\n// 引用Adaptee对象\n}\n// Adapter实现了Target接口的request方法\n// 该方法内部委托给Adaptee的specificRequest方法\nfunc\n(a *Adapter)\nrequest() {\nif\na.adaptee !=\nnil\n{\na.adaptee.specificRequest()\n// 委托调用Adaptee的方法\n}\n}\nfunc\nmain\n()\n{\n// 创建Adaptee对象\nadaptee := &Adaptee{}\n// 创建Adapter对象，并注入Adaptee对象\nadapter := &Adapter{adaptee: adaptee}\n// 客户端使用Target接口，这里通过Adapter实现\nvar\ntarget Target = adapter\ntarget.request()\n// 通过Adapter调用Adaptee的方法\n}\n07\n代理模式（Proxy Pattern）\n代理模式是一种结构型设计模式，它为另一个对象提供一个代替或占位符，以控制对它的访问。代理可以在不改变对象的代码前提下，通过引入代理对象来间接访问原始对象，从而在不直接暴露原始对象的情况下，提供额外的功能操作。\n特点：\n间接访问：通过代理对象来间接访问原始对象。\n职责分离：将控制逻辑与业务逻辑分离，代理对象负责控制逻辑，原始对象负责业务逻辑。\n延迟初始化：代理可以在需要时才创建原始对象，实现延迟初始化。\n优点：\n降低了系统的耦合度，增强了对象的可控性。\n可以为原始对象提供额外的安全控制或延迟加载等操作。\n增加了代码的可扩展性，可以在不修改原始对象的情况下，通过引入新的代理类来扩展功能。\n缺点：\n增加了系统的复杂性，可能会让系统设计变得更加复杂。\n可能会引入性能开销，尤其是在代理对象需要进行复杂控制逻辑时。\n应用场景：\n访问控制：\n在需要对对象访问进行权限控制时，可以使用代理模式。\n延迟初始化：\n对于资源消耗较大的对象，可以使用代理模式实现延迟加载。\n远程代理：\n为远程对象或网络资源提供代理，隐藏对象位于不同地址空间的事实。\n虚拟代理：\n为复杂的对象创建一个简单的代理，以简化访问。\n保护代理：\n控制对原始对象的访问，提供访问前后的附加操作。\n智能引用：\n在访问对象时进行引用计数，当没有引用时自动释放资源。\n// 定义一个Subject接口，它声明了真实主题和代理主题共有的接口。\ntype\nSubject\ninterface\n{\nrequest()\n// 声明一个请求方法，真实主题和代理主题都会实现这个方法。\n}\n// RealSubject 结构体实现了 Subject 接口，代表真实主题。\ntype\nRealSubject\nstruct\n{}\n// RealSubject 的 request 方法实现了 Subject 接口的 request 方法，用于执行实际的操作。\nfunc\n(r *RealSubject)\nrequest() {\nfmt.Println(\n\"Real Subject\"\n)\n// 打印 \"Real Subject\" 表示真实主题正在被调用。\n}\n// Proxy 结构体包含一个指向 RealSubject 的指针，它作为代理主题。\ntype\nProxy\nstruct\n{\nrealSubject *RealSubject\n// 代理主题包含一个对真实主题的引用，初始为 nil。\n}\n// Proxy 的 request 方法实现了 Subject 接口的 request 方法。\n// 这个方法首先检查 realSubject 是否为 nil，如果是，则创建 RealSubject 的实例。\n// 然后，调用 realSubject 的 request 方法，从而间接地实现了 Subject 接口的 request 方法。\nfunc\n(p *Proxy)\nrequest() {\nif\np.realSubject ==\nnil\n{\n// 如果 realSubject 为 nil，说明还没有创建真实主题的实例。\np.realSubject = &RealSubject{}\n// 创建 RealSubject 的实例，并赋值给 realSubject。\n}\np.realSubject.request()\n// 调用真实主题的 request 方法。\n}\n08\n命令模式（Command Pattern）\n命令模式是一种行为设计模式，它将一个请求或操作封装为一个对象。这种模式可以解耦请求的发送者和接收者，让它们不直接交互，而是通过命令对象来间接进行通信。\n特点：\n封装性：命令模式将请求封装为一个对象，隐藏了请求的具体实现细节。\n扩展性：可以方便地添加新的命令类，无需修改现有代码。\n灵活性：命令对象可以被存储、传递、排队、记录和修改。\n优点：\n降低了系统耦合度，请求发送者和接收者之间通过命令对象交互。\n增加了操作的灵活性，如支持撤销、重做、事务等操作。\n易于扩展，可以独立地添加新的命令。\n缺点：\n可能会有大量的命令类，特别是命令的实现逻辑复杂时。\n应用场景：\n事务处理：\n在需要支持事务操作的系统中，命令模式可以封装事务请求，支持事务的提交和回滚。\n撤销操作：\n在需要撤销功能的系统中，命令对象可以存储状态，以便在需要时撤销操作。\n日志请求：\n在需要记录用户操作的系统中，命令对象可以记录操作日志，用于审计或恢复操作。\n批处理系统：\n在批处理系统中，命令对象可以表示一个批处理任务，支持任务的调度和执行。\n宏录制：\n在需要宏录制功能的系统中，命令对象可以封装一系列操作，形成宏命令。\n// 定义Command接口，它声明了所有具体命令必须实现的Execute方法\ntype\nCommand\ninterface\n{\nExecute()\n// 执行命令的方法\n}\n// 定义Receiver结构体，它将执行命令的实际请求\ntype\nReceiver\nstruct\n{}\nfunc\n(r *Receiver)\nAction() {\nfmt.Println(\n\"Receiver: Action\"\n)\n}\n// 定义ConcreteCommand结构体，它实现了Command接口\n// 每个具体命令都包含一个Receiver的引用，表示请求的接收者\ntype\nConcreteCommand\nstruct\n{\nreceiver *Receiver\n// 命令执行的接收者\n}\n// ConcreteCommand实现Command接口的Execute方法\n// 该方法调用Receiver的Action方法来执行请求\nfunc\n(c *ConcreteCommand)\nExecute() {\nc.receiver.Action()\n// 执行请求\n}\n// 定义Invoker结构体，它负责调用命令对象的Execute方法\ntype\nInvoker\nstruct\n{\ncommand Command\n// 存储命令对象\n}\n// 调用命令对象的Execute方法\nfunc\n(i *Invoker)\nInvoke() {\ni.command.Execute()\n// 执行命令\n}\nfunc\nmain\n()\n{\n// 创建接收者对象\nreceiver := &Receiver{}\n// 创建具体命令对象，并注入接收者\ncommand := &ConcreteCommand{receiver: receiver}\n// 创建调用者对象，并注入具体命令对象\ninvoker := &Invoker{command: command}\n// 调用者执行命令\ninvoker.Invoke()\n// 输出: Receiver: Action\n}\n09\n组合模式（Composite Pattern）\n组合模式是一种结构型设计模式，它允许你将对象组合成树状结构，以表示“部分-整体”的层次结构。这种模式使得用户可以一致地对待单个对象和对象组合。\n特点：\n部分-整体层次结构：可以包含其他组合或叶节点，形成树状结构。\n一致性：客户端代码可以一致地处理组合结构和叶节点。\n优点：\n简化了客户端代码，客户端可以统一处理组合结构和对象。\n更好的层次结构表示，易于扩展和维护。\n缺点：\n设计较复杂，需要合理地设计组件的接口和类。\n应用场景：\n文件系统：\n文件系统中的文件和文件夹可以形成树状结构，其中文件夹可以包含文件和其他文件夹。\n组织结构：\n公司的组织结构可以表示为树状结构，其中每个部门可以包含员工和其他子部门。\nGUI 组件：\n在图形用户界面开发中，组件可以包含其他组件，形成复杂的界面结构。\n分布式系统：\n在分布式系统中，资源可以组合成树状结构，以方便管理和访问。\n企业资源规划（ERP）：\nERP 系统中，产品可以由多个部件组成，部件又可以进一步分解为子部件。\n// 定义Component接口，作为组合中对象的一致性协议\ntype\nComponent\ninterface\n{\nOperation()\n// 执行操作的方法\nAdd(Component)\n// 向组合中添加子节点的方法\nRemove(Component)\n// 从组合中移除子节点的方法\nGetChild(\nint\n) Component\n// 根据索引获取子节点的方法\n}\n// 定义Leaf结构体，表示组合中的叶节点\ntype\nLeaf\nstruct\n{\nname\nstring\n}\n// Leaf实现Component接口的Operation方法\nfunc\n(l *Leaf)\nOperation() {\nfmt.Println(\n\"Leaf:\"\n, l.name)\n}\n// Leaf实现Component接口的Add方法，叶节点不能有子节点，因此这里可以不实现或抛出错误\nfunc\n(l *Leaf)\nAdd(c Component) {\nfmt.Println(\n\"Cannot add to a leaf\"\n)\n}\n// Leaf实现Component接口的Remove方法，叶节点不能有子节点，因此这里可以不实现或抛出错误\nfunc\n(l *Leaf)\nRemove(c Component) {\nfmt.Println(\n\"Cannot remove from a leaf\"\n)\n}\n// Leaf实现Component接口的GetChild方法，叶节点没有子节点，因此这里返回nil\nfunc\n(l *Leaf)\nGetChild(i\nint\n) Component {\nreturn\nnil\n}\n// 定义Composite结构体，表示组合中的容器节点\ntype\nComposite\nstruct\n{\nname\nstring\nChildren []Component\n// 存储子节点的列表\n}\n// Composite实现Component接口的Operation方法\nfunc\n(c *Composite)\nOperation() {\nfmt.Println(\n\"Composite:\"\n, c.name)\nfor\n_, child :=\nrange\nc.Children {\nchild.Operation()\n// 递归调用子节点的Operation方法\n}\n}\n// Composite实现Component接口的Add方法，向Children列表中添加子节点\nfunc\n(c *Composite)\nAdd(component Component) {\nc.Children =\nappend\n(c.Children, component)\n}\n// Composite实现Component接口的Remove方法，从Children列表中移除子节点\nfunc\n(c *Composite)\nRemove(component Component) {\nfor\ni, child :=\nrange\nc.Children {\nif\nchild == component {\nc.Children =\nappend\n(c.Children[:i], c.Children[i+\n1\n:]...)\nbreak\n}\n}\n}\n// Composite实现Component接口的GetChild方法，根据索引获取子节点\nfunc\n(c *Composite)\nGetChild(i\nint\n) Component {\nif\ni <\n0\n|| i >=\nlen\n(c.Children) {\nreturn\nnil\n// 索引超出范围，返回nil\n}\nreturn\nc.Children[i]\n}\nfunc\nmain\n()\n{\n// 创建叶节点\nleafA := &Leaf{name:\n\"Leaf A\"\n}\nleafB := &Leaf{name:\n\"Leaf B\"\n}\n// 创建组合节点\ncomposite := &Composite{name:\n\"Composite Root\"\n}\ncomposite.Add(leafA)\n// 向组合中添加叶节点A\ncomposite.Add(leafB)\n// 向组合中添加叶节点B\n// 执行组合节点的操作\ncomposite.Operation()\n}\n10\n迭代器模式（Iterator Pattern）\n迭代器模式是一种行为设计模式，它允许你顺序访问一个聚合对象中的各个元素而不需要暴露其内部的表示。迭代器模式提供了一种通过抽象迭代器来遍历元素的方法，使得你可以在不知道具体集合类型的情况下，对集合进行遍历。\n特点：\n抽象化遍历过程：迭代器定义了遍历元素的接口。\n支持多种遍历方式：不同的迭代器可以实现不同的遍历策略。\n聚合对象与迭代器解耦：聚合对象不需要知道迭代器的具体实现。\n优点：\n抽象化集合的访问，使客户端代码与集合的内部表示无关。\n可以提供多种遍历方式，如正序或逆序遍历。\n增加了集合的灵活性，可以在不修改集合类的情况下，引入新的遍历方式。\n缺点：\n增加了系统的复杂性，需要为每个聚合类设计迭代器类。\n需要额外的代码来实现迭代器。\n应用场景：\n遍历集合：\n在需要遍历集合元素的系统中，迭代器模式提供了一种通用的遍历机制。\n数据结构：\n在实现复杂的数据结构如树、图等时，迭代器模式可以用来遍历结构中的节点。\n数据库查询：\n在数据库查询中，迭代器可以用来逐条访问查询结果。\n用户界面：\n在用户界面开发中，迭代器可以用来遍历界面元素。\n多维数组访问：\n在需要访问多维数组元素的系统中，迭代器可以提供一种顺序访问的方式。\n// 定义Iterator接口，它声明了迭代器必须实现的Next和Current方法\ntype\nIterator\ninterface\n{\nNext()\nbool\n// 移动到下一个元素，并返回是否成功移动\nCurrent()\ninterface\n{}\n// 返回当前元素\n}\n// 定义ConcreteIterator结构体，它实现了Iterator接口\ntype\nConcreteIterator\nstruct\n{\nitems []\nstring\n// 存储聚合对象的元素列表\nindex\nint\n// 当前迭代到的元素索引\n}\n// Next方法实现，用于移动到下一个元素\nfunc\n(c *ConcreteIterator)\nNext()\nbool\n{\nif\nc.index <\nlen\n(c.items) {\nc.index++\n// 索引递增\nreturn\ntrue\n}\nreturn\nfalse\n// 如果索引超出范围，返回false\n}\n// Current方法实现，用于返回当前元素\nfunc\n(c *ConcreteIterator)\nCurrent()\ninterface\n{} {\nif\nc.index >\n0\n&& c.index <=\nlen\n(c.items) {\nreturn\nc.items[c.index\n-1\n]\n// 返回当前索引的元素\n}\nreturn\nnil\n// 如果索引不在范围内，返回nil\n}\n// 定义Aggregate接口，表示聚合对象，它将负责创建迭代器\ntype\nAggregate\ninterface\n{\nCreateIterator() Iterator\n// 创建并返回迭代器\n}\n// 定义ConcreteAggregate结构体，它实现了Aggregate接口\ntype\nConcreteAggregate\nstruct\n{\nitems []\nstring\n// 聚合对象存储的元素列表\n}\n// CreateIterator方法实现，用于创建并返回一个迭代器\nfunc\n(a *ConcreteAggregate)\nCreateIterator() Iterator {\nreturn\n&ConcreteIterator{items: a.items, index:\n0\n}\n// 返回一个新的迭代器实例\n}\nfunc\nmain\n()\n{\n// 创建聚合对象并添加元素\naggregate := &ConcreteAggregate{items: []\nstring\n{\n\"Item1\"\n,\n\"Item2\"\n,\n\"Item3\"\n}}\n// 使用聚合对象创建迭代器\niterator := aggregate.CreateIterator()\n// 使用迭代器遍历聚合对象中的所有元素\nfor\niterator.Next() {\nfmt.Println(iterator.Current())\n}\n}\n-End-\n原创作者｜\n王顺驰\n感谢你读到这里，不如关注一下？👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。6月17日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.07,
+        "irrelevant": 0.71,
+        "transfer_business": 0,
+        "peripheral": 0.22,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.42,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.2,
+        "2": 0.61,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.12,
+      "probabilities": {
+        "0": 0.9,
+        "1": 0.09,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.07,
+      "probabilities": {
+        "0": 0.94,
+        "1": 0.05,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.61,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.2,
+        "2": 0.69,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.26,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.21,
+        "2": 0.05,
+        "3": 0.33,
+        "4": 0.24,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.13,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.71,
+        "2": 0.15,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 12844,
+    "outputTokens": 173,
+    "totalTokens": 13017
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.64,
+        "relevance": 0.61,
+        "grounding": 0.92,
+        "decision_action": 0.95,
+        "evidence": 0.73,
+        "actionability": 0.18,
+        "anti_hype": 0.78
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180009773,
+                "endTime": 1791180009982,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000539448",
+      "marketCost": "0.000539448",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000539448",
+      "inferenceCost": "0.000539448",
+      "inputInferenceCost": "0.000539448",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABW8WRY9M045RVH2Z98GW"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:09 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::rn7fb-1791180008999-c9f362dd1c5c"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.07,
+            "irrelevant": 0.71,
+            "transfer_business": 0,
+            "peripheral": 0.22,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.42,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.2,
+            "2": 0.61,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.12,
+          "probabilities": {
+            "0": 0.9,
+            "1": 0.09,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.07,
+          "probabilities": {
+            "0": 0.94,
+            "1": 0.05,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.61,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.2,
+            "2": 0.69,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.26,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.21,
+            "2": 0.05,
+            "3": 0.33,
+            "4": 0.24,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.13,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.71,
+            "2": 0.15,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 12844,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.64,
+            "relevance": 0.61,
+            "grounding": 0.92,
+            "decision_action": 0.95,
+            "evidence": 0.73,
+            "actionability": 0.18,
+            "anti_hype": 0.78
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180009773,
+                    "endTime": 1791180009982,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000539448",
+          "marketCost": "0.000539448",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000539448",
+          "inferenceCost": "0.000539448",
+          "inputInferenceCost": "0.000539448",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABW8WRY9M045RVH2Z98GW"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:09.232Z"
+  }
+}

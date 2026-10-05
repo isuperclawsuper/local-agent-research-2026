@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "257070055648372737",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "【养虾人必读】告别黑盒！让你的 OpenClaw 像水晶一样透明",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518900&idx=2&sn=a2cbb2b36c97873db034e76b66bf5b90",
+      "date": "2026-03-18T09:03:00.490Z",
+      "chars": 5915,
+      "text": "2026-03-18 17:03\n北京\n2026 年，很多团队都已经在养几只“虾”（OpenClaw），让它们 7x24 小时地查资料、写代码，甚至自动执行多步任务。\n表面上看，一切运转丝滑。但当你的“虾”逐渐成长，从简单问答走向复杂的自动化流程时，崩溃的瞬间也随之而来：\n“我让它同时处理三件事，它好像叫了好几个帮手，最后谁干了啥？”\n一个会话派生出多个并行的子代理（sub-agent），这本是提效妙招，但事后复盘，你面对交错的日志，根本无法还原它们之间是如何协作的，谁是“主谋”，谁是“帮凶”。\n“用户说机器人卡住了，到底是主 Agent 的问题，还是某个子 Agent 掉链子了？”\n问题出现时，你无法立刻知道是哪个 Agent 的哪一步出了错。是主 Agent 理解错了指令，还是负责调用工具的子 Agent 接口超时了？\n“这个月的 Token 账单又爆了，能说清是哪个‘败家’的子 Agent 花的吗？”\n面对高昂的账单，你想精打细算，却发现根本无法将成本归因到具体的子 Agent 或某一次特定的工具调用上。\n在多会话、多 sub-agent 并行的实践中，上述这些“多线程”养虾的情况并不罕见。它们背后指向的是同一个问题：\n当 Agent 开始“影分身”时，要怎样才算真正具备全链路、端到端的可观测性？\n传统的日志方案，更像是在鱼塘水面装了一个摄像头：在“虾”还不多、流程比较简单的时候，勉强能看清来龙去脉；一旦水下出现复杂的“虾兵蟹将”协同作战，很多关键细节就会被遮挡在视野之外。\n在这样的背景下，更需要一套能深入“水下”的观测系统：无论 Agent 如何分身，都能持续捕获每一个“分身”的完整动态。\n核心价值：从“多线程黑盒”到“全链路白盒”\n火山引擎 APMPlus 面向 OpenClaw 场景提供的\napmplus-openclaw-plugin\n插件，正是这样一套“量子纠缠”式的观测系统。\n它的核心价值只有一点：\n将“多会话、多 sub-agent 并行”的复杂黑盒执行过程，变成一个对你完全透明、可追溯、可归因的全链路“白盒”。\n在多会话、多 sub-agent 并行的场景下，接入插件后，常见的变化包括：\n全景还原：\n从主 Agent 派生到所有 sub-agent 执行完毕，能够还原每一个环节，不错过任何一次交互和协同。\n精准归因：\n问题出现时，可以下钻定位到是哪个 Agent 的哪条 Trace、哪行 Log 或哪个 Metric 出了问题，将故障排查时间从“小时级”压缩到“分钟级”。\n量化度量：\nToken 消耗、成功率等核心指标可以按 Agent、按工具调用清晰拆分，为成本优化和性能迭代提供数据依据。\n下面从能力拆解的角度，分别看一看这套系统在 Tracing、Log 和 Metrics 上具体做了哪些加强。\n能力拆解：多会话、多 Sub-Agent 的每一步如何被看清？\nAPMPlus OpenClaw 插件提供了一套完整的 MTL（Metrics, Tracing, Logging）联动观测方案。它不再是基于零散的日志文件进行猜测和拼凑，而是深入 OpenClaw 运行时，从最真实的生命周期节点采集和关联信息，尤其强化了对多 Agent 场景的支撑。\n亮点一：原生支持 Sub-Agent 的全链路 Tracing\n在观测界面中，主 Agent 和它所有的“分身”会以类似“电影分镜”的方式展开，完整呈现每一条执行流，这正是 Tracing 能力的核心。\n我们不仅覆盖了会话、消息、模型、工具等所有基础采集点，更重要的是：\n原生支持 Sub-Agent 链路关联：\n这是与基础采集方案最本质的区别。\n清晰展示主 Agent 何时、携带何种上下文\n派生\n出 sub-agent。\n完整记录\n每一个 sub-agent\n自己的大模型调用、工具调用和执行结果。\n精确追踪 sub-agent 将处理结果\n投递回\n主 Agent 的过程。\n明确标记每一个 sub-agent 生命周期的开始与结束。\n这意味着，无论你的 Agent 如何“裂变”，我们都能为你呈现一张完整的、无断点的家族执行图谱。\n亮点二：与 Trace 丝滑联动的上下文日志（Log）\n日志不再是孤立的信息碎片。可以从 Trace 上的任意一个节点（无论属于主 Agent 还是 sub-agent），直接跳转到当时、当地、当“虾”的详细日志，拿到完整的上下文。\n同时，通过 OneAgent，还能采集到底层运维日志（如系统错误、Panic），将业务问题与系统稳定性问题放在同一条链路上分析，便于 SRE 和运维结合业务日志与系统日志做联动排障。\n亮点三：兼容并包，无限扩展的跨端指标（Metrics）\n我们完整兼容 OpenClaw 原生的所有指标。但我们做得更多。\n跨端覆盖：\n不仅能采集 Agent 的指标，还能采集多 Channel（飞书、Web 等）的指标，将用户端体验和 Agent 执行情况关联。\n无限扩展：\n基于 APMPlus 的强大能力，你可以轻松扩展采集任何你关心的业务与性能指标，如\nCPU/内存利用率、libuv 性能指标\n等，并制作成统一的监控看板。\n监控与告警：让风险无所遁形\n单单看得清还不够，更重要的是在问题发生前就收到预警。OpenClaw 的可观测性不仅停留在事后复盘，更延伸至主动防御。我们为你提供了一套开箱即用的监控与告警体系，让你的“虾”在出现异常行为的初期，就能被立刻“揪”出来。\n能力综述\n我们为 OpenClaw 的核心观测指标内置了丰富的预置报警规则。你无需手动配置，即可享受到覆盖应用性能、资源消耗、依赖健康度等多维度的全面监控。\n分级告警与多渠道通知：\n支持\nWarning\n(警告) 和\nCritical\n(严重) 两级告警，并可通过飞书、邮件等多种渠道，将异常情况第一时间送达给你。\n智能降噪与恢复通知：\n内置告警合并、抑制策略与静默时间段配置，大幅减少因偶发抖动或计划内维护导致的告警轰炸。当指标恢复正常时，你同样会收到恢复通知，形成完整的告警生命周期闭环。\n预置报警规则清单\n以下是我们为你预置的部分核心报警规则。开启 OpenClaw 观测后，您可以去 APMPlus 控制台选择启用这些规则。\n通知与抑制\n多渠道触达：\n你可以配置将告警信息通过飞书群、个人飞书、邮件进行通知，确保在任何场景下都能及时收到关键信息。\n减少噪声：\n通过告警合并与抑制策略，系统能自动将短时间内由同一根因产生的多条告警聚合为一条，并对偶发的、恢复快的指标抖动进行智能降噪。同时，你也可以设置计划内的静默时间段（如版本发布、系统维护），让告警系统“保持安静”。\n恢复通知：\n当触发的告警恢复正常后，系统会发送一条恢复通知，让你明确知道问题已解决，形成一个完整的“发现-处理-恢复”的事件闭环。\n价值对比：从“看得见”到“看得懂、可归因”\n与 OpenClaw 官方观测插件和市面上依赖解析\nsession.jsonl\n的基础采集方案相比，APMPlus 插件提供的不只是数据本身，而是围绕这些数据构建的一整套可用于分析和决策的视图。\n使用场景：从“看不懂问题”到“看得清每一步”\napmplus-openclaw-plugin 的价值，体现在把一次次具体的小问题，变成可看见、可复盘的闭环。下面是几个常见的使用画面。\n场景一：并行查询里，总有人“拖后腿”\n故事背景\n你搭了一个“综合信息小助手”，用户问一句“帮我看看今天适不适合出门”，Agent 会同时去问天气、新闻、路况，最后合在一条回复里发出来。\n大部分时候回答都挺快，但偶尔，用户会反馈一句：\n“今天这个机器人怎么慢吞吞的？”\n你去看后台，只能看到“这个会话挺慢”，但看不出来到底是哪个环节在拖时间。\n在 APMPlus 里看到的画面\n你打开这次会话的 Trace 瀑布图，像看“三条并行流水线”：天气 subAgent、新闻 subAgent、交通 subAgent。\n三条线里，有一条明显比其他的长，颜色也更醒目——就是“新闻查询”那条。\n怎么一步步找到问题\n你点开“新闻查询”那条长线，对应的 Trace Span 展开后，可以看到内部还有一层调用。\n在这层里，“fetch_news_api” 这个工具调用占了大部分耗时，几乎吃掉了这次请求 90% 的时间。\n结合日志，可以看到它在访问某个第三方新闻服务时，经常出现网络抖动。\n最后怎么解决\n你和业务同学一起，给“新闻查询”加了缓存，或换了更稳定的数据源。\n再回到 APMPlus 的 Trace 和 Metrics 里，能看到这条链路的平均耗时明显下降。\n场景二：一版代码上线后，Token 花得又多、效果还变差\n故事背景\n你的“财务分析小助手”，每个月会帮团队生成一份简单的月度报告。之前表现都还稳定。\n新版本上线后，有同学来问：\n“为什么这个月的 Token 花费突然往上窜？而且报告还写得怪怪的。”\n你感到不太对劲，但光看账单，只知道“钱花多了”。\n在 APMPlus 里看到的画面\n你打开 Metrics 看板，按版本筛选，看到 total_tokens 在某个新版本之后，突然抬了一大截。\n同一时间段里，用户对这份报告的评价也开始变差。\n怎么一步步找到问题\n你随机点进一条 Token 特别高的 Trace，展开 LLM 调用详情。\n在“请求详情”里，你看到 Prompt 部分被塞进了一篇几万字的财报原文，而不是预期的“摘要内容”。\nOutput 中，模型明显在拼命“啃”整份长文，导致输出既冗长又偏题。\n最后怎么解决\n和开发同学确认后，发现新版本在拼接 Prompt 时，错拿了“原始财报”字段，而不是“预处理后的摘要”。\n修复代码逻辑、重新上线后，你再回到 Metrics，看见 total_tokens 逐步回落到正常区间，报告的可读性评价也回到了之前的水平。\n场景三：一次失败的工具操作，怎么复盘到“那一行入参”\n故事背景\n你有一个运维 Agent，负责帮大家做一些固定操作，比如“重启某个服务”“拉一份日志”。\n某天，值班同学反馈：\n“我点了好几次‘重启服务’，界面都是失败提示，但是日志里就一句‘执行失败’，根本看不出具体错在哪。”\n此前的日志只告诉你“没成功”，但不告诉你“为什么”。\n在 APMPlus 里看到的画面\n你先找到这次失败任务对应的 Trace，会看到这条自动化操作链路上，有一个工具调用节点被标红。\n这个节点的名字，大致就是“重启服务工具调用”，一眼就能对上这次操作。\n怎么一步步找到问题\n你点进去这个红色节点，Span 详情里展示了完整的调用上下文。\n在 LLM 或工具数据中，你可以看到：调用时带的服务名、实例 ID 等入参，以及工具抛出的原始异常信息，比如 “Error: connection refused”。\n结合这两类信息，很快就能判断：是目标服务的端口配置有误，导致连接被拒绝。\n最后怎么解决\n调整配置后，你再触发一次同样的运维操作，在 Trace 里看到：那个红色节点变成了正常状态，整条自动化操作链路顺利走通。\n这次排障过程也可以留在线上，方便以后遇到类似问题时直接参考。\n通过这些日常场景，apmplus-openclaw-plugin 把“感觉哪里不对”变成“知道是哪一步有问题”，让排障从大海捞针，变成围绕 Trace、日志和指标的一次完整复盘。\n无论是响应变慢、成本走高，还是工具执行失败，这些问题最后都能在同一套观测视图里被看见、被解释、被复盘。\n接入方式\n准备工作\n在接入前，您需要先去火山 APMPlus 接入中心获取您的 APPKey\nhttps://console.volcengine.com/observe/apmplus-server/region:apmplus-server+cn-beijing/server/access/service?aid=0&org_id=0\n详细步骤参考：\nhttps://www.volcengine.com/docs/6431/147492?lang=zh\n插件安装\n为了减少您的接入成本，我们提供了一键安装脚本，您只需要在终端执行以下命令并按照提示输入您的 region, APPKey, 服务名等信息即可自动完成插件的安装与配置。\nnpx\n@volcengine\n/apmplus-openclaw-plugin-onboard-cli install\n检查插件\n插件安装完成后，您可通过以下命令查看插件状态，确认\napmplus-openclaw-plugin\n状态为 loaded:\nopenclaw\nplugins list\n如果插件安装出现任何问题，您可将报错信息发送给龙虾，他会自动修复问题（千万别放过他）。\n至此，插件就完全安装成功了, 再您通过 webChat， 飞书等各种渠道与龙虾对话后，就可以在火山 APMPlus 控制台看到完整的可观测数据了。\n落地与衡量：轻松上手，价值立现\n极简接入：\n在 OpenClaw 项目中添加并启用\napmplus-openclaw-plugin\n即可，无需修改既有 Agent 业务逻辑代码，改造成本保持在较低水平。\n开箱即用：\n插件默认提供监控看板和 Trace 分析能力，接入后即可在同一平台上查看关键链路和指标。\n运维无忧：\n底层依托火山引擎 APMPlus 成熟、稳定的采集与分析平台，可观测系统本身的运维成本被控制在相对可预期的范围内。\n衡量插件价值的常见维度\n实践中，以下几个核心指标的前后变化最直观地体现出效果：\n故障定位效率：\n平均故障定位时间（MTTD）是否从小时级降低到分钟级？\n服务成功率：\n核心会话的成功率是否有所提升？尤其是在多 Agent 场景下。\n工具与模型性能：\n工具调用的错误率、超时率是否下降？大模型调用的 P95 延迟是否改善？\n成本优化：\n通过对 Token 消耗的精细化分析，是否找到了优化 Prompt 或调用策略的空间，从而降低了成本？\n当每一只“虾”和它的“影分身”都能被精细观测和度量时，规模化、智能化的“养虾”会变得更可控、更易复盘。APMPlus OpenClaw 插件在其中提供的是一套可复用的可观测基础设施，让多会话、多 sub-agent 的日常运行保持在可理解、可优化的状态。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.21,
+        "transfer_agent": 0.73,
+        "peripheral": 0.06,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.89,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.08,
+        "2": 0.89,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.7,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.07,
+        "2": 0.24,
+        "3": 0.32,
+        "4": 0.3,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.97,
+      "probabilities": {
+        "0": 0.57,
+        "1": 0.08,
+        "2": 0.21,
+        "3": 0.08,
+        "4": 0.05,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0,
+        "1": 0.18,
+        "2": 0.79,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.62,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.06,
+        "4": 0.76,
+        "5": 0.07
+      }
+    },
+    "anti_hype": {
+      "score": 0.36,
+      "probabilities": {
+        "0": 0.73,
+        "1": 0.2,
+        "2": 0.06,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6910,
+    "outputTokens": 172,
+    "totalTokens": 7082
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.66,
+        "relevance": 0.91,
+        "grounding": 0.4,
+        "decision_action": 0.35,
+        "evidence": 0.85,
+        "actionability": 0.65,
+        "anti_hype": 0.76
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179931339,
+                "endTime": 1791179931485,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00029022",
+      "marketCost": "0.00029022",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00029022",
+      "inferenceCost": "0.00029022",
+      "inputInferenceCost": "0.00029022",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9FNVDTZHRPND3M3B66WV"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:51 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::dtwrc-1791179931143-15631349f2fe"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.21,
+            "transfer_agent": 0.73,
+            "peripheral": 0.06,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.89,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.08,
+            "2": 0.89,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.7,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.07,
+            "2": 0.24,
+            "3": 0.32,
+            "4": 0.3,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.97,
+          "probabilities": {
+            "0": 0.57,
+            "1": 0.08,
+            "2": 0.21,
+            "3": 0.08,
+            "4": 0.05,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0,
+            "1": 0.18,
+            "2": 0.79,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.62,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.06,
+            "4": 0.76,
+            "5": 0.07
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.36,
+          "probabilities": {
+            "0": 0.73,
+            "1": 0.2,
+            "2": 0.06,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6910,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.66,
+            "relevance": 0.91,
+            "grounding": 0.4,
+            "decision_action": 0.35,
+            "evidence": 0.85,
+            "actionability": 0.65,
+            "anti_hype": 0.76
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179931339,
+                    "endTime": 1791179931485,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00029022",
+          "marketCost": "0.00029022",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00029022",
+          "inferenceCost": "0.00029022",
+          "inputInferenceCost": "0.00029022",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9FNVDTZHRPND3M3B66WV"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:50.768Z"
+  }
+}

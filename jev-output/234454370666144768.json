@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "234454370666144768",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "阿里 Assistant Agent 开源，助力开发者快速构建答疑、诊断智能助手",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557465&idx=1&sn=76a5a8c192cf450955cea5c89dab32e9",
+      "date": "2026-01-15T00:30:00.428Z",
+      "chars": 25482,
+      "text": "残风、栀七\n2026-01-15 08:30\n浙江\n更多具体定制接入与使用方式，可加入文末微信与钉钉群，与官方维护团队取得联系。\n简介\nAssistant Agent\n是一个基于\nSpring AI Alibaba\n构建的企业级智能助手框架，采用代码即行动（Code-as-Action）范式，通过生成和执行代码来编排工具、完成任务。它是一个\n能理解、能行动、能学习\n的智能助手解决方案，可帮助企业快速构建\n智能答疑客服、系统诊断、运维助手、业务助理、AIOps\n等智能体。\n仓库地址：\nspring-ai-alibaba/AssistantAgent\nhttps://github.com/spring-ai-alibaba/AssistantAgent\n技术特性\n代码即行动（Code-as-Action）\n：\nAgent 通过生成并执行代码来完成任务，而非仅仅调用预定义工具，可以在代码中灵活编排、组合多个工具，实现复杂流程；\n安全沙箱\n：\nAI 生成的代码在 GraalVM 多语言沙箱中安全运行，具备资源隔离能力；\n多维评估\n：\n通过评估图（Graph）进行多层次意图识别，精准指导 Agent 行为；\nPrompt 动态组装\n：\n根据场景及前置评估结果动态注入上下文（经验、知识等）到 Prompt 中，灵活处理不同任务；\n经验学习\n：\n自动积累成功经验，持续提升后续任务的表现；\n快速响应\n：\n熟悉场景下，跳过 LLM 推理过程，基于经验快速响应；\nAssistant Agent 能帮你做什么？\nAssistant Agent 是一个功能完整的智能助手，具备以下核心能力：\n智能问答\n：\n支持多数据源统一检索架构（通过 SPI 可扩展知识库、Web 等数据源），提供准确、可溯源的答案；\n工具调用\n：\n支持 MCP、HTTP API（OpenAPI）等协议，灵活接入海量工具，可组合调用实现复杂业务流程；\n主动服务\n：\n支持定时任务、延迟执行、事件回调，让助手主动为你服务；\n多渠道触达\n：\n内置 IDE 回复，允许通过 SPI 可扩展钉钉、飞书、企微、Webhook 等渠道；\n为什么选择 Assistant Agent？\n适用场景\n智能客服\n：\n接入企业知识库，智能解答用户咨询；\n运维助手\n：\n对接监控、工单系统，自动处理告警、查询状态、执行操作；\n业务助理\n：\n连接 CRM、ERP 等业务系统，辅助员工完成日常工作；\n以上仅为典型场景示例。通过配置知识库和接入工具，Assistant Agent 可适配更多业务场景，欢迎探索。\n整体工作原理\n以下是 Assistant Agent 处理一个完整请求的端到端流程示例：\n项目结构\nassistant-agent/\n├── assistant-agent-common\n# 通用工具、枚举、常量\n├── assistant-agent-core\n# 核心引擎：GraalVM 执行器、工具注册表\n├── assistant-agent-extensions\n# 扩展模块：\n│   ├──\ndynamic\n/\n#   - 动态工具（MCP、HTTP API）\n│   ├── experience/\n#   - 经验管理与快速意图配置\n│   ├── learning/\n#   - 学习提取与存储\n│   ├── search/\n#   - 统一搜索能力\n│   ├── reply/\n#   - 多渠道回复\n│   ├── trigger/\n#   - 触发器机制\n│   └── evaluation/\n#   - 评估集成\n├── assistant-agent-prompt-builder\n# Prompt 动态组装\n├── assistant-agent-evaluation\n# 评估引擎\n├── assistant-agent-autoconfigure\n# Spring Boot 自动配置\n└── assistant-agent-start\n# 启动模块\n快速启动\n前置要求\nJava 17+\nMaven 3.8+\nDashScope API Key\n1. 克隆并构建\ngit\nclone\nhttps://github.com/spring-ai-alibaba/AssistantAgent\ncd\nassistant-agent\nmvn clean install -DskipTests\n2. 配置 API Key\nexport\nDASHSCOPE_API_KEY\n=your-api-key-here\n3. 最小配置\n项目已内置默认配置，只需确保 API Key 正确即可。如需自定义，可编辑\nassistant-agent-start/src/main/resources/application.yml\n：\nspring\n:\nai\n:\ndashscope\n:\napi\n-key:\n${DASHSCOPE_API_KEY}\nchat\n:\noptions\n:\nmodel\n: qwen-max\n4. 启动应用\ncd\nassistant-agent-start\nmvn spring-boot:run\n所有扩展模块默认开启并采用合理的配置，无需额外配置即可快速启动。\n5. 配置知识库（接入业务知识）\n💡 框架默认提供 Mock 知识库实现用于演示测试。生产环境需要接入真实知识源（如向量数据库、Elasticsearch、企业知识库 API 等），以便 Agent 能够检索并回答业务相关问题。\n方式一：快速体验（使用内置 Mock 实现）\n默认配置已启用知识库搜索，可直接体验：\nspring:\nai:\nalibaba:\ncodeact:\nextension:\nsearch\n:\nenabled:\ntrue\nknowledge\n-\nsearch\n-\nenabled:\ntrue\n# 默认开启\n方式二：接入真实知识库（推荐）\n实现\nSearchProvider\nSPI\n接口，接入你的业务知识源：\npackage com.\nexample\n.\nknowledge\n;\nimport\ncom.\nalibaba\n.\nassistant\n.\nagent\n.\nextension\n.\nsearch\n.\nspi\n.\nSearchProvider\n;\nimport\ncom.\nalibaba\n.\nassistant\n.\nagent\n.\nextension\n.\nsearch\n.\nmodel\n.*;\nimport\norg.\nspringframework\n.\nstereotype\n.\nComponent\n;\nimport\njava.\nutil\n.*;\n@Component\n// 添加此注解，Provider 会自动注册\npublicclassMyKnowledgeSearchProviderimplementsSearchProvider {\n@Override\npublic\nboolean\nsupports\n(\nSearchSourceType\ntype\n){\nreturn\nSearchSourceType\n.\nKNOWLEDGE\n==\ntype\n;\n}\n@Override\npublic\nList\n<\nSearchResultItem\n>\nsearch\n(\nSearchRequest\nrequest\n){\nList\n<\nSearchResultItem\n> results =\nnew\nArrayList\n<>();\n// 1. 从你的知识源查询（向量数据库、ES、API 等）\n// 示例：List<Doc> docs = vectorStore.similaritySearch(request.getQuery());\n// 2. 转换为 SearchResultItem\n// for (Doc doc : docs) {\n//     SearchResultItem item = new SearchResultItem();\n//     item.setId(doc.getId());\n//     item.setSourceType(SearchSourceType.KNOWLEDGE);\n//     item.setTitle(doc.getTitle());\n//     item.setSnippet(doc.getSummary());\n//     item.setContent(doc.getContent());\n//     item.setScore(doc.getScore());\n//     results.add(item);\n// }\nreturn\nresults;\n}\n@Override\npublic\nString\ngetName\n(){\nreturn\n\"MyKnowledgeSearchProvider\"\n;\n}\n}\n常见知识源接入示例\n核心模块介绍\n评估模块（Evaluation）\n作用\n：\n多维度意图识别框架，通过评估图（Graph）对信息进行多层次特质识别。\n┌──────────────────────────────────────────────────────────────────┐\n│\n评估图 (\nEvaluation\nGraph\n) 示例\n│\n├──────────────────────────────────────────────────────────────────┤\n│\n│\n│\n用户输入:\n\"查询今日订单\"\n│\n│\n│\n│\n│\n▼\n│\n│\n┌─────────────────────────────────────────────────────────┐\n│\n│\n│\nLayer\n1\n（并行执行）\n│\n│\n│\n│\n┌────────────┐\n┌────────────┐\n│\n│\n│\n│\n│\n是否模糊\n?\n│\n│\n输入改写\n│\n│\n│\n│\n│\n│\n清晰\n/\n模糊\n│\n│\n（增强）\n│\n│\n│\n│\n│\n└─────┬──────┘\n└─────┬──────┘\n│\n│\n│\n└─────────┼──────────────────────┼────────────────────────┘\n│\n│\n│\n│\n│\n│\n└──────────┬───────────┘\n│\n│\n▼\n│\n│\n┌─────────────────────────────────────────────────────────┐\n│\n│\n│\nLayer\n2\n(基于改写内容，并行执行)\n│\n│\n│\n│\n┌──────────┐\n┌──────────┐\n┌──────────┐\n│\n│\n│\n│\n│\n检索经验\n│\n│\n匹配工具\n│\n│\n搜索知识\n│\n│\n│\n│\n│\n│\n有\n/无    │   │ 有/\n无\n│\n│\n有\n/\n无\n│\n│\n│\n│\n│\n└──────────┘\n└──────────┘\n└──────────┘\n│\n│\n│\n└─────────────────────────────────────────────────────────┘\n│\n│\n│\n│\n│\n▼\n│\n│\n┌────────────────────┐\n│\n│\n│\n整合不同维度评估结果\n│\n│\n│\n│\n→\n传递给后续模块\n│\n│\n│\n└────────────────────┘\n│\n│\n│\n└──────────────────────────────────────────────────────────────────┘\n核心能力\n：\n双评估引擎\n：\nLLM 评估\n：\n通过大模型进行复杂语义判断，用户可完全自定义评估 Prompt（\ncustomPrompt\n），也可使用默认 Prompt 组装（支持\ndescription\n、\nworkingMechanism\n、\nfewShots\n等配置）；\nRule-based 评估\n：\n通过 Java 函数实现规则逻辑，用户自定义\nFunction<CriterionExecutionContext, CriterionResult>\n执行任意规则判断，适合阈值检测、格式校验、精确匹配等场景；\n依赖关系自定义\n：\n评估项可通过\ndependsOn\n声明前置依赖，系统自动构建评估图按拓扑执行，无依赖项并行、有依赖项顺序执行，后续评估项可访问前置评估项的结果；\n评估结果\n：\n支持\nBOOLEAN\n、\nENUM\n、\nSCORE\n、\nJSON\n、\nTEXT\n等类型，传递给 Prompt Builder 驱动动态组装；\nPrompt Builder 模块\n作用\n：\n根据评估结果和运行时上下文，动态组装发送给模型的 Prompt。示例：\n┌─────────────────────────────────────────────────────────────────────────┐\n│                   Prompt Builder - 条件化动态生成                         │\n├─────────────────────────────────────────────────────────────────────────┤\n│                                                                         │\n│  评估结果输入:                                                            │\n│  ┌────────────────────────────────────────────────────────┐             │\n│  │ 模糊: 是  │ 经验: 有  │ 工具: 有  │ 知识: 无               │             │\n│  └────────────────────────────────────────────────────────┘             │\n│                    │                                                    │\n│                    ▼                                                    │\n│  ┌────────────────────────────────────────────────────────────────┐     │\n│  │              自定义 PromptBuilder 条件匹配                       │     │\n│  │                                                                │     │\n│  │   模糊=是 ──────▶ 注入 [澄清引导 Prompt]                          │     │\n│  │   模糊=否 ──────▶ 注入 [直接执行 Prompt]                          │     │\n│  │                                                                │     │\n│  │   经验=有 ──────▶ 注入 [历史经验参考]                              │     │\n│  │   工具=有 ──────▶ 注入 [工具使用说明]                              │     │\n│  │   知识=有 ──────▶ 注入 [相关知识片段]                              │     │\n│  │                                                                │     │\n│  │   组合示例1: 模糊+无工具+无知识 ──▶ [追问用户 Prompt]               │     │\n│  │   组合示例2: 清晰+有工具+有经验 ──▶ [快速执行 Prompt]               │     │\n│  └────────────────────────────────────────────────────────────────┘     │\n│                    │                                                    │\n│                    ▼                                                    │\n│  ┌────────────────────────────────────────────────────────────────┐     │\n│  │ 最终动态 Prompt:                                                │     │\n│  │ [系统提示] + [澄清引导] + [历史经验] + [工具说明] + [用户问题]        │     │\n│  └────────────────────────────────────────────────────────────────┘     │\n│                    │                                                    │\n│                    ▼                                                    │\n│              ┌──────────┐                                               │\n│              │   模型    │                                               │\n│              └──────────┘                                               │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\n核心能力\n：\n多个 PromptBuilder 按优先级顺序执行\n每个 Builder 根据评估结果决定是否贡献、贡献什么内容\n支持自定义 Builder，根据业务需求定制 Prompt 逻辑\n非侵入式，在模型调用层拦截\n对比传统方案\n：\n学习模块（Learning）\n作用\n：\n从 Agent 执行历史中自动提取并保存有价值的经验。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                         学习模块工作流程                                   │\n├─────────────────────────────────────────────────────────────────────────┤\n│                                                                         │\n│  ┌────────────────────────────────────────────────────────────────────┐ │\n│  │                        Agent 执行过程                               │ │\n│  │                                                                    │ │\n│  │  输入 ──▶ 推理 ──▶ 代码生成 ──▶ 执行 ──▶ 输出                          │ │\n│  │   │        │          │         │        │                         │ │\n│  │   └────────┴──────────┴─────────┴────────┘                         │ │\n│  │                        │                                           │ │\n│  └────────────────────────┼───────────────────────────────────────────┘ │\n│                           ▼                                             │\n│              ┌────────────────────────┐                                 │\n│              │      学习上下文捕获      │                                 │\n│              │  - 用户输入             │                                 │\n│              │  - 中间推理步骤          │                                │\n│              │  - 生成的代码           │                                 │\n│              │  - 执行结果             │                                │\n│              └───────────┬────────────┘                                │\n│                          │                                             │\n│                          ▼                                             │\n│   ┌──────────────────────────────────────────────────────────────┐     │\n│   │                    学习提取器分析                              │     │\n│   │  ┌────────────┐  ┌────────────┐  ┌────────────┐              │     │\n│   │  │ 经验提取器  │  │ 模式提取器   │  │ 错误提取器   │              │     │\n│   │  │ 成功模式    │  │ 通用模式    │  │ 失败教训     │              │     │\n│   │  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘              │     │\n│   └────────┼───────────────┼───────────────┼─────────────────────┘     │\n│            │               │               │                           │\n│            └───────────────┼───────────────┘                           │\n│                            ▼                                           │\n│                   ┌────────────────┐                                   │\n│                   │   持久化存储    │ ──▶ 供后续任务参考使用                │\n│                   └────────────────┘                                   │\n│                                                                        │\n└────────────────────────────────────────────────────────────────────────┘\n核心能力\n：\nAfter-Agent 学习\n：\n每次 Agent 运行完成后提取经验；\nAfter-Model 学习\n：\n每次模型调用后提取经验；\nTool Interceptor\n：\n从工具调用中提取经验；\n离线学习\n：\n批量分析历史数据提取模式；\n学习过程\n：\n捕获执行上下文 → 提取器分析识别 → 生成经验记录 → 持久化存储供后续复用；\n经验模块（Experience）\n作用\n：\n积累和复用历史成功执行经验。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                         经验模块工作示意                                   │\n├─────────────────────────────────────────────────────────────────────────┤\n│                                                                         │\n│  【场景\n1\n: 经验积累】                                                       │\n│                                                                         │\n│   用户:\n\"查询订单状态\"\n──▶\nAgent\n成功执行  ──▶     ┌────────────────┐     │\n│                                                  │ 保存经验:       │     │\n│                                                  │ -\nReact\n决策经验 │     │\n│                                                  │ -\nCode\n经验     │     │\n│                                                  │ - 常识经验      │     │\n│                                                  └────────────────┘     │\n│                                                           │             │\n│                                                           ▼             │\n│                                                  ┌────────────────┐     │\n│                                                  │   经验库        │     │\n│                                                  └────────────────┘     │\n│                                                                         │\n│  【场景\n2\n: 经验复用】                                       ｜              │\n│                                                          │              │\n│   用户:\n\"查询我的订单状态\"\n◀────  匹配相似经验  ◀────────────┘              │\n│            │                                                            │\n│            ▼                                                            │\n│   ┌─────────────────────────────────────────────────┐                   │\n│   │\nAgent\n参考历史经验，更快决策+生成正确代码             │                   │\n│   └─────────────────────────────────────────────────┘                   │\n│                                                                         │\n│  【场景\n3\n: 快速意图响应】                                                   │\n│                                                                         │\n│   ┌─────────────────────────────────────────────────────────────────┐   │\n│   │ 经验库                                                           │   │\n│   │   ┌─────────────────────┐       ┌────────────────────────────┐  │   │\n│   │   │ 经验\nA\n(普通)         │       │ 经验\nB\n(✓ 已配置快速意图)      │  │   │\n│   │   │ 无快速意图配置        │       │   条件: 前缀匹配\n\"查看*销量\"\n│  │   │\n│   │   │ → 注入prompt供llm参考│       │   动作: 调用销量查询\nAPI\n│  │   │\n│   │   └─────────────────────┘       └───────────┬────────────────┘  │   │\n│   └─────────────────────────────────────────────┼───────────────────┘   │\n│                                                 │ 条件命中               │\n│                                                 ▼                       │\n│   用户:\n\"查看今日销量\"\n──▶  匹配经验B快速意图  ──▶  跳过\nLLM\n，直接执行          │\n│                                                                         │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\n核心能力\n：\n多类型经验\n：\n代码生成经验、ReAct 决策经验、常识经验，为类似任务提供历史参考；\n灵活复用\n：\n经验可注入 Prompt 或用于快速意图匹配；\n生命周期管理\n：\n支持经验的创建、更新、删除；\n快速意图响应\n：\n经验需显式配置\nfastIntentConfig\n才能启用；\n匹配已配置条件时，跳过 LLM 完整推理，直接执行预记录的工具调用或代码；\n支持多条件匹配：消息前缀、正则、元数据、状态等；\n触发器模块（Trigger）\n作用\n：\n创建和管理定时任务或事件触发的 Agent 执行。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                         触发器模块能力示意                                 │\n├─────────────────────────────────────────────────────────────────────────┤\n│                                                                         │\n│  【定时触发】                                                             │\n│                                                                         │\n│   用户:\n\"每天早上9点给我发送销售日报\"\n│\n│            │                                                            │\n│            ▼                                                            │\n│   ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐   │\n│   │\nAgent\n创建      │     │   调度器         │     │  自动执行        │   │\n│   │\nCron\n触发器     │────▶│\n09\n* * *      │────▶│  生成日报        │   │\n│   │  (自我调度)      │     │                 │     │  发送通知        │    │\n│   └─────────────────┘     └─────────────────┘     └─────────────────┘   │\n│                                                                         │\n│  【延迟触发】                                                             │\n│                                                                         │\n│   用户:\n\"30分钟后提醒我开会\"\n│\n│            │                                                            │\n│            ▼                                                            │\n│   ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐   │\n│   │\nAgent\n创建      │     │\n30\n分钟后      │     │  发送提醒         │   │\n│   │  一次性触发器     │────▶│   触发          │────▶│\n\"该开会了\"\n│   │\n│   └─────────────────┘     └─────────────────┘     └─────────────────┘   │\n│                                                                         │\n│  【回调触发】                                                             │\n│                                                                         │\n│   用户:\n\"满足xx条件时帮我xx\"\n│\n│                                                                         │\n│   外部系统: 发送事件到\nWebhook\n│\n│            │                                                            │\n│            ▼                                                            │\n│   ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐   │\n│   │  接收回调        │     │   触发\nAgent\n│     │  处理事件        │   │\n│   │\nWebhook\n事件   │────▶│   执行任务        │────▶│  返回响应        │   │\n│   └─────────────────┘     └─────────────────┘     └─────────────────┘   │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\n核心能力\n：\nTIME_CRON\n触发器：支持 Cron 表达式定时触发任务；\nTIME_ONCE\n触发器：支持一次性延迟触发；\nCALLBACK\n触发器：支持回调事件触发；\nAgent 可通过工具自主创建触发器，实现\"自我调度\"；\n回复渠道模块（Reply Channel）\n作用\n：\n提供灵活的消息回复能力，支持多种输出渠道。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                       回复渠道模块能力示意                                 │\n├─────────────────────────────────────────────────────────────────────────┤\n│                                                                         │\n│\nAgent\n需要向用户回复消息                                                 │\n│            │                                                            │\n│            ▼                                                            │\n│   ┌─────────────────────────────────────────────────────────────────┐   │\n│   │                    回复渠道路由                                   │   │\n│   └─────────────────────────────────────────────────────────────────┘   │\n│            │                                                            │\n│            ├──────────────┬──────────────┬──────────────┐               │\n│            ▼              ▼              ▼              ▼               │\n│   ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐        │\n│   │\nDEFAULT\n│  │\nIDE_CARD\n│  │\nIM_NOTIFY\n│  │\nWEBHOOK\n│        │\n│   │  文本回复   │  │  卡片展示   │   │  消息推送   │  │\nJSON\n推送   │        │\n│   └─────┬──────┘  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘        │\n│         │               │               │               │               │\n│         ▼               ▼               ▼               ▼               │\n│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐          │\n│   │ 控制台    │    │\nIDE\n│    │\nIM\n│    │ 第三方    │          │\n│   │ 终端回复  │    │ 富文本卡片 │     │ (可扩展) │    │  系统     │          │\n│   └──────────┘    └──────────┘    └──────────┘    └──────────┘          │\n│                                                                         │\n│  【使用示例】                                                             │\n│                                                                         │\n│   用户:\n\"分析完成后发送结果\"\n│\n│            │                                                            │\n│            ▼                                                            │\n│\nAgent\n:\nsend_message\n(text=\n\"分析结果...\"\n)                                │\n│            │                                                            │\n│            ▼                                                            │\n│   用户收到消息:\n\"📊 分析结果: ...\"\n│\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\n核心能力\n：\n多渠道路由\n：\nAgent 可根据场景选择不同渠道回复；\n配置驱动\n：\n动态生成回复工具，无需编码；\n同步异步支持\n：\n支持同步和异步回复模式；\n统一接口\n：\n屏蔽底层实现差异；\n内置示例渠道\n：\nIDE_TEXT\n（演示用）；\n可扩展渠道\n（通过实现\nReplyChannelDefinition\nSPI\n）：如\nIDE_CARD\n、\nIM_NOTIFICATION\n（钉钉/飞书/企微）、\nWEBHOOK_JSON\n等，需用户自行实现\n工具扩展模块（Dynamic Tools）\n作用\n：\n提供高度可扩展的工具体系，让 Agent 能够调用各类外部工具完成任务。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                        工具扩展架构                                       │\n├─────────────────────────────────────────────────────────────────────────┤\n│                                                                         │\n│   Agent 需要执行操作                                                      │\n│            │                                                            │\n│            ▼                                                            │\n│   ┌──────────────────────────────────────────────────────────────────┐  │\n│   │                   CodeactTool 工具体系                            │  │\n│   └─────────────────────────────────────────────────────────────────┘   │\n│            │                                                            │\n│            ├─────────────┬─────────────┬─────────────┬──────────────┐   │\n│            ▼             ▼             ▼             ▼              ▼   │\n│   ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌───────┐ │\n│   │   MCP      │ │   HTTP     │ │\nSearch\n│ │\nTrigger\n│ │ 自定义 │ │\n│   │   Tools    │ │   API      │ │  Tools     │ │  Tools     │ │ Tools │ │\n│   │            │ │   Tools    │ │            │ │            │ │       │ │\n│   └─────┬──────┘ └─────┬──────┘ └─────┬──────┘ └─────┬──────┘ └───┬───┘ │\n│         │              │              │              │            │     │\n│         ▼              ▼              ▼              ▼            ▼     │\n│   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐  ┌──────┐   │\n│   │ 任意 MCP │   │ REST API │   │ 知识检索   │   │ 定时任务  │  │ ...  │   │\n│   │ Server   │   │ OpenAPI  │   │ 项目搜索  │   │ 事件回调  │  │      │    │\n│   └──────────┘   └──────────┘   └──────────┘   └──────────┘  └──────┘   │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\n核心能力\n：\nMCP 工具支持\n：\n一键接入任意 MCP Server，复用 MCP 工具生态；\nHTTP API 支持\n：\n通过 OpenAPI 规范接入 REST API，调用企业现有接口；\n内置工具类型\n：\n搜索（Search）、回复（Reply）、触发器（Trigger）、学习（Learning）等；\n自定义工具 SPI\n：\n实现\nCodeactTool\n接口，轻松扩展新工具；\n知识检索模块（Knowledge Search）\n作用\n：\n多数据源统一检索引擎，为 Agent 的问答和决策提供知识支撑。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                       多数据源检索架构                                     │\n├─────────────────────────────────────────────────────────────────────────┤\n│                                                                         │\n│  用户问题:\n\"如何配置数据库连接池？\"\n│\n│            │                                                            │\n│            ▼                                                            │\n│  ┌─────────────────────────────────────────────────────────────────┐    │\n│  │                      统一检索接口                                 │    │\n│  └─────────────────────────────────────────────────────────────────┘    │\n│            │                                                            │\n│            ├────────────────┬────────────────┬────────────────┐         │\n│            ▼                ▼                ▼                ▼         │\n│   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────┐     │\n│   │    知识库     │  │    项目       │  │\nWeb\n│  │  自定义  │    │\n│   │\nProvider\n│  │\nProvider\n│  │\nProvider\n│  │\nProvider\n│    │\n│   │   (主要)      │  │   (可选)     │  │   (可选)      │  │  (\nSPI\n)  │    │\n│   └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └───┬─────┘    │\n│          │                 │                 │              │          │\n│          ▼                 ▼                 ▼              ▼          │\n│   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────┐      │\n│   │\nFAQ\n/ 文档    │  │ 源代码       │  │ 网络文章       │  │  ...   │      │\n│   │ 历史问答      │  │ 配置文件      │  │ 技术论坛       │  │        │      │\n│   │ 团队笔记      │  │ 日志         │  │               │  │        │      │\n│   └──────────────┘  └─────────────┘  └───────────────┘  └────────┘      │\n│          │                 │                 │              │          │\n│          └─────────────────┴─────────────────┴──────────────┘          │\n│                            │                                           │\n│                            ▼                                           │\n│               ┌────────────────────────┐                               │\n│               │ 聚合排序                │                               │\n│               │ → 注入\nPrompt\n│                                │\n│               └────────────────────────┘                               │\n│                                                                        │\n└────────────────────────────────────────────────────────────────────────┘\n核心能力\n：\n统一检索接口\n：\nSearchProvider\nSPI，支持可插拔数据源；\n演示 Provider\n：\n内置知识库、项目、Web 的 Mock 实现（仅供演示和测试）；\n自定义扩展\n：\n通过实现\nSearchProvider\n接口，接入任意数据源（数据库、向量库、API）；\n结果聚合\n：\n支持可配置的排序策略；\n业务价值\n：\n接入企业知识库提供准确答案、支持答案溯源、降低人工客服压力；\n配置示例\n：\nspring:\nai:\nalibaba:\ncodeact:\nextension:\nsearch\n:\nenabled:\ntrue\nknowledge\n-\nsearch\n-\nenabled:\ntrue\n# 知识库（默认 Mock 实现）\nproject\n-\nsearch\n-\nenabled:\nfalse\n# 项目代码（默认 Mock 实现）\nweb\n-\nsearch\n-\nenabled:\nfalse\n# Web 搜索（默认 Mock 实现）\ndefault\n-\ntop\n-\nk:\n5\nsearch\n-\ntimeout\n-\nms:\n5000\n💡 以上搜索功能默认提供 Mock 实现供演示测试。生产环境需实现 SearchProvider SPI 接入实际数据源。\n致谢\nSpring AI：\nhttps://github.com/spring-projects/spring-ai\nSpring AI Alibaba：\nhttps://github.com/alibaba/spring-ai-alibaba\nGraalVM：\nhttps://www.graalvm.org/\n联系方式\n搜索加入钉钉群：\n130240015687\n扫码加入微信群（如二维码过期请加钉钉群）\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.15,
+        "transfer_agent": 0.66,
+        "peripheral": 0.18,
+        "direct_local": 0,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.95,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.07,
+        "2": 0.89,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.65,
+        "2": 0.17,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.63,
+      "probabilities": {
+        "0": 0.38,
+        "1": 0.15,
+        "2": 0.04,
+        "3": 0.32,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.93,
+      "probabilities": {
+        "0": 0,
+        "1": 0.07,
+        "2": 0.92,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.68,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.07,
+        "4": 0.85,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1,
+      "probabilities": {
+        "0": 0.3,
+        "1": 0.41,
+        "2": 0.28,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 19697,
+    "outputTokens": 172,
+    "totalTokens": 19869
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.57,
+        "relevance": 0.93,
+        "grounding": 0.76,
+        "decision_action": 0,
+        "evidence": 0.95,
+        "actionability": 0.78,
+        "anti_hype": 0.6
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179868220,
+                "endTime": 1791179868405,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000827274",
+      "marketCost": "0.000827274",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000827274",
+      "inferenceCost": "0.000827274",
+      "inputInferenceCost": "0.000827274",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7J116NBNP4K1BJXV9A5A"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:48 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::vft4h-1791179867648-a7f367bffb94"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.15,
+            "transfer_agent": 0.66,
+            "peripheral": 0.18,
+            "direct_local": 0,
+            "transfer_business": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.95,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.07,
+            "2": 0.89,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.65,
+            "2": 0.17,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.63,
+          "probabilities": {
+            "0": 0.38,
+            "1": 0.15,
+            "2": 0.04,
+            "3": 0.32,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.93,
+          "probabilities": {
+            "0": 0,
+            "1": 0.07,
+            "2": 0.92,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.68,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.07,
+            "4": 0.85,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1,
+          "probabilities": {
+            "0": 0.3,
+            "1": 0.41,
+            "2": 0.28,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 19697,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.57,
+            "relevance": 0.93,
+            "grounding": 0.76,
+            "decision_action": 0,
+            "evidence": 0.95,
+            "actionability": 0.78,
+            "anti_hype": 0.6
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179868220,
+                    "endTime": 1791179868405,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000827274",
+          "marketCost": "0.000827274",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000827274",
+          "inferenceCost": "0.000827274",
+          "inputInferenceCost": "0.000827274",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7J116NBNP4K1BJXV9A5A"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:47.833Z"
+  }
+}

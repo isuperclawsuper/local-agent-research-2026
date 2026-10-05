@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "270127761510623232",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "告别OpenClaw运维盲区：火山引擎日志服务TLS一键开启全景观测",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247519455&idx=1&sn=6e82259aa596557beefc85e20e90b7e5",
+      "date": "2026-04-23T09:03:00.724Z",
+      "chars": 3730,
+      "text": "原创\n火山引擎存储\n2026-04-23 17:03\n北京\n概述\n当一个 OpenClaw 应用从本地 Demo 走向生产环境，Agent助手/xClaw企业的开发和运维团队面临的挑战便不再是“能不能跑”，而是“跑得稳不稳、贵不贵、出了事能不能查清”。Agent 运行过程如同一个黑盒，这导致了一系列现实问题：\nToken 成本不明：\n无法精细化衡量不同模型、不同技能（Skill）或不同业务场景下的 Token 消耗，成本账单模糊，优化无从下手。\n多轮对话追踪困难：\nAgent 与大模型交互过程复杂，多轮对话如同“黑盒”，出现问题时难以追踪每一轮的上下文与根因。\n无法监控系统状态：\nOpenClaw 在运行态会涉及消息队列、Webhook 处理、会话管理等多个环节。当用户说“它怎么不回我了”，问题可能出现在任何一层，运维团队将陷入“盲人摸象”的困境。\n安全审计难题：\n高危命令执行、敏感文件访问等无法审计和追溯，造成严重的安全事件。\n针对这些痛点，火山引擎日志服务（TLS）面向Agent助手/xClaw企业的开发和运维团队，提供开箱即用、全方位的OpenClaw运维观测方案。通过一键式安装的插件，实现对 OpenClaw 日志、指标和链路数据的零侵入、全量采集，并自动生成覆盖成本、运维、性能、安全四大核心场景的观测大盘。帮助Agent助手/xClaw企业的开发和运维团队，用最低的接入成本，换取最全面的系统洞察力，让每一次模型调用、每一次工具执行、每一笔 Token 开销都有据可查。\n一键接入：3分钟点亮你的观测大盘\n日志服务TLS提供与 OpenClaw 框架原生集成的日志采集插件，通过一行命令，即可自动、无侵入地采集所有相关的可观测数据，无需修改任何业务代码。\n前提条件\nOpenClaw 版本不低于\n2026.3.8\n。\n已开通火山引擎日志服务（TLS），并确定服务所在的 Region和 Endpoint。\n准备好用于鉴权的\nAK/SK\n或\nAPI Key\n（任选其一）。\n鉴权模式如何选？\n我们支持两种鉴权模式，以适应不同安全级别的部署需求。\n模式\n适用场景\n使用说明\nAK/SK\n(访问密钥)\n希望安装器自动创建和关联所有 TLS 资源（如项目、应用、日志主题），适合初次试用、单机开发与快速验证场景。\n在访问控制台中创建具备资源创建权限的 API 访问密钥。安装器将使用此密钥自动完成所有云上资源的配置。\nAPI Key\n希望严格收敛权限，由运维团队统一预先创建 TLS 资源并分发日志主题 ID。适合生产环境、多实例部署及权限强管控场景。\n在 TLS 控制台预先创建 OpenClaw 应用，获取各类日志对应的 Topic ID 和用于数据写入的 API Key。此方式权限最小，最为安全。\n安装命令示例\n我们推荐使用非交互式的命令行进行批量部署，尤其适合多实例场景。\n💡以下示例以推荐的\nAPI Key\n模式为例。你只需将命令中的占位符替换为你的真实信息即可。\nnpm\nexec\n-\ny\n--package=@volcengine/diagnostics-tls-install -- diagnostics-tls-install \\\n--non-interactive \\\n--region <your-region> \\\n--api-key <your-api-key> \\\n--topic-id-app-log <app日志TopicID> \\\n--topic-id-audit-log <配置审计日志TopicID> \\\n--topic-id-cache-trace <CacheTrace日志TopicID> \\\n--topic-id-session <Session日志TopicID> \\\n--topic-id-trace <Trace日志TopicID> \\\n--topic-id-metric <Metric指标TopicID>\n安装完成后，只需重启 OpenClaw Gateway，即可完成数据采集。\nopenclaw\ngateway restart\n观测大盘：从全局视角看懂 OpenClaw\n数据接入后，TLS 会自动生成预置观测大盘，分别对应成本、运维、性能、安全这四个最受关注的运维场景。你无需手动配置图表，即可直观地洞察系统正在发生什么。\n成本分析大盘：钱花在哪了？\n核心指标概览：\n直观展示总调用次数、总 Token 消耗、总费用以及单次调用的平均成本，让你对整体开销一目了然。\n多维度成本下钻：\n支持按模型、 Provider、Agent 甚至是主机等多个维度对 Token 消耗和费用进行拆解分析。你可以快速发现是哪个大模型或哪个业务 Agent 贡献了绝大部分成本。\n成本趋势分析：\n通过按天聚合的趋势图，清晰地看到成本随时间的变化。如果某天费用突然上涨，可以迅速定位到异常时间点，为进一步排查提供线索。\n运维分析大盘：系统健康吗？\n异常根因下钻：\n当 Gateway 出现异常时，大盘会自动将其按“配置异常”、“ WebSocket 异常”、“工具调用异常”等原因分类，并展示各自的趋势和占比。你可以快速判断是哪一类问题导致了服务不稳定。\n服务状态监控：\n实时统计 Gateway 的退出次数、配置变更次数，以及\nError\n、\nFatal\n级别日志的分布情况，让你对系统的整体健康度有宏观把握。\n多实例对比：\n如果你管理着多个 OpenClaw 实例，大盘可以清晰地展示不同实例的异常分布，帮助你快速识别出“问题最严重”的那个实例。\n性能分析大盘：哪里变慢了？\n关键延迟监控：\n实时展示模型调度的端到端延迟、消息在队列中的处理延迟。如果用户反馈“响应慢”，你可以第一时间判断瓶颈是在模型推理还是在内部任务处理。\n系统吞吐与压力：\n通过 Webhook 的接收速率、错误次数，以及任务队列的深度变化，评估系统当前是否处于高负载状态，是否存在任务积压。\n会话卡死检测：\n自动发现并统计那些长时间没有进展的“卡死”会话。这对于排查 Agent 陷入逻辑死循环或等待外部资源超时等问题至关重要。\n安全审计大盘：谁在做危险操作？\n高危行为追溯：\n对\nexec\n执行危险命令、\nfs_write\n写入敏感路径等行为进行审计。你可以清晰地看到谁（用户/会话）在\n什么时间\n，执行了\n什么\n危险操作\n。\n鉴权与访问监控：\n统计鉴权失败、连接失败的次数，帮助发现潜在的恶意探测或配置错误。\n配置变更留痕：\n每一次对 OpenClaw 核心配置的修改都会被记录下来，方便追溯和审计。\n从仪表盘到原始证据：用 SQL 追溯根因安全审计大盘：谁在做危险操作？\n仪表盘帮助我们从宏观上发现“可能存在问题”，而日志服务 TLS 强大的检索和 SQL 分析能力，则让我们能从“可能”走向“确定”，实现从现象到证据的完整追溯。\n当观测大盘亮起红灯时，你可以直接跳转到原始日志，通过几次简单的查询，层层下钻，直至找到问题根源。\n场景示例 ：Token消耗异常分析\n问题现象：\n成本大盘显示某个 Agent 的 Token 消耗异常高，似乎 Prompt Caching（提示词缓存）完全没有生效。\n排查思路：\n缓存失效的一个常见原因是\nSystem Prompt\n（系统提示词）本身不稳定，比如在其中嵌入了当前时间、用户 ID 等动态信息。我们可以通过一条 SQL 来全局巡检这个问题。\n查询示例：\n*\n|\nSELECT\nsessionKey\nAS\n\"会话键\",\nCOUNT\n(\n*\n)\nAS\n\"请求数\",\nCOUNT\n(\nDISTINCT\nsystemDigest)\nAS\n\"System版本数\",\nDATE_FORMAT(FROM_UNIXTIME(\nMAX\n(__time__)\n/\n1000\n),\n'yyyy-MM-dd HH:mm:ss'\n)\nAS\n\"最近时间\",\nMAX_BY(runId, __time__)\nAS\n\"示例runId\"\nWHERE\nstage\n=\n'session:loaded'\nGROUP\nBY\nsessionKey\nORDER\nBY\n\"System版本数\"\nDESC\nLIMIT\n20\n💡\n解读：\n该查询统计了每个会话（\nsessionKey\n）中，\nSystem Prompt\n的指纹（\nsystemDigest\n）出现了多少个不同的版本。理想情况下，一个会话中的\nSystem Prompt\n应该是固定不变的，版本数应为 1。如果查询结果中出现版本数大于\n1\n的会话，就意味着存在“缓存杀手”，需要立即检查对应 Agent 的代码逻辑。\n总结：让线上数万个 OpenClaw 跑得更稳、更省、更安全\n通过火山引擎日志服务 TLS ，为Agent助手/xClaw企业的开发和运维团队提供了一个从数据采集、全局监控到深度追溯的完整 OpenClaw 可观测性闭环，让我们可以观测线上数万个OpenClaw的整体运行健康状态，及时发现异常和快速定位问题。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.46,
+        "irrelevant": 0.5,
+        "peripheral": 0.04,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.84,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.08,
+        "2": 0.88,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.47,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.09,
+        "2": 0.13,
+        "3": 0.49,
+        "4": 0.16,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.99,
+      "probabilities": {
+        "0": 0.6,
+        "1": 0.07,
+        "2": 0.18,
+        "3": 0.05,
+        "4": 0.1,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.96,
+      "probabilities": {
+        "0": 0,
+        "1": 0.07,
+        "2": 0.9,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.4,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.78,
+        "5": 0.03
+      }
+    },
+    "anti_hype": {
+      "score": 0.72,
+      "probabilities": {
+        "0": 0.6,
+        "1": 0.17,
+        "2": 0.16,
+        "3": 0.07,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4793,
+    "outputTokens": 173,
+    "totalTokens": 4966
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.37,
+        "relevance": 0.88,
+        "grounding": 0.43,
+        "decision_action": 0.34,
+        "evidence": 0.93,
+        "actionability": 0.56,
+        "anti_hype": 0.52
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179926280,
+                "endTime": 1791179926449,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000201306",
+      "marketCost": "0.000201306",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000201306",
+      "inferenceCost": "0.000201306",
+      "inputInferenceCost": "0.000201306",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9AQSVT03FY8CEDXF2E2S"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:46 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::sdxf2-1791179926255-fb076850b13d"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.46,
+            "irrelevant": 0.5,
+            "peripheral": 0.04,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.84,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.08,
+            "2": 0.88,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.47,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.09,
+            "2": 0.13,
+            "3": 0.49,
+            "4": 0.16,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.99,
+          "probabilities": {
+            "0": 0.6,
+            "1": 0.07,
+            "2": 0.18,
+            "3": 0.05,
+            "4": 0.1,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.96,
+          "probabilities": {
+            "0": 0,
+            "1": 0.07,
+            "2": 0.9,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.4,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.78,
+            "5": 0.03
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.72,
+          "probabilities": {
+            "0": 0.6,
+            "1": 0.17,
+            "2": 0.16,
+            "3": 0.07,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4793,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.37,
+            "relevance": 0.88,
+            "grounding": 0.43,
+            "decision_action": 0.34,
+            "evidence": 0.93,
+            "actionability": 0.56,
+            "anti_hype": 0.52
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179926280,
+                    "endTime": 1791179926449,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000201306",
+          "marketCost": "0.000201306",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000201306",
+          "inferenceCost": "0.000201306",
+          "inputInferenceCost": "0.000201306",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9AQSVT03FY8CEDXF2E2S"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:45.681Z"
+  }
+}

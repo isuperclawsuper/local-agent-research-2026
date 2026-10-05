@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "creating a context checkpoint. \"\n\"Treat the conversation turns below as source material for a \"\n\"compact record of prior work. \"\n# 关键: 要求摘要使用用户的语言（如中文对话就输出中文摘要）\n\"Write the summary in the same language the user was using. \"\n# 安全: 绝对不能在摘要中保留密钥\n\"NEVER include API keys, tokens, passwords — replace with [REDACTED].\"\n)\n# 将待压缩的消息序列化为文本\nconversation_lines = []\ntotal_chars =\n0\nmax_total_chars =\n15000\n# 约 3750 tokens，给 summarizer 留足够的输出空间\nfor\nmsg\nin\npruned_middle:\nrole = msg.get(\n\"role\"\n,\n\"unknown\"\n)\ncontent = msg.get(\n\"content\"\n,\n\"\"\n)\nif\nisinstance\n(content,\nlist\n):\n# 多模态内容: 只提取文本部分\ncontent =\n\"\\n\"\n.join(\nitem.get(\n\"text\"\n,\n\"\"\n)\nfor\nitem\nin\ncontent\nif\nisinstance\n(item,\ndict\n)\n)\nif\ncontent:\nline =\nf\"[\n{role}\n]:\n{content[:\n500\n]}\n\"\n# 每条消息最多 500 字\nif\ntotal_chars +\nlen\n(line) > max_total_chars:\nconversation_lines.append(\n\"[...remaining messages omitted]\"\n)\nbreak\nconversation_lines.append(line)\ntotal_chars +=\nlen\n(line)\n# 计算摘要的目标长度\n# 公式: min(max(最小值, 原始内容 * 压缩比), 天花板)\ncontent_tokens =\nsum\n(_estimate_message_tokens(m)\nfor\nm\nin\npruned_middle)\nsummary_budget =\nmax\n(\nMIN_SUMMARY_TOKENS,\n# 最少 200 tokens，太短会丢信息\nmin\n(\nint\n(content_tokens * SUMMARY_RATIO),\n# 按比例压缩 (如 0.3)\nSUMMARY_TOKENS_CEILING\n# 最多 2000 tokens\n),\n)\n# 组装 prompt 并调用 LLM\nsummarizer_messages = [\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_instruction},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\n\"\\n\\n\"\n.join([\nf\"[Previous context summary]\\n\n{previous_summary}\n\"\nif\nprevious_summary\nelse\n\"\"\n,\nf\"[Focus topic:\n{focus_topic}\n]\"\nif\nfocus_topic\nelse\n\"\"\n,\n\"[Conversation history]\\n\"\n+\n\"\\n\"\n.join(conversation_lines),\ntemplate_sections,\n# 13 个字段的结构化模板\n])},\n]\ntry\n:\nresponse =\nself\n.llm.chat(summarizer_messages, tools=\nNone\n)\nreturn\nresponse.get(\n\"content\"\n,\n\"\"\n).strip()\nexcept\nException:\n# 双重保险: LLM 不可用时回退到基于规则的简单摘要\nreturn\nself\n._build_structured_summary(pruned_middle, previous_summary, focus_topic)\n如果标准压缩后 token 仍然超限（比如单轮工具输出就有 80K token），就需要更激进的\n降级策略解决压缩失败问题\n，提高压缩力度。\n# agent/context_compressor.py — 三级降级\ndef\ncompress_with_fallback\n(\nself, messages, todo_store=\nNone\n, ...\n) ->\nlist\n:\n\"\"\"带降级的压缩 — 确保无论如何都能把 token 压到阈值以下。\n降级策略按\"信息损失\"从低到高排列:\n降级① 损失低:  减少尾部保护条数（从 6 条降到 3 条）\n降级② 损失中:  删除最早的 10 条工具结果\n降级③ 损失高:  只保留 system prompt + 最近 3 轮（最后手段）\n\"\"\"\n# 第一次尝试: 标准压缩\nresult =\nself\n.compress(messages)\nresult_tokens =\nsum\n(_estimate_message_tokens(m)\nfor\nm\nin\nresult)\nif\nresult_tokens <\nself\n.threshold_tokens:\nreturn\nself\n._inject_todo_state(result, todo_store)\n# ---- 降级① ----\n# 思路: 尾部保护从 6 条减到 3 条，让更多消息进入压缩区\n# 代价: LLM 丢失了一些近期上下文，可能会重复之前做过的事\noriginal_protect_last =\nself\n.protect_last_n\nself\n.protect_last_n =\nmin\n(\n3\n,\nself\n.protect_last_n)\nresult =\nself\n.compress(messages)\nself\n.protect_last_n = original_protect_last\n# 恢复原值\nresult_tokens =\nsum\n(_estimate_message_tokens(m)\nfor\nm\nin\nresult)\nif\nresult_tokens <\nself\n.threshold_tokens:\nreturn\nself\n._inject_todo_state(result, todo_store)\n# ---- 降级② ----\n# 思路: 直接删除最早的 10 条工具结果消息\n# 代价: 早期的工具执行记录完全丢失\nfiltered = []\nremoved_count =\n0\nfor\nmsg\nin\nresult:\nif\nmsg.get(\n\"role\"\n) ==\n\"tool\"\nand\nremoved_count <\n10\n:\nremoved_count +=\n1\ncontinue\n# 跳过（删除）\nfiltered.append(msg)\nresult = filtered\nresult_tokens =\nsum\n(_estimate_message_tokens(m)\nfor\nm\nin\nresult)\nif\nresult_tokens <\nself\n.threshold_tokens:\nreturn\nself\n._inject_todo_state(result, todo_store)\n# ---- 降级③: 紧急截断 ----\n# 思路: 只保留 system prompt 和最近 3 轮对话，其余全部丢弃\n# 代价: 几乎丢失所有历史上下文，Agent 相当于\"重启\"\nsystem_messages = [m\nfor\nm\nin\nmessages\nif\nm.get(\n\"role\"\n) ==\n\"system\"\n]\nrecent_messages = messages[-\n6\n:]\n# 最近约 3 轮对话\noverflow_notice = {\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n: (\n\"[Context overflow] The conversation exceeded the context window. \"\n\"Most earlier history has been discarded. \"\n\"Only the system prompt and the last 3 turns are preserved.\"\n),\n}\nresult = system_messages + [overflow_notice] + recent_messages\nreturn\nself\n._inject_todo_state(result, todo_store)\n一个容易忽视但很重要的细节：如果消息本身就很长（比如单条 system prompt 占了 60% 窗口），那么反复压缩也压不下来。\n防抖机制\n能够\n避免浪费 LLM 调用。\n# agent/context_compressor.py — 压缩防抖\ndef\ncompress\n(\nself, messages, ...\n):\nbefore_tokens =\nsum\n(_estimate_message_tokens(m)\nfor\nm\nin\nmessages)\n# 防抖检查: 最近几次压缩的平均节省率\nif\nself\n._recent_savings:\navg_saving =\nsum\n(\nself\n._recent_savings) /\nlen\n(\nself\n._recent_savings)\nif\navg_saving < COMPRESSION_DEBOUNCE_THRESHOLD:\n# 默认 0.1 (10%)\n# 平均每次压缩只能节省不到 10%，说明已经压无可压\n# 跳过压缩，避免浪费 LLM 调用（生成摘要也要花 token）\nreturn\nmessages\n# ... 执行压缩 ...\n# 记录本次压缩的节省比例（用于后续防抖判断）\nafter_tokens =\nsum\n(_estimate_message_tokens(m)\nfor\nm\nin\nresult)\nif\nbefore_tokens >\n0\n:\nsaving_ratio = (before_tokens - after_tokens) / before_tokens\nself\n._recent_savings.append(saving_ratio)\nif\nlen\n(\nself\n._recent_savings) >\n5\n:\nself\n._recent_savings.pop(\n0\n)\n# 只保留最近 5 次记录\nreturn\nresult\n压缩后有一个关键问题：\n如果 LLM 正在按照 todo 列表逐步执行任务，压缩会把 todo 工具调用的历史消息压缩掉，导致 LLM \"忘记\"自己做到哪了\n。\n解决方案：压缩完成后，把未完成的 todo 状态作为新消息注入回去，\n防止被压缩\n。\n# agent/context_compressor.py — Todo 状态注入\ndef\n_inject_todo_state\n(\nself, messages, todo_store\n):\n\"\"\"在压缩完成后注入未完成的 todo 任务状态。\n为什么不把 todo 放在 system prompt 里?\n因为 system prompt 是固定的，而 todo 是动态变化的。\n而且 system prompt 在保护区内不会被压缩，放在里面只会让它越来越大。\n所以作为独立的 user 消息注入，插入到尾部保护区之前。\n\"\"\"\nif\ntodo_store\nis\nNone\n:\nreturn\nmessages\ninjection_text = todo_store.format_for_injection()\nif\ninjection_text:\n# 示例输出:\n# [Your active task list was preserved across context compression]\n# - [>] 1. 重写 Harness 理论模块 (in_progress)\n# - [ ] 2. 重写 Claw 理论模块 (pending)\ntodo_message = {\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: injection_text}\n# 插入位置: 在尾部保护消息之前\nsystem_count =\nsum\n(\n1\nfor\nm\nin\nmessages\nif\nm.get(\n\"role\"\n) ==\n\"system\"\n)\ninsert_pos =\nmax\n(system_count,\nlen\n(messages) -\nself\n.protect_last_n)\nmessages.insert(insert_pos, todo_message)\nreturn\nmessages\n在错误分类与重试详细设计方面，API 错误不能一律\"重试 3 次\"——限流错误需要的是等待，认证错误重试 100 次也没用，上下文溢出需要压缩而不是重试。这就是错误分类器的价值。\n生产场景需要对每一种错误标记出来，如下代码所示，然后\n对错误进行细分归类\n，判断后续应该如何重试。\n错误归类\n描述\n可重试成功\n例如网络抖动、超时等，这种情况可以直接重试成功。\n需要修改信息可重试成功\n比如数据超长、服务器过载等等，数据超长可以压缩后重试，服务器过载可以切换模型重试。\n永远无法成功\n比如认证错误，这种需要用户调整完配置才行，否则永远无法成功。\n# agent/error_classifier.py —\nclass\nFailoverReason\n(enum.Enum):\n\"\"\"15+ 种错误原因，每种附带不同的恢复策略。\"\"\"\nauth =\n\"auth\"\n# 临时认证错误 → 换凭证\nauth_permanent =\n\"auth_permanent\"\n# 永久认证错误 → 终止\nbilling =\n\"billing\"\n# 账单耗尽 → 终止\nrate_limit =\n\"rate_limit\"\n# 限流 → 等待后重试\noverloaded =\n\"overloaded\"\n# 服务过载 → 切换提供商\nserver_error =\n\"server_error\"\n# 服务器错误 → 重试\ntimeout =\n\"timeout\"\n# 超时 → 重试\ncontext_overflow =\n\"context_overflow\"\n# 上下文溢出 → 压缩\nmodel_not_found =\n\"model_not_found\"\n# 模型不存在 → 终止\nformat_error =\n\"format_error\"\n# 请求格式错误 → 终止\n# ... 还有 image_too_large, thinking_signature 等\n\"\"\"错误匹配方式:\nLayer 1: HTTP 状态码 (最可靠)\n429 → rate_limit, 402 → billing, 401/403 → auth,\n500/502 → server_error, 503/529 → overloade",
+      "fulltext_obtained": true,
+      "chunk_index": 12,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.04,
+        "peripheral": 0,
+        "transfer_agent": 0.96,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.89,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.09,
+        "2": 0.9,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.71,
+      "probabilities": {
+        "0": 0.67,
+        "1": 0.11,
+        "2": 0.08,
+        "3": 0.1,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.73,
+      "probabilities": {
+        "0": 0.68,
+        "1": 0.1,
+        "2": 0.06,
+        "3": 0.12,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.86,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.12,
+        "3": 0.88,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.59,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.12,
+        "4": 0.78,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.81,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.05,
+        "2": 0.06,
+        "3": 0.76,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.67,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4939,
+    "outputTokens": 172,
+    "totalTokens": 5111
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.94,
+        "relevance": 0.92,
+        "grounding": 0.53,
+        "decision_action": 0.51,
+        "evidence": 0.91,
+        "actionability": 0.7,
+        "anti_hype": 0.75
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180420502,
+                "endTime": 1791180420647,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000207438",
+      "marketCost": "0.000207438",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000207438",
+      "inferenceCost": "0.000207438",
+      "inputInferenceCost": "0.000207438",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARDC56GB0HAX0FQNM7EK3"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:00 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::xvgz7-1791180420477-b1a6c5b04737"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.04,
+            "peripheral": 0,
+            "transfer_agent": 0.96,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.89,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.09,
+            "2": 0.9,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.71,
+          "probabilities": {
+            "0": 0.67,
+            "1": 0.11,
+            "2": 0.08,
+            "3": 0.1,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.73,
+          "probabilities": {
+            "0": 0.68,
+            "1": 0.1,
+            "2": 0.06,
+            "3": 0.12,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.86,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.12,
+            "3": 0.88,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.59,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.12,
+            "4": 0.78,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.81,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.05,
+            "2": 0.06,
+            "3": 0.76,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.67
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4939,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.94,
+            "relevance": 0.92,
+            "grounding": 0.53,
+            "decision_action": 0.51,
+            "evidence": 0.91,
+            "actionability": 0.7,
+            "anti_hype": 0.75
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180420502,
+                    "endTime": 1791180420647,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000207438",
+          "marketCost": "0.000207438",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000207438",
+          "inferenceCost": "0.000207438",
+          "inputInferenceCost": "0.000207438",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARDC56GB0HAX0FQNM7EK3"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:59.904Z"
+  }
+}

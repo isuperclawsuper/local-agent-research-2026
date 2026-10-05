@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1161547692032106496",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI 时代，实时入湖正在告别 ETL：从 Kafka 到 Iceberg 的架构减法",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561192&idx=1&sn=125069c1fabd3e8d3295c00eb13f8236",
+      "date": "2026-06-18T06:33:00.025Z",
+      "chars": 11746,
+      "text": "阿里云开发者\n2026-06-18 14:33\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n摘要\n在 AI 驱动的数据应用场景中，企业越来越需要一套同时支撑实时消费、历史沉淀与多引擎复用的数据底座。Kafka、Iceberg 开放表格式与对象存储的组合，正成为流数据入湖的重要方向。但传统依赖 Flink、Spark 等外部 ETL 作业的方式，也带来了链路长、系统边界多、运维复杂等问题。本文围绕“零 ETL”这一趋势，讨论流数据入湖为什么需要做架构减法，并结合 Kafka × Table Bucket 的实践，分析一种将通用入湖能力前移到消息与表存储链路中的方案，如何在降低复杂度的同时，兼顾实时性、一致性、Schema 演进、CDC 语义与开放生态兼容。\n一、AI 时代，实时入湖为什么要做架构减法\n实时与历史的双重诉求，\n正在重塑数据底座\n过去几年，企业数据体系的演进路径已逐渐清晰：从传统离线数仓走向实时数仓，再从“流批并立”走向统一的数据湖与开放表格式。进入 AI 时代后，这一趋势进一步加快——越来越多的数据场景同时提出实时处理与历史分析的双重要求。\n无论是模型训练、特征工程、在线推理，还是经营分析、用户洞察、风控审计，企业都需要一套既能承接实时数据、又能沉淀长期数据资产的数据底座。前者强调低延迟与持续处理能力，后者强调低成本、可治理与多引擎复用能力。当两类能力被要求在同一份数据上同时实现，数据就必须在更短的链路上完成接入、沉淀和复用。\n在这一背景下，\nKafka + Iceberg（开放表格式）+ 对象存储\n已成为一类常见的架构组合：Kafka 承接持续变化的数据流，Iceberg 将数据组织为可治理、可查询、可演进的表，对象存储承载海量历史数据并提供低成本、可扩展的存储底座。自 2024 年 AWS 推出 S3 Tables 之后，围绕“流式接入 + 开放表格式 + 对象存储”的架构方向也变得更加明确。\n图 1：流式接入、开放表格式与对象存储正在形成新的数据底座组合\n实时入湖演进中的几个趋势\n随着 Lakehouse 架构成为大数据领域的主流范式，将流式数据实时或近实时地写入开放表格式（Iceberg / Delta Lake / Hudi）已成为刚需。Kafka 作为主流的流数据总线，其与数据湖的集成能力直接影响架构选型。从近两年的产品演进和用户需求看，实时入湖领域大致呈现出四个趋势：\n开放格式优先\n：Iceberg 凭借其开放的元数据标准、多引擎兼容及良好的 Schema 演进能力，在跨云数据湖与开放生态场景中的采用率持续提升，已成为开放表格式中的核心选项之一。\n零 ETL 诉求\n：越来越多的用户倾向于减少数据搬运环节，希望消息系统更直接地将数据持久化为开放表格式，以降低架构复杂度与延迟。\n存算分离深化\n：无论是 Kafka 存储层还是数据湖存储层，存算分离已成为降本增效的核心架构演进方向。\nServerless 化\n：流处理与消息服务的 Serverless 化降低了运维门槛，按需计费模式成为不少中小企业与新业务的首选。\nKafka 入湖的三大阵营\n从竞争格局来看，当前 Kafka 入湖市场可划分为三大阵营，技术路径与商业取向差异明显：\n阵营\n代表产品\n核心思路\n价值\n限制\n原生集成\nConfluent Tableflow、Redpanda Iceberg Topics\nBroker 层直接将 Topic 数据物化为 Iceberg 表\n架构简洁、零 ETL、延迟低\nVendor lock-in 风险高，需额外支付存储与管理费用\nConnector / ETL\nAWS MSK Connect + Iceberg Sink、开源 Kafka Connect Iceberg Sink\n通过 Connector 从 Kafka 消费数据并写入 Iceberg\n灵活可控、开源生态丰富\n运维复杂度高，延迟相对偏高，exactly-once 语义保障困难\n生态平台\nDatabricks、Snowflake\n借助平台自身集成能力将 Kafka 数据摄入 Lakehouse\n与分析引擎深度集成\n通常锁定在特定格式（如 Delta Lake）或特定平台，开放度不足\n从架构理念看，\n原生集成阵营更贴近“零 ETL”的思路——将通用入湖能力前移到更靠近消息主链路的位置。\n但这也\n对开放性与中立性提出了更高要求\n：既要像 Connector 阵营一样兼容开放生态，又要避免像生态平台阵营那样被锁定到单一格式或单一引擎。这也是后文 Kafka × Table Bucket 这条路径重点要回答的问题。\n真正困难的，不是“能写”，\n而是“持续稳定地写”\n事实上，真正困难的并不在于“Kafka 能否将数据写入表”，而在于\n“能否稳定、高效、低成本地完成写入”\n。\n一方面，实时数据天然连续且碎片化，如果写入策略不合理，就容易带来小文件、分区失衡、元数据膨胀、写放大与 Compaction 压力；另一方面，上游字段变化、类型变更与 CDC 语义，又会与表格式对 Schema、一致性与事务的要求发生碰撞——Schema 如何演进、Update / Delete 如何表达、写入失败后如何恢复，都是生产环境中的关键问题。\n从落地价值看，这类方案之所以受到持续关注，在于它同时解决了三类现实诉求：通过云原生架构降低整体建设和运维成本；让实时接入与长期分析更接近“流湖一体”的协同方式；并在保留用户自有对象存储数据主权的前提下，借助托管化能力降低小文件治理、Schema 演进与链路维护的负担。\n这也意味着，流数据入湖的核心命题正在改变：不再是“要不要采用这套技术组合”，而是\n“能否通过架构减法收敛链路复杂度，把通用入湖能力尽量前移为平台能力”\n。从当下的演进方向看，答案越来越清晰——\n实时入湖，正在告别外部 ETL\n。\n二、从外部 ETL 到零 ETL：\n入湖链路到底减掉了什么\n如果说第一部分回答的是“为什么要做架构减法”，那么这一部分回答的就是：实时入湖链路中，真正被减掉的是什么。\n传统的流数据入湖路径通常是：\nKafka → Flink / Spark Streaming → 开放表 → 对象存储\n。这条链路已经相当成熟，在需要复杂清洗、实时聚合、状态计算与多流关联的场景中，依然是有效方案。\n问题在于，并不是所有场景都需要一条完整的外部计算链路。很多时候，企业真正要解决的，是把 Kafka 中持续到来的数据稳定、连续地写成可查询、可管理的表。如果只是为了完成这一步，仍维护 Flink 或 Spark Streaming 作业，就意味着额外承担三类系统复杂度：\n系统边界增加\n：数据从 Kafka 流出，再由外部任务消费、转换、写入与提交，中间至少跨越一次独立运行时和一套独立调度体系。链路越长，故障面越大，恢复路径也越复杂。\n通用能力重复实现\n：消息解码、Schema 映射、位点管理、事务提交、小文件控制、失败恢复，本质上都是实时入湖中的共性工程问题，却常常需要在每条 ETL 作业中分别实现与维护。\n平台成本持续上升\n：为支撑这些入湖任务，企业还要维护额外的流计算集群、监控体系、发布流程与排障机制。随着链路数量增加，这部分成本会不断累积。\n图 2：面向流数据入湖的零 ETL 一体化方案示意\n因此，“零 ETL”真正减掉的，并不是数据处理本身，而是那些原本需要依赖外部作业反复承担的通用入湖能力：\n一层额外的数据搬运链路；\n一批重复实现的工程逻辑；\n一部分与业务价值无关的运维复杂度。\n图 3：传统外部 ETL 链路与内建入湖方案的能力差异\n从这个角度看，\n“零 ETL”更像是一种架构思路的变化\n：不是继续通过外部系统拼装链路，而是\n把通用入湖能力尽量收敛为基础设施的内建能力\n。\n对用户来说，这类能力更接近“零代码、配置即生效”的交付方式，而不再以独立 ETL 任务的形式存在。\n三、Kafka × Table Bucket 的零 ETL\n入湖是怎么工作的\n如果说“零 ETL”的核心是把通用入湖能力收敛为平台能力，那么\nKafka × Table Bucket 的关键，就是让“从消息到表”的路径更短、更稳\n。\n这里可以把 Table Bucket 理解为对象存储上的表承载能力。它不是简单地把文件写入对象存储，而是以表的方式组织、管理与提供数据，使数据既保留对象存储低成本、可扩展的特性，又具备面向计算与治理的结构化能力。\n从逻辑上看，这类零 ETL 入湖路径通常可以分为三层：\n层级\n职责\n协议接入层\n兼容标准 Kafka Producer / Consumer 协议\n转换处理层\n完成格式转换、Schema 感知、CDC 解析、分区路由\n表存储层\n提供表写入、元数据管理、对象存储落盘与后台优化\n与传统“Kafka → 外部 ETL → 表”的三段式架构相比，最大的变化在于：\n原本依赖外部作业完成的一部分通用入湖逻辑，被前移到了更靠近 Kafka 的链路中\n。\n更进一步，转换引擎和表写入能力可以以内嵌方式运行在更靠近 Broker 的执行链路中，减少网络往返、独立调度与额外 ETL 集群带来的复杂度。在部分实现中，数据从 Kafka 分区到 Iceberg 表的转换可以在同一进程内完成，同步任务也可以与 Broker 生命周期绑定，使资源调度与故障恢复收敛在同一体系中。\n图 4：Kafka × Table Bucket 的零 ETL 入湖整体架构\n核心数据流：端到端入湖路径\n一条消息从写入 Kafka，到能被下游计算引擎查询到，中间会经过三个关键阶段。\n第一阶段：记录转换\n消息进入 Kafka 后，首先会被转换为适合表写入的结构化对象。这个过程通常由\nRecordProcessor\n一类组件完成，包括 Key / Value 反序列化、Transform 链处理与记录组装。它支持 String、Avro Registry、Protobuf 等多种 Converter，也可以通过\nFlatten\n、\nDebezium\n等转换链对嵌套结构进行展开或对 CDC 事件进行解包。最终，Key、Value、Headers 与 topic、partition、offset、timestamp 等元信息，会被整合为完整的结构化记录。\n第二阶段：Schema 感知与演进\n在真正写入表之前，系统需要比较当前记录的 Schema 与目标表的 Schema。如果发现兼容性变更——例如新增可选字段、必填字段变为可选、类型向上提升（\nint → long\n、\nfloat → double\n）——可以先刷新当前批次，再应用新 Schema 并继续写入。这样一来，常见的 Schema 变化就不再需要完全依赖人工干预。\n第三阶段：Iceberg 写入与事务提交\n完成转换与 Schema 处理后，数据会根据目标表与分区策略写入对象存储上的列式文件：\nAppend 模式\n：使用 PartitionedWriter/UnpartitionedWriter 直接追加写入；\nUpsert 模式\n：同时生成 DataFile（数据文件）和 DeleteFile（删除标记文件），支持 Insert/Update/Delete 三种 CDC 操作。\n当文件达到设定阈值（例如 64MB 这类可配置目标大小）后自动切换新文件，以降低文件过碎的风险。最终，通过表级事务原子提交生成新的 Snapshot，让下游获得一致可见的数据视图。\n图 5：从 Kafka 消息到对象存储表的端到端写入路径\n关键能力：稳定性、一致性与可治理性\n兼顾低延迟与强一致\n实时入湖要真正可用，衡量标准并不只是“能不能写进去”，还包括在低延迟要求下能否保持稳定的一致性与可恢复性。尤其在分布式环境中，数据写入、元数据提交、进度管理与故障切换之间的协调，往往决定了链路能否长期稳定运行。\n更理想的方式，是将关键状态内聚在主链路中，而不是依赖外挂 KV 或其他外部状态系统。比如，将入湖进度维护在 Kafka Leader 元数据中，可以减少系统耦合并降低不一致风险。与之配套的，则是更轻量化的高可用机制：节点切换或扩容时，新节点能够更快接管同步任务。\n具体能力体现在几个方面：\n存算分离 × 轻量化 HA\n：计算与数据持久化解耦后，计算层摆脱 ISR 重量级协议束缚，转而采用轻量 HA 方案。Follower Replica 仅作计算热备，保留最少元数据、处理最少变更请求；新节点在故障切换与弹性扩容时可快速接管。\n双路同步缓解入湖场景的“延迟-吞吐”权衡\n：实时入湖的核心矛盾在于提交频率——频繁提交延迟低，但元数据与 flush 开销大；攒批提交吞吐高，却牺牲新鲜度。此类方案将同步链路拆为两条路径：增量预同步在提交间隙持续完成数据读取、转换与文件写入；强一致同步触发时只需提交少量增量即可完成 Iceberg 事务，从而实现延迟与吞吐同向提升。\n提供嵌入式与独立式两种架构模式\n：嵌入式模式可以实现更低的资源开销，但同进程运行会增加 GC 压力，对消息收发延迟产生潜在影响；独立式模式资源成本较高，但由于进程隔离，可减少对核心收发链路的干扰。双模式设计旨在精准匹配不同客户的功能诉求与业务负载特征。\n入湖进度内聚于 Leader 元数据\n：入湖进度直接维护在 Kafka Leader 元数据中，彻底去除对外挂 KV 等外部系统的依赖，保证了强一致性，同时消除系统间耦合。\n图 6：低延迟与强一致并不矛盾，\n关键在于状态收敛方式\nSchema 自适应演进\nSchema 不一致是 Kafka 入湖链路中最常见、也最容易引发运维负担的问题之一。更合理的方式，是将常见的兼容性变更收敛为系统能力：\n演进类型\n含义\n处理策略\nADD_FIELD\n新增可选字段\n自动应用\nMAKE_OPTIONAL\n必填字段变为可选\n自动应用\nPROMOTE_TYPE\n类型向上提升（\nint → long\n、\nfloat → double\n）\n自动应用\n嵌套递归演进\n在 Struct 等嵌套结构中递归处理上述变化\n自动应用\n删除字段 / 复杂结构重组\n不兼容变更\n保守拒绝，避免一次上游变化中断整条链路\n图 7：将高频 Schema 变化前移为平台能力\n多层小文件治理\n小文件问题是实时入湖中最常见的性能隐患之一。实时数据连续且零散到达，如果写入时缺少控制，很容易在对象存储中产生大量小文件，进而带来元数据膨胀、查询规划变慢与 Compaction 压力增大等连锁问题。因此，小文件治理不能只依赖后置 Compaction，而应在写入阶段尽量减少问题。\n更完整的做法是采用\n多层递进式治理机制\n，在前置和后置两个层面同时治理：\n层级\n阶段\n典型粒度\n作用\nL1\n内存 Buffer 合并\n行级\n在内存中聚合小批次，避免立即落盘\nL2\n微批处理\n32MB\n控制单次 flush 的批次规模\nL3\n目标文件大小控制\n64MB\n写入引擎层面控制文件大小阈值\nL4\n后台 Compaction\n文件级\n异步合并小文件，不占用计算侧资源\n通常 L1 ~ L3 在入湖引擎侧完成，L4 由后台离线 Compaction 承担。\n图 8：小文件治理需要前置控制与后置整理结合\n智能分区策略\n合理的分区策略直接影响后续查询能否有效裁剪数据范围，减少全表扫描和无效 I/O。这类方案通常支持 7 类主流分区方式：字段直接分区、Year / Month / Day / Hour 时间分区、Bucket 分区与 Truncate 分区，并支持多维组合分区。\n# 示例：按地区 + 天双维分区\npartition_by\n:\n\"region, day(timestamp)\"\n# 示例：高基数 ID 哈希分桶\npartition_by\n:\n\"bucket(user_id, 10)\"\n# 示例：邮箱前缀归类\npartition_by\n:\n\"truncate(email, 5)\"\n类似\nbucket(user_id, 10)\n或\ntruncate(email, 5)\n这样的策略，更适合高基数或前缀归类场景。\n图 9：分区设计决定查询裁剪效率与长期组织方式\n完整 CDC / Upsert 支持\n对于数据库变更同步等场景，实时入湖不只是追加新数据，还需要处理 Insert、Update、Delete 等状态变化。如果平台能够直接识别这些语义并映射为表级 Upsert 或 Delete，那么对象存储上的表就能更接近实时地呈现当前业务状态。\n# CDC 入湖典型配置\ntransforms: debezium_unwrap\nwrite_mode: upsert\ntable_format: iceberg-v2\n这类能力通常会与 Debezium 等 CDC 工具适配，自动解包变更事件，并借助 Iceberg 的 Equality Delete 机制生成对应的数据文件与删除标记，在读取阶段自动合并为最新视图。\n图 10：CDC 事件可以直接映射为表级更新语义\n多 Catalog API 兼容架构\n零 ETL 方案若要成为基础设施能力，除了链路更短之外，还必须具备较好的开放兼容性——不仅要能把数据写进去，还要能平滑融入企业既有的数据生态。这类方案通常需要兼容多种 Catalog 接口：\nIceberg REST Catalog\n：开放生态主流标准；\nOSS Tables 兼容 Catalog\n：面向 S3 Tables 迁移场景。\n再往下游看，当表能力建立在开放接口与开放格式之上时，Spark、Trino、Flink、DuckDB 等不同计算与查询引擎，都可以围绕同一份数据开展分析与处理。\n四、AI 时代的数据基础设施，\n为什么需要这种架构\n上述能力叠加后，Kafka × Table Bucket 的价值不只是技术可行性，更在于它对当下数据基础设施的适配程度。它真正值得关注的，并不只是减少了一条 ETL 作业，而是\n从协议层到存储层重新收敛实时入湖能力\n。\n协议与格式的深度融合\n这类融合架构首先改变的是“流”与“表”长期割裂的状态。传统模式下，Kafka 承接流式数据，Iceberg 组织分析表，中间需要借助外部 ETL 系统完成格式转换、Schema 对齐与提交控制；而在融合架构中，这些能力被尽量内嵌到更靠近主链路的位置。\n具体来看，它带来三点变化：\n流批自动转换\n：数据写入即入湖，天然支持流读与批读，无需维护两套代码路径。\nSchema 自适配\n：自动感知并处理上游 Schema 变更，支持\nADD_FIELD\n、\nMAKE_OPTIONAL\n、\nPROMOTE_TYPE\n及嵌套结构递归演进，显著减少人工干预。\n进程内绑定调度\n：转换引擎与 Broker 进程内联，计算与存储深度协同，在缩短链路的同时提升数据新鲜度。相比传统外部 ETL 任务，这类方式更容易将数据可见性收敛到分钟级，在条件合适时还可以进一步逼近秒级。\n图 11：从协议到存储的能力收敛，是这类架构的核心价值\n更低的成本与更强的稳定性\n这类架构的第二个价值，在于用更轻的方式完成原本依赖外部 ETL 作业承担的通用入湖任务。\n一方面，零 ETL 的轻量化架构直接打通了 Kafka 流式协议与 Iceberg 表格式，减少了 Flink / Spark Streaming 这类中间任务链带来的开发与运维成本。另一方面，依托托管化能力，用户更接近“零代码、一键开启、配置即生效”的使用方式，显著缩短入湖链路的交付周期。\n更关键的是，围绕稳定性与成本，这类架构通常会内建一整套优化机制：\n多层小文件治理\n：从内存 Buffer 合并、32MB 微批处理、64MB 目标文件大小到后台 Compaction，分层控制文件组织质量。\n更低 TCO\n：通过云原生架构与存算协同，减少额外计算链路与重复系统建设带来的综合成本；在通用实时入湖场景下，成本结构更接近“Kafka + 对象存储”的二元组合，而不是“Kafka + ETL + 对象存储”的三重成本。\n更稳定的生产表现\n：通过进度内聚、轻量 HA、事务提交与托管化恢复机制，提升链路在故障切换与持续运行中的稳定性。\n与传统方案的能力对比\n维度\nKafka + Flink/Spark + Iceberg\nConnector / ETL 方案\nKafka × Table Bucket（零 ETL）\n架构复杂度\n高（三段式 + 独立调度）\n中（Connector 集群）\n低（单链路内聚）\n开发成本\n高（Streaming SQL/Code）\n中（Sink 配置）\n低（声明式配置）\nSchema 演进\n依赖人工或外部框架\n部分支持\n平台内建自动演进\n小文件治理\n业务自行处理\n部分支持\n多层递进式内建治理\nExactly-Once\n需要业务保证\n配置复杂\n进度内聚 + 事务提交\n运维成本\n高\n中\n低\n整体 TCO\n三重成本\n双重成本 + 集群运维\n接近二元成本结构\n复杂流计算\n✅ 强项\n❌ 不适合\n❌ 不适合\n从上表的对比可以看出，零 ETL 方案在通用入湖场景下显著简化了架构；只是在涉及窗口聚合、多流 Join 或复杂状态计算时，仍需要专门的流计算引擎配合。\n更完整的场景覆盖能力\n在前述价值之外，这类方案能否成为基础设施能力，还取决于它能否覆盖足够多的真实场景。从当前能力看，它已经具备较强的通用性：\n多格式兼容\n：支持 Avro、Protobuf、String 等多种序列化格式，适配主流数据生产场景。\n完整 CDC 支持\n：原生集成 Debezium 解包，支持 Insert / Update / Delete 三类操作，适合数据库到数据湖的实时同步。\n灵活分区策略\n：支持 7 种分区方式与多维组合，覆盖日志、用户画像、IoT 设备等典型分析场景。\n多 Catalog 适配\n：REST、OSS Tables 等 Catalog 可直接对接，更容易融入现有技术生态。\n当然，也需要对它的边界保持清醒判断。\n零 ETL 很适合解决“将流数据稳定沉淀为表”这类通用问题，但这并不意味着复杂流计算引擎会被替代\n。如果业务场景需要窗口聚合、多流 Join、维表关联、复杂事件处理或大规模状态管理，那么 Flink、Spark Streaming 仍然不可替代；而零 ETL 更擅长解决的是“如何让实时数据更自然地沉淀为湖上的表”。\n从这个意义上说，两者并不是简单替代关系，而是更合理的分工：复杂计算交给专门的流计算引擎，通用入湖交给平台内建能力，长期数据资产沉淀交给对象存储与开放表。\n这种分工本身，就是一种架构减法\n。\n五、哪些场景会优先受益\n并不是所有场景都需要同一种入湖方式。但从实际落地看，有四类场景会优先从 Kafka × Table Bucket 这种零 ETL 路径中受益。\n图 12：零 ETL 入湖的典型场景\n1.实时日志分析\n日志是最典型的流式数据之一。应用日志、访问日志、安全日志与系统日志通常先通过 Filebeat / FluentBit 等工具采集到 Kafka，再由不同系统消费。如果这些数据能够按天或按业务维度直接写成对象存储上的表，下游就可以通过 Trino、Spark 等引擎直接查询，既保留实时接入能力，也更适合长期留存与分析。\npartition_by: \"day(timestamp), service_name\"\nwrite_mode: append\ntarget_file_size: 64MB\n这类场景的共同特点是写入持续、查询维度相对稳定、保留周期较长，因此\n非常适合通过更短的链路直接沉淀为表\n。\n2.数据库变更实时入湖\n数据库变更同步是零 ETL 最具代表性的场景之一。通过 Debezium 等工具将 MySQL Binlog 或 PostgreSQL WAL 中的变更事件写入 Kafka 后，如果平台能够识别 Insert、Update、Delete 三种 CDC 语义，并将其映射为对象存储表上的 Upsert 或 Delete，那么数据湖中的表就不仅保存了一串变更事件，还能够更接近实时地呈现当前业务状态。\n在实现上，这类场景通常会开启类似\ndebezium_unwrap + upsert\n的模式，并映射为数据文件与删除标记文件的组合。\n对这类场景来说，\n关键价值不只是“把变更写进去”，而是尽量在入湖阶段就保留主键语义、删除语义与可查询的当前视图\n。\n3.IoT 多源数据汇聚\nIoT 与埋点数据通常具有四个共同特征：吞吐高、来源多、字段变化频繁、历史保留需求强。这类场景很容易把平台拖入“链路越来越多、作业越来越重”的状态。如果将通用入湖能力收敛在 Kafka 与 Table Bucket 之间，再利用对象存储承接海量历史数据，就能更好地平衡实时接入、成本控制与长期分析需求。\n# 高吞吐、时序化场景的组合分区\npartition_by\n:\n\"bucket(device_id, 50), day(timestamp)\"\n下游既可以用 Spark 做大规模分析，也可以用 DuckDB 做轻量查询。\n4.AI 多模态训练数据 Pipeline\n在模型训练过程中，需要同时管理海量路测图片、视频片段、点云数据以及对应的标注元数据。过去，非结构化数据存放在对象存储，结构化元数据存放在数据库，向量检索依赖独立的向量数据库，三类数据分散在不同系统，数据关联和版本回溯极为困难。\n依托阿里云 OSS「对象 + 向量 + 表格」的完整数据存储体系，路测原始数据写入 OSS 对象桶，Embedding 与召回索引落入 OSS 向量桶，Kafka 实时采集的车辆标注信息、传感器元数据则通过入湖能力写入 OSS Table Bucket。三桶数据共享同一套账号、权限与审计体系，训练样本的筛选与版本回溯可在单一平台完成，数据准备效率提升数倍，为模型快速迭代奠定了坚实基础。\n六、结语：告别 ETL，本质是减少复杂性\n“零 ETL”\n很容易被理解为一个功能概念，仿佛它意味着数据不再需要转换，或者所有处理都会收敛到同一条链路中。但从数据基础设施演进的角度看，它真正要解决的问题更具体：不是让数据不经过处理，而是\n让那些高频、通用、重复出现的入湖能力，不再依赖外部系统反复建设\n。\n在流数据入湖这件事上，这一点尤为重要。企业面对的不是一次性项目，而是一条会长期运行、持续扩展、不断演进的基础设施链路。只要系统边界过多、处理路径过长、状态管理过于分散，复杂度就会在规模增长中逐步暴露出来。\n因此，Kafka × Table Bucket 所代表的，并不只是“把数据写进对象存储上的表”，而是用一条更短的路径，将消息接入、格式转换、Schema 适配、CDC 处理、事务提交与文件组织等通用能力尽量收敛在一起，\n让实时入湖更接近平台原生能力\n，而不是一批外部任务的拼装结果。\n这背后反映出的，是 AI 时代数据架构的一个更普遍趋势：数据链路更短，数据资产更开放，表能力与存储能力更靠近，平台能力尽量内聚而不是持续外扩。\n从这个意义上说，真正成熟的“零 ETL”，减少的并不只是一段处理过程，而是一层持续累积的系统复杂性。这正是下一阶段数据基础设施最值得关注的变化。\n在可预见的下一阶段，这类能力还会继续沿三个方向演进：\n更丰富的 Transform 与更智能的运维能力\n；\n与查询、计算、治理体系进一步打通\n；\n持续适配 Iceberg 等开放表格式演进，并兼容更多面向 AI 场景的新型格式\n。\n关于实现\n本文讨论的 Kafka × Table Bucket 零 ETL 入湖能力，目前已在阿里云\nApsaraMQ for Kafka × OSS Tables\n上具备相应实现，完成了初步实践验证，并已对外\n开启邀测\n。\n用户可在不引入额外 ETL 作业的前提下，将\nKafka Table Topic\n以 Iceberg 开放表格式持久化到\nOSS Table Bucket\n，并通过 Iceberg REST Catalog 与 Spark、Trino、Flink、DuckDB 等开放生态对接。文中提及的多层小文件治理、Schema 自适应演进、CDC Upsert 与多 Catalog 兼容等能力，也已在该方案中实现。\n点击下方“阅读原文”，即可快速体验 Kafka 原生消息入湖全流程\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.95,
+        "peripheral": 0.01,
+        "transfer_agent": 0.04,
+        "transfer_business": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.46,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.09,
+        "2": 0.68,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.23,
+      "probabilities": {
+        "0": 0.43,
+        "1": 0.14,
+        "2": 0.25,
+        "3": 0.16,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.1,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.02,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.13,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.83,
+        "3": 0.15,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.45,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.02,
+        "2": 0.04,
+        "3": 0.22,
+        "4": 0.63,
+        "5": 0.03
+      }
+    },
+    "anti_hype": {
+      "score": 2.58,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.09,
+        "2": 0.23,
+        "3": 0.47,
+        "4": 0.14,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 11664,
+    "outputTokens": 173,
+    "totalTokens": 11837
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.94,
+        "relevance": 0.63,
+        "grounding": 0.18,
+        "decision_action": 0.93,
+        "evidence": 0.88,
+        "actionability": 0.59,
+        "anti_hype": 0.51
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179827595,
+                "endTime": 1791179827776,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000489888",
+      "marketCost": "0.000489888",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000489888",
+      "inferenceCost": "0.000489888",
+      "inputInferenceCost": "0.000489888",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6ABXJ02J3X9JYXW4WWB1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:07 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::czvvg-1791179827219-55990e6b2bbe"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.95,
+            "peripheral": 0.01,
+            "transfer_agent": 0.04,
+            "transfer_business": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.46,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.09,
+            "2": 0.68,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.23,
+          "probabilities": {
+            "0": 0.43,
+            "1": 0.14,
+            "2": 0.25,
+            "3": 0.16,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.1,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.02,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.13,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.83,
+            "3": 0.15,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.45,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.02,
+            "2": 0.04,
+            "3": 0.22,
+            "4": 0.63,
+            "5": 0.03
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.58,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.09,
+            "2": 0.23,
+            "3": 0.47,
+            "4": 0.14,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 11664,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.94,
+            "relevance": 0.63,
+            "grounding": 0.18,
+            "decision_action": 0.93,
+            "evidence": 0.88,
+            "actionability": 0.59,
+            "anti_hype": 0.51
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179827595,
+                    "endTime": 1791179827776,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000489888",
+          "marketCost": "0.000489888",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000489888",
+          "inferenceCost": "0.000489888",
+          "inputInferenceCost": "0.000489888",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6ABXJ02J3X9JYXW4WWB1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:07.001Z"
+  }
+}

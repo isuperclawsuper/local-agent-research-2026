@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "254469971937042432",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "全网最细！OpenClaw本地部署教程和常见问题汇总",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694782&idx=1&sn=d48ab6ac92c3558598ab8d7405280656",
+      "date": "2026-03-11T00:45:00.715Z",
+      "chars": 8354,
+      "text": "原创\n徐晓虎\n2026-03-11 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n周末花了一整天在我的 Mac 电脑上进行\nOpenClaw\n本地部署以及整理问题。作为非程序的出身，加上国内环境问题，实现本地部署一个满血版的\nOpenClaw\n，总的来说对于小白来说相对比较困难，不要太相信网上说十分钟部署好，中间不知道省略多少认证和准备，所以我把自己遇到的问题以及在网上检索到大多数人常遇到的做了一个汇总整理，当你信心满满找到一个教程遇到卡点，不妨搭配本文来食用，相信你可以2、3个小时就可以拥有一个真正的私人助理。\n01\n认识 OpenClaw\n1.1\n名字变迁历史（重要！）\nOpenClaw 在短短20天内经历了三次更名，从 ClawdBot 到 MoltBot ，又因为受到律师函，最终改名为\nOpenClaw\n，又被称为“大龙虾”。这是导致很多用户困惑的根源，很多博主也在视频开头提过，但是大都是补录的，一些早期文档教程中可能还是旧的名称，注意复制一些命令时，最好手动替换成最新的名字——\nOpenClaw\n。\n1.2\n核心特性\n执行能力：\n不仅能回答问题，还能实际操作电脑（读写文件、执行命令、打开应用等）\n全天候运行：\n24/7 待命，睡眠时也能执行任务（参考4.3设置）\n持久记忆：\n可以一直记住之前的对话上下文\n主动服务：\n可以主动发起对话和提醒\n开源免费：\n数据完全本地化\n多平台支持：\n可以通过手机聊天软件，通过对话方式驱动电脑上的\nOpenClaw\n国际：WhatsApp、Telegram、Discord、Slack、iMessage\n国内：飞书、钉钉\n1.3\n硬件要求误区\n常见误区：\n“跑 AI 必须得用 Mac Mini 或高价 GPU 服务器”\n实际情况：\nOpenClaw 对硬件要求极低\n最低配置：\n512MB - 1GB 内存即可运行\n推荐配置：\n2GB 以上内存（处理复杂任务更稳定）\n吃灰的旧 Mac、几十块的云服务器都能跑\n02\n安装问题\n2.1\n官方一键安装命令（Linux/macOS）\n【官方】自动安装\n# 官方命令\ncurl\n-fsSL\nhttps://openclaw.ai/install.sh\n| bash\n# 备用命令（如果上面的不行）\ncurl -fsSL\nhttps://molt.bot/install.sh\n| bash\ncurl -fsSL\nhttps://clawd.bot/install.sh\n| bash\n【推荐】手动安装\n（由于大多数没有权限，直接推荐：sudo npm install -g openclaw@latest）\n# 如果一键脚本失败，可以手动安装\nnpm\ninstall -g openclaw\n@latest\n# 如果遇到权限问题\nsudo npm install -g openclaw\n@latest\n2.2\n常见安装错误\n❌ 错误 1：npm error code 128（最常见）\n问题描述：\nnpm\nerror\ncode\n128\nnpm\nerror\n! Failed to clone repository\nfatal: Could not read from remote repository\n原因分析：\nGit 未安装或版本过旧\n国内网络访问 GitHub 缓慢/超时（需要科学上网）\n解决方案：\n# 1. 检查 Git 安装\ngit --version\n# 2. 如果未安装\n# macOS:\nbrew install git\n# Linux (Ubuntu/Debian):\nsudo\napt-get install git\n# Linux (CentOS):\nsudo\nyum install git\n❌ 错误 2：Node.js 版本不满足要求\n问题描述：\nEBADENGINE\nUnsupported engine\nrequires\nnode >=\n22\n.\n12\n.\n0\n解决方案：\n# 1. 检查当前版本\nnode\n-v\n# 2. 使用 nvm 升级（推荐）\nnvm\ninstall\n24\nnvm\nuse\n24\n# 3. 验证版本\nnode\n-v\n# 应该显示 v24.x.x\n# 4. 如果使用 Homebrew\nbrew\nupdate\nbrew\nupgrade node\n❌ 错误 3：ENOENT（文件路径错误）\n问题描述：\nENOENT: Could not\nread\npackage.json\n原因分析：\nnpm 缓存损坏\n解决方案：\n# 清理 npm 缓存\nnpm cache clean --force\n# 删除损坏的 npx 缓存\nrm\n-rf ~/.npm/_npx\n# 重新安装\nnpm install -g openclaw@latest\n❌ 错误 4：EACCES（权限 denied）\n问题描述：\nEACCES\n:\npermission denied\n原因分析：\nnpm 全局目录权限不足\nmacOS/Linux 上常见\n解决方案：\n# 方法1：使用 sudo（不推荐）\nsudo\nnpm install -g openclaw@latest\n# 方法2：修改 npm 默认目录（推荐）\nmkdir\n-p ~/.npm-global\nnpm config\nset\nprefix\n'~/.npm-global'\necho\n'export PATH=~/.npm-global/bin:$PATH'\n>> ~/.zshrc\nsource\n~/.zshrc\nnpm install -g openclaw@latest\n❌问题5：macOS 额外依赖\n# 安装 Xcode Command Line Tools\nxcode-\nselect\n--install\n# 如果遇到 libvips 问题，安装 Homebrew 后使用\nbrew install vips\n❌问题6：找不到 npm 全局路径\n症状：\nopenclaw:\ncommand\nnot found\n解决方案：\n# 1. 找到 npm 全局路径\nnpm prefix -g\n# 2. 添加到 PATH\n# zsh (macOS 默认)\necho\n'export PATH=\"'\n$(npm prefix -g)\n'/bin:$PATH\"'\n>> ~/.zshrc\nsource\n~/.zshrc\n# bash (Linux 默认)\necho\n'export PATH=\"'\n$(npm prefix -g)\n'/bin:$PATH\"'\n>> ~/.bashrc\nsource\n~/.bashrc\n# 3. 如果使用 nvm\n# 确保 ~/.zshrc 或 ~/.bashrc 中包含 nvm 初始化脚本\nexport\nNVM_DIR=\n\"\n$HOME\n/.nvm\"\n[ -s\n\"\n$NVM_DIR\n/nvm.sh\"\n] && \\.\n\"\n$NVM_DIR\n/nvm.sh\"\n❌问题7： moltbot@latest 占位符问题\n⚠️ 严重问题：\n这是导致很多用户安装失败的\n核心原因\n问题描述：\n# 执行安装\nnpm\ninstall -g moltbot\n@latest\n# 安装成功，但运行 moltbot 命令失败\nmoltbot: command not found\n原因\n（来自 GitHub Issue\n#3275\n）：\nnpm 中的\nmoltbot@latest\n指向一个 283 字节的占位符包\n由非官方用户\nconsistent_lee\n上传\n真正的项目代码在\nmoltbot@beta\n（版本 2026.1.27-beta.1，大小 41MB）\n解决方案：\n# 正确安装方式（使用 beta 版本）\nnpm\ninstall -g moltbot\n@beta\n# 或者直接安装 openclaw\nnpm install -g openclaw\n@latest\n03\n配置问题\n3.1\n初始化配置流程\n# 1. 初始化配置目录\nopenclaw\nsetup\n# 2. 进入配置向导（首次安装）\nopenclaw onboard --install-daemon\n# 3. 启动服务\nopenclaw gateway\n# 4. 打开 Web UI（推荐）\nopenclaw dashboard\n3.2\n配置向导选项说明\n配置向导关键步骤\n步骤 1：风险确认\nI understand\nthis\nis\npowerful and inherently risky. Continue?\n✅ 必须选择 “Yes” 继续\nOpenClaw 具有读写文件、执行命令的权限\n步骤 2：选择 Onboarding 模式\nOnboarding\nmode: QuickStart / Manual\n推荐选择\nQuickStart\n步骤 3：配置 AI 模型\n建议使用国内模型降低成本，第一次可选择免费的 Qwen 完成基础配置。\n我当前用了 minimax，每发一个指令要4毛钱，有些疼。\n步骤 4：选择通讯渠道\n国内用户（推荐）：飞书、钉钉\n国际用户：WhatsApp、Telegram、iMessage\n步骤 5：Skills 配置\n可选择 Yes，安装常用技能\n也可跳过，之后通过\nopenclaw\nconfig 命令再次配置\n3.3\n配置相关常见问题\n❌ 问题：配置向导卡住不动\n解决方案：\n# 1. 按 Ctrl + C 中断\n# 2. 重新运行\nopenclaw\nonboard\n# 3. 如果还是不行，重置配置\nopenclaw setup --reset config\n❌ 问题：忘记保存配置\n解决方案：\n# 重新进入配置向导\nopenclaw\nconfigure\n❌ 问题：配置文件格式错误\n解决方案：\n# 1. 备份配置\ncp\n~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.backup\n# 2. 使用配置验证工具\nopenclaw doctor\n# 3. 如果有问题，重新配置\nopenclaw onboard --install-daemon\n04\n运行时问题\n4.1\nGateway 无法启动\n症状：\n浏览器访问\nhttp://127.0.0.1:18789\n拒绝连接\n提示 “Connection refused”\nopenclaw status 显示 offline\n排查步骤：\n# 1. 检查 Gateway 状态\nopenclaw\nstatus\n# 2. 检查端口是否被占用\nlsof\n-i :\n18789\nnetstat\n-tlnp | grep\n18789\n# 3. 手动启动 Gateway（前台模式，查看详细日志）\nopenclaw\ngateway --verbose\n# 4. 如果端口被占用，使用其他端口\nopenclaw\ngateway --port\n18790\n4.2\n服务启动后自动停止\n症状：\n启动后几秒自动关闭\n原因：\n配置文件错误\nAPI Key 无效\n磁盘空间不足\n模型连接失败\n解决方案：\n# 1. 查看详细错误日志\nopenclaw doctor\n# 2. 检查日志文件\ncat\n~/.openclaw/logs/*.\nlog\n# 3. 检查配置文件\ncat\n~/.openclaw/openclaw.json | python3 -m json.tool\n# macOS/Linux\n# 4. 重新配置\nopenclaw onboard --install-daemon\n4.3\nmacOS 休眠问题\n症状：\nMac 睡眠后 OpenClaw 停止运行\n原因：\nMac 睡眠时 CPU 停止工作\n解决方案：\n# 方法1：使用命令行（需要管理员权限）\nsudo\npmset -a standby 0\nsudo\npmset -a hibernatemode 0\nsudo\npmset -a\nsleep\n0\nsudo\npmset -a displaysleep 0\n# 方法2：使用 Amphetamine 等工具\n# App Store 免费下载，保持 Mac 唤醒\n# 方法3：如果使用云服务器，不存在此问题\n# 方法4：买个Mac mini吧！\n4.4\n进程守护问题\n症状：\n关闭终端后服务停止\n解决方案：\n# 方法1：安装为系统服务（推荐）\nopenclaw gateway install\n# 方法2：使用 nohup 后台运行\nnohup\nopenclaw gateway > /tmp/openclaw.log 2>&1 &\n# 方法3：使用 systemd（Linux）\n# 创建 /etc/systemd/system/openclaw.service\nsudo\nnano /etc/systemd/system/openclaw.service\n# systemd 配置示例：\n[Unit]\nDescription=OpenClaw Gateway\nAfter=network.target\n[Service]\nType=simple\nUser=你的用户名\nExecStart=/usr/local/bin/openclaw gateway\nRestart=always\n[Install]\nWantedBy=multi-user.target\n# 启用并启动\nsudo\nsystemctl daemon-reload\nsudo\nsystemctl\nenable\nopenclaw\nsudo\nsystemctl start openclaw\n4.5\n升级后服务无法启动\n症状：\n更新\nOpenClaw\n后 Gateway 启动失败\n解决方案：\n# 1. 检查版本\nopenclaw\n--version\n# 2. 重启服务\nopenclaw gateway stop\nopenclaw gateway\nstart\n# 3. 如果还不行，清除缓存\nrm\n-rf\n~/.openclaw/cache/*\nopenclaw gateway\nstart\n4.6\nHomebrew 安装问题\n症状：\n使用 brew 安装 node 后找不到命令\n解决方案：\n# 1. 确保 Homebrew 在 PATH 中\necho\n'eval \"$(/opt/homebrew/bin/brew shellenv)\"'\n>> ~/.zshrc\nsource\n~/.zshrc\n# 2. 验证 Homebrew\nbrew doctor\n# 3. 添加 Homebrew 到 PATH（Apple Silicon）\necho\n'export PATH=\"/opt/homebrew/bin:$PATH\"'\n>> ~/.zshrc\nsource\n~/.zshrc\n# 4. 如果使用 Intel Mac\necho\n'export PATH=\"/usr/local/bin:$PATH\"'\n>> ~/.zshrc\nsource\n~/.zshrc\n05\n飞书接入问题\n更多 IM 接入教程请访问腾讯云开发者社区 OpenClaw 专区查看：\nhttps://cloud.tencent.com/developer/article/2624973\n5.1\n飞书插件安装失败\n错误信息：\nspawn\nnpm ENOENT\n原因：\nnpm 路径未正确配置\n权限问题\n解决方案：\n# 1. 确保 npm 在 PATH 中\nwhich\nnpm\n# 2. 使用完整路径安装\nsudo\n$(npm prefix -g)/bin/npm install -g @m1heng-clawd/feishu\n# 3. 或者重新配置 PATH\necho\n'export PATH=\"$(npm prefix -g)/bin:$PATH\"'\n>> ~/.zshrc\nsource\n~/.zshrc\n5.2\n飞书完整配置步骤\n步骤 1：创建飞书应用\n访问飞书开放平台：\nhttps://open.feishu.cn\n注册/登录开发者账号\n点击右上角 → 开发者后台\n创建应用 → 填写应用名称和描述\n步骤 2：获取应用凭证\n在应用页面，找到：\nApp ID\nApp Secret\n步骤 3：添加机器人能力\n进入应用详情\n添加能力 → 选择 “机器人”\n配置机器人相关设置\n步骤 4：配置权限\n开通以下权限：\nim:message\nim:message:send_as_bot\nim:chat:readonly\n其他消息相关权限\n步骤 5：安装飞书插件\nopenclaw\nplugins install\n@m1heng\n-clawd/feishu\n步骤 6：配置飞书渠道\nopenclaw\nconfigure\n# 选择 Channels → Feishu\n# 输入 App ID 和 App Secret\n# 选择中国区服务器\n步骤 7：配置事件回调\n在飞书后台配置事件订阅\n使用长连接接收事件\n（一定要先安装飞书插件和渠道，不然设置不了）\n添加消息事件\n发布版本并审批\n06\n常用命令速查\n6.1\n核心命令\n命令\n功能\nopenclaw setup\n初始化配置目录\nopenclaw onboard\n进入配置向导\nopenclaw onboard --install-daemon\n配置并安装系统服务\nopenclaw configure\n修改配置\nopenclaw status\n查看运行状态\nopenclaw health\n健康检查\nopenclaw doctor\n诊断问题\nopenclaw --version\n查看版本\n6.2 服务管理\n命令\n功能\nopenclaw gateway start\n启动服务\nopenclaw gateway stop\n停止服务\nopenclaw gateway restart\n重启服务\nopenclaw gateway --verbose\n前台启动（看日志）\nopenclaw gateway install\n安装系统服务\n6.3 插件管理\n命令\n功能\nopenclaw plugins list\n列出插件\nopenclaw plugins install <name>\n安装插件\nopenclaw plugins remove <name>\n卸载插件\n6.4 设备管理\n命令\n功能\nopenclaw devices list\n查看已授权设备\nopenclaw devices approve <id>\n授权设备\nopenclaw devices revoke <id>\n撤销授权\n6.5 模型管理\n命令\n功能\nopenclaw models status\n查看模型状态\nopenclaw models status --probe\n测试模型连接\n6.6 官方资料\n官方文档：\nhttps://docs.openclaw.ai\n官方安装指南：\nhttps://docs.openclaw.ai/install\n07\n结语\nOpenClaw 作为一款强大的本地 AI 助手，虽然初始配置有一定门槛，但一旦配置完成，将成为您 24/7 待命的智能助手。整理了 mac 用户最常遇到的问题和解决方案，希望有所帮助。现在每天晚上的乐趣就是看看社区上有没有人利用\nOpenClaw\n发掘好玩且实用的应用场景，也欢迎大家一同来分享一下~\n猜你所想彩蛋时刻\n目前，腾讯轻量云 Lighthouse 已支持秒速部署 OpenClaw，可快速接入企业微信、QQ、钉钉、飞书等国内主流 IM 软件，7X24小时在线、随时响应，轻松定制您的私人AI助理！\n优惠活动直达码\nOpenClaw 社群交流码\n-End-\n原创作者｜\n徐晓虎\n感谢你读到这里，不如关注一下？\n👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。3月18日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

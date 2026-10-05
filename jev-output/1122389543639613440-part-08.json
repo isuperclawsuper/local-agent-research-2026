@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "└──────────────┘                │\n│                                                                         │\n│  进阶策略 (来自 OpenHarness):                                            │\n│  • 模型降级: GPT-\n4\n失败 → 自动回退到 GPT-\n3.5\n│\n│  • 提供商切换: OpenAI 超时 → 切换 Anthropic                             │\n│  • 请求拆分: 超大请求 → 拆成多个小请求重试                               │\n└─────────────────────────────────────────────────────────────────────────┘\n为什么需要\"抖动\"（Jitter）？\n如果多个客户端在失败后等待相同时间重试，会在同一瞬间再次涌入服务器（\"惊群效应\" / Thundering Herd）。加随机抖动使重试时间离散分布：\nimport\nrandom\ndef\nexponential_backoff_with_jitter\n(\nattempt:\nint\n, base:\nfloat\n=\n1.0\n) ->\nfloat\n:\n\"\"\"\n业界标准实现 (AWS, Google Cloud, Anthropic SDK 均采用类似策略)\n\"\"\"\nexponential = base * (\n2\n** attempt)\n# 1s, 2s, 4s, 8s...\njitter = random.uniform(\n0\n, exponential *\n0.5\n)\n# 0~50% 随机偏移\nreturn\nmin\n(exponential + jitter,\n60.0\n)\n# 上限 60s\n# AWS 推荐的 \"Full Jitter\" 变体 — 更激进的分散\ndef\nfull_jitter\n(\nattempt:\nint\n, base:\nfloat\n=\n1.0\n, cap:\nfloat\n=\n60.0\n) ->\nfloat\n:\nreturn\nrandom.uniform(\n0\n,\nmin\n(cap, base * (\n2\n** attempt)))\n真实案例\n：Anthropic 官方 SDK 内置 2 次自动重试 + 指数退避；OpenAI SDK 默认重试\n429\n/\n500\n/\n503\n错误。这些都是 Harness 的最小实现。\n子系统 2：上下文工程 (Context Engineering)\nParlant 将这个概念提升到了框架设计核心——\"getting the right context, no more and no less, into the prompt at the right time\"。上下文管理不只是防溢出，更是\n让 Agent 在有限窗口内保持最优决策能力\n。\n┌─────────────────────────────────────────────────────────────────────────┐\n│              上下文生命周期管理                                             │\n│                                                                         │\n│  Token 使用率                                                            │\n│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n100\n% (窗口上限)     │\n│                                                                         │\n│                                          ┌─── 阶段\n4\n: 紧急模式            │\n│                                     ━━━━━┤\n90\n%  只保留\nsystem\n+ 最近N轮  │\n│                                ━━━━━     │                              │\n│                           ━━━━━     ━━━━━┤\n80\n%  阶段\n3\n: 工具结果截断       │\n│                      ━━━━━              │      (只保留 summary)          │\n│                 ━━━━━               ━━━━━┤\n70\n%  阶段\n2\n: 自动压缩           │\n│            ━━━━━                         │      (结构化摘要替换早期消息)   │\n│  ━━━━━━━━━━                         ━━━━━┤\n60\n%  阶段\n1\n: 预警               │\n│                                          │      (标记可压缩区域)          │\n│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│                              │\n│  正常运行 (无干预)                        │                       时间 →  │\n└─────────────────────────────────────────────────────────────────────────┘\n各阶段策略对比\n：\n阶段\n触发条件\n操作\n信息损失\n代表实现\n阶段1: 预警\n60% 窗口\n标记冗余区域，准备压缩\n无\nClaude Code auto-compact\n阶段2: 压缩\n70% 窗口\nLLM 生成结构化摘要替换早期消息\n低\nLangChain ConversationSummaryMemory\n阶段3: 截断\n80% 窗口\n工具返回只保留摘要，删除原始内容\n中\nOpenHarness context trim\n阶段4: 紧急\n90% 窗口\n仅保留 system prompt + 最近 3 轮\n高\nSWE-agent window reset\nParlant 的创新方法\n：不同于被动压缩，Parlant 主动做\n上下文窄化\n(Context Narrowing) ——根据当前对话轮次的主题，只注入相关的规则、知识和工具描述，从源头控制 token 消耗。这是从\"事后压缩\"到\"事前精选\"的范式转变。\n子系统 3：迭代控制 (Iteration Control)\nAgent 的无限循环是生产中最常见的\"静默杀手\"——不会崩溃，但会持续消耗 Token 和时间，直到预算耗尽。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                   迭代控制 — 三层防护                                      │\n│                                                                         │\n│\nLayer\n1\n: 硬性预算 (\nHard\nBudget\n)                                         │\n│  ───────────────────────────────────────────                            │\n│  • 最大迭代次数 (如\n200\n轮)                                              │\n│  • 最大\nToken\n消耗 (如 $5/次)                                            │\n│  • 最大执行时间 (如\n30\n分钟)                                             │\n│  → 任一触发 = 强制终止 + 输出当前摘要                                     │\n│                                                                         │\n│\nLayer\n2\n: 模式检测 (\nPattern\nDetection\n)                                   │\n│  ───────────────────────────────────────────                            │\n│  • 重复检测: 同一工具 + 同一参数连续调用 N 次                             │\n│  • 震荡检测: A→B→A→B 反复切换状态                                        │\n│  • 空转检测: 连续 N 轮无新信息/无副作用                                   │\n│  → 触发 = 注入反思提示 / 强制 re-plan / 终止                             │\n│                                                                         │\n│\nLayer\n3\n: 进展评估 (\nProgress\nEvaluation\n)                                 │\n│  ───────────────────────────────────────────                            │\n│  • 里程碑机制: 每 N 轮评估\n\"离目标更近了吗?\"\n│\n│  • 衰减因子: 每轮的价值递减，超过阈值说明边际收益已不足                    │\n│  • 置信度:\nLLM\n自评\n\"我有多确定能完成?\"\n< 阈值则终止                      │\n│  → 触发 = 交还控制权给用户 + 附带进展报告                                 │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\nSWE-agent 的做法\n：在代码修复任务中设置 cost limit（$3/实例），超出后强制停止并提交当前最优 patch。这保证了在 benchmark 评测中不会因单个困难实例耗光全部预算。\nDeerFlow 的做法\n：引入\"迭代衰减\"机制——前 10 轮每轮权重 1.0，之后每轮权重递减 0.95^n。当累积衰减权重低于阈值，判定为\"边际收益不足\"，自动终止。\n子系统 4：工具治理 (Tool Governance)\nAgent 调用外部工具是最大的风险点——因为工具操作\n有副作用\n（删文件、发邮件、执行代码）且\n不可逆\n。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                    工具调用的完整生命周期                                    │\n│                                                                         │\n│\nLLM\n输出工具调用意图                                                     │\n│       │                                                                 │\n│       ▼                                                                 │\n│  ┌─────────────┐    ┌─────────────┐    ┌──────────────┐                │\n│  │ ① 参数校验  │───→│ ② 权限检查  │───→│ ③ 参数修复   │                │\n│  │  & 清洗     │    │  & 审批     │    │  (容错)      │                │\n│  └─────────────┘    └─────────────┘    └──────┬───────┘                │\n│                                                │                        │\n│  校验:                权限:                 修复策略:                     │\n│  •\nJSON\nSchema\n• 白名单/黑名单       • 大小写归一化               │\n│  • 必填参数          • 路径范围限制         • camelCase→snake_case      │\n│  • 类型转换          • 危险操作需审批       • 模糊匹配 (\nLevenshtein\n)    │\n│  • 注入检测          • 并发/频率限制        • 缺失参数填默认值           │\n│                                                │                        │\n│                                                ▼                        │\n│                                       ┌──────────────┐                 │\n│                                      ",
+      "fulltext_obtained": true,
+      "chunk_index": 8,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.05,
+        "transfer_agent": 0.95,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.94,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.92,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.44,
+      "probabilities": {
+        "0": 0.72,
+        "1": 0.17,
+        "2": 0.07,
+        "3": 0.03,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.65,
+      "probabilities": {
+        "0": 0.44,
+        "1": 0.04,
+        "2": 0.14,
+        "3": 0.19,
+        "4": 0.19,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.28,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.71,
+        "3": 0.28,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.71,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.23,
+        "4": 0.73,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.09,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.31,
+        "2": 0.21,
+        "3": 0.43,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.7,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6326,
+    "outputTokens": 172,
+    "totalTokens": 6498
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "grounding": 0.71,
+        "decision_action": 0,
+        "evidence": 0.79,
+        "actionability": 0.79,
+        "anti_hype": 0.37,
+        "category": 0.93,
+        "relevance": 0.95
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180419369,
+                "endTime": 1791180419523,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000265692",
+      "marketCost": "0.000265692",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000265692",
+      "inferenceCost": "0.000265692",
+      "inputInferenceCost": "0.000265692",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARC8V94T9G7KPB8Q5JZN2"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:59 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::clbj2-1791180419353-7fa3185f4ea5"
+    },
+    "body": {
+      "answers": {
+        "grounding": {
+          "type": "score",
+          "score": 0.44,
+          "probabilities": {
+            "0": 0.72,
+            "1": 0.17,
+            "2": 0.07,
+            "3": 0.03,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.65,
+          "probabilities": {
+            "0": 0.44,
+            "1": 0.04,
+            "2": 0.14,
+            "3": 0.19,
+            "4": 0.19,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.28,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.71,
+            "3": 0.28,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.71,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.23,
+            "4": 0.73,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.09,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.31,
+            "2": 0.21,
+            "3": 0.43,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.7
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.05,
+            "transfer_agent": 0.95,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.94,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.92,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6326,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "grounding": 0.71,
+            "decision_action": 0,
+            "evidence": 0.79,
+            "actionability": 0.79,
+            "anti_hype": 0.37,
+            "category": 0.93,
+            "relevance": 0.95
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180419369,
+                    "endTime": 1791180419523,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000265692",
+          "marketCost": "0.000265692",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000265692",
+          "inferenceCost": "0.000265692",
+          "inputInferenceCost": "0.000265692",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARC8V94T9G7KPB8Q5JZN2"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:58.756Z"
+  }
+}

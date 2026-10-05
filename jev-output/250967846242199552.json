@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "250967846242199552",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "一文读懂 Agent Tools，拒绝复杂化、碎片化、黑盒化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518565&idx=1&sn=5ef6fa3bcf12ce15f5d491e0bf38fa8e",
+      "date": "2026-02-27T09:03:00.643Z",
+      "chars": 10275,
+      "text": "2026-02-27 17:03\n北京\n一、如何做好 Tools 的开发：\n在了解如何做好 Tools，先要明确为什么做好 Agent Tools 的开发对构建 Agent 至关重要。 Tools 是连接大语言模型（LLM）与现实世界的“感官”与“肢体”。单纯的 LLM 虽有强大的逻辑能力，但却是一个处于真空状态的“大脑”，只有配备了精良的工具，它才能进化为真正的主动智能体。合格的Agent Tool 应该是一个\n“可理解、安全且具备容错能力”\n的交互接口。\n经过实践，我们尝试从 Agent 工具调用的生命周期的 5 个阶段归纳总结了设计 Tools 应该考虑的关键要素及方法：\n类型安全与自动化：充分利用 Python 类型系统和 Pydantic，自动处理 schema 生成和数据验证，防止模型“瞎猜”。\n使用 Pydantic BaseModel：利用 Pydantic 进行复杂参数验证，自动处理 Schema 生成和数据验证。\n限制枚举值：通过\nLiteral\n等方式限制可选参数，减少模型出错概率。\n设置默认值：清晰的默认值非常关键，能减轻模型负担并防止响应过大。\ndefsearch_products\n(\nquery\n: str =\nField\n(\ndescription=\n\"用户的自然语言搜索意图。例如: '适合跑步的防水鞋'\"\n),\ncategory\n: Literal[\n\"electronics\"\n,\n\"clothing\"\n,\n\"food\"\n] =\nField\n(\ndescription=\n\"产品类别。如果用户提到'手机'/'电脑'用electronics\"\n),\nprice_max\n: Optional[\nint\n] =\nField\n(\nNone,\ndescription=\n\"最高价格(人民币)。只有当用户明确提到预算时才填写\"\n),\nsort_by\n: Literal[\n\"relevance\"\n,\n\"price_asc\"\n,\n\"rating\"\n] =\nField\n(\ndefault\n=\n\"relevance\"\n,\ndescription=\n\"排序方式。默认按相关性,除非用户说'便宜的'/'评分高的'\"\n)\n):\nLLM 友好的接口设计：LLM 无法像传统程序那样通过技术文档理解接口，它依赖于自然语言描述来决定如何使用工具。\n自然语言优先：使用自然语言描述签名、参数和错误信息，避免使用晦涩的技术术语。\n花费 50% 的时间去打磨\nDocstring\n，善于用\nExamples\n和\nSample Case\n引导模型准确传参。\n遵守实现“单一责任”原则，不要给模型一个过于复杂的组合接口，而是拆解成参数清晰、职责明确的小型工具，让 Agent 的决策链路更加稳定\ndefget_user_preferences(user_id:\nstr\n) ->\ndict\n:\n\"\"\"\n获取用户偏好设置\n常见后续操作:\n- 如果需要推荐商品 → 使用 recommend_products(preferences)\n- 如果需要发送通知 → 检查 preferences['notification_enabled']\n\"\"\"\nreturn\nuser_service.get_preferences(user_id)\n使用 OpenAPI 规范集成外部 API 转化为 Tools：推荐使用OpenAPIToolset 工具集，它可以利用\nOperationParser\n自动从 OpenAPI spec 生成 function declaration、参数 schema 和请求构建逻辑，实现标准化的快速创建。\nopenapi_toolset = OpenAPIToolset(\nspec_str=openapi_spec_yaml,\nspec_str_type=\n\"yaml\"\n,\nauth_scheme=oauth2_scheme,\nauth_credential=oauth2_credential,\n)\n构建自我修复能力，而不是直接终止：工具不应在遇到错误时直接抛出异常导致流程终止，而应引导 Agent 调整策略。\n结构化错误返回包含\nerror\n信息和\nrecovery_suggestion\n（修复建议）。\n配合\nReflectAndRetryToolPlugin\n等插件拦截错误，提供结构化反思指导，让 Agent 从失败中学习并自动重试。\ndefdelete_file(file_id:\nstr\n) ->\nUnion\n[ToolSuccess, ToolError]:\n\"\"\"删除文件\"\"\"\ntry\n:\nresult = file_service.delete(file_id)\nreturn\nToolSuccess(data=result)\nexcept\nFileNotFoundError:\nreturn\nToolError(\nerror=\n\"文件不存在\"\n,\nrecovery_suggestion=\n\"使用 list_files() 查看可用文件列表\"\n)\nexcept\nPermissionError:\nreturn\nToolError(\nerror=\n\"权限不足\"\n,\nrecovery_suggestion=\n\"请用户确认是否有删除权限,或尝试 get_file_permissions(file_id)\"\n)\n加入 Human - in - the - loop（安全防护机制）和关键行为确认。\n通过人工确认，将关键行为的决策权和责任交还给用户。\n通过\nrequire_confirmation\n定义工具是否需要开启确认模式。\ntool_context.tool_confirmation\n在敏感操作执行前，验证用户是否已经授权了本次行为。\n当无法决策或缺少关键信息时，\nask_human\n主动请求用户帮助。\ndefask_human(question:\nstr\n) ->\nstr\n:\n\"\"\"\n当遇到无法自动决策的情况时,询问用户\n使用时机:\n- 需要用户授权敏感操作\n- 多个选择都合理,需要用户偏好\n- 缺少关键信息无法继续\n\"\"\"\nreturninput(\nf\"🤖 需要你的帮助:\n{question}\n\\n你的回答: \"\n)\n性能优化与上下文管理：为了保证 Agent 的响应速度并防止上下文溢出，需要对结果进行精细控制。提供多个Tools 给模型调用的时候，可以通过实现异步的方案调用，将串行调用转为并行以加速执行。通过\nmax_query_result_rows\n限制返回数量，或仅返回摘要而非全文，避免 LLM Context 溢出\ndefsearch_knowledge_base(\nquery:\nstr\n,\nmax_results:\nint\n= Field(\ndefault=\n3\n,\n# 👈 默认值很关键\nle=\n5\n,\n# 限制最多5条\ndescription=\n\"返回结果数量。默认3条已足够,除非用户要求更多\"\n)\n) ->\nlist\n[\ndict\n]:\n\"\"\"搜索知识库,返回相关文档片段\"\"\"\nresults = kb.search(query, limit=max_results)\n# 👇 关键优化:返回摘要而非全文\nreturn\n[\n{\n\"id\"\n: r.\nid\n,\n\"title\"\n: r.title,\n\"summary\"\n: r.content[:\n200\n] +\n\"...\"\n,\n# 只返回前200字\n\"relevance_score\"\n: r.score,\n\"full_text_available\"\n:\nTrue\n# 提示可以获取全文\n}\nfor\nr\nin\nresults\n]\ndefget_document_full_text(doc_id:\nstr\n) ->\nstr\n:\n\"\"\"获取文档完整内容 - 仅在需要详细信息时调用\"\"\"\nreturn\nkb.get_by_id(doc_id).content\n二、如何解决 Tools 开发三大痛点：碎片化、复杂化、黑盒化\n真正企业在落地 Agent 实践，会面临一个非常现实的问题。面对海量的 API 文档和数以万计的存量应用，Agent Tools 运行会面对工具碎片化、连接复杂化，治理黑盒化的多重难题。火山引擎 AgentKit 打造了全新的 Gateway ，提供从工具鉴权、工具转化、工具调用和管理、丰富工具生态能力。\n存量应用智能化 ：3分钟打造 LLM 友好的工具\n在微服务时代，网关做的是流量代理和负载均衡；在 AI 原生时代，网关需要成为 Agent 与外部世界沟通的“中枢”。它不仅要处理高并发的流量——支撑百万级 QPS，更要解决一个核心问题，如何让 Agent 看懂你的旧接口？\n针对企业海量的存量 API 和老旧系统，AgentKit Gateway 提供智能化的“AI 转换器”，大幅降低企业应用 AI 化的门槛，解决“有大模型但无工具可用”的尴尬。Agent 与外部工具交互的标准协议是 MCP。而企业里大量的存量服务是传统的 HTTP API。\nAgentKit Gateway 提供了一个自动转换层。相比人工重构，智能转化成本降低\n80%\n。自动生成的 AI 提示词（Prompt Description）被模型正确理解的概率 >\n95%\n。历史 API 转化为 MCP 工具的自动化率达\n90%\n。\nAI 逆向工程生成： 只需上传 Swagger/OpenAPI 文档甚至是一段代码，内置的专用大模型即可自动生成符合 MCP 标准的 Tool Definition，并自动补全缺失的参数描述和用途说明（Description）。\n自动化测试脚手架： 生成工具的同时，自动生成测试用例（Test Cases）。通过模拟 Agent 调用，验证工具的可用性和返回格式的规范性。\n一键热加载： 转换后的 Skills 可直接推送到 Gateway 生效，无需重写一行业务代码。\n海量的 MCP 工具的治理：提供性能优化的 Agent Tools 工具集\nGateway 是 AgentKit 的核心枢纽，集成了\n流量\n、\n控制\n与\n数据\n三大核心要素，旨在为 Agent 生态提供统一的基础设施支持。\n流量中枢：\n作为 Gateway 的基础核心能力，它负责流量的统一接管与处理。无论是 Agent 间的交互、Agent 对 MCP（Model Context Protocol）的调用，还是对底层模型服务的访问，均可通过 Gateway 实现统一的流量治理。\n控制中枢：\n支持通过控制台集中配置 MCP 路由、模型路由及负载均衡策略。同时，集成限流、安全认证等传统服务治理能力，实现对 Agent 相关流量与治理策略的统一管控。\n数据中枢：\n提供对 Agent 相关元数据的全生命周期管理，涵盖 MCP 元数据、API 元数据及 Skills 元数据等。\nAgentKit Gateway 演进自应用层 API Gateway。鉴于 APIG（API 网关）已承接大量迁移至火山引擎的客户业务，并对其服务与接口实施了统一托管与流量代理，Gateway 能够高效地将这些现存服务与 API 转化为 MCP 标准，供 Agent 直接调用，实现传统业务与 AI Agent 的无缝连接。\n针对原生 MCP 调用中存在的上下文（Context）冗余、Token 消耗过高及模型幻觉问题，AgentKit Gateway 引入了独有的工具搜索与召回机制。\n智能召回：\n通过独有的搜索方案，综合提升工具调用的准确率，大幅降低无效 Token 的消耗。\n标签筛选：\n支持基于场景与分类标签（Tag）的工具筛选能力。用户可按需自定义 MCP 工具组合，通过标签逐级索引 MCP Tool，显著提升调用的效率与准确性。\n在一些关键性能指标上：\nToken 节省率：\n在涉及 50+ 工具调用的复杂负载场景下，MCP 调用 Token 消耗降低\n70%\n。\n调用准确率：\n基于 Schema 优化技术，复杂工具调用的参数填充准确率提升至\n98.5%\n。\n响应延迟：\n结合语义缓存技术，常用工具的响应速度提升\n300%\n。\n开发一个高质量的 MCP Server：让 Agent 更精准地理解并调用工具\n当底层的 MCP 工具（Tools）定义清晰后，就需要从更高维度思考：如何将这些独立的工具组合成顺畅的任务流，让 Agent 能够智能、高效地完成复杂工作。这涉及到\n工具规划\n（如何设计工具组合）和\n工具编排\n（如何动态组织和调用工具）两个核心环节。\n核心思想\n设计工具时，把模型当成一个聪明的“实习生”。不需要告诉他每个技术细节（最小化接口），但需要把相关的任务打包好（避免零散），并明确告诉他这个任务的目标是什么（任务导向）。在分配工作时，一次只给他当前相关的资料（最小化工具编排 + 渐进式披露），如果流程复杂，就给他一份清晰的操作指南（如 Agent Skill）。\n工具定义：“模型友好”\n名称用“动词-名词”结构（如\ncreate_order、manage_order\n），避免技术实现名（如\ncall_http_endpoint\n）。\n描述既要简洁，又要完整说明用途、输入输出、典型场景和异常处理，不夸大能力。\n输入/输出统一用 JSON Schema（或 Pydantic/Zod 等生成），善用类型（string/integer/enum 等）和约束\n（minimum/maximum/pattern/enum/examples/required）\n，\n避免巨大的嵌套结构，必要时拆平参数。\n工具规划：控制“颗粒度”和“数量”\n遵循“最小必要接口”：只暴露完成任务必须的参数和功能，去掉无意义或永远是固定值的参数。\n避免拆得过碎：从“用户要完成的任务”出发，把强相关步骤打包成一个任务型工具，而不是几十个原子接口。\n以“任务导向”而不是“接口罗列”为中心设计工具集，让模型理解“现在要完成什么事”。\n工具编排：“减负 + 渐进披露”\n不要一次性把所有 MCP 工具都挂给一个 Agent，而是根据具体场景按需加载一小部分工具集。\n可以通过标签或搜索按任务动态选择工具，避免上下文被无关工具描述淹没。\n对于复杂流程，用 Agent Skill 写一份“操作说明书”，引导模型按步骤调用多个工具完成任务。\nSkills：消除工具碎片化的和技能孤岛，提高企业复用率\n我们将“工具”升级为“技能（Skills）”。技术标准上，我们与 Claude Code Skills 保持完全兼容，但在此基础上增加了企业级所需的管理维度。AgentKit 将 Skills 视为企业核心数字资产，提供从开发、测试、发布到下线的全生命周期管理。\n维度\n传统 Tools\n企业级 Skills\n定位\n离散的功能插件\n核心数字资产\n管理\n手动维护、版本混乱\n集中管理、版本回滚、灰度发布\n构建\n纯代码编写\n原子能力编排 + Vibe Coding\n价值\n单点执行\n高复用、高效率、安全隔离\n在 Skills 从试验阶段走向生产落地时，核心的问题是\n如何将内部沉淀的 Skills 统一高效地管理起来，并在执行过程中保证可靠性、成本与安全隔离\n；AgentKit 通过平台级能力，把这些诉求拆解为“生成—管理—发现与执行”三个环节。\nSkills 的生成：基于预置的 skill-creator，将团队的 SOP、模板、脚本沉淀为可复用的 Skills 包。\nSkills 的集中管理：通过 Skills 中心统一完成 Skills 的注册、更新与版本发布，基于 Skills 空间查询与加载 Skills，解决跨团队共享难、版本混乱和权限边界不清的问题。\nSkills 的发现与执行：Skills Sandbox 通过 Skills 空间按需加载 Skills、与 LLM 交互决策使用的 Skills、在 Sandbox 中隔离执行并将最终生成任务结果。\n我们将在后面系列专题中展开 skills 的实战分享。\n工具鉴权及身份管理 (Identity & Access)：为 Agent 打造的“零信任”安全盾牌\n在 Agent 自主执行任务的场景下，风险不再来自 “用户是否登录”，而是来自 Agent 会在无人工逐步确认的情况下，多轮、多步、跨系统调用工具。传统的静态 API Key 或 长期 token 权限极易扩散，且事后很难回答 “是谁授权、以什么身份、做了什么、为什么放行”。AgentKit Identity 面向 Agent 运行时重新定义身份与权限，通过引入 Agent Persona （Agent 工作负载身份）与 Delegation Chain（委托链），并以 Zero Trust（零信任）方式在每一次 tool call 上执行策略判定与审计，确保每一次工具调用都做到可控、可追责、可审计。\n亮点能力：\nSecretless 的动态临时凭证：\n不再把长期秘钥交给 Agent。每次调用工具时，Gateway 联合 Identity 服务会根据调用上下文与策略，即时签发短期凭证，用完即失效，支持快速撤销与最小权限下发，显著降低 “密钥泄露/复用/越权” 等风险概率。\n端到端委托链：\n将终端用户身份、Agent Persona、会话/任务上下文（如环境、风险等级、工单、审批结果）绑定为可验证的身份链路，在 Agent 调用 Tool/MCP 的过程中安全传递，用于下游精细化授权与审计归因。实现：同一个 DevOps Agent，Alice 可以 delete，Bob 只能 reboot/list -- 不靠写死分支，而靠身份链 + 策略绑定 的效果。\n存量身份一键迁移：\n支持与企业现有身份体系无缝衔接（支持 OIDC/SAML/企业用户池），同时覆盖 2LO/3LO 授权场景，既能满足系统到系统（M2M）的自动化调用，也能满足用户授权参与的外部私域数据访问。\n工具调用级细粒度授权：\n在传统 RBAC 策略基础上，支持叠加属性（Attribute）条件（如工具类型、操作危险等级、目标资源标签、网络环境、是否二次确认/审批），做到 “对什么人、在什么上下文、允许调用什么工具” 的机制细粒度访问控制，实现业界领先的 ReBAC （Relation-based Access Control）。\n审计与可观测：\n记录每次 token 签发、策略判定、工具调用、返回结果与关键上下文，便于接入 SIEM/审计系统，支持事后追溯与持续合规运营。\n合规与技术参数指标：\n合规能力对齐：\n提供最小权限、全链路审计、短期凭证与随时撤销机制，支持客户业务对齐\nSOC2 Type II, ISO 27001, GDPR\n等全球顶级合规要求。\n性能指标：\n在同 Region / 同 AZ 部署下，身份判定与策略决策链路低至 “毫秒级开销”\n风险控制：\n支持对高风险工具调用的默认阻断、二次审批/确认、限速与异常检测等安全防护手段\n三、火山引擎 AgentKit Tools 实战\n理论引领方向，实践验证价值。AgentKit 所倡导的“工具化智能”开发范式，具备高度的行业普适性与解决方案可迁移性。以下深度场景推演与方案设计，均基于AgentKit平台核心能力构建，清晰展示了其为不同领域带来的智能化转型路径与可量化的高阶价值。\n案例1：零售行业——构建连锁集团的“全能数字员工”，重塑消费者服务体验\n场景深度剖析：\n全国性连锁零售集团，因客服问题重复率高、业务系统数据孤岛林立，面临巨大运营压力。具体表现为：超过60%的客服咨询为重复性事务；客服需跨十余个系统查询信息，单次查询耗时长达2分钟；大促期间响应延迟超5分钟，客户满意度骤降。传统规则引擎僵硬且无法理解用户自然语言中的复合意图，维护成本高昂。\nAgentKit工具实战方案：\n存量系统“零改造”智能融合：\n利用 AgentKit 的\nMCP 服务\n，在不修改任何后端代码的前提下，将分散的CRM、WMS（仓储管理系统）、OMS（订单管理系统）及营销平台的50多个核心接口，自动转化为符合MCP标准的、具有语义描述能力的智能工具。这标志着企业的“数据孤岛”被首次统一为Agent可理解和调用的“能力地图”。\n动态工具组合与意图理解：\n构建“智能客服Agent”，它并非简单的问题匹配机器人，而是一个具备工具使用能力的“虚拟专员”。当用户问及复杂问题时，Agent 通过 AgentKit 的\nMCPtoolset\n，自动将意图拆解，并发精准工具搜索、匹配和调用（例如：根据用户提问，“订单a有赠品是什么”，先调用“会员订单查询Tool”定位订单，再调用“实时库存查询Tool”匹配门店，最后调用“促销规则计算Tool”确认赠品资格）。\n安全与成本的双重治理：\n引入\n动态临时令牌机制\n，每次工具调用均生成短期有效令牌，杜绝了传统API Key长期暴露的风险。同时，通过工具的精确定义和组合调用，避免了将大量原始数据塞入提示词（Prompt），使单次交互的Token消耗降低70%，在大规模并发场景下显著优化了运营成本。\n落地价值与行业启示：\n效率革命：\n客服问题自动解决率大幅度提升，人工坐席得以专注于情感沟通和复杂纠纷处理，价值感提升。\n体验重塑：\n跨系统查询时间从分钟级降低到秒级，用户获得无缝的即时服务体验。\n核心观点：\n在零售行业，Agent的价值远不止“自动回复”。其本质是\n将后端复杂的业务系统网络，通过工具化封装，透明地、智能地映射为前端极简的用户服务界面\n，实现了服务流程的数字化重构。\n案例2：金融科技行业——锻造智能风控的“数字审计官”，实现实时合规与业务敏捷的双重突破\n场景深度剖析：\n跨境支付金融科技公司，日均处理数百万笔全球交易，业务覆盖数字钱包、跨境汇款、商户收单等多个创新领域，通常面临全球动态合规与海量交易审计的巨大挑战。传统人工审计依赖个人经验在多系统间手动操作，需耗时数天，风险响应滞后且标准不一，同时存在数据安全风险。自研系统与外部方案均难以兼顾敏捷适配与审计可解释性。\nAgentKit工具实战方案：\n动态合规规则的“Skill化”敏捷部署：\n利用 AgentKit 的\n“Skill Studio”\n，合规与风控专家无需编写代码，即可将最新监管要求或内部风控策略，快速封装为可执行、可测试的独立Skill（如“跨境大额交易聚类分析Skill”、“可疑地址链上追踪Skill”、“交易对手方风险评分Skill”），根据不同审计场景被灵活组合和动态加载，将监管响应时间从“周级”缩短至“小时级”。\n全链路可解释性与监管级审计溯源：\n通过 AgentKit 的全链路监测服务，每一笔被Agent标记为“可疑”的交易，都能生成完整的“决策报告”：包括调用了哪些数据源（工具）、应用了哪些风控规则（Skill）、推理的逻辑链（Reasoning Trace）以及最终判断的依据，极大减轻了合规汇报的压力。\n在敏捷开发中嵌入“隐私优先”的安全范式：\n借助AgentKit的 通过引入\nAgent Persona （Agent 工作负载身份）与 Delegation Chain（委托链）\n，Agent 对敏感数据的访问权限不再仅基于静态角色，而是动态评估访问的“上下文”——包括审计任务类型、数据敏感级别、操作时间等。这确保了在研发、测试、生产等多环境中，数据安全和合规底线不被打破。\n落地价值与行业启示：\n风控效力质变：\n通过7x24小时实时流式处理，将风控模式从“事后检查”彻底转变为“事中拦截”，有效缩短可疑交易调查响应时间，有效拦截高风险交易。\n组织能力释放：\n自动化使合规审计总工时减少85%，将团队从机械劳动中解放，转而聚焦风险策略优化与新业务合规设计，使合规部门从成本中心转型为业务赋能者。\n核心观点：\n对于金融科技公司而言，Agent工具化的核心价值在于\n解决“创新速度”与“合规稳健性”之间的根本矛盾，构建一套内生于技术架构、能随业务快速迭代、同时满足最高安全与审计标准的智能风控基础设施。\n四、行业展望\n以上案例清晰地勾勒出一条路径：无论是零售业的\n服务重塑\n还是金融业的\n风控升维\n，其共同起点都是将企业固有的、复杂的、数字化的业务能力，通过AgentKit转化为智能体可自如运用的“工具”。这不再是简单的技术集成，而是\n一次深刻的“业务能力AI化”范式转移。\nAgentKit 通过其\n存量应用无缝转化、skills产品化、企业级治理\n三位一体的核心能力，正助力各行业领先者将AI的潜力，扎实地转化为可见的业务优势、可控的安全屏障和可持续的竞争力。未来，拥有并善用“智能工具链”的企业，将在智能化浪潮中掌握定义新时代游戏规则的主导权。\nAgentKit 正在火热公测中，感兴趣的朋友点击阅读原文，跳转官网体验。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.09,
+        "peripheral": 0.11,
+        "direct_local": 0,
+        "transfer_agent": 0.78,
+        "transfer_business": 0.02
+      }
+    },
+    "relevance": {
+      "score": 2.09,
+      "probabilities": {
+        "0": 0,
+        "1": 0.05,
+        "2": 0.8099999999999999,
+        "3": 0.14,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.34,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.17,
+        "2": 0.23,
+        "3": 0.49,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 3.15,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.02,
+        "2": 0.03,
+        "3": 0.18,
+        "4": 0.44,
+        "5": 0.15
+      }
+    },
+    "evidence": {
+      "score": 2.18,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.81,
+        "3": 0.08,
+        "4": 0.07,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.6,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.33,
+        "4": 0.61,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 0.99,
+      "probabilities": {
+        "0": 0.3,
+        "1": 0.46,
+        "2": 0.21,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 9570,
+    "outputTokens": 172,
+    "totalTokens": 9742
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.72,
+        "relevance": 0.87,
+        "grounding": 0.47,
+        "decision_action": 0.23,
+        "evidence": 0.82,
+        "actionability": 0.7,
+        "anti_hype": 0.62
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179935518,
+                "endTime": 1791179935688,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00040194",
+      "marketCost": "0.00040194",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00040194",
+      "inferenceCost": "0.00040194",
+      "inputInferenceCost": "0.00040194",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9KRC4SHN4M9SCK15NY63"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:55 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::lvmq6-1791179935040-4a14bf869ca3"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.09,
+            "peripheral": 0.11,
+            "direct_local": 0,
+            "transfer_agent": 0.78,
+            "transfer_business": 0.02
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.09,
+          "probabilities": {
+            "0": 0,
+            "1": 0.05,
+            "2": 0.8099999999999999,
+            "3": 0.14,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.34,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.17,
+            "2": 0.23,
+            "3": 0.49,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 3.15,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.02,
+            "2": 0.03,
+            "3": 0.18,
+            "4": 0.44,
+            "5": 0.15
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.18,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.81,
+            "3": 0.08,
+            "4": 0.07,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.6,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.33,
+            "4": 0.61,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.99,
+          "probabilities": {
+            "0": 0.3,
+            "1": 0.46,
+            "2": 0.21,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 9570,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.72,
+            "relevance": 0.87,
+            "grounding": 0.47,
+            "decision_action": 0.23,
+            "evidence": 0.82,
+            "actionability": 0.7,
+            "anti_hype": 0.62
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179935518,
+                    "endTime": 1791179935688,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00040194",
+          "marketCost": "0.00040194",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00040194",
+          "inferenceCost": "0.00040194",
+          "inputInferenceCost": "0.00040194",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9KRC4SHN4M9SCK15NY63"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:54.920Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1232704691876397056",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "模型越来越强， harness该留下什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696815&idx=1&sn=273c44cd529f4ae4cac7328bb19e54b8",
+      "date": "2026-08-06T00:45:00.464Z",
+      "chars": 19677,
+      "text": "原创\n魏依承\n2026-08-06 08:45\n广东\n关注腾讯云开发者，一手技术干货提前解锁👇\n删掉团队 harness 框架 61% 内容之后的一些思考：什么会被模型内化，什么永远不会，以及在开源框架遍地的今天，团队自己做 harness 的价值在哪。\n最近我们对部门的 harness 框架\ntdsql-harness\n做了一轮彻底的 refactor：根指令删掉 61%，skills 砍掉 40%，agent 从 10 个减到 6 个。 删的过程中反复在问同一个问题——\n这一条，到底还有没有用？\n几乎同一时间，Anthropic 公布他们为 Claude 5 系列删掉了 Claude Code 系统提示词的 80% 以上，编码评测没有可测量的损失。\n这不是巧合。过去半年，Anthropic 与 OpenAI 各自独立地把 prompting 指引调转到了同一个方向：减法。而且不是「精简一点更好」这种风格建议，是明确指出——为旧模型写的指令，在新模型上会\n主动造成\n质量损失。\n这篇文章是那轮瘦身之后的思考：什么该删、什么该留，以及在模型越来越强、开源 harness 日趋成熟的今天，团队自己做 harness 的价值究竟在哪。\n01\n正在发生什么\n先把事实摆清楚：这是行业级的转向，不是某一家的风格偏好。\n1.1\n两家头部厂商独立收敛到「减法」\n过去半年，Anthropic 与 OpenAI 各自更新了自家模型的 prompting 指引。两份文档彼此独立，却给出了同一个结论。\nAnthropic 那条尤其值得停一下：删掉的是\nClaude Code 自己的系统提示词\n——那是他们打磨了一年多、被数百万开发者每天使用的核心资产。一次删掉 80%，评测不掉。\n1.2\n关键的质变：冗余从中性变成了负数\n如果只理解成「精简一点更好」，那就错过了这轮变化里最重要的部分。\n在弱模型时代，多写一句话最坏的结果是浪费 token；今天，\n多写一句话可能覆盖掉模型自己更好的判断。\n两家给出的证据都很具体。\nOpenAI 给了机制说明。\n它指出旧 prompt 常常过度规定流程，因为早期模型确实需要更多帮助才不跑偏，但在 GPT-5.5 上——\n…that can add noise,\nnarrow the model's search space,\nor lead to overly mechanical answers.\n（那会引入噪音、缩小模型的搜索空间，或者导致机械化的回答）\n「缩小搜索空间」是这轮变化的技术内核：你写下的每一条路径规定，都在从模型可选的方案里剪掉一部分。当模型比你更清楚哪条路好走时，这个剪枝就是净损失。\nAnthropic\n给了最直观的例子。\n如果你的 code review prompt 里写了「只报高危问题」或者「保守一点」：\n…the model may follow that instruction\nliterally\nand report less; ask it to report everything and filter in a separate pass instead.\n（模型可能会照字面执行、报得更少；正确做法是让它全报，然后另开一轮过滤）\n这句话戳中的是一个非常普遍的写法。「保守一点」在人类之间是个程度副词，在指令遵循能力足够强的模型那里是一条会被严格执行的规则——\n你以为在调节风格，实际在削减召回。\n更值得注意的是官方的处置建议：删除，而不是改写。\nIf your prompt contains explicit verification instructions (\"include a final verification step for any non-trivial task,\" \"use a subagent to verify\"),\nremove them\n: instructions like these cause over-verification on Claude Opus 5, and removing them reduces wasted tokens with\nno loss in quality\n. The same applies to\nlegacy harness scaffolding\nthat adds separate verification steps.\nAnthropic《Prompting Claude Opus 5》\n注意最后一句直接点名了 legacy harness scaffolding（遗留的 harness 脚手架）——这是官方在告诉你：\n你的 harness 里那些旧脚手架该拆了。\n同一份文档还有两条同类的：\n强调语反噬。\n过去为了让模型可靠地调用工具，大家习惯写\nCRITICAL: You MUST use this tool when...\n。现在官方建议降级成普通的\nUse this tool when...\n——因为新模型对系统提示词更敏感，激烈措辞会导致\n过度触发\n。同理，\nIf in doubt, use [tool]\n这类兜底句现在是过度触发的主要来源。\n负面指令反噬。\n如果系统提示词里写了「不要思考 / 不要推理」这类规则，官方要求\n直接删掉\n——那类指令反而会\n增加\n内部标签泄漏到可见输出里的概率。而且「点名负面项」比「笼统表述」效果更差。\nOpenAI 在迁移建议里把这个方向推得更彻底：不要把旧 prompt 里的指令逐条搬过来，而应当\n从一个全新的基线开始\n——先写出「能保住产品契约的最小 prompt」， 再针对真实样例逐项调优。\n把旧指令当作待验证的负担，而不是当作资产。\n这一节的结论\n冗余指令在弱模型时代是中性的，最多浪费预算；在今天是负的。 它会缩小搜索空间、被字面执行、导致过度触发，并且可能覆盖掉模型本来更好的判断。\n1.3\n具体在变的四件事\nAnthropic 那篇文章列了六个转变，其中四条最可操作。\n一、规则 → 判据\n这是全文最重要的一组对照。同样是控制代码注释风格，前后两版差别是这样的：\n后者更短，但覆盖的情况更多。而且它避开了前者的一个硬伤：\n如果这个文件周围本来就是多行注释风格，前一版会给出明确错误的指导。\n穷举式禁令必然有覆盖不到的边界，而判据把边界判断交回给模型——它读得到上下文，你写规则的时候读不到。\n二、前置全量上下文 → 渐进式披露\n把详细指引（比如完整的 code review 流程）从常驻的系统提示词里挪进按需加载的 skill。skill 只有元数据（名字和描述，约 100 token）常驻，正文在被触发时才读进上下文。这样你可以装几十个 skill 而不撑爆注意力预算。\n三、示例 → 接口设计\n与其给模型一堆工具用法示例，不如把工具接口本身设计好。官方举的例子：把状态字段的取值枚举成\npending / in_progress / completed\n，这个枚举本身就在引导正确用法，不需要再配示例。\n顺带一提，这条背后还有一个更微妙的观察：对足够强的模型，\n示例会成为约束\n——因为它比你给的例子更有想象力。\n四、简单 markdown 规格 → 更丰富的引用物\n用 HTML 产物、测试套件、函数签名、评分表（rubric）来替代纯文字描述的规格。理由很直接：代码和测试是\n可执行的规格\n，不存在解释歧义；文字描述则需要模型二次翻译。\n案例：prefill 是怎么消失的\n上面几条都还停留在「建议」层面。这里举一个具体案例——它不是建议，而是既成事实，也最能说明这轮变化的性质。\nprefill（预填充助手回复的开头，用来强制输出格式）是一个存在多年的标准技巧——比如先塞一个\n{\"result\":\n进去，逼模型接着输出 JSON。几乎所有需要结构化输出的场景都用过它。\n从 Claude 4.6 开始，这个能力\n从 API 层面直接移除了\n，带 prefill 的请求会返回 400 错误。\n官方给的理由只有一句：\nModel intelligence and instruction following have advanced such that\nmost use cases of prefill no longer require it.\n（模型智能和指令遵循已经进步到大多数 prefill 场景不再需要它）\n这是「脚手架消失」最干净的一个案例，也为第三部分埋下伏笔：\n脚手架不是被优化掉的，是它防御的那个问题不存在了。\n02\nharness 与 skill 该怎么写\n五道关卡：该不该写 → 怎么表达 → 给多大自由度 → 怎么验证 → 写完往哪里退。这一部分都能直接照做。\n2.1\n第一关：这一条到底该不该存在\n最省力的优化是不写。Anthropic 在讲他们内部怎么用 skill 时给了一句很硬的判据：\nClaude already knows how to code and can read your codebase.\nA skill that restates what Claude would do by default adds context without adding value.\n（Claude 本来就会写代码，也能读你的代码库。一个复述模型默认行为的 skill，只增加上下文，不增加价值）\nAddy Osmani 给了一个更好操作的版本，我觉得可以直接当尺子用：\n删除判据\n这条信息，agent 读你的代码库能不能找到？能找到就删。\n按这条判据，下面这些是该删的：目录结构、架构概览、技术栈描述——全都可以通过读代码发现。而下面这些该留：\n用\nuv 管理依赖\n、\n跑测试必须加 --no-cache，否则会有假通过\n、不明显的约定、运维坑、生产里还残留的废弃模式。\n为什么冗余的代价不只是浪费 token\n这是这一节最该讲透的一点。大家精简 prompt 时想的通常是省上下文预算，但真正的代价在别处：\nYou've added a file that the agent reads, then goes and confirms by reading your actual code, and now has to\nreconcile two sources of truth.\n（你加了一个文件，agent 读了它，然后又去读真实代码确认一遍，现在它得调和两个事实来源）\n制造第二个事实来源\n——这比浪费上下文严重得多。代码会变，你写的那份描述不会跟着变；当两者不一致时，agent 要么信了过期的那份，要么花额外的推理去判断该信谁。\n过期的文档比没有文档更危险。\nAnthropic 官方的 skill 撰写指南把这道判断拆成了三个自查问题，每写一段就问一遍：\n模型真的需要这段解释吗？\n我能不能假定它已经知道？\n这一段配得上它的 token 成本吗？\n同一份指南里还有一个说法值得记住：\n「上下文窗口是公共资源」\n（The context window is a public good）。你的 skill 与系统提示词、对话历史、其它 skill 的元数据、以及用户真正的请求共享同一片空间。\n一条我们自己在用的机械判据\n抽象的提醒（「注意读者是 agent 不是人」）在实践中效果很差，因为它没法机械执行——你没法拿它去逐行扫描。我们后来换成了一句可以直接执行的问句：\n逐行扫描用的判据\n一个没有本次会话记忆的 agent 读到这一行，行为会怎么变？\n答不出来就删。\n它的好处是可以逐行套用，而且答案是二值的。用它扫一遍会发现几类东西必然出局：\n元评论。\n「这里以前出过 bug」「这条规则是因为某某才加的」「目前这块还不完善」——这些不含任何动作。更糟的是最后一类：\n告诉模型某条边界没有强制力，等于主动削弱那条边界。\n自我辩护。\n「这就是本 skill 存在的理由」这类句子是写给人看的，对读到它的 agent 不产生任何行为差异。\n防御性否定。\n「这不是指某某」——为了澄清而写的否定句，会把被否定的那个概念本身引入上下文。\n2.2\n第二关：从规则到判据\n决定了要写，接下来是怎么表达。核心动作就是第一部分那组注释规则的对照：\n把穷举式禁令换成判据。\nOpenAI 给了一条很实用的分界线，回答了「那什么时候还能用绝对措辞」：\nUse those words for\ntrue invariants.\n[…] For judgment calls, such as when to search, ask for clarification, use a tool, or keep iterating, prefer\ndecision rules\ninstead.\n（把 MUST / NEVER 这类词留给真正的不变量。判断题——何时搜索、何时追问、何时用工具、何时继续迭代——一律改写成决策规则）\n按这条分界线，我们 harness 里保留绝对措辞的地方只剩一类：\n不可逆动作\n。commit、push、MR 合入、deploy、workspace 之外的删除——这些是真正的不变量，写死没有代价。其余全部改成了判据。\n还有一条容易被忽略的：\n正例优于禁令。\nAnthropic 明确说，与其写一堆「不要怎样」，不如给一个你想要的样子的正面例子——后者的效果更好。这和「负面指令反噬」是同一件事的两面。\n2.3\n第三关：路径放开，验收收紧\n前面一直在讲「少写、别规定路径」，这很容易被理解成另一个极端：那就什么都别写，全交给模型。这是这一关要澄清的误区。\n放开的是路径，收紧的是验收。\n这两件事必须同时做，只做前一半就是放羊。\n「给目标」到底是给什么\nOpenAI 那句被反复引用的话，重点常常被读漏了：\nGPT-5.5 is strongest when the prompt defines the\ntarget outcome, success criteria, constraints, and available context\n, then lets the model choose the path.\n（当 prompt 定义了目标结果、成功判据、约束和可用上下文，再让模型自己选路径时，GPT-5.5 表现最好）\n四项里有三项是\n你必须写死的\n——目标、成功判据、约束。只有「路径」是留给模型的。 所以「给目标而不给步骤」不等于写得更少，而是\n把笔墨从「怎么做」挪到「怎么算做完」\n。\n把验收写成可执行的形态\nAddy Osmani 对 skill 的定义正是这一点的操作化。他要求 skill 是一个 workflow， 但他对 workflow 的定义值得逐字读：\nA skill is a workflow: a sequence of steps the agent follows,\nwith checkpoints that produce evidence, ending in a defined exit criterion.\n（skill 是一个工作流：agent 依次执行的一串步骤，每一步都有产出证据的检查点，并以一个明确的退出条件结束）\n他自己把重点点得很清楚：\n「真正有价值的不是那些 markdown，是退出条件。」\n这里的「步骤」不是「先做 X 再做 Y」这种路径规定，而是\n「做完 X → 拿出证据 → 达标才继续」\n。证据是什么？绿色的测试结果、一张截图、一段日志、一个评审通过。\n没有证据，这一步就不算完成。\n他反对的对立面也不是「给目标和约束」，而是\n读完不会被执行的参考资料\n：\nIf you put a 2,000-word essay on testing best practices into the agent's context, the agent reads it, generates plausible-looking text, and\nskips the actual testing.\n（如果你往 agent 的上下文里塞一篇两千字的测试最佳实践长文，它会读完、生成一段看起来很像样的文字，然后跳过真正的测试）\n把三方的说法并排看，会发现它们讲的是同一件事：\nsuccess criteria 和 exit criteria 是同一个东西的两种叫法。\n没有人在主张「一步步教模型做事」， 大家主张的是「把做完的标准写死」。\n例外：什么时候连路径也要写死\n确实存在需要规定路径的场景。Anthropic 用一个比喻界定了它的边界：\n判据是\n操作的脆弱性，不是任务的重要性\n。数据库迁移要写死不是因为它重要， 而是因为顺序错了就无法挽回；code review 同样重要，但它没有唯一正确的路径。\n这一关可以归结为一句：\n用判据而不是步骤，但判据必须能被机械判定。\n「代码质量要好」不是判据——它产不出任何证据； 「测试变绿 / 产物存在 / diff 为空 / 命令 exit 0」才是。\n2.4\n第四关：先建裁判，再写内容\nAnthropic 官方 skill 指南里有一条要求，我认为是全篇最容易被跳过、但价值最高的：\nCreate evaluations BEFORE writing extensive documentation.\nThis ensures your Skill solves real problems rather than documenting imagined ones.\n（在写大量文档之前先建评测。这能确保你的 skill 解决的是真问题，而不是在为想象出来的需求写文档）\n它给的五步是：\n不带 skill 跑一遍，记录下具体的失败——不是「效果不太好」，是「它在第三步漏掉了 X」。\n针对这些 gap 建三个评测场景。\n建立 baseline，量出没有 skill 时的表现。\n写刚好够填补 gap 的最少内容——注意是「刚好够」。\n迭代，对照 baseline 看有没有真的变好。\n这套流程的副产品比它本身更重要：每条规则天然绑定了它防御的那个具体失败。这一点会在第三部分变成判断「规则是否已经过期」的唯一依据。\n值得注意的是它对「最少内容」的定义方式——不是靠写的人自己把握分寸， 而是由评测反推：能让评测从不通过变成通过的那些内容就是必要的，多出来的都是待辩护的。 这也是为什么第一部分里 Anthropic 敢一次删掉 80%——他们有一套评测在兜底， 所以「删了会不会坏」不是靠判断，是靠跑出来的。\n2.5\n第五关：能沉降到工具层的，就别留在指令层\n这一关讲的是「写完之后往哪里退」，也是最容易被忽略的一步。\nAddy 给了一个我很认同的定位：\nThink of AGENTS.md as\na living document of friction you haven't fixed yet.\n（把 AGENTS.md 当成一份「你还没修掉的摩擦」的清单）\n推论很直接：当 agent 反复卡在同一个地方时，\n先去修根因\n——重构那段代码、加一条 linter 规则、补一个测试。\n穷尽这些手段之后\n，才考虑往指令文件里加话。\nOpenAI 那边是同一件事的另一面。他们用 Codex agent 交付了一个约一百万行代码的生产 beta 产品，全程无人手写代码。他们的做法是：\nBy\nenforcing invariants, not micromanaging implementations\n, we let agents ship fast without undermining the foundation.\n（通过强制不变量、而不是微管理实现，我们让 agent 既能快速交付又不破坏根基）\n关键在于这些 invariants 是\n用 custom linter 和 structural test 强制的，不是靠 prompt 说服的\n。而他们的 AGENTS.md 只有\n约 100 行\n，定位是「a map, with pointers to deeper sources of truth elsewhere」（一张地图，指向别处更深的事实来源）——是目录，不是百科全书。\n一条容易记的分工\n指令层的强度取决于模型当下怎么读它；工具层不取决于。\n所以凡是能表达成 linter 规则、测试用例、CI 门禁的，就不要留在指令里。 指令文件应该越修越短——因为内容在持续沉降。\n案例：我们\n删掉了 61%\n回到开头那三个数字。这轮 refactor 的范围和结果：\n删掉的东西按类型归纳，大致是这么几类——如果你也要做一轮，可以照着扫：\n剩下的 6,400 字符里是什么？基本只有四类：\n什么算做完\n（成功判据与验收）、\n哪里必须停下来找人\n（gate 与升级条件）、\n状态放在哪\n（跨 session 恢复的约定）、\n什么不能自己做\n（不可逆动作的授权边界）。\n为什么恰好剩下这四类，是第三部分要回答的问题。\n03\n什么值得留下\n前面都在讲删。这一部分回答：什么不能删、怎么判断，以及团队自己做 harness 的价值在哪。\n3.1\n总纲：每一条都是一个赌注\nAnthropic 在讲 harness 设计时给了一句话，我认为是理解整个问题的钥匙：\nEvery component in a harness encodes an assumption about what the model can't do on its own.\n（harness 里的每一个组件，都编码了一个关于「模型自己做不到什么」的假设）\n——而这些假设\ngrow stale as the model gets more capable\n（随着模型变强而过期）。\n把这句话反过来读，问题就清晰了：\n你 harness 里的每一条，都在赌一件模型做不到的事。问题只是这个赌注什么时候到期。\n所以真正的工作不是「精简」，而是\n识别哪些赌注已经到期、哪些永远不会到期\n。\n3\n.2\n到期的假设长什么样\n先建立模式识别。下面这些都是过去一年里真实到期的脚手架：\n看这张表最右列会发现一个规律：\n它们不只是变得多余，好几条已经反转成了负作用。\n而最左列有一个更重要的共同点：\n识别到期赌注的模式\n凡是在补模型能力缺口的，都会过期，只是早晚。\n这条模式的价值在于它能\n前瞻\n：你现在写的规则，如果理由是「模型记不住 / 模型不会主动做 / 模型容易漏」，那它已经在到期队列里了，只是还没轮到。\n3\n.3\n怎么知道一条假设已经过期\n知道了假设会到期，下一个问题就是：\n怎么知道某一条已经到期了？\n这个问题的答案，决定了「面向未来设计」到底该怎么做。\n大家讨论「要不要为更强的模型提前设计」时，想的通常是「留个接口、留点余地」。但那是猜测，而且猜错的代价很高——你不知道下一代模型会内化哪一块。\n我认为更好的答案.是换一个方向：\n核心方法\n你预测不了模型什么时候会内化某条规则，但你可以让「已经被内化」这件事变得\n可检测。\n做法就是第二部分第四关那件事：\n每条规则写下来的时候，就绑定它防御的具体失败模式。\n这样当模型进化到不再犯这个错时，你有明确的信号可以删它。\nAddy Osmani 有一个同构的表述，他叫它「棘轮法」（ratchet approach）：\nadding constraints\nonly after observing real failures.\nRules should trace back to\nactual mistakes, not speculation.\n（只在观察到真实失败之后才加约束。规则必须能追溯到真实发生过的错误，而不是猜测）\n反过来看，这解释了一个很普遍的现象：\n绝大多数 AGENTS.md 和 CLAUDE.md 只增不减。\n根因不是懒。是\n这些规则当初就没写清防的是什么\n——所以谁也不敢删，因为谁也判断不了它是否还有用。文件于是变成一堆没人说得清是否还起作用的历史包袱。\n一句话总结这一节：\n说不清防什么的规则，从写下来的那一刻就已经无法被淘汰了。\n3\n.4\n四层归属：分层回答「会不会被内化」\n「这些东西以后会不会被模型内化掉」——这个问题没有统一答案，一概而论地回答「会」或「不会」都不对，得分层看。\n自建 harness 的立足点在 L2 和 L3 —— 不在 L1\n注意 L2 的归宿写的是「迁移」不是「消失」：它不会被模型内化，但会从指令层沉降到工具层。\n把第二部分删掉的那六类东西对照这张图看，会发现它们全部落在 L0 和 L1。而剩下的 6,400 字符——成功判据、gate、状态约定、授权边界——全部落在 L2 和 L3。\n3\n.5\nL3 永不内化的两条理由\n这是全文我最想讲清楚的一节。L3 之所以永不内化，有两条理由，而且第二条比第一条硬得多。\n理由一：信息不可达\n价值排序（冲突时优先保什么）、私有 context（三年前那个模块为什么要那样设计）、主观 oracle（什么样算好看、什么样算合适）——这些信息\n物理上不在模型能到达的地方\n。\n它不在公开语料里，否则每个组织都会是一样的答案；也不在你的 repo 里，否则 grep 就能拿到。它只存在于人的头脑和组织的运作中。\n这不是智力问题，是信息可达性问题。\n顺着这条理由可以得到一个很干净的判据：\n判断一条内容是否保值\n问「这条信息的源头在哪里」——\n在公开语料 → 会被内化，别写。\n在 repo 或运行环境 → 会被工具拿到，别写。\n在人的头脑或组织结构里 → 永远是你的责任。\n理由二：责任不可转移\n第一条理由有个漏洞：\n信息不可达，理论上可以靠「把信息补齐」来缩小。\n如果哪天所有组织知识都被结构化地喂给了模型呢？\n第二条理由堵住了这个漏洞。Addy Osmani 说得非常锋利：\nOnly people inherit consequence.\nAgents can be asked to choose, route, merge, and escalate safely inside a policy, but they\ncannot inherit the consequences.\n（只有人能继承后果。你可以让 agent 在policy 内安全地做选择、路由、合并、升级，但它无法继承后果）\n就算把所有信息都给了模型，责任也不会转移。\n这不是能力问题，也不是信息问题，是社会结构问题——出了事，被问责的是人。这一条连理论上都无法被技术进步消解。\n他把人必须持有的东西归成三件，我觉得可以直接拿来当 gate 设计的清单：\n3\n.6\n官方给出的「留」与「删」\n上面是推导，那么有没有人给过直接的答案？有。Anthropic 那篇《Agent Harness Design: 3 Patterns》的第三个模式讲的正是这个：\n这和我们自己收敛的结果对上了。我们 harness 保留下来的内容里，第四节整节就是「不可逆动作只能由用户明示触发」——commit、push、MR 合入、deploy、workspace 之外的写入与删除，并且规定 subagent 永久不得执行其中任何一项。\n这一条不是我们的偏好，是\n独立收敛的结论\n。\n3\n.7\n还有一类不会消失：结构性偏差\n除了 L3，还有一类东西容易被漏掉，但同样不会随模型变强而消失——\n因为它不是能力缺口。\nAnthropic 在讲 workflow 编排时点名了单上下文推理的三个失败模式，其中第二个最关键：\n第二条不是「模型不够聪明」，而是\n评价者与被评价者是同一个\n造成的结构性问题。同一件事在另外两处被独立观察到：\nAnthropic 在长任务实验中发现，模型自评时会\nconfidently praise the work\n——即便在人看来质量明显平庸。\nAddy 的说法更直白：\n\"The model that wrote the code is way too nice grading its own homework.\"\n（写代码的那个模型给自己的作业打分，实在是太宽容了）\n结论：独立 reviewer 和跨模型校验的价值，不随模型变强而衰减。\n需要补充一个精确的观察：Anthropic 的实测是，evaluator 的价值边界只是\n外移\n了——以前需要 QA 复核的任务现在模型能自行完成，但复杂应用仍然从独立评审中获益。\n是边界移动，不是价值消失。\n这也是第二篇里跨模型协作那套机制到今天依然成立的原因。\n3\n.7\n度：自主度的上界\n「面向未来设计」和「不能无条件信任」之间的平衡点在哪？我见过最好的一句表述来自 Addy：\nBack pressure\nyou can only hand a loop as much autonomy as you can cheaply and reliably verify, and not one inch more.\n你能交给一个循环的自主度，上限就是你能廉价且可靠地验证的那么多——一寸都不能多。\n注意这个上界绑定的是\n验证能力\n，不是任务的重要程度，也不是模型的能力。这是个很实用的区别：一个很重要的任务，如果验证成本低、错了能回滚，反而可以给高自主度；一个不起眼的任务，如果错了发现不了，就不能放手。\n配套的三个判定问题，我认为是「度」最好的操作化：\n多快能知道我们错了？（How quickly will we know we're wrong）\n多干净能撤销？（How cleanly can we undo）\n什么能证明我们是对的？（What would prove we're right）\n如果答案是「要很久才知道 / 很难撤销 / 只能相信它给的摘要」——那就不该给这个自主度。\n顺着这条线还有一组反模式，其中几条在实践中相当常见：\n还有一个更大的背景：\n验证，而不是生成，才是真正的瓶颈。\n启动一个 agent 只要一句话，但收口一个 agent 一点也不便宜。当生成速度超过你能有意义地验证的速度，积累的就是\n认知债\n——代码看着干净、测试全绿，但没有人真正理解它。这种债最麻烦的地方在于它不像技术债那样通过摩擦暴露自己，它\n滋生的是虚假的信心\n。\n这条上界还有一个直接推论，落在 gate 的设计上：\ngate 的数量上限，等于人能真正判断的数量上限。\n我们 harness 里为此写了一条实测经验——人在 gate 面前会退化成快速点头， 所以\n对策不是减少 gate，而是让每个 gate 便宜到能真判\n： 把需要裁决的事项、证据和推荐前置，全文和 diff 作为可选读的附录。 一个人判不动的 gate 等于没有 gate，而且更糟——它制造了「已经审过」的假象。\n3\n.8\n团队为什么还要自己做 harness\n最后回到那个最实际的问题：模型越来越强，开源 harness 框架也已相当成熟，团队为什么还要自己做一套？\n先破一个误解：harness 不会消失，它在迁移\nCounterintuitively, harnesses\ndon't shrink; they migrate.\nBetter models eliminate certain scaffolding but enable new capabilities requiring different scaffolding. The assumption landscape\nshifts rather than contracts.\n（反直觉的是，harness 不是在缩小，而是在迁移。更好的模型消灭了某些脚手架，同时解锁了需要另一类脚手架的新能力。假设的地形是移动，不是收缩）\n所以「以后就不需要 harness 了」这个判断是错的。真正在变的是\n哪一层需要你投入\n。\n立足点在 L2 和 L3，不在 L1\n回到那张分层图。开源 harness 框架能给你的，绝大部分是\nL1\n——执行循环、状态管理、subagent 编排、上下文管理。而 L1 恰恰是\n最会被平台原生吸收、最不保值\n的一层：Claude Code、Codex 这些底层 harness 每个版本都在往里吸收这些能力。\n这解释了一个很常见的错配：\n很多团队自建 harness，力气全花在 L1 上\n——重写自己的执行循环、设计自己的 workflow 引擎。那是投入最大、贬值最快的地方。\nL2 具体长什么样：我们打通了什么\n「组织特有的流程与工具」听起来抽象，落到实处其实非常具体。下面是\ntdsql-harness\n里真正构成不可替代性的那部分：\n这三类内容有一个共同点，也正是它们不可替代的原因：\n把「换一个团队，这条会不会不一样」这个问题套上去，答案全是「会」。\n而 L0 和 L1 的内容套上去，答案全是「不会」——所以 L0 与 L1 注定由模型和平台提供。\n还有一层更关键的区别值得点破。\n这些 skill 的价值不只是「告诉 agent 怎么做」，而是「让 agent 能做」。\n通过 MCP 工具、封装脚本和固化的操作流程，agent 获得的是\n操作内部系统的能力\n——它能自己去查工作项、触发流水线、登录测试集群拉日志、把评审意见处理完再回写状态。这不是知识注入，是能力接入。\n差别有多大？可以对比一下两种状态：\n模型能力的提升会让左边那一列越来越强，但\n不会让它自己跨到右边\n。跨过去的那一步，只能由了解这些系统的团队铺设。这就是自建 harness 的杠杆所在：\n它决定的不是 agent 写得多好，而是 agent 能不能独立走完一整条交付链路。\n最有力的论据：Anthropic 自己就是样本\n如果要给「团队该不该自己做 harness」找一个证据，最好的一个是：\n模型厂商自己也在做。\nClaude Code 的系统提示词、他们内部的 skills、他们的验证 skill——这些就是一份团队自建 harness。而这篇文章开头那个 80% 的数字，恰好帮我们回答了本文的问题：\n删到只剩 20% 之后，剩下的是什么？\n按他们自己的描述，剩下的是：产品级上下文、团队的意见（team opinions）、gotchas、验证 skill、安全边界。\n全部是 L2 和 L3。\n还有一条实测可以佐证：他们统计过内部各类 skill 的效果，结论是——\nVerification skills have had the most measurable impact on Claude's output quality internally.\n（验证类 skill 是内部对 Claude 产出质量影响最可测量的一类）\n为什么是验证类？因为\n验收标准是组织特有的、模型拿不到的信息\n。什么算「做完了」、什么算「够好了」——这在每个团队都不一样，而且不写下来模型无从得知。它落在 L3。\n一个正面理由：自建 harness 是在偿还意图债\n最后换一个角度。我们习惯把写 harness 理解成「给 agent 加约束」，但还有一个更正面的解释。\nAddy 区分了三种独立的债：\n技术债\n在代码里，\n认知债\n是系统超出团队理解的部分，而\n意图债\n是——\nIntent debt lives in the artifacts you\nmay have never wrote\n: the goals, constraints, and rationale for\nwhy\nthe system is the way it is.\n… You can have low technical debt and high intent debt… each one\nbills you separately.\n（意图债存在于那些你可能从未写下的文档里：目标、约束，以及系统为什么是现在这个样子的理由。你可以技术债很低而意图债很高……每一种都分别向你收费）\nagent 把这个债从慢性变成了急性。原因是它每个 session 都是冷启动：\nWhatever you haven't externalized into an artifact it can read, it doesn't have.\n（凡是你没有外化成它能读到的文档的东西，它就没有）\n人的意图债是分摊到几年里慢慢还的——新人靠口口相传、靠 code review 里的只言片语、靠在旁边坐三个月。agent 没有这条路径，\n你要为每一次未记录的决策重复付费\n。\n而这笔投入的收益并不只作用于 agent：\n一个顺带的好处\n一个 agent 更容易理解和验证的系统，通常也是新人更容易接手、故障更容易排查的系统。\n为 agent 沉淀 L2 和 L3，本质上是在补一直欠着的工程基础设施。\n04\n变的和不变的\n先把这两者各自落到具体的东西上，再给四个明天就能做的动作。\n4\n.1\n会过期的，有一个统一的判别式\n回头看第三部分那张到期清单——context resets、任务分片、prefill、CoT 诱导、self-check 指令、CRITICAL 强调语——它们的共同点已经说过一次，这里再说一遍，因为它是全文最省力的一条工具：\n判别式\n凡是为了补模型能力缺口而写的，都会过期，只是早晚。\n用法很简单：翻出你 harness 里的任意一条，问它\n为什么存在\n。 如果理由是「模型记不住」「模型不会主动做」「模型容易漏」——那它已经在到期队列里排着了， 只是还没轮到。你现在能做的，是给它绑一个具体的失败模式，好让轮到它的时候你认得出来。\n4\n.2\n不会过期的，是三件具体的事\n「不变的是人的价值」这种说法没有用，因为它不能指导任何动作。 真正不会过期的东西是可以一条条指出来的，而且都\n不是因为它更难\n：\n把这两张表叠起来看，harness 里的内容其实分成了两种资产： 一种每次模型升级都要减记一次，另一种越积越厚而且没人能替你积。 前者是 L0 和 L1，后者是 L2 和 L3。\n4.\n3\n四个明天就能做的动作\n每加一条，先写清它防的是哪个具体失败。\n写不出来就别加——你连它什么时候该删都判断不了。这是「面向未来」唯一可执行的形态。\n每隔一个模型代际，做一次到期审计。\n问 Anthropic 那个问题：\nwhat can I stop doing?\n重点查那些理由是「模型记不住 / 不会主动做 / 容易漏」的条目——它们已经在到期队列里了。\n把力气从 L1 挪到 L2 和 L3。\n别去重写执行循环，那部分平台会替你做完。 去沉淀你们的验收标准、授权边界、内部工具用法、模块 gotcha——那部分没人能替你做。\n能沉降到工具层的，就别留在指令层。\nlinter、测试、CI 门禁比任何措辞都可靠。\n指令层的强度取决于模型当下怎么读它，工具层不取决于。\n第一篇的结尾写过一句「工具变强了，做法就该跟着调」。写完这一篇，我想给它补一个更具体的版本：\n要调的从来只是一半。\n补模型能力的那一半，会被一次次吸收掉；\n定验收标准、划授权边界、沉淀只有你们知道的东西——\n那一半不会，而且会越积越厚。\n所以「模型这么强了，我们还做 harness 干什么」这个问题，其实问反了。 模型能力的边界一直在外扩，但它扩不到\n「只有你们知道」\n和\n「只有人能承担」\n这两处。\nharness 的长期价值，就等于这两处的面积。\n参考来源\n全部为一手来源，可直接访问核对。\nAnthropic\nThe new rules of context engineering for Claude 5 generation models，Thariq Shihipar，2026-07-24 —— 删掉 80% 系统提示词、六个转变、规则→判据的 before/after 对照\n（\nhttps://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models\n）\nPrompting Claude Opus 5（Claude Platform Docs）—— 验证指令要删除而非改写、字面执行导致召回下降、legacy harness scaffolding\n（\nhttps://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5\n）\nPrompting best practices（Claude Platform Docs）—— 过度提示导致过度触发、CRITICAL 措辞降级、prefill 从 API 移除\n（\nhttps://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices\n）\nAgent Harness Design: 3 Patterns for Harnessing Claude's Intelligence，2026-04-02 —— 三个设计模式、what stays / what goes\n（\nhttps://claude.com/blog/harnessing-claudes-intelligence\n）\nHarness design for long-running application development，2026-03-24 —— 「每个组件都编码了一个假设」、context resets 成为 dead weight、evaluator 价值边界外移\n（\nhttps://www.anthropic.com/engineering/harness-design-long-running-apps\n）\nA harness for every task: dynamic workflows in Claude Code，2026-06-02 —— agentic laziness / self-preferential bias / goal drift\n（\nhttps://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code\n）\nLessons from building Claude Code: How we use skills，2026-06-03 —— 复述默认行为的 skill 零价值、验证类 skill 影响最大\n（\nhttps://claude.com/blog/lessons-from-building-claude-code-how-we-use-skills\n）\nSkill authoring best practices（Claude Platform Docs）—— 上下文窗口是公共资源、自由度分级、先建评测\n（\nhttps://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices\n）\nEffective context engineering for AI agents，2025-09-29 —— 注意力预算、context rot\n（\nhttps://www.anthropic.com/engine\nering/effective-co\nntext-engineering-for-ai-agents\n）\nOpenAI\nHarness engineering: leveraging Codex in an agent-first world，2026-02-11 —— 强制不变量而非微管理实现、AGENTS.md 约 100 行的「地图」、用 linter 与 structural test 强制\n（\nhttps://openai.com/index/harness-engineering/\n）\nGPT-5.5 prompt guidance（OpenAI 开发者文档）—— 删除分步流程指引、过度指定缩小搜索空间、真正的不变量 vs 判断题、从最小 prompt 重新起步\n（\nhttps://developers.openai.com/api/docs/guides/prompt-guidance?model=gpt-5.5\n）\nAddy Osmani（Google Chrome 团队工程主管，个人博客）\nAgent Harness Engineering，2026-04-19 —— harness 不是缩小而是迁移、棘轮法\n（\nhttps://addyosmani.com/blog/agent-harness-engineering/\n）\nOwn the Outer Loop，2026-07-15 —— 只有人能继承后果、Verdict / Answerability / Accountability\n（\nhttps://addyosmani.com/blog/own-the-outer-loop/\n）\nEarning taste and judgment，2026-07-14 —— 监督者悖论\n（\nhttps://addyosmani.com/blog/earning-judgment/\n）\nSoftware Factories, Light and Dark，2026-07-20 —— back pressure、验证才是瓶颈\n（\nhttps://addyosmani.com/blog/software-factories/\n）\nAgentic Autonomy Levels，2026-07-02 —— 六级自主度、三个判定问题、四个反模式\n（\nhttps://addyosmani.com/blog/agentic-autonomy-levels/\n）\nThe Intent Debt，2026-06-05 —— 技术债 / 认知债 / 意图债的区分\n（\nhttps://addyosmani.com/blog/intent-debt/\n）\nStop Using /init for AGENTS.md，2026-02-23 —— 能找到就删、第二个事实来源、还没修的摩擦\n（\nhttps://addyosmani.com/blog/agents-md/\n）\nAgent Skills，2026-05-03 —— 流程优先于散文\n（\nhttps://addyosmani.com/blog/agent-skills/\n）\nThe Orchestration Tax，2026-05-24 —— 启动便宜、收口昂贵\n（\nhttps://addyosmani.com/blog/orchestration-tax/\n）\nComprehension Debt，2026-03-14 —— 认知债滋生虚假信心\n（\nhttps://addyosmani.com/blog/comprehension-debt/\n）\n-End-\n原创作者｜\n魏依承\n感谢你读到这里，不如关注一下？👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。8月13日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.12,
+        "direct_local": 0,
+        "transfer_agent": 0.88,
+        "peripheral": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.99,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.07,
+        "2": 0.85,
+        "3": 0.07,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.75,
+      "probabilities": {
+        "0": 0.33,
+        "1": 0.15,
+        "2": 0.18,
+        "3": 0.16,
+        "4": 0.15,
+        "5": 0.03
+      }
+    },
+    "decision_action": {
+      "score": 1.62,
+      "probabilities": {
+        "0": 0.34,
+        "1": 0.03,
+        "2": 0.41000000000000003,
+        "3": 0.11,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.16,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.15,
+        "3": 0.49,
+        "4": 0.35,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.36,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.11,
+        "4": 0.39,
+        "5": 0.5
+      }
+    },
+    "anti_hype": {
+      "score": 4.27,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.65,
+        "5": 0.33
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 15528,
+    "outputTokens": 172,
+    "totalTokens": 15700
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.83,
+        "relevance": 0.9,
+        "grounding": 0,
+        "decision_action": 0.3,
+        "evidence": 0.64,
+        "actionability": 0.58,
+        "anti_hype": 0.75
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179998012,
+                "endTime": 1791179998191,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000652176",
+      "marketCost": "0.000652176",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000652176",
+      "inferenceCost": "0.000652176",
+      "inputInferenceCost": "0.000652176",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABGSBA2PS8RZZE6GBFCEZ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:58 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::l2mg5-1791179997703-8444b487edb2"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.12,
+            "direct_local": 0,
+            "transfer_agent": 0.88,
+            "peripheral": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.99,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.07,
+            "2": 0.85,
+            "3": 0.07,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.75,
+          "probabilities": {
+            "0": 0.33,
+            "1": 0.15,
+            "2": 0.18,
+            "3": 0.16,
+            "4": 0.15,
+            "5": 0.03
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.62,
+          "probabilities": {
+            "0": 0.34,
+            "1": 0.03,
+            "2": 0.41000000000000003,
+            "3": 0.11,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.16,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.15,
+            "3": 0.49,
+            "4": 0.35,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.36,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.11,
+            "4": 0.39,
+            "5": 0.5
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 4.27,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.65,
+            "5": 0.33
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 15528,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.83,
+            "relevance": 0.9,
+            "grounding": 0,
+            "decision_action": 0.3,
+            "evidence": 0.64,
+            "actionability": 0.58,
+            "anti_hype": 0.75
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179998012,
+                    "endTime": 1791179998191,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000652176",
+          "marketCost": "0.000652176",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000652176",
+          "inferenceCost": "0.000652176",
+          "inputInferenceCost": "0.000652176",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABGSBA2PS8RZZE6GBFCEZ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:57.455Z"
+  }
+}

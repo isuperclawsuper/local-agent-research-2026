@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1117950888783118337",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "TencentDB Agent Memory 全球正式开源：让 Agent 沉淀经验，让人专注创造",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695568&idx=2&sn=000c9b3c8c00fe6e2fd675360a016edb",
+      "date": "2026-05-19T00:46:00.030Z",
+      "chars": 3405,
+      "text": "腾讯云数据库\n2026-05-19 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n今天，腾讯云数据库团队全球正式开源\nTencentDB Agent Memory\n。\n一套面向 AI Agent 的分层记忆引擎，项目采用\nMIT 协议\n开源，开箱即用。\n⭐\n项目主页：\nhttps://github.com/Tencent/TencentDB-Agent-Memory\n在当前主流的 Agent 架构中，Memory 已经从\"加分项\"变成了\"标配组件\"。\n无论是面向 C 端的对话助手，还是面向开发者的长周期 Agent，底层都依赖类似的\"记忆层\"承\n载跨会话偏好与历史经验，并逐渐收敛出一套通用的接口范式。\nTencentDB Agent Memory 正是在这一背景下诞生的：让 Agent 学会你的工作流程、保留任务上下文、复用历史经验——以符号化记忆化解单次长任务的信息过载，以分层记忆沉淀跨会话的经验资产。\n在超长 session 评测中发现，Agent Memory 作为 OpenClaw 插件接入后：最高节省\n61.38\n%\nToken，通过率相对提升\n51.52\n%\n；PersonaMem 准确率从\n48%\n提升到\n76%\n。\n记忆能力\nBenchmark\nOpenclaw 成功率\n加插件后成功率\n相对变化\nOpenclaw Token   消耗\n加插件后 Token 消耗\n相对变化\n短期记忆\nWideSearch\n33%\n50%\n51.52%\n221.31M\n85.64M\n−61.38%\n短期记忆\nSWE-bench\n58.40%\n64.20%\n9.93%\n3474.1M\n2375.4M\n−33.09%\n短期记忆\nAA-LCR\n44.00%\n47.50%\n7.95%\n112.0M\n77.3M\n−30.98%\n长期记忆\nPersonaMem\n48%\n76%\n59%\n—\n—\n—\n目前，TencentDB Agent Memory 已作为 OpenClaw 记忆增强插件，在生产环境中验证效果。\n01\n准确\n当下主流 AI Agent 的记忆方案，大多做的是同一件事：把对话历史压缩成一段摘要，然后在下次会话时注入上下文。这在短对话里够用，但在真实的长周期任务中会暴露三个问题：\n●\n跨会话断裂\n：\n昨天反复确认的代码规范，今天新开会话又全忘了\n●\n事实与偏好混淆\n：\n用户说过\"我用 TypeScript\"和\"帮我查一下天气\"，这两条信息的价值完全不同，但被同等对待\n●\n上下文膨胀\n：\n任务越长，堆进上下文的历史信息越多，Token 消耗持续攀升，模型注意力也在衰减\nTencentDB Agent Memory 通过把不同粒度的信息放在不同的\"楼层\"，构建分层式长期记忆能力来解决以上长周期任务问题：\nL0 原始对话层全量保留每一轮交互；\nL1 原子记忆层自动提取事实、偏好、约束、阶段结论；\nL2 场景归纳层按任务自动聚合；\nL3 用户画像层持续蒸馏出稳定的长期画像\n每一层只做一件事，层与层之间通过提取-聚合-蒸馏的管道连接，任何一层都可以独立升级或替换，让Agent 不再因为换了一次会话就忘掉你是谁。\n02\n效率\n过去，\"更聪明的 Agent\"往往意味着\"更贵的 Agent\"，但 Agent 是按 Token 计费、按响应速度评价的，每多塞一段对话，就是成本和体验的双重损失。\nTencentDB Agent Memory 通过上下文卸载 + Mermaid 无限画布两项关键技术，把原始工具结果搬到外部文件，把任务结构折叠成可导航的画布，上下文里只保留摘要和索引。\n对于连续任务和大规模并发，每一个 Token 都影响着成本和体验，这套功能，使得原文不丢、结构可查、Token 不再线性增长。\n03\n稳定\n省 Token 之外，任务完成率也是检验记忆方案的重要指标。\n很多压缩方案能把 Token 砍下来，但任务跑偏、遗忘、重复分析的问题随之而来。\nTencentDB Agent Memory 在四个公开评测集上同时跑通了两条曲线：Token 下降，完成率上升。\n不过，「跑得稳」不只看评测分数，还得经得起底层架构的拷问——我们用 异构存储 + 全链路可溯源，确保了稳定与全量检索。\n这套能力已在生产环境经历真实验证——在编程、调研、文档分析、工作流编排四类长链路任务上稳定收敛。\n04\n快速开始\nGitHub 仓库中提供了 OpenClaw 、Hermes Gateway 接入方案，开箱即跑。\n1\n.\nOpenclaw\n一行\n安装\nopenclaw plugins install @tencentdb-agent-memory/memory-tencentdbopenclaw gateway restart\n2.\nHermes Gateway（Docker，需版本号 ≥ 0.3.\n4\n）\n除 OpenClaw 外，本插件也支持 Hermes Agent。（\nhttps://github.com/NousResearch/hermes-agent）\n一行命令即可启动带记忆能力的 Hermes：\ndockerrun-d\\--name hermes-memory \\--restart unless-stopped \\-p8420:8420\\-eMODEL_API_KEY=\"$MODEL_API_KEY\"\\-eMODEL_BASE_URL=\"$MODEL_BASE_URL\"\\-eMODEL_NAME=\"$MODEL_NAME\"\\-eMODEL_PROVIDER=\"$MODEL_PROVIDER\"\\-vhermes_data:/opt/data\\agentmemory/hermes-memory:latest\n镜像支持 linux/amd64 和 linux/arm64。内置腾讯云 DeepSeek-V3.2 默认配置，如需自定义模型可额外传入 MODEL_BASE_URL、MODEL_NAME、MODEL_PROVIDER。\n验证：\ncurl\nhttp://localhost:8420/health#\n检查 Gateway 状态dockerexec-ithermes-memoryhermes# 进入 Hermes 对话\n记忆不是让 AI 记住所有事，而是让人不必重复所有事。\n我们把 TencentDB Agent Memory 放到开源社区，是因为相信记忆这个产品远没有标准答案，比起做一个完美的方案，我们更想和开发者一起，把产品做得更丰富、更扎实、更可用，从而帮助更多 Agent 沉淀经验，让人更专注于创造。\n欢迎所有形式的共建——提一个 issue，发起一次discussion，对一个早期项目而言，每一种反馈，都是贡献。\n05\n相关链接\n资源\n链接\nGitHub\nhttps://github.com/Tencent/TencentDB-Agent-Memory\nnpm\nhttps://www.npmjs.com/package/@tencentdb-agent-memory/memory-tencentdb\n官网介绍\nhttps://cloud.tencent.com/product/agm\nPersonaMem 评测集\nhttps://github.com/bowen-upenn/PersonaMem\nOpenClaw\nhttps://github.com/openclaw/openclaw\nHermes\nGitHub -   NousResearch/hermes-agent: The agent that grows with you · GitHub\nTencentDB Agent Memory 由腾讯云数据库团队开发和维护。如果这个项目对你有帮助，欢迎在 GitHub 上给一个 ⭐。\n📢 活动预告\n5月29日，腾讯云「数据库+AI」发布会\n将首次完整披露从“AI-In-Database”原生融合，到全面支撑Agent的演进路径与核心能力。\n诚邀您见证“AI 原生重构数据库”的行业变革，共建下一代智能体应用的数据根基。\n👇 扫码即刻报名！席位有限，先到先得！\n-End-\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

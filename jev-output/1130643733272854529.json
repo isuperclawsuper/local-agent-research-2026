@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1130643733272854529",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "5月30日·腾讯AI公开课到杭州！0基础也能拥有「能动手干活」的AI！名额有限，全程免费！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695701&idx=2&sn=301af26601a74df0ee689fc198061b72",
+      "date": "2026-05-28T00:45:00.163Z",
+      "chars": 1471,
+      "text": "在杭州等你的\n2026-05-28 08:45\n北京\n5 月 30 日（周六），「腾讯云社区 AI 公开课·杭州站」在杭州·西湖区文体中心开课。我们想做一件具体的事：哪...\n大多数人对 AI 的认识，还停在那个对话框里——它在框里说话，你在框外打字。但 AI 早已不甘于做一个「会说话的搜索引擎」。\n它可以替你接管微信里那些来不及回的消息； 它可以钻进一座你没时间读完的文档库，10 秒钟告诉你答案； 它可以一句话生成问卷、一晚上跑完调研； 它可以拿着你的需求自己开工，最后递给你一份结果。\n这是 AI Agent。这才是 AI 真正「上岗」的样子。\n5 月 30 日（周六），「腾讯云社区 AI 公开课·杭州站」在杭州·西湖区文体中心开课。我们想做一件具体的事：\n哪怕你从来没碰过技术，也能当场把这样一个 AI Agent，装进自己的电脑里。\n左右滑动查看更多\n活动信息速览\n活动时间\n5 月 30 日（周六）14:00 - 18:00\n活动地点\n杭州·西湖区文体中心\n（杭州市西湖区蒋村街道晴川街217号）\n适合谁来\n任何对 AI 工具感兴趣、希望通过AI提质增效、甚至变现的新手、老手都适合。\n参会要求\n现场装机及实操工坊需在电脑上完成，请携带个人笔记本电脑参会。\n这是一场怎样的公开课？\n这次杭州站，围绕 “上手 / 干活 / 落地” 三个关键词搭建了四块内容拼图：现场装机、场景实操、互动体验、行家沙龙。\n零基础的朋友，可以从装机开始一步步跟\n；技术圈的同学，可以直奔沙龙听干货。\n一场活动同时容纳两种节奏，互不打扰。\n五个理由，告诉你为什么值得专门赶一趟\n🟢\n理由一｜见识“另一种 AI”\n大多数人对 AI 的印象，是一个被动等你说话的对话框。 这次想让你看到的，是另一种 AI——它会主动动手：会查资料、会做表格、会管知识、会发问卷、还能接到你的微信里，成为你的隐形助理。\n你不是来听一份“AI 趋势分享”。你是带着自己的笔记本电脑来，当场把这样一个 AI，从零搭起来。\n🟢\n理由二｜\n不懂代码？也照样玩得转\n很多人卡在 AI 门口，不是听不懂，而是没人陪你迈出第一步。\n这场活动把那“第一步”做到了最友好——\n·现场技术专员全程 1V1 陪跑\n·微信扫一扫，就能和你的 AI 对话\n·安装、调通、跑通：一行代码也不用写\n半天时间，让你从“知道 AI 在干嘛”变成“它正在替我干活”。\n🟢 理由三｜杭州站特设——AI 互动体验区\n扭蛋机一摇，神秘任务到手！\n可能让你炫个技，可能让你偷个懒，也可能是帮你解锁一个超实用技能。绝对不难，保证很酷。\n完成它，就有机会把腾讯联名耳机、鹅厂新款公仔盲盒等专属奖励抱回家。\n你敢来挑战吗？\n🟢 理由四｜五位讲师，五种视角，一条认知路径\n本次内场沙龙的讲师阵容，覆盖了95后/70后/文科生/大厂裸辞……AI时代不同年龄与背景的人。想知道如何探索忠于自我的事业？想学习用AI赚到第1桶金、第N桶金？多元变现！？想听真实踩坑经历、不吹不水的干货？想了解普通打工人怎么用AI干活、早点下班？1 场沙龙、多种视角，从“看懂 AI”到“用好 AI”，一次讲透。\n🟢 理由五｜免费 + 圈层 + 周边礼，一次都不少\n公益开放，零门槛报名\n活动前后都有官方群，有人一起聊\n现场赠送：腾讯限量周边 + AI 应用实操手册\n如果你最近正想认真搞懂 AI，又不知从哪儿开始——有人讲、有人带、有人陪你一起练的线下场，就是杭州这半天。\n议程图+报名二维码\n杭州站｜扫描图片二维码报名👆\n-End-\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "irrelevant": 0.02,
+        "peripheral": 0.98,
+        "transfer_business": 0,
+        "direct_local": 0,
+        "transfer_agent": 0
+      }
+    },
+    "relevance": {
+      "score": 0.92,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.87,
+        "2": 0.02,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.8,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.74,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.25,
+      "probabilities": {
+        "0": 0.83,
+        "1": 0.14,
+        "2": 0.01,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.32,
+        "1": 0.68,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 0.55,
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.36,
+        "2": 0.07,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.01,
+      "probabilities": {
+        "0": 0.99,
+        "1": 0.01,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.74,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3294,
+    "outputTokens": 174,
+    "totalTokens": 3468
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.97,
+        "relevance": 0.91,
+        "grounding": 0.82,
+        "decision_action": 0.84,
+        "evidence": 0.78,
+        "actionability": 0.64,
+        "anti_hype": 0.99
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180011674,
+                "endTime": 1791180011825,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000138348",
+      "marketCost": "0.000138348",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000138348",
+      "inferenceCost": "0.000138348",
+      "inputInferenceCost": "0.000138348",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABY4B1HKSFFXAVXS94GC7"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:11 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::8t575-1791180011634-c31ad196ab18"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "irrelevant": 0.02,
+            "peripheral": 0.98,
+            "transfer_business": 0,
+            "direct_local": 0,
+            "transfer_agent": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.92,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.87,
+            "2": 0.02,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.8,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.74,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.25,
+          "probabilities": {
+            "0": 0.83,
+            "1": 0.14,
+            "2": 0.01,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.32,
+            "1": 0.68,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 0.55,
+          "probabilities": {
+            "0": 0.55,
+            "1": 0.36,
+            "2": 0.07,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.01,
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.74
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3294,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.97,
+            "relevance": 0.91,
+            "grounding": 0.82,
+            "decision_action": 0.84,
+            "evidence": 0.78,
+            "actionability": 0.64,
+            "anti_hype": 0.99
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180011674,
+                    "endTime": 1791180011825,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000138348",
+          "marketCost": "0.000138348",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000138348",
+          "inferenceCost": "0.000138348",
+          "inputInferenceCost": "0.000138348",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABY4B1HKSFFXAVXS94GC7"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:11.054Z"
+  }
+}

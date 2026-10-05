@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "255267025835766784",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "用自然语言替代复杂代码",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650542997&idx=1&sn=d444e39531c09899991f1d638ac53475",
+      "date": "2026-03-13T08:34:00.406Z",
+      "chars": 9031,
+      "text": "原创\n天猫技术团队\n2026-03-13 16:34\n浙江\n本文介绍了利用 AI平台，通过自然语言描述业务规则 + 预置 AI Agent + 参数化调用的方式，替代传统复杂代码（150+行）来解决电商促销中“多 SKU 凑单破价”资损风险巡检问题的实践方案。\n本文介绍了利用 AI平台，通过\n自然语言描述业务规则 + 预置 AI Agent + 参数化调用\n的方式，替代传统复杂代码（150+行）来解决电商促销中“多 SKU 凑单破价”资损风险巡检问题的实践方案；核心价值在于将高理解成本、难维护的硬编码逻辑，转化为可读性强、修改便捷、开箱即用的 AI 驱动分析流程，并在开发效率、维护成本、响应速度和业务价值上实现显著提升。\n背景:一个棘手的业务问题\n某业务场景中存在一个复杂的数据分析需求:\n多规格商品的组合计算\n。\n场景举例\n:\n某业务活动:针对商品进行优惠计算\n商品有多个规格,价格差异大\n- 高价规格:¥600+\n- 低价规格:¥100+\n- 活动优惠:每件固定金额\n用户组合购买:\n1个高价 + 多个低价\n总优惠按件数叠加\n高价规格按比例分摊优惠\n场景:高价规格到手价可能低于预设阈值\n业务需求\n:活动前自动检测,找出有风险的数据并预警。\n痛点:传统方案太难维护\n▐\n2.1 编写规则代码?150 行起步\n传统方案需要编写精确的计算代码:\n// 伪代码示意(实际更复杂)\nfunction\ncheckPriceRisk\n(\nitem\n) {\n// 1. 筛选有效规格(库存>0,状态正常)\nconst\nvalidSkus = item.\nskus\n.\nfilter\n(\ns\n=>\ns.\nsellable_quantity\n>\n0\n&& s.\nsku_status\n===\n'正常'\n);\n// 2. 找最高价和最低价规格\nconst\nhighSku =\nmaxBy\n(validSkus,\n'page_price'\n);\nconst\nlowSku =\nminBy\n(validSkus,\n'page_price'\n);\n// 3. 获取基准价格(可能需要调用服务)\nlet\nbasePrice = highSku.\nbase_price\n;\nif\n(!basePrice) {\nbasePrice =\nawait\nqueryBasePrice\n(item.\nitem_id\n);\n}\n// 4. 循环计算不同组合数量\nfor\n(\nlet\nn =\n1\n; n <= lowSku.\nsellable_quantity\n; n++) {\nconst\ntotalPrice = highSku.\npage_price\n+ lowSku.\npage_price\n* n;\nconst\ntotalDiscount = item.\ndiscount\n* (\n1\n+ n);\nconst\nhighSkuDiscount = totalDiscount * (highSku.\npage_price\n/ totalPrice);\nconst\nfinalPrice = highSku.\npage_price\n- highSkuDiscount;\n// 5. 判断是否超出阈值\nif\n(finalPrice < basePrice) {\n// 记录风险...\n}\n}\n// ... 还有很多边界处理\n}\n问题\n:\n代码复杂\n:150-200 行,多层循环嵌套；\n理解成本高\n:新人需要仔细读代码才能理解逻辑；\n维护困难\n:规则变化(如改计算公式)需要改代码、测试、发布。\n▐\n2.2 为什么是 AI?\n观察上面的代码,其实逻辑本身不复杂,\n核心是\"多步骤的推理和计算\"\n:\n筛选有效规格\n找最高价和最低价\n获取基准价格(可能需要调用工具)\n循环计算组合场景\n判断是否超出阈值\n这种\"理解任务 → 多步推理 → 生成结果\"**的能力,恰好是 AI 大模型的优势。\n理想方案\n:\n用自然语言描述分析任务 → AI 执行推理和计算 → 返回结构化结果\n但新问题来了:\n如何在业务系统中快速接入 AI 能力?\n直接调用 LLM API 面临三大难题:\n参数复杂\n:model、temperature、max_tokens、system prompt、user prompt……需要深入了解 AI 技术\nPrompt 难写\n:要写出高质量的 Prompt 需要大量调试和经验积累\n维护困难\n:Prompt 写在代码里,每次调整都要改代码、测试、发布\nAI 平台的解决方案\n:\n✅\n预置 Agent\n:平台已经配置好专业的 Prompt 模板(如\"数据分析师\")\n✅\n参数化调用\n:只需填充业务参数(job、data),无需关心底层细节\n✅\n配置管理\n:Agent URL 在配置中心管理,版本切换无需改代码\n简单说:\nAI 平台把复杂的 AI 能力封装成\"填空题\",我们只需填充业务参数即可。\n解决方案:AI 平台让 AI 接入变简单\n▐\n3.1 AI 平台优势?\nAI 平台提供\n预配置好的 AI Agent\n供业务直接使用。\n核心机制\n:\nAI 平台\n├─ 预置多种专业 Agent(数据分析师、文案助手、客服助手...)\n├─ Agent 内置完整的 Prompt 模板\n├─ Prompt 中预留参数坑位(\n$\n{job}、\n$\n{\ndata\n}、\n$\n{\ntype\n}...)\n└─ 暴露标准化的 API 接口\n业务系统调用\n├─ 选择合适的 Agent\n├─ 填充业务参数(job、\ndata\n)\n└─ 获取分析结果\n参数 → Agent → 结果\n关键特点\n:\n开箱即用\n:\nAgent 已经优化好,无需从零写 Prompt\n参数化\n:\n只需填充业务参数,降低使用门槛\n配置管理\n:\nAgent URL 可配置,支持版本切换\n持续优化\n:\n平台持续优化 Agent,自动提升效果\n简单理解:\nAI 平台就像一个\"AI 能力超市\",我们选择合适的 Agent,填充参数就能用。\n▐\n3.2 如何使用?\nAI 平台的核心优势是\n提供了预配置好的 Agent\n,我们只需要\"填空\",不需要从零写 Prompt。\nStep 1:选择合适的 Agent\nAI 平台上已经有丰富的预置 Agent,比如\"数据分析\"类 Agent:\n角色定位\n:\n专业的数据分析师\n核心能力\n:\n数据清洗、统计分析、趋势识别、结果解读\nPrompt\n预留参数待调用时传入:\n- 分析任务描述\n:\n${\njob}\n- 待分析的数据\n:\n${\ndata}\n- 输出类型\n:\n${\ntype}\n- 输出格式定义\n:\n${\ndefinition}\nAgent\nURL\n:\nhttps://ai-platform\n.example.com/api/agent/{agent_id}/{version}\n调用者不需要关心 Agent 内部的 Prompt 怎么写,\n只需要知道填什么参数就行\n。\nStep 2:填充参数调用\n在检测代码中,只需填充参数:\n// 伪代码示意\nconst\nresult\n= await aiService.\ncallAI\n({\napiKey\n:\n'dataAnalysisApi'\n,  // 从配置中心获取 Agent URL\nsessionId\n: `task-${taskId}-${timestamp}`,\nvariableMap\n: {\njob\n: `检查商品的组合计算风险\n背景:商品多规格,活动每件优惠,用户组合购买\n步骤:\n1\n. 筛选有效规格(库存>\n0\n,状态正常)\n2\n. 找最高价和最低价规格\n3\n. 获取高价规格基准价(为空则调用工具 - 自定义MCP)\n4\n. 循环计算组合场景(\n1\n个高价+N个低价)\n5\n. 判断规格到手价是否低于基准价\n6\n. 记录首次风险件数和最大件数`,\ndata: JSON.\nstringify\n([\n{\nitem_id\n:\n\"***\"\n,\nskus\n: [\n{\nsku_id\n:\n\"***\"\n,\npage_price\n:\n600\n,\nbase_price\n:\nnull\n, ...},\n{\nsku_id\n:\n\"***\"\n,\npage_price\n:\n100\n,\nbase_price\n:\nnull\n, ...}\n],\ndiscount\n:\n50\n}\n// ... 更多商品\n]),\ntype:\n'JSON'\n,\ndefinition: `[{\nhas_risk:\n\"是否有风险\"\n,\nitem_id:\n\"商品 id\"\n,\nhigh_sku_id:\n\"风险规格 id\"\n,\nlow_sku_id:\n\"组合规格 id\"\n,\nlow_sku_num_min:\n\"最小组合数量\"\n,\nloss_amount_min:\n\"最小损失\"\n,\nlow_sku_num_max:\n\"最大组合数量\"\n,\nloss_amount_max:\n\"最大损失\"\n,\n...其他需要的数据\n}]`\n},\nisJsonObject:\ntrue\n});\n对比传统方案\n:\n传统:150 行代码 + 多层循环 + 复杂逻辑\nAI:  自然语言描述任务 + 数据 + 输出定义\n工作原理\n:\n业务参数 → 填入 Agent Prompt 坑位 → LLM 推理计算 → 结构化结果\n↑\nAI 平台自动完成\n关键优势\n:\n可读性强\n:任何人都能看懂业务逻辑；\n维护简单\n:规则变化改\njob\n描述即可；\n快速迭代\n:修改配置中心即可切换版本。\nStep 3:配置中心管理 Agent\n将 Agent URL 放在配置中心:\n{\n\"agentConfig\"\n:\n{\n\"dataAnalysisApi\"\n:\n\"\nhttps://.../agent\\_id/version\n\"\n,\n\"otherApi\"\n:\n\"\nhttps://.../agent\\_id/version\n\"\n}\n}\n好处\n:\n切换 Agent 版本只需改配置,秒级生效；\n不同环境配置不同版本(灰度发布)；\n问题回滚只需配置回退,无需重新发布代码。\n▐\n3.3 批量处理策略\n实际业务中,一次检测可能有几百甚至几万个数据需要分析。\n分批策略\n:\n// 将数据分组,每批 3-5 个\nconst\nbatchSize =\n3\n;\nconst\nbatches =\nchunkArray\n(items, batchSize);\n// 批量调用(控制并发)\nfor\n(\nconst\nbatch\nof\nbatches) {\nconst\nresult =\nawait\naiService.\ncallAI\n({\napiKey\n:\n'dataAnalysisApi'\n,\nsessionId\n:\n`task-\n${taskId}\n-batch\n${i}\n`\n,\nvariableMap\n: {\njob\n:\n'...'\n,\n// 同样的分析任务\ndata\n:\nJSON\n.\nstringify\n(batch),\n// 这批数据\ntype\n:\n'JSON'\n,\ndefinition\n:\n'...'\n}\n});\n// 收集风险数据\nriskItems.\npush\n(...result.\ndata\n);\n}\n为什么分批\n:\n准确性\n:批次太大容易出错或遗漏；\n稳定性\n:单次请求失败不影响全局；\n成本\n:控制单次 Token 消耗。\n实践经验\n: 数据库初筛百级数据 → 数十批次(每批 3-5 个)→ 总耗时分钟级。\n▐\n3.4 MCP 工具让 AI 自主获取数据\nMCP(Model Context Protocol)的定义和基础概念这里不展开,可查阅相关文档了解。\n业务场景\n:\n我们的案例中,商品数据的\nbase_price\n(基准价)字段经常为空,但这是判断是否超出阈值的关键数据。传统方式需要提前 join 多张表准备好数据,而通过 MCP,可以让 AI\n按需获取\n。\n// 数据中基准价为空\n{\nitem_id\n:\n\"***\"\n,\nskus\n: [{\nsku_id\n:\n\"***\"\n,\npage_price\n:\n600\n,\nbase_price\n:\nnull\n,\n// ❌ 数据缺失\n...\n}]\n}\n传统方式:手动注册 MCP\n需要手动编写 MCP 工具定义(JSON Schema):\n{\n\"name\"\n:\n\"queryBasePriceByItemId\"\n,\n\"description\"\n:\n\"根据商品ID查询基准价\"\n,\n\"parameters\"\n:\n{\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n:\n{\n\"item_id\"\n:\n{\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"商品ID\"\n}\n},\n\"required\"\n:\n[\n\"item_id\"\n]\n},\n\"implementation\"\n:\n{\n\"type\"\n:\n\"rpc\"\n,\n\"service\"\n:\n\"com.example.PriceService\"\n,\n\"method\"\n:\n\"queryBasePrice\"\n,\n\"version\"\n:\n\"1.0.0\"\n}\n}\n痛点\n:\n❌ 手写 Schema 复杂易错\n❌ RPC 接口参数需要手动映射\n❌ 接口变更需要同步更新 MCP 定义\n❌ 缺少统一管理和监控\n平台方式:一键生成 MCP ✨\n接口平台提供\n接口一键转 MCP\n能力:\n步骤\n1\n:平台抓取\nRPC\n接口\n└─ 平台本身支持将内部接口自动转为\nHTTP\n接口\n步骤\n2\n:圈选接口\n└─ 在平台找到目标接口\n└─ 点击\n\"一键生成 MCP\"\n步骤\n3\n:自动生成\n└─ 自动生成\nMCP\n工具定义\n└─ 自动注册到\nAgent\n工具箱\n└─ 面向各种\nAI\nIDE\n、\nCode\nAgent\n开放\n关键优势\n:\n对比维度\n传统手动注册\n平台一键生成\nSchema 定义\n手写 JSON\n自动生成\nRPC → HTTP\n需要自己包装\n平台自动转换\n参数映射\n手动维护\n自动解析\n接口变更\n手动同步\n自动更新\n监控管理\n自己搭建\n平台统一管理\n接入时间\n半天起步\n5 分钟\nAI 自动调用示例\n:\n在 job 参数中提示 AI 使用工具:\nvariableMap: {\njob: `...\n3\n. 获取基准价(为空则调用工具 queryBasePriceByItemId)\n...`\n}\nAI 执行过程:\n1\n. 发现 base_price 为 null\n2\n. 发现&调用:获取queryBasePriceByItemId完整定义,以及调用条件(itemId必填)\n3\n. 获取结果:{ base_price:\n380\n}\n4\n. 继续分析\n核心价值\n:\n✅\n极简接入\n:圈选接口,一键生成,5 分钟搞定；\n✅\n自动维护\n:接口变更自动同步,无需手动更新；\n✅\n统一管理\n:平台提供监控、版本管理、权限控制；\n✅\n生态开放\n:面向 AI IDE(Cursor、Windsurf)、Code Agent 等开放。\n实践建议\n:\n优先使用平台\n:如果 RPC 接口已在平台注册,直接一键生成；\n工具要稳定\n:选择稳定的底层服务,避免频繁超时；\n设置超时\n:建议 5-10 秒,避免 AI 分析卡住；\n监控调用\n:在平台查看 MCP 调用情况,及时发现问题。\n实现效果\n▐\n4.1 开发效率提升\n对比维度\n传统代码方案\nAI 方案\n开发周期\n3-5 天\n1-2 天\n代码量\n150-200 行\n30 行(调用代码)\n规则调整\n改代码 + 测试 + 发布(1-2天)\n改参数 + 配置切换(1-2小时)\n可读性\n需要读代码\n自然语言描述\n▐\n4.2 运行效果\n性能数据\n(百级数据检测):\n分批策略:数十批次,每批 3-5 个数据\n单批耗时:5-8 秒\n总耗时:分钟级\n成功率:90%+\n准确率:95%+(抽查验证)\n▐\n4.3 业务价值\n1.\n提前发现风险\n├─ 活动前自动检测\n├─ 及时发现风险数据\n└─ 避免潜在损失\n2.\n降低人力成本\n├─ 原人工排查:数人 × 数天\n├─ 现自动检测:分钟级\n└─ 人力节省:90%+\n3.\n提升响应速度\n├─ 原:活动后被动发现\n├─ 现:活动前主动预警\n└─ 风险前置:提前数天\n实践经验与避坑指南\n▐\n5.1 参数设计要点\n虽然 Agent 的 Prompt 已经预置好,但我们填充的参数(特别是\njob\n)质量直接影响效果。\n✅ 好的 job 参数\n:\n从用户反馈中提取以下信息:\n1.\nTITLE:简洁的标题(10字以内)\n2.\nPRIORITY:优先级(P0/P1/P2/P3)\n3.\nTAG:问题类型(功能异常/性能问题/体验优化/其他)\n要求:准确理解用户意图,标题要能概括核心问题\"\n❌ 常见误区\n:\n1.\n太简略:\"提取标题\" → 标准不明确\n2.\n太啰嗦:大段描述反而影响理解\n3.\n没有约束:输出格式不稳定\n迭代技巧\n:\n先用小样本测试,不断优化\njob\n描述\n通过调整\ndefinition\n明确输出格式\n记录典型 case,形成测试集\n▐\n5.2 响应处理要鲁棒\nAI 平台返回的响应格式可能不一致(不同版本 Agent),需要兼容处理:\n// 伪代码:兼容多种响应格式\nfunction\nparseResponse\n(\nresponse\n) {\nlet\noutput = response.\ndata\n?.\ncontent\n|| response.\ndata\n?.\nrunLog\n?.\noutput\n|| response.\noutput\n;\n// 清理 markdown 包裹\noutput = output.\nreplace\n(\n/```json\\n/g\n,\n''\n).\nreplace\n(\n/\\n```/g\n,\n''\n);\n// 解析 JSON\ntry\n{\nreturn\nJSON\n.\nparse\n(output);\n}\ncatch\n(e) {\nreturn\n{};\n// 降级处理\n}\n}\n建议\n:在 Service 层统一处理,业务代码无需关心细节。\n▐\n5.3 版本管理策略\nAI 平台 Agent 会持续优化,平台会发布新版本。我们通过配置中心管理版本切换。\n配置中心灰度\n:\n{\n\"agentConfig\"\n:\n{\n\"dataAnalysisApi\"\n:\n\".../version_stable\"\n,\n// 稳定版\n\"dataAnalysisApi_beta\"\n:\n\".../version_beta\"\n// 灰度版\n}\n}\n业务代码根据灰度策略选择:\n// 按比例分流\nconst\napiKey =\nshouldUseBeta\n(userId)\n?\n'dataAnalysisApi_beta'\n:\n'dataAnalysisApi'\n;\n快速回滚\n:\n发现问题立即修改配置中心\n将 URL 切回旧版本\n无需代码发布,秒级生效\n▐\n5.4 成本控制建议\nAI 调用是有成本的(按 Token 计费),需要注意:\n数据预处理\n:调用 AI 前先做初步筛选和清洗\n合理分批\n:批量处理时控制每批大小,避免超限\n结果缓存\n:相同输入缓存结果,避免重复调用\n选择合适模型\n:简单任务用小模型,复杂任务用大模型\n实践经验\n:通过优化后,单次检测成本可控,相比人工成本可忽略不计。\n▐\n5.5 监控与告警\n生产环境必须有监控:\n关键指标:\n├─ 调用成功率\n├─ 平均响应时间\n├─ 调用量\n└─ 成本消耗\n告警规则:\n├─ 成功率异常 → 立即告警\n└─ 失败率超阈值 → 告警\n建议\n:接入统一监控平台,自动告警。\n总结与思考\n▐\n6.1 核心收获\n技术层面\n:\nAI 平台大幅降低了 AI 接入门槛(无需从零写 Prompt)\n预置 Agent + 参数化,快速上手\n配置中心管理版本,迭代速度快\n业务层面\n:\n开发效率提升 5 倍(从 5 天到 1 天)\n维护成本降低 10 倍(2 天 → 2 小时)\n代码量减少 75%(150 行 → 30 行)\n▐\n6.2 适用场景\n适合用 AI 的场景\n:\n✓ 复杂的多步推理和计算(如组合计算分析)\n✓ 规则频繁变化(业务规则调整)\n✓ 代码实现复杂但业务逻辑清晰\n✓ 数据分析和异常检测\n✓ 需要动态获取数据(通过 MCP 工具)\n✓ 数据源分散,难以提前\njoin\n不适合的场景\n:\n✗ 实时性要求极高(毫秒级响应)\n✗ 简单的阈值判断(\nif\n-\nelse\n就能搞定)\n✗ 高频调用且成本敏感\n✗ 对准确性要求\n100\n% 的场景(金融核算等)\n判断标准\n:\n传统代码行数 > 100 行? → 考虑 AI\n规则每月变化 > 2 次? → 考虑 AI\n需要多步推理计算? → 考虑 AI\n对成本不敏感? → 考虑 AI\n▐\n6.3 一点思考\n关于 AI 的定位\n:\nAI 不是万能的,但在合适的场景下确实能带来质的提升。\n关键是找到 AI 的优势场景,与传统技术互补,而不是全面替代。\n关于 AI 平台的价值\n:\nAI 平台采用\"预置 Agent + 参数化\"\n的模式,最大的价值是\n降低了 AI 应用的门槛:\n不需要深入了解 AI 技术\n不需要从零写 Prompt\n不需要调试模型参数\n原本只有 AI 专家能做的事,现在\n业务开发也能快速上手\n。这种\"能力平台化\"的思路,才是 AI 真正赋能业务的方式。\n选对了场景,用对了工具,AI 就能快速产生业务价值。\n团队介绍\n本文作者影子\n，来自淘天集团-天猫技术团队\n。天猫技术是阿里巴巴旗下专注于电商场景的综合技术团队，不仅服务于自身电商业务增长，也在不断探索如何用AI、大数据、交互技术赋能行业交易、品牌营销与消费者体验，成为全球领先的品质购物平台和技术引擎。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_business",
+      "probabilities": {
+        "transfer_agent": 0.12,
+        "irrelevant": 0.1,
+        "transfer_business": 0.78,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 2.54,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.44,
+        "3": 0.55,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.29,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.1,
+        "3": 0.45999999999999996,
+        "4": 0.41,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 2.25,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.04,
+        "2": 0.35000000000000003,
+        "3": 0.32,
+        "4": 0.12,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 3.49,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.18,
+        "3": 0.14,
+        "4": 0.68,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.15,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0,
+        "3": 0.03,
+        "4": 0.74,
+        "5": 0.22
+      }
+    },
+    "anti_hype": {
+      "score": 3.08,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.19,
+        "3": 0.51,
+        "4": 0.29,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8403,
+    "outputTokens": 172,
+    "totalTokens": 8575
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.72,
+        "relevance": 0.69,
+        "grounding": 0.62,
+        "decision_action": 0.36,
+        "evidence": 0.66,
+        "actionability": 0.8,
+        "anti_hype": 0.66
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179899928,
+                "endTime": 1791179900181,
+                "providerRequestId": "2f17e897-379a-4c03-a2d6-dae78ee37625",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179900199,
+                "endTime": 1791179900366,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000352926",
+      "marketCost": "0.000352926",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000352926",
+      "inferenceCost": "0.000352926",
+      "inputInferenceCost": "0.000352926",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8GVEY4VG82Y09M9RSAAP"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:20 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7ns7m-1791179899347-f8cf1a8ad236"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_business",
+          "probabilities": {
+            "transfer_agent": 0.12,
+            "irrelevant": 0.1,
+            "transfer_business": 0.78,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.54,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.44,
+            "3": 0.55,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.29,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.1,
+            "3": 0.45999999999999996,
+            "4": 0.41,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.25,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.04,
+            "2": 0.35000000000000003,
+            "3": 0.32,
+            "4": 0.12,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.49,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.18,
+            "3": 0.14,
+            "4": 0.68,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.15,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0,
+            "3": 0.03,
+            "4": 0.74,
+            "5": 0.22
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.08,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.19,
+            "3": 0.51,
+            "4": 0.29,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8403,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.72,
+            "relevance": 0.69,
+            "grounding": 0.62,
+            "decision_action": 0.36,
+            "evidence": 0.66,
+            "actionability": 0.8,
+            "anti_hype": 0.66
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179899928,
+                    "endTime": 1791179900181,
+                    "providerRequestId": "2f17e897-379a-4c03-a2d6-dae78ee37625",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179900199,
+                    "endTime": 1791179900366,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000352926",
+          "marketCost": "0.000352926",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000352926",
+          "inferenceCost": "0.000352926",
+          "inputInferenceCost": "0.000352926",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8GVEY4VG82Y09M9RSAAP"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:19.595Z"
+  }
+}

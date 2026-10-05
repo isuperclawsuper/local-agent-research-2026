@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "261430993608508416",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "认知重建之后，步入Agentic Engineering的工程革命",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801026&idx=1&sn=3e12f0888b3c232ed7218caf90df5f0a",
+      "date": "2026-03-30T09:37:00.859Z",
+      "chars": 6500,
+      "text": "辑一个 JSON。\n这意味着\ngit 就是天然的升级机制\n。\ngit pull\n完成升级，\ngit diff\n看到每一行变化，\ngit merge\n处理冲突。不需要版本号、不需要发布流程、不需要兼容性矩阵。当体系的核心资产是文本而非编译后的二进制时，版本控制工具本身就是最好的分发和升级系统。\n问题二：最佳实践怎么推广？\n传统的推广靠文档、培训、分享会——信息从\"知道的人\"单向传递到\"不知道的人\"。但在单仓库模式下，团队内其他项目的做法就在仓库里：\ncontext/project/A/\n是 A 项目的知识积累，\ncontext/project/B/\n是 B 项目的知识积累，\nrequirements/\n里是每个需求的完整产出物。\nAgent 可以直接读取其他项目的实践——\"B 项目在做接口对接时是怎么处理鉴权的？搜一下\ncontext/project/B/\n\"。不需要找人问、不需要等分享会、不需要翻文档。\n项目间的经验差距，被 Agent 的检索能力直接抹平了。\n一个项目踩过的坑沉淀到仓库里，其他项目的 Agent 下次就能直接引用。\n两个问题，同一个答案：\n单仓库 + git + Agent 的检索能力，天然解决了升级和推广这两个传统工程化难题。\n这不是刻意设计的——是当你把体系的核心资产从\"代码\"变成\"知识文本\"之后，自然获得的工程化优势。\n2.3 \"知道\"之后的真实困境\n从一个 AGENTS.md 开始，我手里有了方向。但认知和行动之间的鸿沟真实存在。\n困境一：什么时候该加东西？\n从一个 AGENTS.md 起步，\"然后呢\"是一个完全开放的问题。AI 第一天就开始犯错——没有记忆、没有经验、每个会话从零开始。你知道应该\"让具体问题驱动演进\"，但面前有十个方向可以走，每个方向都有合理的理由。\n一个真实的例子：我让 Agent 用 Playwright 做页面验证，每次它都老老实实地打开浏览器、登录、操作、关闭浏览器。下一个任务又打开浏览器——又要重新登录。内部平台的登录流程涉及多步鉴权，每次重新走一遍既慢又脆弱。解法其实很简单：告诉 Agent \"不要关闭浏览器，用新增 Tab 来切换任务\"。但这条规则该写在哪里？写进 AGENTS.md？单独建一个 Playwright 使用规范？还是先忍着每次手动提醒？全都做是过度设计，只做一个可能选错。\n\"极简主义\"告诉你不要过度设计，但没告诉你最小可行的下一步是什么。\n困境二：第一个复利的种子是什么？\n复利工程的前提是\"有东西可以复利\"。但第一个需求做完，我手里的产出物不少——需求文档、概要设计、详细设计、笔记、进度日志、评审报告——问题是，这些都是为\n当前需求\n服务的。真正能跨需求复用的经验性知识，被锁在了这些一次性文档的字里行间。哪些该提取出来？提取到哪里？用什么粒度？\n做完运营活动配置的第一个需求后，我列了一下过程中反复出现的信息：雅典娜平台的商品创建流程、Apollo 配置的 When-Then 规则格式、奖品库存锁定的先后顺序、活动模板和玩法模板的对应关系。这些信息虽然都在会话中出现过，但经过多次上下文压缩后早已丢失。\n你知道应该沉淀，但立刻面对一个粒度选择：拿 Apollo 配置来说，是记一句\"Apollo 有特殊的 When-Then 格式\"？太粗了，下次 Agent 还是写错。还是把完整的语法规则、字段枚举、常见错误全部写下来？太细了，下次需求可能根本不涉及 When-Then。四类信息，每类都有这个粒度困境，而你没有任何经验判断\"下次会用到哪些\"。\n你知道\"应该积累\"，但不知道\"积累什么、怎么积累、积累到什么粒度\"。\n困境三：一个人的效率提升不等于团队的效率提升。\n自己用得顺手了，下一步是什么？让同事也来用？但团队里的人处在不同的起点上。\n已经有过 Vibe Coding 经验的同事，上手后反馈不错——他们知道怎么和 AI 对话，缺的只是体系化的规范和工具，这套框架正好补上了。但对于连 Vibe Coding 都还没怎么接触的同事来说，问题根本不在\"体系怎么用\"，而在\n提示词不知道怎么写\n。你给他一个\n/requirement:new\n命令，Agent 问他\"请描述你的需求\"，他对着输入框发愣——不是不知道需求是什么，是不知道用什么粒度、什么结构、什么语气去\"说\"给 AI 听。这时候你才发现，\n你的体系预设了\"用户至少会和 AI 对话\"这个前提，而这个前提在团队里并不普遍成立。\n从\"我在用\"到\"我们在用\"之间，隔的不只是工具使用的知识传递，还有一层更基础的——和 AI 协作的基本能力。\n这三个困境不是理论问题，而是我在建设过程中真实面对的处境。它们也不是孤立的——困境一不解决，困境二就没有方向；困境二不解决，困境三就没有内容可传递。它们构成了一个环环相扣的链条：\n困境一（何时加）→ 困境二（加什么）→ 困境三（怎么让别人也能用）\n↑                                    |\n└────── 别人用不了，反馈你才知道该加什么 ──┘\n于是我选了最可控的路径：\n自己边用、边体验、边优化\n——先把自己当作第一个用户，在迭代工程体系的过程中反复碰壁、反复修正。\n接下来的章节，记录的就是我从 1 月到 2 月，把 AgenticMetaEngineering 从一个 AGENTS.md 文件\"长\"成一个拥有 22 个 Agent、27 个 Skill、28 个命令的工程体系的过程——每一步都是在回答上面的困境。\n三、在我的项目中如何落地：一个体系的自然生长\n好的工程体系不是设计出来的，是\"长\"出来的。每一个 Agent、每一个 Skill 都是在解决业务问题的过程中被逼出来的。\n在讲演进故事之前，先说一个前提认知。\nCodeBuddy、Claude Code 这类工具，本质上是\n擅长使用计算机的通用智能体\n。它们能读写文件、执行命令、调用 API、搜索代码——这些是\"会用电脑\"的能力。但\"会用电脑\"和\"会做研发\"是两件事。\n一个新入职的工程师，即使电脑操作再熟练，也需要了解团队的分支策略、代码规范、评审流程、需求管理方式，才能真正融入协作。AI Agent 也一样。它缺的不是操作能力，而是\n研发团队约定俗成的规范和流程\n——代码怎么组织、需求怎么流转、方案怎么评审、质量怎么把控。\n所以，从通用智能体到能真正承担研发工作的 Agentic Engineering，中间要补的就是这层\n团队研发知识\n。下面的演进过程，本质上就是我一步步把这些隐性的研发规范显性化、结构化，最终让 AI 能像一个\"了解团队规矩的同事\"一样工作的过程。\n3.1 阶段一：一个文件的起步（1月初）\n2026 年 1 月 2 日凌晨，第一个 commit 落地：\nfeat: 初始化 AgenticMetaEngineering 项目结构和上下文管理规范\n。\n那时候整个体系就是一个 AGENTS.md 文件——定义了 Agent 的角色、几条基本规则、目录约定。仅此而已。然后用它来做第一个自建需求：插件市场的开发。\n从第一篇文章的认知出发，我知道上下文工程、记忆持久化、经验沉淀这些事迟早要做。但从第二篇文章的教训出发，我刻意控制了自己\"一步到位\"的冲动——\n不是不知道要做，而是不确定现在做是不是过度设计。\n所以策略很明确：先让 AI 按照最简单的规则跑起来，等到真正\"不得不做\"的时候再做。\n预期中的问题很快就出现了：\nAI 每次做需求都要从头问一遍业务背景——\n它没有记忆\n上次踩的坑这次又踩了——\n经验没有沉淀\n做到一半会话断了，恢复时完全不知道做到哪了——\n没有状态持久化\n这些问题不意外，但它们在同一天之内集中爆发，明确了一件事：\n现在就是\"不得不做\"的时候了。\n一个文件起步是对的，但一个文件不够用——不是设计失败，而是演化的信号到了。\n3.2 阶段二：目录结构的自然涌现（1月上旬）\n既然 AI 没有记忆，那就给它造一个。\n第一个\"涌现\"的目录是\ncontext/\n——最初就是一个放文档的地方。但很快它自然地分化出了两个层次：\n团队级知识\n（context/team/）：所有项目通用的规范和流程——需求怎么写、方案怎么做、代码怎么审\n项目级知识\n（context/project/）：特定项目的架构设计、业务知识、技术选型依据\n这个分化不是我画了架构图然后实现的，是因为我发现有些规范每个项目都在重复写，有些则只对特定项目有意义。\n把它们放在不同的位置，AI 就能根据当前项目按需加载。\n第二个\"涌现\"的目录是\nrequirements/\n。最初只是为了保存需求文档，但做了几个需求后发现它自然演化出了固定结构：\nrequirements/{id}/\n├── meta.yaml      ← 元信息：需求在哪个阶段、关联什么服务\n├── plan.md        ← 计划：这个需求要做什么、分几步\n├── process.txt    ← 进度：做到哪了、遇到了什么阻塞\n└── notes.md       ← 笔记：过程中发现的经验、待沉淀的知识\n每个文件的出现都有对应的痛点：\nprocess.txt\n是因为跨会话恢复时 AI 不知道之前做到哪了；\nnotes.md\n是因为过程中发现的好经验没地方记，等回头想整理时已经忘了。\n这个阶段最重要的认知是\"\n位置即语义\n\"——不需要复杂的元数据系统，文件放在哪个目录，AI 就知道它是什么。这比任何数据库或索引机制都简单、都可靠。\n3.3 文档即记忆：一个有意的设计选择\n当 context/ 和 requirements/ 的结构逐渐稳定下来后，我发现它们已经构成了一个完整的记忆系统——这不是\"无意中长出来的\"，而是从一开始就有意参考了 Anthropic 在上下文工程中提出的\nAgentic Search\n思路。\nAgentic Search 的核心理念是：\n维护轻量级的索引和标识符，让 Agent 在运行时根据当前任务动态检索，而不是把所有知识预加载到上下文里。\n就像一个资深工程师不需要背手册，只需要知道\"要查什么\"和\"去哪查\"。这个理念直接影响了整个目录结构的设计决策——context/ 的分层、requirements/ 的固定结构、INDEX.md 索引文件的引入，都是在为 Agent 构建一套\"知道去哪找\"的记忆检索体系。\n具体来说，这套记忆系统分为三层：\n长期记忆（容量无限，按需检索）\n├── context/     ← 知识库：团队规范、项目知识、经验文档\n├── skills/      ← 能力封装：可复用的专业技能\n└── requirements/ ← 历史资产：已完成需求的全部产出物\n溢出区（会话中断时的\n\"存档/读档\"\n）\n├── process.txt  ← 做到哪了、遇到了什么阻塞\n├── notes.md     ← 过程中发现的经验、待沉淀的知识\n└── plan.md      ← 当前计划和决策记录\n工作记忆（容量有限，需要精细管理）\n└── 运行时的对话上下文\n长期记忆持久化在文件系统中，工作记忆是运行时对话上下文，中间的\"溢出区\"解决的是一个具体问题——会话中断时关键状态溢出到文件中，下次恢复时读回来。本质上就是游戏的\"存档/读档\"。\n但真正让这个记忆系统区别于\"又一个知识库方案\"的，是一个更深层的选择：\n为什么是文档，而不是数据库或向量存储？\n第二篇文章中我提出过一个原则：\"文档即记忆\"——同一份文档，人类和 AI 都能读懂、都能用。这不只是工程上的简化，而是关于\n知识一致性\n的选择。当团队的知识存在两套体系——人读人的、AI 读 AI 的——就不可避免地出现版本漂移：人更新了规范但忘了同步到 AI 的知识库，AI 的向量索引里还是旧的理解。文档形态天然避免了这个问题，因为\n人和 AI 读的是同一份文件\n。\n更重要的是，文档形态有一个独特的优势：\n高频使用对抗腐化\n。传统文档最大的问题是写了没人看、看了不更新，最终变成僵尸文档。但当文档同时作为 AI 的记忆时，它在每一次 Agent 执行任务时都被\"读取\"和\"使用\"。文档过时了，AI 行为就会出错，开发者立刻发现并修正——这形成了一个天然的反馈环。文档不再是被动的参考资料，而是每天都在被消费的\"活的记忆\"。\n这套记忆系统还解决了团队协作中一个根本性的问题：\n知识对齐\n。当整个团队共享同一套 context/ 目录时，所有人的 AI 都基于相同的记忆工作。新人 clone 仓库那一刻，就获得了团队积累的全部知识资产。这比任何 Wiki 或 Confluence 都高效——因为它不只是\"可以看\"，而是\"必须用\"。\n3.4 阶段三：场景驱动的规范体系（1月中旬）\n随着规范越来越多，一个新问题浮出水面：\nAgent 同时面对太多约束，行为开始不稳定。\nAnthropic 在\nBuilding Effective AI Agents\n一文中给出了一个关键指导原则：\"\nfinding the simplest solution possible, and only increasing complexity when needed\n\"（找到最简单的可行方案，只在必要时增加复杂度）。其中介绍的 Routing 工作流——\"classifies an input and directs it to a specialized followup task\"——给了我直接的启发。\n这个思路的核心是：\n如果用户面向的是 Agent，那么应该给 Agent 最小的约束。\n规范越少，Agent 越不容易\"走神\"；约束越精确，行为越可预期。当时场景还不多，规范也在可控范围内，用路由模式返回最小约束集合是一个合理的选择。\n于是我做了一个决策：\n引入场景驱动架构，用路由机制实现最小约束\n。\n核心思路——\n按场景隔离规则，只返回当前场景需要的最小约束集\n：\n用户意图 → 场景识别 → 加载该场景的最小规则集 → 执行任务\n我设计了一套完整的场景体系：普通场景（代码探索、需求定义、方案设计等）、流程场景（需求开发、规范维护等编排多步骤的流程）、辅助场景（阶段检查点、进度日志等被动引用的支撑能力），再加上横切规则（跨场景通用的行为约束）。\n关键组件是\nengineering-spec-retriever 路由 Agent\n——一个专门负责\"搜索当下 Agent 应该遵循哪些规范\"的子代理。主 Agent 识别到用户意图后，调用这个路由 Agent 检索对应场景的规范，只返回一份精简的可执行清单。这样主 Agent 的上下文中只有当前场景所需的最小约束，不会被无关规范干扰。\n这套架构完全遵循了 Anthropic 的指导——\n在每个时刻，Agent 只看到它需要看到的规则\n。我为它写了完整的设计文档，包括场景分类、路由机制、流转规则、扩展指南。在场景较少的早期阶段，它运行得很好。\n3.5 阶段四：推翻场景路由，转向工具设计（1月下旬）\n转折点发生在一个具体的下午。我让 Agent 做一个常规的需求定义任务，它先是调用路由 Agent 检索到\"需求定义\"场景的规范，然后开始工作。做到一半我说\"顺便看看相关代码的现有实现\"，Agent 又调了一次路由，拿回\"代码探索\"场景的规范。两份规范加上横切规则，上下文已经占了大半。当我接着说\"根据代码现状修改方案\"时，第三次路由把\"方案设计\"场景的规范也拉了进来——Agent 开始\"走神\"了：它跳过了需求定义阶段的必填项，把方案设计的格式套到了需求文档上。\n三个场景的规范互相干扰，Agent 的行为完全不可预期了。\n这不是个例，而是系统性问题的集中爆发。\n先澄清一点：",
+      "fulltext_obtained": true,
+      "chunk_index": 2,
+      "chunk_count": 9
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.91,
+        "peripheral": 0,
+        "irrelevant": 0.09
+      }
+    },
+    "relevance": {
+      "score": 1.79,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.14,
+        "2": 0.81,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.99,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.05,
+        "2": 0.07,
+        "3": 0.19,
+        "4": 0.54,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.94,
+      "probabilities": {
+        "0": 0.63,
+        "1": 0.05,
+        "2": 0.12,
+        "3": 0.17,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.88,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.1,
+        "3": 0.9,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.26,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.04,
+        "2": 0.09,
+        "3": 0.27,
+        "4": 0.56,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 3.1,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.83,
+        "4": 0.15,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.81,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7475,
+    "outputTokens": 172,
+    "totalTokens": 7647
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.89,
+        "relevance": 0.85,
+        "grounding": 0.31,
+        "decision_action": 0.37,
+        "evidence": 0.92,
+        "actionability": 0.5,
+        "anti_hype": 0.87
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180437545,
+                "endTime": 1791180437710,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00031395",
+      "marketCost": "0.00031395",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00031395",
+      "inferenceCost": "0.00031395",
+      "inputInferenceCost": "0.00031395",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARY0T0VB37Q02A8TMHY30"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:17 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::mmcr7-1791180437336-e6bd702cb5be"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.91,
+            "peripheral": 0,
+            "irrelevant": 0.09
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.79,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.14,
+            "2": 0.81,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.99,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.05,
+            "2": 0.07,
+            "3": 0.19,
+            "4": 0.54,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.94,
+          "probabilities": {
+            "0": 0.63,
+            "1": 0.05,
+            "2": 0.12,
+            "3": 0.17,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.88,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.1,
+            "3": 0.9,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.26,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.04,
+            "2": 0.09,
+            "3": 0.27,
+            "4": 0.56,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.1,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.83,
+            "4": 0.15,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.81
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7475,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.89,
+            "relevance": 0.85,
+            "grounding": 0.31,
+            "decision_action": 0.37,
+            "evidence": 0.92,
+            "actionability": 0.5,
+            "anti_hype": 0.87
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180437545,
+                    "endTime": 1791180437710,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00031395",
+          "marketCost": "0.00031395",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00031395",
+          "inferenceCost": "0.00031395",
+          "inputInferenceCost": "0.00031395",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARY0T0VB37Q02A8TMHY30"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:16.952Z"
+  }
+}

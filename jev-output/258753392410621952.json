@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "258753392410621952",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "拒绝重复造轮子！抽象 80% 工作场景，打造可复用的\"AI 助手工厂”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558977&idx=1&sn=dcf5e1258edd06e555cc9bff963f133a",
+      "date": "2026-03-23T00:32:00.532Z",
+      "chars": 8317,
+      "text": "原创\n雨清\n2026-03-23 08:32\n浙江\n阿里妹导读\n当每个业务场景都需要一个AI助手时，我们是在埋头苦干、重复造轮子，还是选择打造一条“AI助手生产线”？本文深入探讨智空间团队如何将执行、答疑、排查、极简场景四大高频需求抽象为可复用的技术方案，最终实现让业务方“配”助手而不是“开发”一个助手。\n精缩版：\n1. 场景抽象：\n日常工作内容的80%可以抽象为几类高频场景，针对每类场景的目标、挑战，可以形成有效的解决方案。详见：第一章。\n2. Prompt插拔架构：\nPrompt是给LLM运行的“代码”，Prompt设计就是“架构设计”。详见：第三章\n。\n3. 平台实践\n：\n基于“\n解决方案模板+Prompt框架+业务定制扩展”\n的\n技术方案\n，我们打造了“一键式”创建AI助手的平台：\n智空间\n。详见：第四章。\n引言：重复“造轮子”的困境？\n当每个业务场景都需要一个AI助手时，我们似乎陷入了一个熟悉的循环：接到需求、从零开始、打造助手、交付上线。从金融答疑到系统排查，从联调造数到VIP演练，每个团队都在各自的业务场景中重复着相似的开发流程，这种模式看似务实，实则暗藏巨大的效率陷阱。\n开发一个中等复杂度的AI助手，动辄需要几周，其中超过60%的工时消耗在流程编排、Prompt调优、工具集成和效果验证等高度重复的工作上。\n更可怕的是，这些倾注心血打造的助手，绝大部分如同“高级定制款”，从需求对接到Prompt调优，从工具集成到效果验证，每个都是信息孤岛，彼此之间几乎无复用性可言。这像是AI界的“作坊式”生产模式——看似“遍地开花”，但大部分精力消耗在了低水平重复上。\n破局之道：\n以上困境的根因，在于我们每一次都聚焦于具体的、差异化的场景本身。唯有通过深入分析，归纳出场景的共性与差异性，并沉淀为技术化的解决方案，我们才能从“AI作坊”迈向“智能工厂”。\n第一部分：场景抽象——四大高频场景类型\n按照第一性原理，我们对日常工作进行了“贴身观察”和行为分析，发现虽然工作内容五花八门，但近80%的任务可被归为四大类：复杂指令执行、知识问答、问题排查、常规碎片化场景\n（coding作为单独课题，不在此列）\n。\n1.1 四大高频场景的本质分析\n复杂指令\n本质\n：\n不是简单聊天，而是“工具海选 + 链路规划 + 安全执行”的复杂决策过程。\n案例\n：\n用户一句“给我弄张优惠券”，AI需自动完成“身份验证→查询用户状态→寻找可用券模板→调用发券接口→返回结果”等一系列精密操作。\n技术挑战\n：\n指令的精准拆解、海量工具的智能召回、工具链的合理推导，以及复杂场景的理解和安全边界控制。\n知识问答\n本质\n：\n不止是关键词匹配，而是“图文召回 + 多语义理解 + 知识保鲜”的综合能力。\n案例\n：\n用户可能文绉绉地问“如何创建迭代”，也可能直接甩一张报错截图问“这啥意思？”。\n技术挑战\n：\n实现文本生成和图片召回的协同，以及在多轮对话中保持知识的鲜活性，避免“鱼的记忆”。\n问题排查\n本质\n：\n从“表象”到“根因”的RCA过程，是“工具调用与人工经验融合”的层层推理。\n案例\n：\n用户说“优惠券用不了”，AI需像侦探一样追问、查证：“什么时候用的？什么错误提示？我查一下你的账号状态...哦，发现是账号被风控了”。\n技术挑战\n：\n准确理解问题本质，通过试错（排除法）定位问题——精确使用工具并根据结果决策下一步，最后把系统异常转译成人类语言。\n常规场景\n本质\n：\n“极简接入 + 能力复用”。一些简单场景没必要复杂流程，直接复用平台的基础能力最快最经济。\n技术挑战\n：\n场景简单但多样，关键在于精准的问题定义、Prompt调优和快速试错，并极致降低接入与运维成本。\n1.2 跨越场景的共性挑战\n在深入这些场景时，我们发现了一些共性的难题：\nQuery表达多样化\n：\n用户的问题从来都不标准，同一个意思有N种说法，还经常信息不全。\nQuery多模态化\n：\n现在用户越来越喜欢图文混问，一张截图配几句话成了标配。\n工具描述不清晰\n：\n各个工具的描述质量参差不齐，功能还有重合，让AI很难选择。\n安全与权限问题\n：AI不能瞎操作，特别是涉及数据修改时，权限控制是生命线。\n1.3 场景归类&方案：\n基于上述分析，我们为每一类场景设定了明确的目标，并设计了针对性的解决方案。\n复杂指令\n知识问答\n问题排查\n常规（极简）\n场景案例\n智造\n演练助手\nVIP答疑\n金融答疑助手\n系分分析助手\n目标（本质）\n根据用户指令、专家经验，\n在海量工具中找到并规划工具链，达成任务。\n根据用户问题，\n在海量信息中，找到图文信息，生成知识，解决问题。\n从表象（问题描述）到根因的RCA过程：\n表象 --> 可能原因 --> 根因。\n常规的借助LLM完成特定任务。\n挑战\n指令拆解\n海量工具\n工具链推导\n复杂场景理解\n召回RAG（含图文知识），生成准确的答案\n召回相关图片\n多轮对话，用户追问、意图跳转\n不断试错（排除法）\n多轮执行\n人工经验指导\n交互话术（系统异常到语言表达）\n场景简单但是多样\n问题定义\nprompt调优\n快速试错\n方案\n意图分类、意图拆解\n创新工具召回算法（FSWW）\n创新工具链推导算法（逆向推理+正向执行）\n安全性：工具读写管控\n创新RAG文本块（图文嵌入模式）\n实现答复模式：文生成、图召回\n缓存RAG文本块汰换算法\n生成式FAQ嵌入prompt\n问题分类（类似意图分类）\n人工经验指导（嵌入prompt）\nReAct + 执行引擎模式\n创新：prompt框架 + 定制模式\n助手市场（产品）\n小组支持（人员）\n共性问题\nquery：不全、不清晰，句式多变；\nquery多模态：含图文；\n工具：描述不清晰，功能重合；\n上手成本高，调试难；\n安全与权限问题。\n共性问题应对\n多模态支持：识别并解析图文输入\n意图识别：理解用户意图，并做好必要的校验、纠偏\n工具治理：提升工具描述质量、优化出入参，引入冲突检测\n助手市场：一键创建agent 实例、页面调试（所见即所得）\n安全治理：工具执行权限校验、工具分类（写管控）、工具治理（非测试数据管控）\n至此，我们完成了从“具体场景”到“抽象类型”的理论跨越。接下来，是如何将这些抽象方案，转化为稳定、高效、可复用的系统。\n第二部分：技术破局——四套解决方案\n整体架构：\n一个分层解耦的架构设计。\n整体架构设计图\n架构解读：\n解决方案层：固化了四大场景的差异化流程，包含多个Agent和工程化节点。\n核心能力层：包含了推理、执行、知识、工具、安全五大能力域，每个域拆分为多个组件化的功能模块（如工具推理、反思推理）。\n设计精髓：解决方案可以像搭积木一样，自由选用核心层的功能模块。例如，复杂指令方案使用工具推理，问题排查方案则使用反思推理。\n下面，我们重点介绍解决方案层的设计。\n1. 复杂指令场景方案\n目标：\n根据用户指令，在海量工具中找到并规划工具链，达成任务。\n1.1 方案：\n核心流程：\n1. 预处理\n2.\n意图识别\n3. 意图处理\n4.\n工具召回（过滤引擎）\n5.\n推理执行\n6. 总结&返回\n复杂指令执行架构设计：\n复杂指令架构图\n预处理模负责块识别和处理多模态、快速响应内嵌式命令（能不用LLM就不用LLM）；意图处理，负责了意图路由、定制化意图处理、定制化流量处理等功能；总结&召回模块负责分析结果、组装语言返回用户。\n意图识别、工具召回、推理执行三个节点，顾名思义，其功能一目了然，但实现方案确颇具挑战，其背后是面向用户语言和诉求的多样化、工具描述和功能的多样化，以及诉求粒度和功能粒度的断层。\n1.2. 意图识别——把“人话”翻译成标准模型\n我们设计了\nIntentResult模型\n，这是一个结构化的意图理解框架。它把用户的一句“人话”翻译成机器能精准执行的\n标准模型\n。\n以“给用户1234发放一张满50减20的优惠券，预发环境”为例，我们的模型会解析出：\n谁\n：\n一般是我，不用解析\n什么地点\n：\n预发环境\n什么条件\n：\n未提供\n关联方是谁\n：\n用户1234\n做什么\n：\n发放\n对象是什么\n：\n满50减20的优惠券\n什么时间\n：\n现在\n这个模型的优点在于，它不仅能理解单一意图，还能处理复杂的多意图指令，甚至能识别出用户的“负向约束”（即用户不希望发生的事情）、背景说明等辅助信息。\n1.3. 工具召回——从“海选”到“精准匹配”\n如何在调用大模型前，精准的从海量工具中筛选出少量的候选工具？\n这是一个业界的痛点。我们自主研发了\nFSWW算法\n（Fused Subspace with Word Weights），通过工程化计算的方式，有效的解决了海量工具预选的难题。\nFSWW算法是使用IntentResult模型（用户意图）匹配工具池中的\nToolEssentialModel\n（自定义统一工具模型），获取最佳匹配的候选工具。算法的核心思想是：\n在保留用户原始意图语义的基础上，为关键动作和对象赋予更高的权重\n。\n比如对于“发放优惠券”这个指令，算法会让“发放”和“优惠券”这两个关键词在语义匹配中占据主导地位，同时又不完全忽略其他词语的语义信息。\n原创论文：\nhttps://arxiv.org/abs/2511.19483\n1.4. 推理执行——逆向思维\n核心功能：\n详细制定“\n逆向推理、正向执行\n”的算法描述，给到LLM，生成可行的工具链条，并通过MCP协议调用工具，拿到结果。\n具体流程如下：\n1.\n目标工具筛选\n：\n从发券这个目标出发，找到能完成发券的工具A\n2.\n依赖分析\n：\n发现工具A需要用户ID作为输入，但当前指令没提供\n3.\n上游追溯\n：\n找到能查询用户ID的工具B\n4.\n形成工具链\n：\n工具B（查询用户ID）→ 工具A（发放优惠券）\n除此之外，这个过程中内置了四重安全校验：\n环境校验：确保工具在当前环境（预发/线上）可用\n读写类型校验：严格控制影响面，查询类意图绝不用写类工具\n功能匹配校验：确保工具能力与目标一致\n权限与影响面校验：验证用户权限，防止越权操作\n2. 知识问答场景方案\n目标：\n根据用户问题，在海量信息中，找到图文信息，生成知识，解决问题。\n核心痛点：生成文本知识的同时，召回相关图片（无臆造）。\n2.1 方案：\n方案主要包括了两部分：推理流程和知识构建流程。方案的核心，解决两个问题：第一、是回答用户问题时，采用文生成+图召回的模式；第二、是在问答场景中，精准应对用户的多轮对话。\n推理流程：\n1. 预处理\n2. query改写\n3. 知识汰换\n4. 上下文生成\n5. 答案生成\n6. 图片填充\n知识问答架构设计：\n知识问答架构图\n知识构建流程\n知识构建架构图\n我们知道产技类文档中，纯文本基本不存在，大量的知识是以架构图、流程图、时序图等形式存在。\n图文RAG创新：让AI“看懂”图片\n，\n我们的解决方案是\n图文嵌入模式\n。在知识构建阶段，当系统解析文档时：\n文本内容被拆分成逻辑连贯的文本块；\n图片则通过专门的图像解析Agent进行理解，生成结构化的语义摘要；\n关键的一步：把图片摘要回填到对应的文本上下文中，形成图文关联的知识块；\n最后，文本和图片分别进行向量化，但在语义层面保持关联。\n这样，当用户提问时，系统不仅能召回相关的文本知识，还能\n同步召回相关的配图\n。比如用户问“如何配置网关路由”，AI在给出文字说明的同时，还能把配置页面的截图一并返回。\n2.2. 答疑效果（文生成、图召回）：\n2.3. 多轮对话应对 -- 知识块选择和汰换\n在知识问答的场景中，用户往往存在多轮交互，而在此多轮交互中往往存在意图延续、意图跳转、意图回跳（意图跳转后，又会跳回到原始问题）等情况，需要做出不同的应对：\n话题延续时，必须保留历史轮次中的关键信息；\n话题切换时，需要快速引入新知识，避免历史信息干扰当前判断。\n多轮对话流程图\n我们的解决方案是\n动态知识筛选机制\n。在每一轮对话中，系统会智能决策：\n话题延续时：保留历史轮次中的关键信息，保证对话连贯性\n话题切换时：快速引入新知识，避免历史信息干扰\n决策基于三个关键信号：\ntopicSwitch：是否发生话题切换\ndialogAct：当前轮的对话行为类型\ninfoNovelty：当前轮引入的信息新鲜度\n通过这些信号调节新旧知识的权重，AI就能在不同对话场景下智能切换策略，真正做到“该记得的记得，该忘掉的忘掉”。\n2.3. 问题排查场景方案：\n目标：\n从表象（问题描述）到根因的RCA过程\n表象 --> 可能原因 --> 根因。\n1. 方案：\n问题排查架构图\n2. 意图路由：\n排查问题一般分为两类：\n1.\n业务咨询类\n，面向静态知识的问答。例如：如何创建绑定账号？如何查看优惠券等？\n2.\n查询和排查类\n，面向特定账号、数据的咨询和排查。\n通用意图识别模块，区分出问题类型，然后路由到不同的处理流程：业务咨询类，走知识问答流程；查询排查类走ReAct推理流程。\n3. ReAct 推理：\nReAct推理模块：\n定位：\n智能决策代理（Agent），采用 ReAct（Reason + Act）模式进行多轮推理与工具协调。核心职责是：基于用户目标、上下文信息和可用工具能力，规划并输出下一步行动，但绝不自行执行任何工具调用。\n组装并给到大模型的输入：\nIntentResult：\n来自意图识别 Agent\n原始query\n：\n用户的原始输入请求（需作为最终结果校验的基准）\ntool_results\n：\n本轮已执行的工具调用结果\n历史对话\n：\n用户与平台的过往交互记录\nmcp工具池\n：\n平台注册的工具信息\n执行约束：\n1. 输出结构化模型 ToolExecutionChain；\n2. 只思考，不执行；\n3. 多轮迭代，基于历史推理；\n4. 保持严谨、安全性。\n4. 执行引擎：\n反思执行组件提供两套实现方案：\nReActExecutor：简化版（Thought→Action）。\n优点：响应速度快\n不足：复杂处理逻辑可能效果不好\nReActObversationExecutor：完整版（Thought→Action→Observation）\n优点：职责清晰，可解决复杂处理逻辑、任务规划协调重试\n不足：耗时较长\n场景适配\n场景类型\n推荐引擎\n原因\n简单排查（答疑）\nReActExecutor\n快速响应（少一步LLM调用），无需复杂评估。\n多步骤业务流程\nReActObversationExecutor\n需动态评估每一步结果，确保流程正确性。\n需要错误恢复\nReActObversationExecutor\n观察者可触发重试或回退策略。\n2.4 常规（极简）场景方案：\n流程设计相对简单，核心的目标有两个：1. 降低接入的门槛；2. “复用”工具库和RAG库，统一接入和运维、多方使用。\n方案：\n极简定制架构图\n复用能力：\n复用预处理模块的多模态支持能力\n复用公域的工具池资源\n复用统一的RAG知识库\n复用标准的安全权限体系\n这确保了简单场景的助手，能够“站在巨人的肩膀上”快速诞生。\n第三部分：prompt插拔式架构 —— 框架prompt + 业务定制\nprompt 形式上是文本，本质上是给LLM执行的“代码”。因此，prompt也需要进行功能抽象、模块设计、架构设计，而其文本特性给了我们很便捷的操作方式。\n在日常工作中，我们尝尝会把实现某一类（某一个）功能点的prompt沉淀下来，方便下一次复用（黏贴）。如果我们再往前走一步，以架构设计的视角来看待prompt，自然而然的，就会想要抽象场景 --> 规划出核心功能 --> 沉淀专有的prompt --> 开放出业务定制部分。最终达成框架prompt的统一运维、高度复用，业务定制部分贴合具体场景，极度灵活。\n在沉淀解决方案的过程中，我们已经抽象出了核心功能节点（agent）：意图识别、工具推理、反思推理、交互反馈等，在不断迭代的过程中，也沉淀出了多套框架prompt和业务定制prompt模版。\n我们以意图识别这个核心Agent为例展开介绍。\n意图识别：\n目标：\n理解用户语义，确保语义完整\n解析指令，规范输出\n意图分类（可选）\n框架 prompt\n业务定制\n功能抽象\n语义结构\n输出格式\n步骤拆解逻辑\n追问逻辑\n归一化逻辑\n意图分类\n归一化词表\n案例声明\nprompt结构\n角色定义\n职责\n原则\n输出模型定义\nIntentResult\n深层语义结构识别\n意图分类\n通用意图\n业务定制\n信息抽取与字段规则\n如何从query中抽取元素，组装IntentResult\n语义完整与追问逻辑\n语义归一化\n特殊场景处理\n业务说明\n业务信息补充\n意图定义（分类）\n意图定义、说明\n意图分类方法\n数据完整性校验（可选）\n归一化词表（动作、实体）\n案例说明\n框架prompt--插桩：\n业务定制模版：\n业务定制模版，结合前端产品设计，开放出：业务说明、意图定义、归一化词表等模块，又助手创建者填写。\n案例：VIP演练执行助手\n案例：金融答疑助手\n第四部分：平台落地——从技术方案到“助手工厂”\n我们将以上的四套解决方案沉淀为了四套模版，核心agent节点（意图识别、工具推理、ReAct推理、总结交互等）均内置了框架prompt + 开放业务定制的架构设计，并以此创建了智空间的助手市场产品能力。\n产品设计的核心思路\n：\n让用户通过“选择模板 -> 配置 -> 生效”的三步法，像配置工作流一样“配”出AI助手。\n4.1 一键三连，创建第一个AI助手（极简定制）\n1. 一键选择模版\n2. “三联”配置助手：\n3. 一秒生效：保存即生效，点击即使用。\n4.2 定制一个排查助手\n首先，我们要明确一点，AI需要借助“专家经验”、底层工具、知识库，才能解决复杂问题。而助手工厂所有的努力，都是\n让专家集中精力去沉淀“专家经验”\n，无需关注多agent如何设计、prompt如何配置、工具如何召回等耗时、耗力的事项。\n因此，在创建一个AI助手时，必然要理清楚：\n要解决的问题是什么？明确场景和边界；\n复杂场景分类，采用MECE（\n不重不漏\n）原则拆分为子类型（也叫意图类型）；简单场景可以跳过；\n每一类型，如何排查？注意：不是结论，是过程！！！\n创建排查助手：\n查看排查流程：\n意图识别定制（资深编辑模式）：\n排查策略定制（资深编辑模式）：\n第五部分：总结展望\n5.1 核心沉淀：\n方法论层面\n，我们总结出了\n场景抽象→解法沉淀→产品化落地\n的三步法，此方法也将继续驱动AI平台智空间的演进。\n技术层面\n，我们沉淀了四大\n模板+Prompt框架+业务定制架构\n的技术体系，这得益于我们作为业务平台团队对于能力抽象、解决方案沉淀的执着。该架构体系很好的平衡了标准化和灵活性——既保证了基础能力的统一和高质量，又支持不同业务的个性化需求。\n产品层面\n，我们初步实现了配置化、模板化、极简化的设计目标，有效的降低了创建智能助手的门槛。\n5.2 未来规划：\n场景拓展\n，除了文中提及的四大场景以外，做决策和做数据分析，也是日常工作内容的重要组成部分，后续也将纳入到解决方案中。\n能力升级\n，从配置化到自动化。当前依赖人工分析案例、划分意图（令人头疼的MECE原则）、配置录入（一键三连也很麻烦）、调试发布，在运维期间还要分析真实用户的query、场景等。在此过程中，唯一不能被AI代替的是：具体案例沉淀（问题描述、解决过程、决策分析等），其它的全部可以由后台agent来完成。此处的各种后台agent，就是我们的下一步。\n5.3 一点思考：\n智能化与基建并行\n，AI平台的终极目标，始终是让“专家”聚焦于沉淀“专家经验”，是让AI技术对助手创作者透明化，所以平台本身必然走向智能化。与此同时，恰如大树生长，除了智能化的向上生长，底层的知识库构建（文档信息、知识生成等）、工具能力建设（面向AI友好的工具&工具集合）都是决定平台是否能用、好用的关键。\n专家经验沉淀是关键\n，专家经验沉淀的深度和厚度，是决定AI应用的落地和推广的关键。\n平台是骨架，专家经验才是灵魂\n。\n也许这将是未来几年对“专家”最大的挑战和机遇。\n5.4 AI 共创：\n你在开发 AI 助手时遇到的最大痛点是什么？欢迎评论区留言。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.01,
+        "peripheral": 0.03,
+        "direct_local": 0,
+        "transfer_agent": 0.81,
+        "irrelevant": 0.14
+      }
+    },
+    "relevance": {
+      "score": 2.13,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.79,
+        "3": 0.17,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.56,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.09,
+        "2": 0.3,
+        "3": 0.49,
+        "4": 0.1,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.73,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.47000000000000003,
+        "4": 0.32,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.11,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.85,
+        "3": 0.13,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.66,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.27,
+        "4": 0.7,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.22,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.12,
+        "2": 0.54,
+        "3": 0.28,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 9628,
+    "outputTokens": 172,
+    "totalTokens": 9800
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.76,
+        "relevance": 0.85,
+        "grounding": 0.57,
+        "decision_action": 0.38,
+        "evidence": 0.9,
+        "actionability": 0.77,
+        "anti_hype": 0.66
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179849797,
+                "endTime": 1791179849963,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000404376",
+      "marketCost": "0.000404376",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000404376",
+      "inferenceCost": "0.000404376",
+      "inputInferenceCost": "0.000404376",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A701KDC78VT069KSPJ8WQ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:29 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::w4mxj-1791179849565-155fd5a3a5e0"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.01,
+            "peripheral": 0.03,
+            "direct_local": 0,
+            "transfer_agent": 0.81,
+            "irrelevant": 0.14
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.13,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.79,
+            "3": 0.17,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.56,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.09,
+            "2": 0.3,
+            "3": 0.49,
+            "4": 0.1,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.73,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.47000000000000003,
+            "4": 0.32,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.11,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.85,
+            "3": 0.13,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.66,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.27,
+            "4": 0.7,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.22,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.12,
+            "2": 0.54,
+            "3": 0.28,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 9628,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.76,
+            "relevance": 0.85,
+            "grounding": 0.57,
+            "decision_action": 0.38,
+            "evidence": 0.9,
+            "actionability": 0.77,
+            "anti_hype": 0.66
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179849797,
+                    "endTime": 1791179849963,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000404376",
+          "marketCost": "0.000404376",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000404376",
+          "inferenceCost": "0.000404376",
+          "inputInferenceCost": "0.000404376",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A701KDC78VT069KSPJ8WQ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:29.188Z"
+  }
+}

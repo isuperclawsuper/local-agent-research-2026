@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1167511084874108928",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Loop Engineering 实践指南：在 Code Buddy 中构建自主循环系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802117&idx=1&sn=a91a32e0b00305c1a30f4a6684c3c6b2",
+      "date": "2026-06-22T09:22:00.710Z",
+      "chars": 9668,
+      "text": "原创\n腾讯程序员\n2026-06-22 17:22\n广东\nAI 编程第三次革命\n作者：\neliqiao\n一、什么是 Loop Engineering\nLoop Engineering 是由谷歌工程师 Addy Osmani 提出的 AI 编程新范式。其核心理念是：\n围绕大模型构建自主循环运行系统，使 AI 从单次响应工具升级为长期自治代理。\n在传统的 AI 辅助开发中，开发者与 AI 的交互模式是\"一问一答\"——你发一条指令，AI 回复一次，然后等待下一条指令。这种模式的瓶颈在于：\n人成了循环的瓶颈\n。每一步都需要人类介入，AI 无法自主推进复杂工作流。\nLoop Engineering 的解法是：\n让人从循环内部的操作者，转变为循环之上的监督者和目标设定者。\n你定义\"做什么\"和\"何时算完成\"，AI 自己决定\"怎么做\"和\"下一步是什么\"，直到目标达成或确认不可达。\n类比传统工程学中的 PDCA 循环（Plan-Do-Check-Act），在 Loop Engineering 中：\n模型\n是执行者\nLoop\n是控制中枢\n规则框架\n是边界约束\n这三者组合，让 AI 在可控范围内自主推进复杂工作流。\n为什么现在重要\n当模型能力足够强时，\n循环设计\n成为决定 AI 自主性与可靠性的关键瓶颈。一个设计良好的循环可以让 AI 连续工作数十轮完成复杂重构，而一个设计糟糕的循环可能在第三轮就失控。Loop Engineering 被视为继 Prompt Engineering、Context & Harness Engineering 之后的\"AI 编程第三次革命\"——开发者角色从\"提示词工程师\"彻底升级为\"AI 系统架构师\"。\n二、Loop Engineering 与 ReAct 的区别\nReAct（Reasoning + Acting）是目前最主流的 AI Agent 交互范式，由 Yao et al. 在 2022 年提出。其核心模式是：\n思考 → 行动 → 观察 → 思考 → 行动 → 观察……\n交替进行推理和工具调用，直到任务完成。\nLoop Engineering 与 ReAct 经常被放在一起讨论，但它们解决的是不同层次的问题。理解两者的区别，是正确实践 Loop Engineering 的前提。\n本质关系：Inner Loop vs Outer Loop\nReAct 是 Loop Engineering 的 Inner Loop。\nLoop Engineering（Outer Loop）\n┌─────────────────────────────────────────────────────┐\n│  目标拆解 → 任务分配 → 结果汇总 → 再计划              │\n│                                                       │\n│  ┌─────────────────────────────────────────────────┐ │\n│  │  ReAct（Inner Loop）                             │ │\n│  │  思考 → 行动 → 观察 → 思考 → 行动 → 观察 ...     │ │\n│  └─────────────────────────────────────────────────┘ │\n│                                                       │\n│  ┌─────────────────────────────────────────────────┐ │\n│  │  ReAct（Inner Loop）                             │ │\n│  │  思考 → 行动 → 观察 → 思考 → 行动 → 观察 ...     │ │\n│  └─────────────────────────────────────────────────┘ │\n└─────────────────────────────────────────────────────┘\nReAct 解决的是\n单次任务内\n\"怎么一步步做\"的问题\nLoop Engineering 解决的是\n跨任务\n\"做什么、谁来做、何时停、怎么续\"的问题\n核心差异对比\n维度\nReAct\nLoop Engineering\n关注层次\n单次任务的执行过程\n跨任务的编排与调度\n循环粒度\n细粒度（单步工具调用）\n粗粒度（整个任务周期）\n状态管理\n依赖上下文窗口内记忆\n状态外置到文件/数据库，每次迭代全新上下文\n停止条件\n模型自己判断\"做完了\"\n独立评估器验证可度量条件是否满足\n验证机制\n自我检查（同一模型）\n对抗验证（不同模型/独立评估器）\n错误恢复\n在同一上下文内重试\n断点续跑，可跨会话恢复\n并行能力\n单 Agent 串行\n多 Agent 并行 + 工作树隔离\n运行周期\n单次对话\n可持续数小时甚至数天\n用一个类比理解\n把开发一个软件比作建一栋楼：\nReAct\n是工人的工作方式——\"我需要砌这面墙，先搬砖，再和水泥，再砌，检查是否平整，不平就修\"。它关注的是\n单步操作的执行质量\n。\nLoop Engineering\n是项目经理的工作方式——\"今天完成地基，明天搭框架，后天装管道，质检通过再进行下一步，不合格就返工\"。它关注的是\n整体工程进度的编排与质量保障\n。\n没有工人的砌墙能力（ReAct），楼建不起来；没有项目经理的编排（Loop Engineering），工人可能把墙砌错了地方，或者砌完才发现管道没留口。\nReAct 的局限，Loop Engineering 如何补位\n局限 1：上下文窗口有限，长任务必然遗忘\nReAct 在同一个上下文窗口内持续推理。当任务跨越几十步操作时，早期信息被压缩或遗忘，导致 AI \"忘记\"之前做了什么、为什么这么做。\nLoop Engineering 的解法：\n状态外置\n。每轮迭代从全新上下文开始，从持久化文件中读取状态，不依赖模型记忆。CodeBuddy 中的 Memory、CODEBUDDY.md、Rules 就是这一原则的体现。\n局限 2：自我检查存在盲区\nReAct 中同一个模型既写代码又检查代码，容易产生确认偏误——\"我写的当然没问题\"。\nLoop Engineering 的解法：\n对抗验证\n。执行者和评估者使用不同模型或指令。CodeBuddy 中\n/goal\n的评估器用小模型独立判断，Team 模式中 planner/coder/reviewer 使用不同角色，都是对抗验证的实践。\n局限 3：没有跨任务的进度跟踪\nReAct 完成一个任务就结束，没有\"做到哪了\"的持久记录。如果中途崩溃，只能从头来。\nLoop Engineering 的解法：\n断点续跑\n。通过状态文件记录进度，崩溃后可从断点恢复。CodeBuddy 中\n/goal\n支持\n--resume\n恢复未完成的 goal，Memory 记录跨会话上下文。\n局限 4：缺少编排能力\nReAct 是单 Agent 串行执行，无法同时推进多个子任务。\nLoop Engineering 的解法：\n多 Agent 并行 + 工作树隔离\n。CodeBuddy 的 Team 模式支持多个 Agent 同时工作在不同分支上，互不干扰，最后合并结果。\n不是替代，是演进\nLoop Engineering 不是要替代 ReAct，而是在 ReAct 之上增加编排层。两者关系：\nPrompt Engineering    → 怎么问（单次交互优化）\n↓\nReAct                → 怎么做（单任务内的推理-行动循环）\n↓\nLoop Engineering     → 怎么管（跨任务的编排、验证、状态管理）\n在 CodeBuddy 中，当你用\n/goal\n设置一个条件时，每一轮内部 AI 仍然使用 ReAct 模式来思考和行动，但\n/goal\n的评估器在 Outer Loop 层面判断整体进度——这就是两层循环的协作。\n三、Loop Engineering 的核心架构\n五阶段循环机制\nLoop Engineering 遵循\nDiscover → Plan → Execute → Verify → Iterate\n闭环：\n阶段\n说明\n关键设计\nDiscover\n自动读取 CI 失败、issue、代码审查等信号\n输入源要结构化、可订阅\nPlan\n分解目标为具体步骤\n温度适中，避免过早收敛\nExecute\n执行代码编辑与工具调用\n工具调用要幂等、可回滚\nVerify\n通过测试、lint、类型检查等客观信号验证\n验证标准必须客观、可机器判定\nIterate\n失败则自动修复并重新循环；成功则进入下一任务\n状态要持久化，支持断点续跑\n双层循环模型\nLoop Engineering 采用双层循环架构：\nOuter Loop（编排层）\n目标拆解 → 任务分配 → 结果汇总 → 再计划\nInner Loop（执行层）\n感知 → 推理 → 规划 → 行动 → 观察\n↑                        ↓\n评估 / 修正 ←───────────┘\nInner Loop\n= 单个 Agent 的工作循环（等价于 ReAct 模式）\nOuter Loop\n= 编排器管理多个 Inner Loop 的生命周期\n六要素构建体系\n要素\n作用\n为什么重要\n自动化\n提供循环心跳，按计划或事件触发\n没有心跳就没有循环\n工作树\n通过 git 为每个 Agent 创建独立工作目录\n并行开发零冲突\n技能（SKILL.md）\n固化项目知识，避免每次冷启动重新推导\n知识复用，降低 token 消耗\n连接器（MCP）\n打通 issue 系统、CI 等真实工具链\nAI 必须能感知和操作真实世界\n子智能体\n将写代码与检查代码分离，形成对抗验证\n避免单一 Agent 自我检查的盲区\n状态文件\n记录进度，支撑断点续跑\n防止上下文遗忘和信息漂移\n状态外置哲学\nLoop Engineering 的一个关键设计原则：\n所有状态存储在外部系统，而非模型的上下文窗口。\n每次循环迭代从一个全新的上下文窗口开始，基于实际持久化内容工作。这彻底解决了模型遗忘、信息漂移与上下文压缩问题。\n四、CodeBuddy 中的 Loop Engineering 实现\nCodeBuddy 提供了三种核心机制来实现 Loop Engineering，它们分别对应不同的循环驱动模式：\n3.1\n/goal\n— 条件驱动的持续工作\n/goal\n是 Loop Engineering 最直接的实现。你设置一个\n可验证的完成条件\n，CodeBuddy 跨多轮自动工作，直到条件满足。\n# 基本语法\n/goal <完成条件>\n# 实际示例\n/goal all tests\nin\ntest\n/auth pass and the lint step is clean\n# 加兜底上限防止无限循环\n/goal all tests pass or stop after 20 turns\n# 非交互模式（headless 运行）\ncodebuddy -p\n\"/goal CHANGELOG.md has an entry for every PR merged this week\"\n写好条件的三个关键要素\n：\n要素\n说明\n示例\n可度量的终态\n测试结果、构建退出码、文件数等\nall tests in test/auth pass\n可证明方式\n明确怎么验证\n`npm test` exits 0\n或\n`git status` is clean\n不可破坏的约束\n过程中不能改的东西\nno other test file is modified\n评估机制\n：每轮结束后，由独立小模型评估器判断条件是否满足，三态结果：\n✅\nok: true\n— 条件已满足，清除 goal，UI 显示\n✔ Goal achieved\n🔄\nok: false\n— 条件未满足，reason 注入 history，继续下一轮\n❌\nok: false, impossible: true\n— 目标不可达，立即清除 goal\n关键设计：\n评估器使用小模型\n（如 gemini-2.5-flash），快速且便宜，只看 transcript 不调用工具。评估器与执行 Agent 使用不同模型，天然形成对抗验证。\n3.2\n/loop\n— 时间驱动的循环任务\n/loop\n按时间间隔重复执行指令，适合监控、巡检等持续性场景：\n# 语法\n/loop [时间间隔] <指令>\n# 检查 CI/CD 流水线状态\n/loop 3m 检查一下流水线是否跑完，把结果告诉我\n# 定时运行单元测试\n/loop 30m 帮我运行一次单元测试，如果有失败的用例告诉我\n# 每小时汇总代码审查待办\n/loop 1h 看一下有没有新的 PR 需要我审查\n特性\n说明\n最小间隔\n1 分钟\n每会话上限\n50 个任务\n自动过期\n3 天后自动清除\n生命周期\n会话级，退出后消失\n执行时机\n只在会话空闲时触发\n3.3 Automations — 跨会话的定时任务\nAutomations 是持久化的定时任务，不随会话消失，适合需要长期运行的监控场景：\nRecurring\n：按 cron 规则重复执行，如\nFREQ=HOURLY;INTERVAL=1\nOnce\n：指定时间点一次性触发\n三种方式的对比\n方式\n下一轮何时开始\n何时停止\n适用场景\n/goal\n上一轮结束后立即\n评估器确认条件满足\n有明确终态的实质性工作\n/loop\n时间间隔触发\n主动停或模型判定结束\n监控、巡检、定期检查\nAutomations\n按 cron 规则\n永久或设有效期\n跨会话的长期监控\n五、Loop Engineering 架构在 CodeBuddy 中的映射\nLoop Engineering 要素\nCodeBuddy 实现\n说明\n自动化（循环心跳）\n/goal\n、\n/loop\n、Automations\n三种驱动模式覆盖不同场景\n工作树（并行隔离）\nGit worktree + Team 模式\n多 Agent 并行开发互不干扰\n技能（SKILL.md）\nSkills 机制\n固化项目知识，避免冷启动\n连接器（MCP）\nMCP 协议\n打通 issue、CI、数据库等工具链\n子智能体（对抗验证）\nTask 工具 + Team 模式\n规划者/执行者/评审者三角分工\n状态文件\nMemory、CODEBUDDY.md、Rules\n跨会话知识持久化\n六、实践案例\n实践 1：使用\n/goal\n完成模块迁移\n场景\n：将一个旧认证模块从\nauth/legacy\n迁移到新 API，直到所有调用点都能编译且测试通过。\n/goal all tests\nin\ntest\n/auth pass, `npm run build` exits 0, no file\nin\nauth/legacy is imported anywhere, or stop after 30 turns\n为什么这样写条件\n：\nall tests in test/auth pass\n— 可度量的终态，确保功能不受损\n`npm run build` exits 0\n— 可证明方式，确保编译通过\nno file in auth/legacy is imported anywhere\n— 不可破坏的约束，确保旧代码完全移除\nor stop after 30 turns\n— 兜底上限，防止无限循环\nCodeBuddy 的自动循环过程\n：\nDiscover\n：扫描\nauth/legacy\n目录，识别所有导出和调用点\nPlan\n：列出需要修改的文件，制定迁移步骤\nExecute\n：逐个文件修改导入路径，更新调用方式\nVerify\n：运行\nnpm test\n和\nnpm run build\n，检查编译和测试结果\nIterate\n：如果测试失败，分析错误原因，修复后重新运行\n每轮结束后，评估器独立判断：\"所有 auth 测试通过了吗？构建成功了吗？旧文件还有被引用吗？\"——只有三个条件全部满足才宣告完成。\n实践 2：使用\n/loop\n实现 CI 监控与自动修复\n场景\n：在提交 PR 后，持续监控 CI 状态，如果失败则尝试自动修复。\n/loop 2m 检查当前分支的 CI 状态，如果失败了，查看失败日志并尝试修复，修好后提交\n这个循环的工作流\n：\n每 2 分钟触发\n→ 读取 CI 状态\n→ 如果通过 → 报告成功\n→ 如果失败 → 读取错误日志 → 分析原因 → 修改代码 → 提交 → 等待下一轮验证\n注意\n：\n/loop\n是时间驱动的，不会自动停止。当你确认 CI 通过后，需要手动取消：\n取消 CI 监控的定时任务\n实践 3：使用 Team 模式实现对抗验证\n场景\n：复杂重构任务，需要规划者、执行者、评审者三角分工。\n1. 创建 Team\n2. 生成\n\"planner\"\n：负责分析代码库、制定重构方案\n3. 生成\n\"coder\"\n：根据方案执行代码修改\n4. 生成\n\"reviewer\"\n：独立审查修改结果，确保质量\n5. planner 和 reviewer 使用不同模型/指令，形成对抗验证\n为什么对抗验证重要\n：单一 Agent 自己检查自己的代码，容易产生盲区——\"我写的代码当然没问题\"。规划者和评审者使用不同的视角和指令，能发现执行者忽略的问题。\n实践 4：使用 Skills 固化项目知识\n场景\n：团队有一套编码规范和架构约定，希望 AI 每次都能遵循。\n在\nskills/\n目录下创建\nskill.md\n，将项目知识固化：\n---\nname: project-conventions\ndescription: 项目编码规范和架构约定\n---\n## 架构约定\n-\n所有 API 调用必须经过 service 层，controller 不直接调用 repository\n-\n数据库查询必须使用参数绑定，禁止字符串拼接 SQL\n-\n错误处理遵循统一异常体系...\n## 命名规范\n-\nService 类以 Service 结尾\n-\nRepository 类以 Repository 结尾\n...\n效果\n：每次 AI 工作时自动加载这些约定，不需要你在每次对话中重复说明。这正是 Loop Engineering 中\"技能\"要素的体现——\n避免每次冷启动重新推导\n。\n实践 5：使用 MCP 连接器打通工具链\n场景\n：让 AI 能读取 Jira issue、触发 Jenkins 构建、查询数据库。\n通过 MCP 协议接入第三方工具：\n{\n\"mcpServers\"\n: {\n\"jira\"\n: {\n\"command\"\n:\n\"mcp-jira\"\n,\n\"args\"\n: [\n\"--project\"\n,\n\"MYPROJ\"\n]\n},\n\"jenkins\"\n: {\n\"command\"\n:\n\"mcp-jenkins\"\n,\n\"args\"\n: [\n\"--url\"\n,\n\"\nhttps://ci.example.com\n\"\n]\n}\n}\n}\n接入后，在\n/goal\n循环中 AI 可以：\n/goal all issues labeled\n\"bug\"\nin\ncurrent sprint have a corresponding\ntest\nthat passes, or stop after 50 turns\nAI 能直接读取 Jira issue 列表、编写测试、运行验证——整个 Discover → Plan → Execute → Verify → Iterate 闭环都在真实工具链中运行。\n实践 6：使用 Rules 和 Memory 实现状态外置\n场景\n：长期运行的重构任务，需要跨会话保持上下文。\nRules\n（\n.codebuddy/rules\n）：定义硬性约束，AI 每次启动都会读取：\n-\n所有数据库查询必须使用参数绑定\n-\n修改 API 接口必须同步更新 OpenAPI 文档\n-\n每个 PR 不超过 300 行变更\nMemory\n：记录跨会话的偏好和上下文：\n-\n用户偏好使用 pytest 而非 unittest\n-\n当前项目使用 Python 3.11，类型注解必须完整\n-\n用户上次重构到 step 3，下次继续从 step 4 开始\n效果\n：每次新的循环迭代从全新的上下文窗口开始时，Rules 和 Memory 提供了\"状态外置\"——关键信息不依赖模型的记忆，而是从持久化存储中读取。这正是 Loop Engineering \"状态外置哲学\"的体现。\n七、最佳实践与注意事项\n写好\n/goal\n条件的 checklist\n终态可度量\n：用\"测试通过\"\"构建成功\"\"文件数为 0\"这类客观指标，避免\"代码质量提升\"这类主观判断\n验证方式明确\n：指定用什么命令/工具来验证，如\n`pytest test/auth` exits 0\n约束不可破坏\n：明确过程中不能改的东西，如\"不修改其他模块的测试\"\n兜底上限\n：始终加\nor stop after N turns\n，防止无限循环消耗 token\n条件不超过 4000 字符\n：这是\n/goal\n的硬性限制\n避免常见陷阱\n陷阱\n说明\n解法\n验证责任不可转移\n无人值守的循环也是无人值守地犯错\n关键变更仍需人工审查，Loop 不代替 Code Review\n理解债务加速累积\n代码库真实状态与开发者理解之间的鸿沟随循环加速扩大\n定期 review AI 的变更，保持对代码库的理解\n认知投降风险\n开发者极易停止独立判断，系统给什么就接受什么\n把 AI 当协作者而非权威，质疑每个变更\nToken 成本约束\n循环运行消耗大量 token\n设置\nstop after N turns\n，用小模型评估器\n条件模糊导致无效循环\n条件不够具体，AI 反复尝试但无法满足\n条件要写成\"AI 自己的输出能证明\"的形式\n何时用哪种循环模式\n有明确终态的实质性工作（迁移、重构、实现功能）\n→ /goal\n持续性监控和巡检（CI 状态、PR 审查、性能回归）\n→ /loop\n跨会话的长期定期任务（每日构建检查、每周代码审查汇总）\n→ Automations\n需要多角色协作的复杂任务（规划+执行+评审）\n→ Team 模式 + /goal\n八、总结\nLoop Engineering 的核心不是某个具体工具，而是一种\n系统设计思维\n：把 AI 当作循环中的执行者，你设计循环的规则、验证标准和状态管理。CodeBuddy 提供了完整的工具链来实现这一范式：\n/goal\n是 Loop 的心跳——条件驱动，自动循环\n/loop\n是 Loop 的时钟——时间驱动，定期触发\nSkills\n是 Loop 的知识——固化经验，避免冷启动\nMCP\n是 Loop 的触手——连接真实工具链\nTeam 模式\n是 Loop 的分身——对抗验证，多角色协作\nRules + Memory\n是 Loop 的记忆——状态外置，断点续跑\n从\"一问一答\"到\"设定目标、自动循环\"，这是 AI 辅助开发从工具到伙伴的质变。而 Loop Engineering 的实践者，正是这一质变的设计师。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

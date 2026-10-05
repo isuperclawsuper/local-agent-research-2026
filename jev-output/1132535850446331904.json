@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1132535850446331904",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Tair 联手 SGLang 共建 DeepSeekV4 分层缓存架构",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560437&idx=1&sn=c67264f9a52d40a160a703be91e54609",
+      "date": "2026-05-29T00:30:00.236Z",
+      "chars": 9626,
+      "text": "阿里云开发者\n2026-05-29 08:30\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\nDeepSeek V4 采用 CSA + HCA 的混合注意力结构：CSA 通过低倍率压缩与 sparse top-k 检索保留长程历史，HCA 通过高倍率压缩提供全局上下文补充，再由 SWA 负责最近窗口内的精细建模。\n这种设计降低了长上下文推理的计算和显存压力，但也对推理系统提出了一个根本性的挑战：同一个 token 在不同 attention 路径里会对应完全不同的物理形态——最近窗口需要 raw KV，长历史被压缩成 C4 或 C128，C4 还要配合 indexer 做稀疏检索。如果继续把 KV Cache 当作一块连续 buffer 来管理，系统根本接不住这样的复杂度。\n阿里云 Tair KVCache 团队\n联合\nSGLang 社区\n，为 DeepSeek V4 构建了一套面向 Prefill 和 Decode 的分层缓存架构。实测在多轮对话场景下，\nPrefill 结合 HiCache 吞吐提升接近 3 倍；Decode 侧\n通过 HiSparse 分层 SparseAttention 机制，成功\n释放显存提升 5～10 倍 BatchSize。\n本文将沿着这条架构展开，并梳理 Shadow Radix、UnifiedRadixTree、HiCache 与 HiSparse 在其中的职责边界。\nTair KVCache 与 SGLang社区的这套方案，对 DeepSeek V4 的处理可以概括为如下链路：\nSGLang 提出了 Shadow Radix 提供统一的逻辑地址，让 prefix cache 和 scheduler 不直接感知 SWA、C4、C128 等物理细节。\nHiCache 和 HiSparse 分别服务 prefill 与 decode：\nHiCache 在存储层用GPU → Host → Storage 三级架构扩展前缀复用能力；\nHiSparse 在计算层用降低 C4 sparse attention 在 decode 阶段的 GPU 常驻 KV。\n下文将按这条边界展开：先聊聊 Shadow Radix，再讲述 P/D 分离下 HiCache 与 HiSparse 的功能，并且分别进入 V4 HiCache 和 V4 HiSparse 的实现讲解。\n1. Shadow Radix：\n一棵逻辑树对应五种物理形态\nDeepSeek V4 的 attention kvcache 由几类不同的数据路径组成。最近 128 个 token 走 sliding window attention，远处历史以 C4 或 C128 的压缩 KV 参与计算；C4 layer 还会通过 indexer 选出本步需要访问的 sparse kvcache\n图 1：DeepSeek V4 的每层 attention 同时面对最近窗口和压缩历史。图来自\nSGLang DeepSeek-V4 Day-0 blog。\nShadow Radix 的目标是让不同物理 pool 共用一套逻辑坐标。在 SGLang 里，radix tree 保存的是 full logical index。这个 index 会出现在\nreq.prefix_indices\n、\nreq_to_token_pool.req_to_token\n、\nForwardBatch.out_cache_loc\n等位置。\nfull logical index 不等同于某个物理 KV 地址。它更像一条稳定的 token 地址线：scheduler 用它描述 prefix 命中，request table 用它描述请求上下文，backend 再根据 layer 类型把它翻译到具体 pool。\nfull logical\nindex\n-> SWA\nindex\n最近窗口里的 raw KV\n-> C4 compressed\nindex\n4\n:\n1\n压缩后的历史 KV\n-> C128 compressed\nindex\n128\n:\n1\n压缩后的历史 KV\n-> C4 indexer\nindex\n稀疏检索用的量化 key\n-> compress\nstate\nring      继续压缩所需的 rolling\nstate\n图 2：Shadow Radix 使用一棵逻辑前缀树维护 full logical index，再由 backend 把同一段逻辑前缀投影到 SWA、C4、C128、indexer 和 state pools。\n几个投影规则需要分开看。SWA 依赖\nfull_to_swa_index_mapping\n, 通过 full logical indices 直接映射至 swa indices。C4 和 C128 的压缩位置可直接由 full logical indices 通过除法推算，例如\nraw_out_loc // 4\n或\nraw_out_loc // 128\n。compress state 先从 full index 翻译到 SWA index，再进入每个 SWA page 所属的 ring index：\nswa_page\n= swa_loc // swa_page_size\nstate_loc\n= swa_page * ring_size + (swa_loc % ring_size)\n图 3：官方 Shadow Radix storage layout。它强调的是同一份 logical slot 在多个物理 pool 中有不同投影，而不是让 radix tree 直接管理每个物理页。\n2. 分层缓存架构应对 P/D 不同的显存压力\n在 SGLang 的 P/D 分离部署中，Prefill Worker 和 Decode Worker 承担的压力不同。Prefill 侧的成本集中在长前缀计算上；Decode 侧的问题则更多来自长期 KV 常驻显存，显存被冷 KV 占住后，decode batch size 很难继续拉大。HiCache 和 HiSparse 都会引入 Host 分层，但它们分别对应这两个阶段的瓶颈。\n图 4：SGLang P/D 分离下的缓存边界。\nPrefill Worker 开启 HiCache，用 L2 Host 和 L3 Storage 扩展 prefix KV cache；Decode Worker 开启 HiSparse，只在 C4 sparse attention 的 miss token 上做增量 Host→GPU 加载。\n两者的差异可以直接放在一张表里：\n机制\n所在阶段\n管理对象\n主要数据路径\n目标\nV4 HiCache\nPrefill\nprefix KV cache\nGPU L1 ↔ Host L2 ↔ Storage L3\n扩大前缀 KV 的可复用空间，提高长前缀命中率\nV4 HiSparse\nDecode\nC4 sparse attention KV\nCPU C4 mirror ↔ GPU hot buffer\n减少 C4 compressed KV 在 GPU 上的常驻占用\nHiCache 依赖 UnifiedRadixTree 的 prefix match 语义。请求进入 prefill 时，scheduler 先匹配 full logical prefix；如果命中已经 offload 到 Host 或 Storage 的前缀，HiCache 会在 prefill 计算前把必要的 KV load back 到 GPU。\nHiSparse 不走这条 prefix match 路径。Decode 每一步，C4 indexer 会选出本步需要访问的 top-k compressed tokens。HiSparse 检查这些 token 是否已经在 GPU hot buffer 中，miss 的部分再从 CPU mirror 增量拷回 GPU。\n3. V4 HiCache：让 Prefill 的前缀缓存\n从 GPU 一路延伸到 Storage\nV4 HiCache 是 DeepSeek V4 在 prefill 阶段使用的分层 prefix cache。它把原本只能留在 GPU 的 prefix KV 扩展到 L2 Host 和 L3 Storage，并且要保证 Full、SWA 以及 DeepSeek V4 的 sidecar pools 一起移动。\n这部分实现直接基\n于\npython/sglang/srt/mem_cache/unified_radix_cache.py\n。\n3.1 UnifiedRadixTree——\n一套接口，多种 KV 形态\nUnifiedRadixTree 的定位是统一 SGLang 的 PrefixCache 实现。它对 scheduler 暴露的仍然是\nBasePrefixCache\n风格接口：\nmatch_prefix()\ncache_finished_re\nq()\ncache_unfinished_re\nq()\nevict()\ninit_load_back()\n变化发生在 tree 内部。传统 radix cache 的 node 主要保存一段 key 和一段 value；UnifiedRadixTree 的 node 额外保存\ncomponent_data\n。每个 component 可以独立维护自己的 device value、host value、lock ref、host lock ref 和元数据。\n当前主要 component 包括：\nFullComponent\n：管理基础 full logical value，也是大多数 prefix hit 的主坐标。\nSWAComponent\n：管理 sliding window KV，处理 SWA tombstone、full-to-SWA 翻译和窗口内恢复。\nMambaComponent\n：管理 Mamba state，处理状态类 cache 的 copy-on-write 语义。\n图 5：UnifiedRadixTree 的可插拔缓存架构。\nScheduler 只调用统一的 PrefixCache API；模型差异通过 Full、SWA、Mamba 等 component 注入。DeepSeek V4 使用\nFULL + SWA\n作为 tree component，C4、C128、indexer 和 compress state 作为 sidecar pools 跟随主 anchor offload/load-back。\nLRU 也按 component 拆开。Full、SWA、Mamba 可以有不同的驱逐优先级和锁范围；HiCache 打开后，还会有对应的 host LRU。这样主树只负责 radix 匹配、节点 split、insert、lock/refcount 和组件编排，具体的释放、恢复、备份逻辑交给 component hook。\n对 DeepSeek V4 来说，UnifiedRadixTree 只需要\nFULL + SWA\n两个 tree component。C4、C128、C4 indexer 和各类 compress state 不直接参与 prefix tree 匹配，它们作为 sidecar pools 挂在 Full 或 SWA 下面，在 offload/load-back 时跟随主 pool 一起搬运。\n3.2 DeepSeek V4 如何基于\nUnifiedRadixTree 实现多 Pool 的 Offload 管理\n图 6：DeepSeek V4 HiCache Sider pools 跟随 anchor pool offload\nV4 HiCache 的初始化路径如下：\nUnifiedRadixCache.init_hicache()\n->\nattach_hybrid_pool_to_unified_cache()\n->\nbuild_deepseek_v4_hicache_stack()\n->\nHostPoolGroup + HybridCacheController\nbuild_deepseek_v4_hicache_stack()\n会为 DeepSeek V4 构造一组 host pools。基本结构是用 Full 和 SWA 作为 anchor，再把其他物理 pool 作为 sidecar 挂上去。\nFULL anchor:\nKV\nC4 compressed KV\nC4 indexer KV\nC128 compressed KV\nSWA anchor:\nSWA KV\nC4 compress\nstate\nC4 indexer compress\nstate\nC128 compress\nstate\nUnifiedRadixTree 不需要理解每个 sidecar pool 的物理 layout。它只构造\nPoolTransfer\n：主 pool 要搬哪些 indices，sidecar pool 应该从哪个 anchor 推导 indices。数据移动由\nHybridCacheController\n负责，包括 host buffer 分配、device buffer 分配、D2H backup、H2D load-back，以及 L3 Storage 的 batch get/set。\n回到 prefill 请求路径，V4 HiCache 的流程是：\nprefill request\n->\nmatch_prefix(full logical tokens)\n->\ndevice hit: 直接复用 GPU prefix\n->\nhost hit: init_load_back(best_match_node)\n->\nFull/SWA + sidecar pools H2D load-back\n->\nbackend 根据 full indices 翻译 SWA/C4/C128/state\n->\nprefill 计算剩余未命中 token\nL3 Storage 的位置也在这条链路里。Host L2 是更近的层；当前缀被写入 storage backend 后，后续请求可以通过 prefetch 把可能命中的 prefix 先拉回 Host，再由 load-back 恢复到 GPU。Mooncake 和 HF3FS 这类 backend 负责 Storage I/O，UnifiedRadixTree 仍然只维护 prefix match 和 node residency。\n3.3 HiCache 实践——多轮对话吞吐提升3倍\nHiCache 为 DeepSeek V4 提供了更大的 KVCache 存储空间，尤其适合多轮对话中大量复用历史前缀的场景。以下图中的 Multiturn 数据集为例，开启 L2 HiCache 后，相比 L1 Only，系统在保持较高前缀命中率和较低 TTFT 的同时，将 Input Throughput 提升到接近 3 倍。\n图 7：Multi-turn Benchmark结果\n4. V4 HiSparse：\nDecode 阶段不再为冷 KV 买单\nHiSparse 是 decode 阶段的 sparse attention 分层方案。它和 HiCache 使用的词汇有重叠，比如 Host、GPU、load，但它们处理的问题不同。HiSparse 不依赖 UnifiedRadixTree 的 prefix hit，也不会通过\nbest_match_node\n做 prefix load-back。\n4.1 HiSparse——\nGPU 只留 hot buffer，miss 了再去拿\nSparse attention 的前提是：每一步只读取少量 KV。如果完整 KV 仍然常驻 GPU，那么计算变稀疏了，显存占用却没有同步下降。HiSparse 的设计就是把完整 KV mirror 放到 CPU pinned memory，在 GPU 上只保留一个较小的 hot buffer。\nDecode 每步执行时，indexer 先给出本步需要访问的 top-k token。HiSparse kernel 随后检查这些 token 是否已经在 GPU hot buffer 中：\nhit：直接读取 resident slot；\nmiss：从 CPU host pool 拷到可驱逐的 GPU slot，并更新请求自己的 page table 或 slot table。\n图 8: GPU 只保留小 hot buffer(4k/8k)，CPU host pool 保存完整 KV mirror；miss 时再 swap-in。这是 decode-time sparse loading，不是 prefill prefix cache。\n4.2 DeepSeekV4 + HiSparse 设计\nDeepSeek V4 中，HiSparse 主要作用在 C4 compressed KV 上。SWA 只覆盖最近窗口，常驻 GPU 的成本相对可控；C128 仍按 dense history 读取；真正会随长上下文持续膨胀的是 C4 compressed history。因此，V4 HiSparse 的缓存布局可以概括为：\nSWA: 留在 GPU，小而热\nC128: 留在 GPU，dense 读取\nC4: CPU full mirror + GPU hot buffer\nC4 indexer / state: 按各自语义管理\n在 P/D 分离部署中，Prefill 侧仍按 DeepSeek V4 的正常路径生成各类 KV。传到 Decode 侧时，C4 compressed KV 进入 Decode Host mirror，作为完整历史的 CPU 备份；SWA、C128、indexer 和 state 则进入 Decode GPU。这样 Decode Worker 不再为全部 C4 历史预留显存，只保留一个可替换的 C4 hot buffer。\n图 9：DeepSeek V4 + HiSparse 的 P/D 传输与 decode 流程。\nP 端将 C4 compressed KV 直接传到 Decode Host mirror，其他 V4 KV 进入 Decode GPU；D 端每步执行 C4 top-k、HiSparse swap-in 和 C4 sparse attention forward，并在生成新的 C4 token 后按需 D2H backup。\n进入 decode 后，流程收敛成一个很短的循环。第一步，C4 indexer 根据当前 query 选出本步需要访问的 top-k compressed token position。第二步，\nHiSparseCoordinator.swap_in_selected_pages\n检查这些 token 是否已经在 C4 hot buffer 中：命中时直接返回 GPU slot，未命中时从 Host mirror 拷入可驱逐 slot，并更新 LRU 与 token-to-slot 映射。第三步，DeepSeek V4 backend 用新的 device slot 覆盖\nc4_sparse_page_indices\n，C4 sparse attention 只读取已经 resident 的 GPU KV。生成新 token 后，如果落在 C4 压缩边界上，再把对应 KV backup 到 Host mirror，保证 CPU 侧始终保有完整 C4 历史。\n4.3 HiSparse 实践——\n显存节省转化为吞吐收益\nHiSparse 的收益随并发和上下文长度变化明显。并发升高后，GPU 侧常驻 KV 的节省开始转化为大 Batch 高吞吐收益。\n图 10：peak throughput for DeepSeek-V4-Flash on 2xB200, 200K-input / 20K-output, swa_full_tokens_ratio=0.001\n另一个需要关注的指标是 miss count。hot buffer 太小或 LRU 策略不合适时，每步 top-k 会产生更多 host miss，导致 H2D 传输成为瓶颈。 我们为每个 Req 在 Device 侧维护了 4K LRU Buffer，可显著降低每步 topk 的 miss tokens\n图 11：hot buffer 大小和 LRU 策略会直接影响 miss count。miss 不是系统噪声，而是 HiSparse 性能模型里必须单独管理的成本。\n5. 总结\n总的来说，DeepSeek V4 的分层缓存可以从三个层次理解：\n第一层是 Shadow Radix，解决\"怎么描述\"的问题。它把 prefix cache 统一在 full logical index 上，让 scheduler 和 radix tree 不需要直接管理 SWA、C4、C128、indexer 和 state pools。\n第二层是 V4 HiCache，解决\"Prefill 放不下\"的问题。它基于 UnifiedRadixTree，把 Full/SWA 作为 prefix tree component，再通过 SidecarPool 把 DeepSeek V4 的多类物理 pool 一起 offload、load-back 和 prefetch。它服务 prefill，目标是提高长前缀 KV 的复用能力。\n第三层是 V4 HiSparse，解决\"Decode 占太满\"的问题。它服务 decode，只针对 C4 sparse attention 做分层加载。CPU 保存完整 C4 mirror，GPU 只维护 per-request hot buffer，本步 top-k miss 才增量加载到 GPU。\n这套架构在Prefill 侧为多轮对话的 Input Throughput 提升接近\n3 倍\n，长前缀命中率和 TTFT 均保持在健康水位；在Decode 侧，HiSparse 在 2×B200、200K 输入的场景下，通过释放 C4 冷 KV 的显存占用，将 peak throughput 显著拉高——并发越大，收益越明显。\n如果你正在部署 DeepSeek V4 的长上下文推理服务，尤其是面临多轮对话前缀复用或大并发 decode 的场景，欢迎尝试 SGLang + Tair KVCache 的组合。\n参考资料\nSGLang DeepSeek-V4 Day-0 blog:\nhttps://www.lmsys.org/blog/2026-04-25-deepseek-v4/\nSGLang HiSparse blog:\nhttps://www.lmsys.org/blog/2026-04-10-sglang-hisparse/\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.68,
+        "transfer_agent": 0.31,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.32,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.22,
+        "2": 0.55,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.16,
+      "probabilities": {
+        "0": 0.93,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.07,
+      "probabilities": {
+        "0": 0.97,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.55,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.16,
+        "3": 0.11,
+        "4": 0.73,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.25,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.06,
+        "4": 0.64,
+        "5": 0.09
+      }
+    },
+    "anti_hype": {
+      "score": 1.88,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.21,
+        "2": 0.29,
+        "3": 0.35,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7169,
+    "outputTokens": 173,
+    "totalTokens": 7342
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.6,
+        "relevance": 0.55,
+        "grounding": 0.9,
+        "decision_action": 0.96,
+        "evidence": 0.7,
+        "actionability": 0.38,
+        "anti_hype": 0.24
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179832454,
+                "endTime": 1791179832652,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000301098",
+      "marketCost": "0.000301098",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000301098",
+      "inferenceCost": "0.000301098",
+      "inputInferenceCost": "0.000301098",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6F3PV84SA1PHNJDRYGXY"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:12 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::dhbpf-1791179832422-fa77cb8c0b19"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.68,
+            "transfer_agent": 0.31,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.32,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.22,
+            "2": 0.55,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.16,
+          "probabilities": {
+            "0": 0.93,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.07,
+          "probabilities": {
+            "0": 0.97,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.55,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.16,
+            "3": 0.11,
+            "4": 0.73,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.25,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.06,
+            "4": 0.64,
+            "5": 0.09
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.88,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.21,
+            "2": 0.29,
+            "3": 0.35,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7169,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.6,
+            "relevance": 0.55,
+            "grounding": 0.9,
+            "decision_action": 0.96,
+            "evidence": 0.7,
+            "actionability": 0.38,
+            "anti_hype": 0.24
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179832454,
+                    "endTime": 1791179832652,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000301098",
+          "marketCost": "0.000301098",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000301098",
+          "inferenceCost": "0.000301098",
+          "inputInferenceCost": "0.000301098",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6F3PV84SA1PHNJDRYGXY"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:11.885Z"
+  }
+}

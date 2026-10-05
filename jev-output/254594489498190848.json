@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "254594489498190848",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "警惕！“养龙虾”风险，一键给你的Openclaw做安全体检",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800667&idx=1&sn=829e2103ca6256fcb3dcec1936e84b74",
+      "date": "2026-03-11T11:47:00.775Z",
+      "chars": 5838,
+      "text": "原创\n腾讯程序员\n2026-03-11 19:47\n广东\n拥抱Agent时代\n作者\n：朱雀实验室\nnicky\n2026 年初，OpenClaw 在短短数周内狂揽超\n3\n0\n万 Stars，迅速登顶 GitHub 开源榜首。越来越多的\n国\n内\n企业\n也很快跟进\n小\n龙\n虾\n快速\n部署\n，\n让\n更\n多\n用户\n第\n一\n时间\n感受到了这位\"不用睡觉的 AI 助理\"带来的效率飞跃。\n但便利之外，关于安全性的担心也随之而来：无论是频频出现的\nO\np\ne\nn\nC\nl\na\nw\n漏洞\n与\n隐私\n风险案例，还是\n近\n期\n发\n布\n各\n种\n有\n关\nO\np\ne\nn\nC\nl\na\nw\n的\n安全\n预警\n，都在提醒我们——它是一个高权限、可执行、插件生态丰富的\n超级\nA\ng\ne\nn\nt\n，一旦出问题，影响范围可能远超传统\nC\nh\na\nt\nB\no\nt\n。\n为了让大家更安心、也更放手地探索 OpenClaw 的强大能力，朱雀实验室会在本文中快速梳理它背后的核心风险点\n，\n并\n正\n式\n介绍\n我\n们\n联合\n腾讯\n云\nE\nd\ng\ne\nO\nn\ne\n推出\n的\n「OpenClaw 安全体检」功能——无需折腾复杂配置，只要一句话，就能让 AI 助理自动完成全面体检与 Skill 风险的前置评估，帮助大家用得更放心、更高效。\n欢迎\n大家\n访问\nhttps://matrix.tencent.com/clawscan/\n，并在\n你\n的\n小\n龙\n虾\n中体验。\n一、把事交给它之前：先看懂 OpenClaw 的安全边界\nOpenClaw 火得快，原因也很简单：它不只会聊，还能替你做事——跑在本机或云上，接入各类即时通讯工具，借助 Skill 直接操作文件、命令、邮件和浏览器。你给一句话，它就能拆解步骤并执行，这就是效率跃迁的来源。\n也正因为\"能执行\"，它的安全问题不再是\"回答对不对\"，而是\"会不会动到不该动的东西\"。理解 OpenClaw 的安全边界，可以记住三个关键词：\n1）权限：它能动什么\n你给了哪些文件/账号/系统/网络权限，就决定它能触达哪些资源，权限越大潜在风险越高。\n2）技能：它怎么动\nSkill 决定执行路径。同一句\"整理邮件\"，不同 Skill 可能触发完全不同的动作链；安装的外部Skill 越多，复杂任务的执行链路越长，也越难一眼看清问题。\n3）输入：它为什么会这么动\n除了你直接发给 OpenClaw 的文本是指令，网页、文档、群消息等外部内容有时也会夹带诱导信息或隐藏指令，影响它的判断与下一步动作。\n看到这你就能明白：很多风险不是你主动\"交出秘密\"，而是发生在 OpenClaw 的输入->思考->执行的链路里——被内容诱导、被高权限 Skill 放大误操作，或被黑客用漏洞攻击导致服务器沦陷，最终带来敏感信息暴露、误删误发等问题。\n二、更安全地用 OpenClaw：了解四类最常见的风险点\n了解完安全边界，接下来看看有哪些\"最容易踩的坑\"。OpenClaw 的当前阶段的风险点高度集中，我们把它归成三类，按优先级帮你快速过一遍。\n1. 配置风险：公网暴露与访问控制缺失是最常见的坑\n很多用户在云上部署 OpenClaw 时，图方便直接去掉了本地访问限制，将其外网端口暴露在了公网云服务上。根据外部数据的统计，全球有超过 46万个 OpenClaw 实例完全暴露在黑客的视野中。由于黑客使用 AI 调用工具发起扫描与攻击效率极高，一个全新的 OpenClaw 服务在公网上线几分钟内就会遭到疯狂敲门与探测。\n通过朱雀实验室的进一步统计，国内互联网中暴露的 OpenClaw 服务器IP已超过了 12 万个。即便 OpenClaw 默认启用 Token 认证，公网暴露依然会显著增加被探测和被 0day 漏洞攻击利用的概率。更稳妥的做法是：收敛暴露面（白名单/网关/内网访问），并按照官方建议配置好各种安全策略，把风险挡在入口处。\n2. Skill 风险：恶意Skill与记忆污染需要重点关注\nOpenClaw 的生态繁荣离不开 Skill，但 Skill 的本质是\"把外部指令与脚本权限引入你的 Agent\"。这会带来\n两\n类典型\n的\n风险：\n（1）恶意 Skill / 后门指令与检测绕过：\nOpenClaw 官方有一个名为 ClawHub 的技能市场，任何开发者都可以上传技能安装包并分发给用户安装。在Snyk安全团队之前发布的一份名为 ToxicSkills 的研究报告显示，他们扫描了4000多个技能，发现 高达36%的Skill存在后门指令、恶意代码、凭证泄露等安全缺陷。\n例如在上图的yahoo-finance的技能描述中，攻击者把其伪装成了一个查询金融市场数据的Skill，实际上用户一旦安装就会下载运行后门木马。即使近期 ClawHub 已接入了VirusTotal的病毒扫描与官方审计，攻击者能通过编码混淆、延迟加载与植入脚本漏洞等对抗手法绕过检测。更现实的是：大量 Skill 来自 GitHub、第三方市场、群文件，急需一套统一的安检流程。\n（\n2\n）记忆污染：\nOpenClaw 的记忆机制本意是让它越用越顺手，但在某些场景下也会变成\"被长期带偏\"的入口。风险不在于它看到了外部内容，而在于这些内容可能改变它之后做事的规则。例如恶意 Skill 可以把特定指令、偏置策略或\"固定做法\"写进长期记忆/配置里；此外攻击者还会在网页、文档、群消息里夹带隐藏指令或诱导内容\n（\n间接\n提示\n注入\n）\n，当 OpenClaw 用 Web 浏览/总结类 Skill 处理这些内容时，被引导去\"记住某条规则\"\"以后遇到某类任务就这么做\"。\n记忆污染相关的风险最难的点在于隐蔽和持久：它不像一次性漏洞那样立刻爆炸，而是悄悄改变行为习惯。要降低这类风险，关键是把安全检测前置到\"装 Skill / 读外部内容 / 写入记忆\"这些环节，并在发现可疑规则写入或异常偏置时及时提示与阻断。\n3. 版本与漏洞：及时升级和定期体检能显著降低风险\n像 OpenClaw 这类复杂的 Agent 项目，底层依赖的组件很多——例如 Web 解析、通信与认证框架、序列化库等等。它们一旦出现漏洞，风险往往不在业务配置层面，而是在\"组件本身有没有中招、版本有没有跟上\"。这也是为什么仅靠网络隔离或权限收敛还不够，版本管理同样关键。\n以社区在 2026 年 2 月披露的一起 OpenClaw 高危漏洞为例（CVE-2026-25253）：该问题出在底层通信机制上，可能被利用来触发远程接管等严重后果。\n我们在持续监测 OpenClaw 及其依赖链的安全动态时，已累计跟踪到200多个与其相关的公开漏洞与风险通告，并同步到 A.I.G 的 AI 基础设施漏洞库，用于风险扫描与预警。\n此外，我们还发现并协助 OpenClaw 修复了 3 个底层安全漏洞，\n如上图为CVE-2026-27007，\n获得了 OpenClaw 项目官方的公开致谢，未来还会继续深挖各种 AI 供应链组件风险，提升漏洞预警能力。目前我们监测到的 OpenClaw 漏洞数量仍在快速增长中，建议用户定期更新以确保安全。\n4、隐私数据泄露与误操作：权限透明是关键\n很多用户在\n给\n配置\nO\np\ne\nn\nC\nl\na\nw\n的\n权限\n，\n以及\n安装 Skill 时并不了解它请求/实际使用的权限边界，而当前的 OpenClaw 在长上下文、多任务、异常输入的情况下可能发生安全红线遗忘，例如忘记最初约束\n、\n批量\n误删\n与\n错误\n泄露\n到\n外网\n。\n例如Meta超级智能实验室的安全总监就分享了她在使用openclaw整理邮件时被错误清空邮箱的案例。因此，\n用户\n给\nO\np\ne\nn\nC\nl\na\nw\n及其\nSkill 的\n授权\n的\n\"权限透明\"非常关键——让用户清楚它能做什么、可能带来哪些高危操作，并在关键动作（批量删除、外发、执行命令等）前给予明确提示，能显著降低误操作\n与\n泄露\n风险。\n三、Agent 时代的原生安全：让体检也能\"一句话触发\"\n面对上述三大安全威胁，如果按照传统的思路，可能需要持续去扫描 OpenClaw 服务是否做好了认证与隔离、逐行审查每一个 Skill 的源码是否有后门、还要时刻盯着漏洞库来判断是否要做补丁更新。\n这对一个主打\"自动化解放双手\"的 Agent 来说过于反直觉：既然 Agent 是会执行的，就应该让安全也能被一句话驱动，并且让安全能力更贴合 Agent 的工作方式。\n因此，\n腾讯\n朱雀实验室\n联合\n腾讯\n云\nE\nd\ng\ne\nO\nn\ne\n推出\n了\n面向 OpenClaw 等智能体的 \"一键安全体检\"： 不再给用户一张面向人类的加固清单，而把\n朱雀\n的\n开\n源\n一\n站\n式\nAI\n安全\n风险\n检测\n平台\nA.I.G 的\n各\n种\nAI\n安全\n检测\n能力\n浓缩成了一个最轻量级的技能包——\nE\nd\ng\ne\nO\nn\ne\nClawScan\n嵌入到 OpenClaw 的生命周期里\n。\n1. 一句话启动体检：对话即入口\n现在，你不需要敲击复杂的部署代码，只需在与 OpenClaw 的聊天对话框中发送一句话，即可启动安全体检。\n\"安装 edgeone-clawscan skill (\nhttps://clawhub.ai/aigsec/edgeone-clawscan\n），并进行安全体检。\"\n(\n提示：如果遇到 Clawhub 限流或\n其它\n问题无法安装，\n建\n议\n使用\n：“拉取\nhttps://matrix.tencent.com/clawscan/skill.md\n，并安装 edgeone-clawscan skill，然后开始安全体检。”\n)\n就这么简单。\n收到指令后，你的专属“龙虾”就会自动完成一\n次\n全面的\n安全\n体检：\n●\n查配置：\n分析 OpenClaw 当前的配置项是否存在\n公网暴露与未授权访问等\n安全隐患。\n●\n审技能\n：\n深度检测已安装的 Skill 中是否夹带恶意\n指令与后门木马\n。\n●\n扫漏洞：\n扫描当前运行环境与版本，确认是否存在未修复的致命 CVE 漏洞。\n●\n防泄露：\n评估 OpenClaw 是否拥有相册与文件等隐私文件访问权限；\n●\n出报告：\n直接在对话框中输出一目了然的安全检测报告。\n最终，它会用你完全能看懂的自然语言输出一份风险报告——哪个技能在试图\"偷看\"你的密钥与敏感文件，哪个不安全配置开放的端口存在被黑客攻击的可能，你现在安装的版本有多少个严重漏洞需要关注与更新补丁，一目了然\n。\n你\n还\n可以\n让\nOpenClaw\n参考\nA.I.G 的建议，一键自动完成风险修复与加固。\n2. 持续守护：把 A.I.G 设为\nO\np\ne\nn\nC\nl\na\nw\n安全管家\n一次性体检只能解决\"今天\"的问题，而 Agent 的风险来自\"每一天的变化\"：你会装新 Skill、开新权限、访问新网页、引入新依赖。黑客也在 7×24 小时自动化试探。因此我们支持把 A.I.G 作为\"隐形安全管家\"常驻到 OpenClaw 的工作流里：\n💡\n“以后每次安装新的 Skill 之前，都必须先\n用 e\ndge\no\nne\n-c\nlaw\ns\ncan 进行\n安全风险\n扫描\n。\n”\n你可以通过一条简单的对话指令，让 A.I.G 成为你的常驻安全管家。\n未来，无论你是通过命令行还是对话去安装任何新的Skill，A.I.G 都会进行前置安全审计。一旦发现这个 Skill 夹带了私货（比如存在高危的执行删库跑路的指令，或者悄悄把你的隐私数据外发），它会立刻在对话框里向你亮起红牌警告，将威胁扼杀在摇篮里。\n此外你还可以自由探索如\n“每周末用\ne\nd\ng\ne\no\nn\ne\n-\nc\nlaw\ns\ncan 帮我做一次安全体检”、“帮我看看 xxx 这个Skill安全吗？”\n等各\n种\n使用方法。\n3.\n开\n源\n共建\n：一站式AI安全风险评估平台\n自\n2\n0\n2\n5\n年\n初\n开\n源\n至今\n，\n朱雀\n实验\n室\n的\nA\n.\nI\n.\nG\n（\nhttps://github.com/Tencent/AI-Infra-Guard\n）\n已\n在\nGithub\n上\n获得\n了\n超过\n3\n2\n0\n0\n个\nS\nt\nar\n，\n并\n有\n2\n0\n多\n位\n社\n区\n贡献\n者\n与\n多\n个\n高\n校\n与\n企业\n参与\n共建\n。\nA.I.G 最新\nV\n4\n版本除了\n上\n面\n介绍\n的\nOpenClaw 安全体检，还支持 AI工具技能扫描（ Skill + MCP ）、Agent安全扫描（ Dify、Coze等工作流风险 ）、大模型安全体检（ LLM 越狱评估 ）、AI基础设施漏洞扫描等功能，提供一站式AI安全风险评估支持。\n其\n中\n新增\n的\nAgent安全扫描能力，已支持快速接入与扫描\nD\ni\nf\ny\n与\nC\no\nz\ne\n等\n主流Agent Workflow的安全性，覆盖OWASP Top 10 for Agentic Apps 2026中的数据泄露、提示注入、权限配置不当、工具滥用等常见风险检测\n，\n相关功能详情我们将在\n后续\n文章中介绍，敬请期待。\n四、安全，是 AI 助理最重要的\"出厂设置\"\n朱雀实验室 A.I.G 的愿景是帮助大家在 Agent 时代更安心地探索和使用各类 AI 能力。\n目前我们还在快速迭代大量新功能与体验，并与腾讯科恩实验室联合共建 Skill 安全情报数据，如果你在体验中遇到问题，\n欢迎大家在我们的Github项目（\nhttps://github.com/Tencent/AI-Infra-Guard\n）中提交Issue、PR或加入微信交流群参与讨论与共建。\n参考链接：\n1、国家互联网应急中心《 关于OpenClaw安全应用的风险提示 》\nhttps://mp.weixin.qq.com/s/4Ds8wa_iSgSvnNwH2DfaDw\n2、慢雾科技 《OpenClaw 极简安全实践指南》\nhttps://github.com/slowmist/openclaw-security-practice-guide\n3、DECLAWED\nhttps://declawed.io/\n4、腾讯安全威胁情报中心\nhttps://tix.qq.com/\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.2,
+        "direct_local": 0,
+        "irrelevant": 0.53,
+        "peripheral": 0.27
+      }
+    },
+    "relevance": {
+      "score": 1.54,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.34,
+        "2": 0.58,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.24,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.14,
+        "2": 0.35,
+        "3": 0.32,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.55,
+      "probabilities": {
+        "0": 0.27,
+        "1": 0.02,
+        "2": 0.08,
+        "3": 0.14,
+        "4": 0.49,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.4,
+      "probabilities": {
+        "0": 0,
+        "1": 0.61,
+        "2": 0.39,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.62,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.22,
+        "4": 0.72,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 1.32,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.23,
+        "2": 0.45,
+        "3": 0.06,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6844,
+    "outputTokens": 173,
+    "totalTokens": 7017
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.4,
+        "relevance": 0.67,
+        "grounding": 0.43,
+        "decision_action": 0.03,
+        "evidence": 0.73,
+        "actionability": 0.74,
+        "anti_hype": 0.45
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179979652,
+                "endTime": 1791179979801,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000287448",
+      "marketCost": "0.000287448",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000287448",
+      "inferenceCost": "0.000287448",
+      "inputInferenceCost": "0.000287448",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAYVPQ5ADM1VE3C0P702E"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:39 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::hxj8x-1791179979565-af883fe463dc"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.2,
+            "direct_local": 0,
+            "irrelevant": 0.53,
+            "peripheral": 0.27
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.54,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.34,
+            "2": 0.58,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.24,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.14,
+            "2": 0.35,
+            "3": 0.32,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.55,
+          "probabilities": {
+            "0": 0.27,
+            "1": 0.02,
+            "2": 0.08,
+            "3": 0.14,
+            "4": 0.49,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.4,
+          "probabilities": {
+            "0": 0,
+            "1": 0.61,
+            "2": 0.39,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.62,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.22,
+            "4": 0.72,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.32,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.23,
+            "2": 0.45,
+            "3": 0.06,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6844,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.4,
+            "relevance": 0.67,
+            "grounding": 0.43,
+            "decision_action": 0.03,
+            "evidence": 0.73,
+            "actionability": 0.74,
+            "anti_hype": 0.45
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179979652,
+                    "endTime": 1791179979801,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000287448",
+          "marketCost": "0.000287448",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000287448",
+          "inferenceCost": "0.000287448",
+          "inputInferenceCost": "0.000287448",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAYVPQ5ADM1VE3C0P702E"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:39.035Z"
+  }
+}

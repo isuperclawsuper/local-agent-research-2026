@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "等等。\n常见场景对比：\n场景\n服务端 Agent（传统）\nClaw Agent（本地）\n\"帮我修复这个 bug\"\n\"你需要在第 15 行改成...\" → 用户手动改\n直接编辑文件 → 运行测试 → 确认修复\n\"帮我部署到测试环境\"\n\"执行以下命令:...\" → 用户复制粘贴\n直接执行 docker build → push → deploy\n\"帮我创建一个 PR\"\n\"去 GitHub 创建 PR，标题是...\" → 用户操作\ngit add → commit → push → gh pr create\n\"帮我查个 bug 原因\"\n\"可能是XX问题\" → 用户自己去看日志\ngrep 日志 → 读代码 → 定位根因 → 给出结论\n关键差异在于，\nClaw Agent 消除了\"告诉用户怎么做\"和\"用户实际执行\"之间的断层——它\n直接动手做，形成完整的\"决策-执行-验证\"闭环\n。\n发展至今，好像已经很完备了，\n实际 agent 没有跑出一个很划时代的范式\n，大家还在探索阶段，未来会持续发展。\n回顾整条技术线，本质上是在解决三个递进的问题：\n1.LLM 知道什么\n（知识 → 记忆 + RAG 扩展）\n2.LLM 能做什么\n（能力 → function call + MCP + skill）\n3.LLM 怎么做得好\n（质量 → agent loop + multi agent + harness）\n这三层问题不是一次性解决的，而是随着实践不断暴露出新的痛点，再催生出新的方案。下面进入实践部分，看看这些理论在项目中是怎么落地的。\n二、Agent 实践篇\n01 项目总览\n本项目定位为一个云端通用agent，用于处理用户的日常问题，后续用户沉淀mcp和skill后可以慢慢加入进来，让agent的能力越来越完善，逐渐可以解决更多问题。\n整个agent的架构设计如下所示，流程较为简单，核心是一个loop，loop循环内会调用底层能力，这里特别注意：\n能力层需要尽可能抽象，对编排层暴露尽可能少的接口，让agent的loop流程尽量保持简洁，提高后续持续迭代的可维护性。\n02 核心 Loop 设计\n核心方案：ReAct 主循环（按需可plan） + 六重保障（预算/压缩/重试/修复/中断/防抖）。\n在进入代码之前，先用一张图理解整个循环的数据流和保障机制的介入时机：\n┌─────────────────────────────────────────────────────────────────────────┐\n│                    Agent Loop 完整生命周期                                 │\n│                                                                         │\n│  用户请求                                                                │\n│     │                                                                   │\n│     ▼                                                                   │\n│  ┌─────────────────────────────────────────────────────────────────┐    │\n│  │ 预算检查 (IterationBudget)                                      │    │\n│  │ 当前迭代 < 最大迭代?                                             │    │\n│  │\nNO\n→ 生成工作摘要 → 优雅退出                                  │    │\n│  │\nYES\n↓                                                        │    │\n│  ├─────────────────────────────────────────────────────────────────┤    │\n│  │ 中断检查                                                        │    │\n│  │ 用户请求取消?                                                    │    │\n│  │\nYES\n→ 保存状态 → 优雅退出                                    │    │\n│  │\nNO\n↓                                                        │    │\n│  ├─────────────────────────────────────────────────────────────────┤    │\n│  │ 上下文压缩检查 (ContextCompressor)                               │    │\n│  │ token 数 >=\n75\n% 窗口?                                           │    │\n│  │\nYES\n→ 执行压缩(三步策略) → 注入 Todo 状态                     │    │\n│  │\nNO\n↓                                                        │    │\n│  ├─────────────────────────────────────────────────────────────────┤    │\n│  │ 记忆预取                                                        │    │\n│  │ 提取用户最近 query → 预取记忆 → 注入 <memory-context> 围栏       │    │\n│  │    ↓                                                            │    │\n│  ├─────────────────────────────────────────────────────────────────┤    │\n│  │ ★ THINK: 调用 LLM                                               │    │\n│  │ _api_call_with_retry(messages, tools)                           │    │\n│  │                                                                 │    │\n│  │    成功 → 解析 response                                         │    │\n│  │    失败 → ErrorClassifier 分类:                                  │    │\n│  │           瞬态错误 → 指数退避+抖动重试                            │    │\n│  │           上下文溢出 → 触发压缩后重试                              │    │\n│  │           永久错误 → 报告用户 → 退出                              │    │\n│  │    ↓                                                            │    │\n│  ├─────────────────────────────────────────────────────────────────┤    │\n│  │ 空响应防护                                                      │    │\n│  │ content 和 tool_calls 都为空?                                   │    │\n│  │\nYES\n→ 计数器+\n1\n, 超过\n2\n次则终止                                 │    │\n│  │\nNO\n↓                                                        │    │\n│  ├─────────────────────────────────────────────────────────────────┤    │\n│  │ 分支判断: 有 tool_calls?                                         │    │\n│  │                                                                 │    │\n│  │\nYES\n: ★ ACT\nNO\n: ★ DONE           │    │\n│  │    │                                       │                    │    │\n│  │    ▼                                       ▼                    │    │\n│  │  ToolDispatcher                         输出最终回答             │    │\n│  │  • 工具名修复(模糊匹配)                  • 同步记忆              │    │\n│  │  • 参数 JSON 修复                        • 保存会话              │    │\n│  │  • 权限校验                              • 返回给用户            │    │\n│  │  • 执行工具                                                     │    │\n│  │  • 结果写入 messages                                            │    │\n│  │    │                                                            │    │\n│  │    └──────────── 回到循环顶部 ────────────────────┘              │    │\n│  └─────────────────────────────────────────────────────────────────┘    │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\n下面是\nagent/loop.py\n的核心精简代码，每一行都有注释说明其设计意图：\n# agent/loop.py 核心循环（简化版，展示完整保障机制）\nclass\nAgentLoop\n:\ndef\nrun\n(\nself, messages, tools\n) -> Generator:\nbudget = IterationBudget(\nself\n._max_iterations)\n# 保障①: 迭代预算\nwhile\nbudget.consume():\n# 保障②: 可中断\nif\nself\n._interrupt_requested:\nyield\n{\n\"type\"\n:\n\"interrupted\"\n}\nreturn\n# 保障③: 上下文压缩\nmessages =\nself\n._check_and_compress(messages)\n# 记忆预取注入\nprefetch_context =\nself\n._memory.prefetch_all(user_query)\n# ...注入 <memory-context> 围栏\n# THINK: 调用 LLM（保障④: 错误分类+重试）\nresponse =\nyield\nfrom\nself\n._api_call_with_retry(messages, tools)\n# 保障⑤: 空响应防护\nif\nnot\ncontent\nand\nnot\ntool_calls:\nconsecutive_empty +=\n1\nif\nconsecutive_empty >=\n2\n:\nyield\n{\n\"type\"\n:\n\"error\"\n,\n\"message\"\n:\n\"LLM 连续返回空响应\"\n}\nreturn\ncontinue\n# ACT: 执行工具调用（保障⑥: 名称/参数修复）\nif\ntool_calls:\nyield\nfrom\nself\n._dispatcher.execute_tool_calls(tool_calls, messages)\ncontinue\n# DONE: 无工具调用 → 最终回答\nyield\n{\n\"type\"\n:\n\"final_answer\"\n,\n\"content\"\n: content}\nreturn\n# 预算耗尽 → 自动生成工作摘要\nyield\n{\n\"type\"\n:\n\"budget_exhausted\"\n,\n\"summary\"\n:\nself\n._build_summary(messages)}\n保障及触发条件如下。\n保障\n模块\n触发条件\n行为\n代码位置\n① 迭代预算\nIterationBudget\n达到上限（默认90轮）\n生成工作摘要 → 优雅退出\nloop.py\n② 可中断\n_interrupt_requested\n外部线程设置标志\n保存记忆 → 立即退出\nloop.py\n③ 上下文压缩\nContextCompressor\ntoken ≥ 75% 窗口\n三步压缩 + 三级降级\ncontext_compressor.py\n④ 错误重试\nErrorClassifier\n+\njittered_backoff\nAPI 异常\n分类 → 重试/压缩/终止\nerror_classifier.py\n⑤ 空响应防护\n连续计数器\n连续2次空\n注入提示引导 → 超限终止\nloop.py\n⑥ 工具修复\nToolDispatcher\n工具名/参数错误\n模糊匹配",
+      "fulltext_obtained": true,
+      "chunk_index": 10,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.97,
+        "transfer_business": 0,
+        "direct_local": 0,
+        "irrelevant": 0.03,
+        "peripheral": 0
+      }
+    },
+    "relevance": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.14,
+        "2": 0.84,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.54,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.27,
+        "2": 0.45999999999999996,
+        "3": 0.09,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.89,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.15,
+        "4": 0.6,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.16,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.83,
+        "3": 0.16,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.62,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.16,
+        "4": 0.76,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.21,
+        "2": 0.64,
+        "3": 0.13,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.74,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6187,
+    "outputTokens": 172,
+    "totalTokens": 6359
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.95,
+        "relevance": 0.89,
+        "grounding": 0.53,
+        "decision_action": 0.26,
+        "evidence": 0.88,
+        "actionability": 0.74,
+        "anti_hype": 0.73
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180419790,
+                "endTime": 1791180419947,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000259854",
+      "marketCost": "0.000259854",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000259854",
+      "inferenceCost": "0.000259854",
+      "inputInferenceCost": "0.000259854",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARCNHT8BKXJ72H3M7KC1X"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:59 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::vcl2k-1791180419734-5dff1652a21b"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.97,
+            "transfer_business": 0,
+            "direct_local": 0,
+            "irrelevant": 0.03,
+            "peripheral": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.14,
+            "2": 0.84,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.54,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.27,
+            "2": 0.45999999999999996,
+            "3": 0.09,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.89,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.15,
+            "4": 0.6,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.16,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.83,
+            "3": 0.16,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.62,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.16,
+            "4": 0.76,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.21,
+            "2": 0.64,
+            "3": 0.13,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.74
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6187,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.95,
+            "relevance": 0.89,
+            "grounding": 0.53,
+            "decision_action": 0.26,
+            "evidence": 0.88,
+            "actionability": 0.74,
+            "anti_hype": 0.73
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180419790,
+                    "endTime": 1791180419947,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000259854",
+          "marketCost": "0.000259854",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000259854",
+          "inferenceCost": "0.000259854",
+          "inputInferenceCost": "0.000259854",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARCNHT8BKXJ72H3M7KC1X"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:59.175Z"
+  }
+}

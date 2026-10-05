@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1121026156301156352",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "真武M890 AI芯片首次亮相，构建Agentic算力芯底座",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509491&idx=1&sn=8e06097c0e673efab4b6c2886a7d4dcd",
+      "date": "2026-05-20T11:04:00.871Z",
+      "chars": 1491,
+      "text": "平头哥半导体\n2026-05-20 19:04\n浙江\n全场景训推一体AI芯片\n5月20日，在2026阿里云峰会上，\n阿里发布基于平头哥新一代AI芯片真武M890的128卡超节点服务器，搭载互联芯片ICN Switch 1.0\n，通信时延低至百纳秒级，可让128张AI芯片组成一台计算机，满足海量Agent并发推理和大模型训练需求。\n目前，该超节点服务器已上线阿里云百炼，支持Qwen、DeepSeek、Kimi等主流模型。\nAgent时代，算力集群需要承载成千上万个Agent同时运行，每个Agent在一次任务中可能连续发起数十次模型调用，这对通信时延和带宽有极高要求。磐久AL128超节点服务器基于自研AI芯片和互联芯片打造，通过单机柜128卡紧密耦合互联，P2P时延低于150ns，单柜带宽达到Pb/s级，可支海量Agent的并发请求。\n真武系列芯片是面向AI训练与推理的数据中心AI芯片，由平头哥自主设计研发，采用自研并行计算架构与片间互联技术，配合自研软件栈T-Head SAIL™，实现软硬结合，支持自研软件生态，同时兼容主流AI生态应用。\n首次亮相的真武M890\n采用自研并行计算架构，内置144GB显存，性能是真武810E的3倍，片间互联带宽达到800GB/s，芯片原生支持FP32到FP4等多种数据精度\n，\n可应用于高精度训练、低精度和超低精度推理的全场景，\n低精度推理场景下，不仅可以保证模型输出质量，还能显著降低单次推理的算力开销\n。\n平头哥互联芯片ICN Switch 1.0支持自研ICN互联总线协议和PCCL通信库\n，\n吞吐量达25.6Tbps，可支持真武M890的高效互联，提升AI集群的算力效率\n。\n真武M890搭配ICN Switch 1.0芯片，可实现64卡全带宽互联\n，\n显著提升大规模智算集群计算的效率与稳定性。基于平头哥自研T-Head SAIL软件栈的软硬协同\n，可最大程度释放芯片的算力\n。\nT-Head SAIL向下对接底层硬件算力、向上承接上层应用需求，软硬协同、端到端支撑用户自主业务快速落地。软件栈由以下三层架构组成：\n•\n接口层：\n提供统一的编程接口，全面兼容平头哥自研工具链及主流软件生态，屏蔽底层硬件差异，降低开发者接入门槛。\n•\nSDK层：\n具备完备的软件生态及开发工具链，赋能开发者与业务团队快速开展应用开发，实现从算法模型到硬件部署的高效流转。\n•\nOS层：\n通过KMD（内核驱动）与OS（操作系统）的深度结合，广泛兼容不同底层硬件平台与主流操作系统，通过系统级性能调优，确保全栈运行效率最大化。\n大会现场，\n平头哥首次公布真武系列AI芯片的规划，\n未来两年将陆续推出算力更强的真武V900、真武J900两代芯片\n，\n以满足Agent时代千行百业的AI算力需求。\n目前，\n真武系列芯片已累计出货56万片，服务了中国电信、中国一汽、浦发银行等20多个行业的400多家客户\n。\n随着Agent应用的爆发，AI的核心任务逐渐从纯对话转向任务执行，这不仅需要高AI算力支撑，其任务规划、状态管理、工具调用等环节极其依赖CPU，CPU成为影响Agent执行效率的关键部件。\n平头哥拥有自研的服务器CPU倚天系列，可与真武AI芯片高效协同，大幅提升AI推理效率，有效应对Agent高并发任务的负载压力。\n目前，\n平头哥已推出真武系列AI芯片、倚天系列Arm服务器CPU、磐脉系列智能网卡、镇岳系列存储主控芯片、ICN Switch互联芯片等数据中心核心芯片，实现算力、网力和存力的全栈自研\n。\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "irrelevant": 0.27,
+        "transfer_agent": 0.01,
+        "transfer_business": 0,
+        "peripheral": 0.72,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.33,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.51,
+        "2": 0.41,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.32,
+      "probabilities": {
+        "0": 0.69,
+        "1": 0.31,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.04,
+      "probabilities": {
+        "0": 0.98,
+        "1": 0.02,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.95,
+        "2": 0.02,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 0.65,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.39,
+        "2": 0.09,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.09,
+      "probabilities": {
+        "0": 0.93,
+        "1": 0.06,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.86,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3208,
+    "outputTokens": 174,
+    "totalTokens": 3382
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.66,
+        "relevance": 0.67,
+        "grounding": 0.79,
+        "decision_action": 0.97,
+        "evidence": 0.96,
+        "actionability": 0.56,
+        "anti_hype": 0.94
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179805552,
+                "endTime": 1791179805672,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000134736",
+      "marketCost": "0.000134736",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000134736",
+      "inferenceCost": "0.000134736",
+      "inputInferenceCost": "0.000134736",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5MTKNSTQRMD3Y9EWMS9N"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:45 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::sdwc9-1791179805515-ede593fc7814"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "irrelevant": 0.27,
+            "transfer_agent": 0.01,
+            "transfer_business": 0,
+            "peripheral": 0.72,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.33,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.51,
+            "2": 0.41,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.32,
+          "probabilities": {
+            "0": 0.69,
+            "1": 0.31,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.04,
+          "probabilities": {
+            "0": 0.98,
+            "1": 0.02,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.95,
+            "2": 0.02,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 0.65,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.39,
+            "2": 0.09,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.09,
+          "probabilities": {
+            "0": 0.93,
+            "1": 0.06,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.86
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3208,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.66,
+            "relevance": 0.67,
+            "grounding": 0.79,
+            "decision_action": 0.97,
+            "evidence": 0.96,
+            "actionability": 0.56,
+            "anti_hype": 0.94
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179805552,
+                    "endTime": 1791179805672,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000134736",
+          "marketCost": "0.000134736",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000134736",
+          "inferenceCost": "0.000134736",
+          "inputInferenceCost": "0.000134736",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5MTKNSTQRMD3Y9EWMS9N"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:44.903Z"
+  }
+}

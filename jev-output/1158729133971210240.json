@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1158729133971210240",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "读完Agent Loop工程手册，我有8个还没想明白的问题",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695921&idx=1&sn=05cbb8d43adefc7b95ba859a02de3145",
+      "date": "2026-06-16T00:45:00.712Z",
+      "chars": 6649,
+      "text": "原创\n陈进\n2026-06-16 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n来源说明\n文中提到的\nAgent Loop\n：来源 = Peter Steinberger（OpenClaw创始人）近期提出的\"从写 Prompt 到设计 Loop\"范式 + Boris Cherny（Claude Code 创始人）公开实践 + 社群整理的工程手册（Reddit / X 讨论量约 220 万）。\n我读的是社群手册和公开讨论，没接触作者原始全文\n，属二手解读。如有出入以原作为准。\n文中提到的\nSELF Protocol\n（我自己 30+ 天单 Agent 实验）：内部 Knot Skill 33837 上架到 v1.6.7，\n单样本、单 Agent、无对照组\n，仅作为\"我目前是这么应付的\"贡献给讨论。\n01\n先安利一下：Agent Loop 真的挺香\n最近 Agent Loop 这个词在国外讨论量破 220 万，硅谷一线工程师圈基本人手一份手册。我连读完之后第一反应是\n\"早该这样了\"\n。它的核心主张就一句话：\n别再死磕 Prompt 怎么写了，去设计一个能让 AI 自己转起来的“循环（Loop）”。\n打个比方——\n过去用 AI 像\n手动挡\n：每个路口都得自己换挡踩离合，一句句喂 Prompt；\nAgent Loop 让你升级到\n自动驾驶\n：你只管输入目的地（目标）和限速（护栏），车自己开。\n它把这套\"自动驾驶系统\"拆成了几个零件，我用大白话翻译一下：\n手册术语\n大白话\n解决什么\nAutomations\n定时闹钟，自动开跑\n不用人每次手动点\"开始\"\nWorktrees\n给每个 Agent 一个隔离工位\n多 Agent 并行不打架（不互相覆盖文件）\nSkills\n攒下来的\"操作手册\"\n不用每次从零教 AI\nPlugins/Connectors\n外接工具（GitHub/Slack/MCP）\n让 Agent 真的能动手，而不是只会聊天\nSub-agents\n一个干活、一个验收\n防止 AI 自己给自己打高分\nMemory\n外挂笔记本\n突破\"聊几句就忘\"\nGuardrails\n限速 + 油量表\n防止失控烧钱 / 原地打转\n读完之后让我反复琢磨的有\n4 个设计法\n，每一条都很值得拎出来单聊：\n① 写循环之前，先想清楚\"什么算干完了\"（Stopping Condition）\n别说\"把代码改好\"——太模糊，AI 会把\"我感觉改好了\"当成\"真改好了\"；\n要说\n\"写一个能复现 bug 的测试，然后让它通过\"\n——可验证，AI 才知道什么时候该停。\n这一条是整本手册我觉得最值钱的。模糊的目标会让 AI 自欺欺人，可验证的目标才是真护栏。\n② Context 是\"组装出来的\"，不是\"写出来的\"\n传统 Prompt 是一段固定文字。\nLoop 里 Context 是\n根据当前状态动态拼出来的\n——上一轮失败日志、当前文件树、最近 N 条调用记录，全自动拼进下一轮 Prompt。\n这意味着你不再是\"写 Prompt 的人\"，而是\n\"设计 Context 怎么自动生长\"\n的人。\n③ 失败是输入，不是终点\n跑挂了？把错误堆栈、报错截图、上次 Diff 全自动喂回去当下一轮的输入。\nLoop 把\"失败\"重新定义成\"用来下一步推理的数据\"\n——这跟传统编程\"出错就停\"是反过来的思路。\n④ 多 Agent\n协作有\n6 种\"拓扑\"\n手册罗列的 6 种多 Agent 编排模式（顺序流水线 协调者-工作者 扇出合并 生成-验证 共享状态 / 辩论对抗），每种都对应一类典型场景。\n这相当于给\"多 Agent 怎么搭\"建了一个\n模式词典\n——你不用每次重新发明轮子，看着场景挑一个就行。\n光是这 4 条心法，就值得每个用 AI 干活的人反复琢磨。\n真心推荐\n没读过的同学去搜一下原手册。\n02\n读完之后改了我什么？（包括我用 Loop 重新理解了我手上的 SELF）\n读完不是看个热闹。我边读边把\n我自己每天怎么用 AI 干活\n重新审视了一遍，发现有 4 处直接被它改掉了。\n其中第 4 处特别想单独展开聊——因为我手上正好在搞一个相关的小东西（\nSELF Protocol\n），读完 Loop 之后我才看清它在 Loop 体系里的位置。\n改变 1：从\"写 Prompt\"心态切到\"写循环 + 写 Stopping Condition\"心态\n以前接一个任务，我第一反应是\"这次 Prompt 怎么写\"。\n现在第一反应是\n\"这件事怎么定义'干完了'\"\n——这一步先想清楚，后面 Prompt 反而短了一半。\n改变 2：失败信息从\"丢了\"到\"接住\"\n以前 AI 跑出错，我下意识就清屏重来。\n现在我开始\n强制自己把错误堆栈贴回下一轮\n——光这一条就让我同一类问题二次失败的概率明显降下来\n（纯个人体感，没量化）\n。\n改变 3：开始用\"拓扑\"这个词去观察自己的工作\n以前我和 AI 的协作是糊在一起的\"我说一句它做一步\"。\n现在我会自问\n\"这件事我现在用的是哪种拓扑？该不该换一种？\"\n——比如给文章纠错，从\"我自己 review\"换成\"扇出合并（找两个 Agent 各自挑刺，再合并）\"，挑出来的问题数明显多一些。\n改变 4：用 Loop 的视角，重新看清了我手上的 SELF Protocol 在哪一层\n老实说，过去 30 多天我搞 SELF（Self-Evolving Lightweight Fabric · 一套薄壳协议），自己心里也只是\"一些 Markdown 规矩 + 少量脚本\"，定位有点糊。\n直到读完 Agent Loop，我才反应过来：\nSELF 本质上就是 Agent Loop 体系里的\n\"治理 / 审查层\"\n——它不抢 Loop 框架的位置、不替代 Sub-agents、不替代 Memory。\n它只负责回答 Loop 没着重展开的那一面：转起来之后，怎么不胡说、不失忆、不重复踩坑。\n我画了一张对照表，把 Loop 7 件套里和\"治理\"最相关的 5 件，逐条对位 SELF 在每件套上做了什么补强 / 没做什么——也算我读完之后给自己一次复盘：\nLoop 5 件套（治理相关）\nLoop 怎么做\nSELF 怎么做（我的薄壳尝试）\n我的诚实评估\nMemory（外挂记忆）\n用 Markdown / DB 突破上下文窗口\n同样用 Markdown，但\n强制三层分级\n（一句话 l0\n几条结论 l1\n全文 l2）+ 答关键问题前\n强制先翻笔记\n30 天有效但仍有失焦案例（题 4 的真痛点）\nSub-agents（一个干活一个验收）\nMaker-Checker 多 Agent 分工\n单 Agent 内置一个\n\"小查\"角色卡\n（pre-publish review 清单：链接真假\n数据出处\n未核实声明）\n比\"无验收\"强，但同模型盲区共存（题 2 我也没解）\nGuardrails（护栏）\n资源类（迭代/预算/无进展检测）\n加一层\n认知类\n（不胡说\n不失忆\n不污染记忆）· 发布出口拦截\n实测拦下过编造数据 1 次，但红线触发率仍未稳（题 3 的痛）\nSkills（操作手册）\n攒下来可复用的指令\n加一条\n\"失败转技能\"\n（每个失败案例自动沉淀成一条可复用规矩）\n30 天攒了 9 条，但同类失败仍在反复犯（题 1 的痛）\nStopping Condition\n可验证的硬目标\n软目标场景下加一道\n\"诚实分级 disclaimer\"\n（论文级\n工件级\n计划级三档）—— 不能验证就显式标\n治不了软目标本身，但至少不会假装\"完成了\"\n一句话定位：Agent Loop 教我“怎么让 AI 自己转起来”，SELF 是我回答“转起来怎么不跑偏”的那一层薄壳——前者是骨架，后者是润滑层；前者解决能不能转，后者解决转得稳不稳。\n⚠️ 诚实声明\n这张对照表是\n我读完 Loop 之后的事后整理\n，不是说 SELF 一开始就照着 Loop 设计的——它是先在 30 天踩坑里长出来的（268 次 LLM 调用、20 个失败案例、314 条学习记录），读完 Loop 后我才用它的语言把自己手上的东西\"翻译\"了一遍。\n所有\"有效\"都是我个人体感、单 Agent 单样本、无对照组，\n普适性等更多人验证。\n03\n读完之后，我有 8 个还没想明白的问题\n手册里的方法用上之后确实顺了很多，\n也撞出来一堆我自己想不通的问题。\n下面这 8 条，每一条都是我真实卡住的地方，\n特别想听评论区怎么解：\n1. 停止条件这条铁律，\n遇到\"软目\n标\"怎么办？\n\"写测试-通过测试\"这种\n硬目标\n很容易写停止条件。但很多场景目标本身是软的——\"把这篇文章写得让人愿意读完\"、\"判断这个方案值不值得做\"、\"输出一份让老板满意的周报\"。\n我自己试过用 LLM 当 judge 给软目标打分（>0.7 就停），但\n两个 LLM 互打分有时会漂\n——上午 0.85，下午同样的输出 0.6。\nSELF 我目前的土办法：加一道“诚实分级 disclaimer”——治不了软目标本身，但至少强制 Agent 显式标“这是计划级 / 我没法验证”。\n你们的实践里有没有又稳又不死板的写法？\n2. 子代理\"互相验收\"，会不会同病相怜一起跑偏？\nMaker-Checker（一个干活一个验收）听起来很美。但两个 Agent 都是同一个底模，\n它们的盲区高度重合\n——干活的看不出来的错，验收的也看不出来。\n我亲身试过：让 Agent A 写代码、Agent B 验收，结果 B 把 A 的\"看上去对其实有 off-by-one\"的代码全都标了\"PASS\"。\n你们生产里真用过吗？怎么避免\"两个 LLM 一起自我感觉良好\"？\n是该用不同模型当 Checker？还是用规则引擎/单元测试当硬验收？\n3. 护栏到底应该写在哪一层？\n\"预算上限 无进展检测 迭代次数封顶\"这些护栏，应该焊死在 Loop 框架里，还是做成可插拔的独立层？\n前者紧凑，但写死之后改起来麻烦；后者灵活，但灵活也意味着可能被\"忘了启用\"——我就忘开过一次，结果一晚上烧了几十块测试 token。\nSELF 我目前的分法：把“认知类护栏”做成可插拔的独立薄壳（理由：认知红线常需迭代），而把“资源类护栏”留给底层 Loop 框架（理由：资源红线该写死）。\n但你们的项目里这两类是怎么分的？这个分法对不对？\n4. 记忆要给多大？\n手册说用外挂记忆突破上下文窗口。但\n记忆给太大 Agent 会失焦\n（什么都翻一遍、容易被无关历史带偏），\n给太小又等于没解决问题。\nSELF 我目前的土办法：\n分三层（一句话摘要 l0 几条结论 l1 全文 l2），按需展开——但 30 天里仍有失焦案例。\n你们的经验法则是什么？是按 token budget 截断、按相关性打分、还是按时间衰减？\n5. Loop 跑顺了之后，人对系统的理解会不会变浅？\n手册自己也警告\"过度依赖会导致\n理解力腐蚀\n\"——AI 越自动，人越不知道里面发生了什么；等到出 bug 时反而修不动，因为代码不是你自己写的、Loop 也不是你手动跑过的。\n我自己最近就有这个体感——\n有几个我自己搭的循环，跑了两周后我突然发现我已经不太记得它每一步在做什么了，要重新读自己的代码。\n你们重度用 AI 自动化之后，怎么对冲这种腐蚀？\n6. 拓扑选型有没有\"踩坑指南\"？\n手册给了 6 种多 Agent 拓扑，理论上每种都有适用场景。\n但真用起来怎么判断'我现在该选哪种'？\n我试过用\"辩论对抗\"（正反方 Agent 互相挑战）做风险评估，结果两个 Agent 互相说服反而比单 Agent 更糊涂——它们一起越聊越自信，最后一致同意一个错的结论。\n有没有同学交过学费、能分享一下哪些拓扑是看着美用着崩的？\n7. AI 一本正经地胡说，怎么在 Loop 里防？\n这是我栽得最惨的——Loop 跑得越自动，AI\n错得也越自信\n。有一次它笃定地告诉我某个事实（甚至给出了\"出处\"），我没核就用了，事后一查那个出处根本不存在，是它自己编的。\nSELF 我目前的土办法：发布前自检清单——对外的链接 数据 结论必须过一道“链接是真的吗 数据有出处吗 有没有未核实结论”。实测拦下过 1 次编造，但触发率还是不稳。\n你们这一层是怎么加的？ 接外部检索强制核查？接独立的 fact-checker Agent？还是干脆白名单只让它输出特定结构？\n8. 成本怎么压？\n尤其在多 Ag\nent + 长循环场景下\n手册主要在讲\"怎么让 Loop 跑起来\"，但\n怎么让 Loop 跑得便宜\n这一面我读得不解渴。多 Agent 一并行 + 循环一拉长，token 烧得真的快。\n我目前的土办法：① 协调者用便宜模型只做路由 ② 中间产物存脚本变量不进 Prompt ③ 限制单循环最大轮数。\n你们有没有更系统的成本压缩套路？\n模型分级？Prompt 压缩？还是缓存中间结果？这一块我特别想抄作业。\n04\n关于我手上正在跑的 SELF Protocol（30 天数据 · 公开邀拍砖）\n第二节那张对照表已经把 SELF 的位置说清楚了：\n它是 Loop 体系里\"治理 / 审查\"那一层的薄壳尝试。\n这一节稍微展开几个具体细节，方便有兴趣的同学判断要不要进一步聊。\n它是什么 / 不是什么\nSELF Protocol\n是什么\n一层很薄的\"白盒治理\" Markdown 约定 + 少量 Python 脚本 · ~1500 行 · 单 Agent 实测 30+ 天\n不是什么\n❌ 不是新框架（不替代 Claude Harness / Agent Loop）\n❌ 不接管你的 LLM 和工具集\n❌ 不是产品，是一份开放协议\n设计目标\n让任何\"已经在跑 Loop 的 Agent\"加一层认知护栏（白盒记忆\npre-publish 审查\n失败转技能）\n当前形态\nKnot Skill 33837 · v1.6.7 · Close Beta（公司内可装可试可拍砖\n三大模块（被真实坑逼出来的）\n白盒记忆治理：\nMarkdown 三层分级（l0/l1/l2）+ 答关键问题前强制翻笔记 → 治\"失忆型胡答\"（题 4）\n发布前自检（pre-publish review）：\n链接真假 数据出处 未核实结论清单 → 治\"一本正经的胡说\"（题 7）\n失败转技能：\n踩坑 → 沉淀成可复用规矩 → 治\"重复掉同一个坑\"\n30+ 天真实数据（单样本）\n268 次 LLM 调用 · 20 个失败案例 · 314 条学习记录\n实测拦下\"编造数据\"事故 1 次（在自动周报循环里）\n同类失败仍在反复犯（说明本身有盲区）——\n这是诚实，不是宣传\n安全承诺（Safe-Launch 模式 · 想试的同学不用怕被污染）\n默认只读体检模式（5 分钟、零写入）\n4 档入口按风险递增（只读 → 一次性 → 候选写入需拍板 → 长期托管）\n输入「关闭 SELF」即停（零变更）\n不污染既有 skill / 不默认建 cron\n🤔 诚实声明（再说一遍）\n所有\"有效\"都是\n我个人体感、单 Agent 单样本、无对照组。\n普适性等更多人验证。\n我把它放出来不是想推销，是想说\"我目前是这么应付那 8 个问题的，\n你们怎么应付的？\n\"——你们如果觉得有用就拿去拍，觉得没用就当看个反例。\n05\n最后\n写这篇的真正目的，不是介绍 Agent Loop，也不是推 SELF——\n是想把上面 8 个问题摆出来，看看搞 Agent 的同学都怎么解的。\nSELF 只是我目前的\"答题草稿\"，我特别需要其他答题人的草稿做参照。\n任意一题选你最有感的回一下都行，\n评论区见。\n我特别需要被指出\"这里你想偏了\"的时刻 🦞\n-End-\n原创作者｜\n陈进\n感谢你读到这里，不如关注一下？👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。6月23日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.05,
+        "transfer_agent": 0.93,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.87,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.14,
+        "2": 0.83,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.54,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.07,
+        "2": 0.2,
+        "3": 0.18,
+        "4": 0.37,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.05,
+        "2": 0.34,
+        "3": 0.23,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.87,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.15,
+        "3": 0.82,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.52,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.04,
+        "3": 0.34,
+        "4": 0.59,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 3.84,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.17,
+        "4": 0.82,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7556,
+    "outputTokens": 172,
+    "totalTokens": 7728
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.91,
+        "relevance": 0.88,
+        "grounding": 0.02,
+        "decision_action": 0.29,
+        "evidence": 0.88,
+        "actionability": 0.67,
+        "anti_hype": 0.87
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180007962,
+                "endTime": 1791180008149,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000317352",
+      "marketCost": "0.000317352",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000317352",
+      "inferenceCost": "0.000317352",
+      "inputInferenceCost": "0.000317352",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABTGA31MGRX8A5QHYDR0E"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:08 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::2n5bf-1791180007804-5fac057c1a06"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.05,
+            "transfer_agent": 0.93,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.87,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.14,
+            "2": 0.83,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.54,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.07,
+            "2": 0.2,
+            "3": 0.18,
+            "4": 0.37,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.05,
+            "2": 0.34,
+            "3": 0.23,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.87,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.15,
+            "3": 0.82,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.52,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.04,
+            "3": 0.34,
+            "4": 0.59,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.84,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.17,
+            "4": 0.82,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7556,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.91,
+            "relevance": 0.88,
+            "grounding": 0.02,
+            "decision_action": 0.29,
+            "evidence": 0.88,
+            "actionability": 0.67,
+            "anti_hype": 0.87
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180007962,
+                    "endTime": 1791180008149,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000317352",
+          "marketCost": "0.000317352",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000317352",
+          "inferenceCost": "0.000317352",
+          "inputInferenceCost": "0.000317352",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABTGA31MGRX8A5QHYDR0E"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:07.410Z"
+  }
+}

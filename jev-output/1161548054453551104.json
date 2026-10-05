@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1161548054453551104",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "20年架构老兵的AI探索，让WorkBuddy帮你超越身边的人",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695957&idx=1&sn=9b0b6956f078f79196bd515d301d56ec",
+      "date": "2026-06-18T00:45:00.568Z",
+      "chars": 3156,
+      "text": "原创\n腾讯云开发者\n2026-06-18 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n李伟山是一位有着 20年从业经验的架构师，也是腾讯云架构师同盟的明星成员，此前曾在腾讯云开发者账号上分享了多篇 AI Agent爆款文章：\n一文讲透如何构建Harness——六大组件全解析\n从零设计生产级 Multi-Agent Harness：架构、评估、记忆、成本与 MCP 工具接入全拆解\n从Prompt、Context到Harness，工程的三次进化与终局之战\n现在，他的日常工作是设计toB智能体系统。每天花 40% 的时间写方案做架构，60% 的时间做需求调研和设计。\n我们了解到，在他的workflow里，WorkBuddy已经成为了一个核心节点，在一声声“很好用” “真的很好用”的夸赞中，我们对他进行了采访，看他是如何玩转WorkBuddy 的。\n01\n为什么一个架构师需\n要内容生产力？\n传统印象里的架构师，日常工作可能是画架构图、写技术方案、对接上下游规划整体工作，为什么他却在做教程和早报？\n因为 2026年，AI架构师的工作很大程度上被AI重塑了，写代码画架构图已经不是最燃眉之急的场景，更棘手的问题，往往来自于AI知识的快速迭代与范式更新。\n他的日常是这样的：\n团队里不断有人问\"这个新工具怎么用\"\n老板要他给全组做AI工具培训\n自己要跟踪行业动态，每天有几十篇论文和产品发布要看\n还得把这些信息整理成别人能看懂的东西\n以前他是怎么做的？\n自己写提示词，去各个网站收集信息，手动整理成文档或HTML页面，一个教程从调研到排版，少说一整天。\n直到有一天他发现，这些重复性的知识生产工作，完全可以让AI来做，前提是你得教会它要什么。\n02\n10分钟，17500字的教程\n这是他用WorkBuddy跑出的一套典型案例。\n需求：\n给团队做一份《Codex从入门到精通》教程，内容要全面、有深度、带配套图表。\n以前：\n自己查官方文档、看视频、整理笔记、写大纲、填内容、做排版。保守估计1-2天。\n现在：\n打开 WorkBuddy，召唤\"深度研究\"专家。\n一句话：\"帮我深度调研下 Codex 从入门到精通的教程。\"\nWorkBuddy自动做了什么：\n调出\"深度研究主理人\"专家，制定了完整的5阶段研究计划\n拉起\"课题研究员\"做初始调研，确定内容框架\n按照\"规划大纲 → 逐章研究 → 审稿 → 撰写 → 发布\"的流程逐步执行\n最终产出一份5章、17500+字、带配套流程图的完整HTML教程\n从提出需求到教程生成：整个过程不到10分钟。而且质量不是那种\n充斥着AI味儿\n的泛泛之谈。教程里有：\nCodex 工作流程图（从用户输入到代码生成的完整链路）\nSpec-kit 结构化开发工作流（/spec → /plan → /do 三阶段）\n双AI联动工作流（Claude Code + Codex 协同）\n每章都有实操案例和最佳实践\n关键不是 AI 能搜到这些信息，而是它知道我要的不是一篇博客，是一份可以直接给团队用的教程。因为我的知识库里已经告诉了它：我们内部培训的标准格式是什么样的。\n03\n每早 8点自动推送 AI早报\n他给 WorkBuddy 创建了一套自动化任务，每天投喂 AI领域的信息：\n每天早上自动调用 AI HOT 技能抓取当日AI领域资讯\n按5个固定板块分类：模型发布/更新、产品发布/更新、行业动态、论文研究、技巧与观点\n全局编号贯穿全文，方便快速定位\n自动生成一份完整的 HTML 页面，样式精美，带导航栏和卡片布局\n如果当日早8点前数据还没更新，自动回退到最近一期\n每天清晨，打开电脑就能看到一份整理好的AI行业全景报告。24条资讯，6大板块，全自动。\n以前是自己去刷各种网站——Twitter、Reddit、arXiv、各家产品官网。光收集信息就要小半个小时，更别说整理了。\n现在这件事的人工参与度：零。\n他把早报规则写得极其细致：\n每条资讯必须有来源标识（X/RSS/官网）\n每条摘要60字以内中文摘要\n时间必须转成北京时间ISO格式\n链接必须使用 target=\"_blank\" rel=\"noopener noreferrer\"\n所有样式写死在HTML里，禁止外部依赖\n你给它的规则越具体，它出活的质量就越稳定。我的早报已经跑了好几个月了，几乎不用人工干预。\n04\n三条 AI协作原则\n当我问他把 WB 用好的关键是什么时，他给了我三个很朴素但很实用的建议：\n原则一：知识库先行，别让AI直接开干\n新建任务的时候，先选对场景，然后在知识库里添加你业务的上下文。这样产出的质量会很高，不需要反复解释。\n翻译成人话：\n别每次都从一句空白提示词开始。先把你的业务背景、标准规范、常用模板喂进去。前期多花5分钟配置，后面省几十个小时\n。不然你就会陷入早期人类驯服 AI 的死循环中，然后……token就没了。\n原则二：\n用\n好 WorkBuddy 的\n专家模块，别什么都自己问\n不定期看看专家模块，总会发现不一样的东西。现在开放了自定义专家，可以把自己好的经验设置成专家来召唤，这样就不需要每次从头开始。\n他\n的做法是：把自己反复用的工作流固化成专家。下次同类需求来了，召唤一下就行，不用重新描述需求。\n原则三：给AI立\n规矩\n，规则越死出活越稳\n在Coding场景下，他给WorkBuddy 立了这些规矩：\n代码回答必须带文件路径\n不许自作主张改我的测试\n所有技术决策必须给理由\n在通用场景下，一套模糊的提示词下，AI也许能发挥很好，也许可能翻车，但在Coding场景下，翻车的代价往往很大。所以，这也是为什么Harness Engineering会越来越重要，也推荐各位去设立自己的规则，这样 AI才能更加满足你的需求。\n05\n写在最后\n当我们问到，除了WorkBuddy，你还有哪些 AI工具在重度使用时。他给的回答是Codex和Claude Code，为了满足他不同的工作场景需求。\n按他的实际分工：\nCodex / Claude Code：纯写代码。需要直接在代码库里操作的时候用它们\nWorkBuddy：一切\"需要理解我、记住我、帮我管理信息\"的事\n写代码是一个动作，但工程师的工作远不止写代码。\n调研、学习、总结、培训、信息整理、知识传播，这些占了他 60%以上的工作时间。而这些事情恰恰是需要上下文连续性和个性化理解的。\nWorkBuddy恰好知道这些，因为你已经教会他了。\n采访最后，我们问他：能否给 WorkBuddy 一句话评价？\n他说了一句很有意思的话：\n超越你身边的人，WB 绝对是一把利器。\n如果这波 AI浪潮终究会席卷所有人，就像那个经典的地狱笑话里说的，两个人在森林里被熊追赶，跑肯定是跑不过熊，但如果你能跑得比另一个人快，存活下来的可能性是不是更高？\n所以，用好WorkBuddy并不是用AI帮你偷懒，是让AI放大你的能力，帮你做到周围人做不到的事儿。\n而把 WorkBuddy 用好的方法其实很简单：\n把你的业务知识喂进去（花一次时间，省无数次重复）\n把常用工作流固化成专家（下次一键召唤）\n能自动化的就自动化（让AI替你值夜班）\n他只花了 4 个月就把自己变成了「一人 AI培训部门」，你也可以。\n欢迎评论区分享你的WorkBuddy实践\n，如果你有好用的工程师视角的体系方法论，请联系我们对你进行采访，你的经验将有机会发布在本公众号上，我们也将为你送出精美的\n腾讯周边礼品一份\n。\n-End-\n感谢你读到这里，不如关注一下？👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.14,
+        "direct_local": 0,
+        "peripheral": 0.08,
+        "transfer_business": 0,
+        "transfer_agent": 0.78
+      }
+    },
+    "relevance": {
+      "score": 1.69,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.25,
+        "2": 0.71,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.2,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.03,
+        "2": 0.05,
+        "3": 0.43,
+        "4": 0.45,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.77,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.34,
+        "2": 0.04,
+        "3": 0.1,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.94,
+      "probabilities": {
+        "0": 0,
+        "1": 0.08,
+        "2": 0.9,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.85,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.07,
+        "2": 0.19,
+        "3": 0.36,
+        "4": 0.33,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.98,
+      "probabilities": {
+        "0": 0.41000000000000003,
+        "1": 0.25,
+        "2": 0.32,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4688,
+    "outputTokens": 172,
+    "totalTokens": 4860
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.72,
+        "relevance": 0.79,
+        "grounding": 0.47,
+        "decision_action": 0.49,
+        "evidence": 0.92,
+        "actionability": 0.46,
+        "anti_hype": 0.35
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180007293,
+                "endTime": 1791180007448,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000196896",
+      "marketCost": "0.000196896",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000196896",
+      "inferenceCost": "0.000196896",
+      "inputInferenceCost": "0.000196896",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABSV6351QH2H6VE9ZNJZ7"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:07 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7v6mt-1791180007254-980ec23ee914"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.14,
+            "direct_local": 0,
+            "peripheral": 0.08,
+            "transfer_business": 0,
+            "transfer_agent": 0.78
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.69,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.25,
+            "2": 0.71,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.2,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.03,
+            "2": 0.05,
+            "3": 0.43,
+            "4": 0.45,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.77,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.34,
+            "2": 0.04,
+            "3": 0.1,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.94,
+          "probabilities": {
+            "0": 0,
+            "1": 0.08,
+            "2": 0.9,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.85,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.07,
+            "2": 0.19,
+            "3": 0.36,
+            "4": 0.33,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.98,
+          "probabilities": {
+            "0": 0.41000000000000003,
+            "1": 0.25,
+            "2": 0.32,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4688,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.72,
+            "relevance": 0.79,
+            "grounding": 0.47,
+            "decision_action": 0.49,
+            "evidence": 0.92,
+            "actionability": 0.46,
+            "anti_hype": 0.35
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180007293,
+                    "endTime": 1791180007448,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000196896",
+          "marketCost": "0.000196896",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000196896",
+          "inferenceCost": "0.000196896",
+          "inputInferenceCost": "0.000196896",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABSV6351QH2H6VE9ZNJZ7"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:06.681Z"
+  }
+}

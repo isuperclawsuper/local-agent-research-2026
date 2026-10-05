@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "251501506246719488",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Skills 真的可以帮我干活了：把工单分析变成一个可复用的 Skill",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558554&idx=1&sn=239e1d2c63c0a9a7eb0be1ced653db00",
+      "date": "2026-03-03T00:33:00.842Z",
+      "chars": 5001,
+      "text": "原创\n丹坤\n2026-03-03 08:33\n浙江\nAnthropic 刚推出\nSkills\n[1]\n时，我非常兴奋。官方的态度也很明确：\n不要再执着于开发复杂 Agent，而是把精力放在 Skills 上。\n但在认真研究了一圈官方和社区的\nSkills\n示例\n[2]\n后，我很快冷静下来——\n几乎没有一个 Skills 能直接在真实环境中跑起来。\n当时我的判断是：这就是个玩具。\n直到最近，\nClaude Code\n2.1.3\n版本\n[3]\n发布，将 commands 和 skills 进行了合并，解决了之前触发困难等问题。\n特别是最近我关注的一位 AI 博主在介绍他的新项目时提到： 他最近最主要的工作就是帮企业把\n日常 SOP 沉淀成 Skills\n，一个 Skills 的收费高达\n五位数\n。\n让我意识到 Skills 价值已经逐步在被证明。\n一句话总结我接下来做的事情：\n我把一个需要登录内网、手动筛选、导出、分析的工单 SOP， 固化成了一个\n可复用、易扩展、稳定运行的 Skills\n。\n问题背景：为什么工单分析一直是痛点\n最近一段时间，团队的产品的升级工单量明显上涨。 问题不在于\"工单多\"，而在于\n工单分析的复杂度\n。\n工单分析有三个非常典型、也非常现实的特征：\n1.\n数据在内网\n必须登录，且有严格的权限控制，无法通过公开 API 拉取。\n2.\n高频重复\n每个产品、每个版本、每周都要重新做一遍。\n3.\n每个角色的关注点不一样\n研发关心具体的技术问题，PD 关心提炼共性问题，产品化机会，TL 关心跨产品的横向对比。同一份数据，不同人要看不同的切面。\n这恰好是 AI 非常擅长的事情，但前提是：\n你得先把数据稳定地拿出来，还要能灵活适配不同角色的分析诉求。\n注意：以下方案只讨论技术实现，不涉及任何数据安全或权限绕过问题。\n传统思路的局限\n无论是 Skills、Agent 还是 Workflow，本质都一样：\n拿到数据 → 交给模型分析\n。\n真正的难点只有一个：\n如何在企业内网、强登录态的情况下，稳定、低成本地获取数据。\n最自然的想法，是让 AI 帮我\"操作浏览器\"。但我很快发现这条路走不通。\nPlaywright / playwright-mcp 的问题\n我最早尝试的是\nplaywright-mcp\n[4]\n，但很快遇到了几个致命问题：\n1.\nToken 消耗极高\nPlaywright 需要生成大量页面 snapshot。\n2.\n稳定性差\n页面中大量动态 DOM（例如时间选择器），元素定位极不稳定。\nagent-browser：\n更适合 Agent，但问题依旧存在\n最近 vercel-labs 推出的\nagent-browser\n[5]\n很火，5 天 7k star。 Rust CLI + 原生二进制，对 snapshot 做了大量优化，\nToken 消耗最多可降低 93%\n。\nagent-browser\nopen\n<url>\nagent-browser snapshot -i\nagent-browser click\n@e1\nagent-browser fill\n@e2\n\"text\"\nagent-browser\nclose\n但在实际使用中，我发现一个问题始终无法绕开：\n只要是\"让 AI 去操作页面\"，行为就一定不稳定。\n退回到\"固定 selector + 脚本\"的方式当然稳定，但代价是：\n编写成本高\nUI 变更后维护成本极高\nconst\nbrowser =\nawait\nchromium.launch();\nconst\npage =\nawait\nbrowser.newPage();\nawait\npage.\ngoto\n(\n'\nhttp://example.com\n'\n);\nawait\npage.locator(\n'.submit'\n).click();\nawait\nbrowser.close();\n于是问题变成了：\n能不能既稳定，又不需要维护复杂 UI 脚本？\n关键观察：SPA 页面本质上只是接口渲染\n现在绝大多数企业后台系统都是 SPA 架构。 页面上的数据，本质都来自接口请求。\n比如一次简单的搜索操作，就会触发 Ajax 请求：\n我们做一个实验\n1. 在 Chrome DevTools 的 Network 面板中，对某个请求执行\nCopy as fetch\n2. 将代码粘贴到 Console 中直接执行\nNetwork 面板可以看到，请求被\n完整复现\n：\n关键结论\n只要页面能正常渲染，就意味着对应接口在当前登录态下一定可复现。\n与其让 AI 学会\"怎么点页面\"， 不如让 AI\n直接执行已经被验证过的请求\n。\n新的解决方案：\nCopy as fetch + agent-browser eval\n最终方案非常克制，也非常工程化：\n1. 使用\nagent-browser open\n打开目标页面 （登录问题由用户自行解决）；\n2. 在 DevTools Network 面板中\nCopy as fetch\n，提前构造请求脚本；\n3. 使用\nagent-browser eval\n执行该脚本，获取 JSON 数据；\n4. 将数据交给大模型分析；\n流程图\nSkills 实现\n细节请查看源码\norder-analysis-skill\n[6]\n目录结构\norder\n-\nanalysis\n-\nskill\n/\n├── scripts\n/\n│   ├──\ncheck\n-\nagent\n-\nbrowser.sh\n│   ├──\ncheck\n-\ncdp.sh\n│   └──\norder\n-\nanalysis.js\n└── SKILL.md\nSkills 的关键价值\n这个 Skills 的核心不在于\"分析工单\"， 而在于：\n它把\"人类在 DevTools 里的隐性操作\"， 变成了 AI 可以稳定执行的显性 SOP。\nSKILL.md 核心内容\n---\nname: order-analysis\ndescription: 分析产品升级工单，识别共性问题并提出产品改进建议。通过 agent-browser工具 访问工单系统，提取工单数据，进行问题分类、趋势分析和根因定位，输出改进方案。\n---\n## 核心工作流程\n### 步骤 1: 前置检查\n执行以下两个检查脚本，确保环境准备就绪：\n```bash\n# 检查 Chrome Debug 模式\nsh scripts/check-cdp.sh\n# 检查 agent-browser 工具\nsh scripts/check-agent-browser.sh\n打开工单系统页面\nagent\n-browser --cdp\n9222\nopen\n\"\nhttps://inner.example.com\n\"\n准备输出目录\n创建以时间命名的输出目录（格式：YYYYMMDD-HHMMSS）：\nOUTPUT_DIR=\n\".output/order-analysis/\n$(\ndate +%Y%m\n%d\n-%H%M\n%S\n)\"\nmkdir\n-p\n\"\n$OUTPUT_DIR\n\"\n获取订单数据\n在浏览器中打开页面后，\n在同一 shell 会话中\n执行以下命令获取订单的所有JSON数据：\nagent-browser --cdp 9222\neval\n\"\n$(cat scripts/order-analysis.js)\n\"\n>\n\"\n$OUTPUT_DIR\n/order.json\"\n分析数据\n针对获取的订单数据，识别共性问题并提出产品改进建议，并将分析结果保存到\n$OUTPUT_DI\nR/order_rep\nort.md\nagent-browser 使用方法\n使用\nagent-browser\n进行网页自动化操作。运行\nagent-browser --help\n查看所有命令。\n注意\n：\n所有\nagent-browser\n命令应加上 --cdp 9222 参数，例如\nagent-bro\nwser --\ncdp 9222 open\nhttps://www.baidu.com/\\\n用法:\n1.\nagent-browser --cdp 9222 open <url>\n- 访问指定页面\n2.\nagent-browser --cdp 9222 snapshot -i\n- 获取可交互元素及其引用 (@e1, @e2)\n3.\nagent-browser --cdp 9222 click @e1\n/\nfill @e2 \"text\"\n- 通过引用与页面元素交互\n4. 页面变化后重新执行 snapshot\n## 延伸思考：Skills vs Workflow\n正如[\n宝玉在他的文章\n](\nhttps://baoyu.io/blog/agent-skills-replace-workflow\n)中提到的：\\\n*\\*\n大部分 workflow 编排场景，都可以被 Agent + Skills 取代。\\\n*\\*\nWorkflow 很擅长 \"跑固定流程\"，有确定性——节点 A 执行完一定是节点 B。但它也有硬伤：\n*\n**不够灵活**\n：流程定死后，遇到输入变化就容易出错\n*\n**难以移植**\n：平台锁定效应明显，换个环境就得重来\n*\n**修改成本高**\n：改起来要小心翼翼怕影响其他节点\n而 Skills 以 Markdown 格式存在，意味着使用者只需要用自然语言进行简单修改，就能满足各个角色的不同诉求。\n### Skills 的灵活性优势\n**1. 自然语言编排**\n不需要拖拽节点，用自然语言描述流程。条件分支、并行执行、错误处理，都可以用自然语言描述，Agent 能理解。\n**2. 可持续进化**\n这是 Skills 相比 Workflow 最大的优势。发现提示词不够好？让 AI 帮你改。流程可以优化？随时调整。你的 Skills 会越用越好，而不是搭完就放在那儿吃灰。\n**3. 版本管理友好**\nSkills 是纯文本文件，可以用 Git 管理版本，可以代码审查，可以在不同机器间同步。\n### 不同数据源诉求\n比如我是负责\n`API 网关`\n的研发，我只对\n`API 网关`\n的工单感兴趣，对于其他的数据不关注，但是我的老板的视角可能不太一样，他需要看到每个产品的横向对比。关注的数据源就很不一样。\n只需要修改一行：\n```javascript\nconst productName = \"API 网关\";  // 改成其他产品名，或留空获取全部\n对于分析结果的不同诉求\n拿到数据后，不同角色对于数据的关注点不一样，比如我作为前端，更关注的是哪些工单是体验问题的；PD 更关注的是有哪些共性的问题，需要通过产品化来解决， 只需要修改 SKILL.md 中的分析提示词即可。\n总结\n通过这个 Skills，原本需要：\n打开内网系统\n多次筛选、导出\n人工分析\n现在变成了：\n1. 一条命令触发 Skills\n2. AI 自动完成数据采集与分析\n3. 输出结构化分析报告\nSkills 真正替换的不是\"工作\"，而是\n那些每次都要重新搭一遍的 SOP 脑力成本\n。\n源码地址：\norder-analysis-skill\nhttps://github.com/heimanba/order-analysis-skill\n[1]\nhttps://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview\n[2]\nhttps://github.com/anthropics/skills\n[3]\nhttps://github.com/anthropics/claude-code/releases/tag/v2.1.3\n[4]\nhttps://github.com/microsoft/playwright-mcp\n[5]\nhttps://github.com/vercel-labs/agent-browser\n[6]\nhttps://github.com/heimanba/order-analysis-skill\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.2,
+        "peripheral": 0.01,
+        "transfer_agent": 0.72,
+        "transfer_business": 0.07
+      }
+    },
+    "relevance": {
+      "score": 2.32,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.65,
+        "3": 0.34,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.75,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.21,
+        "4": 0.77,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 2.62,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.02,
+        "2": 0.29,
+        "3": 0.38,
+        "4": 0.22,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.91,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.09,
+        "3": 0.9,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.01,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.02,
+        "4": 0.92,
+        "5": 0.06
+      }
+    },
+    "anti_hype": {
+      "score": 3.75,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.25,
+        "4": 0.74,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5167,
+    "outputTokens": 172,
+    "totalTokens": 5339
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.93,
+        "anti_hype": 0.81,
+        "category": 0.65,
+        "decision_action": 0.46,
+        "evidence": 0.94,
+        "grounding": 0.83,
+        "relevance": 0.76
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "digitalocean",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179855381,
+                "endTime": 1791179855619,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000217014",
+      "marketCost": "0.000217014",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000217014",
+      "inferenceCost": "0.000217014",
+      "inputInferenceCost": "0.000217014",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A75G4VP6N90Y48GZ0A02Z"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:35 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::dxm4v-1791179855354-88b0f2f93464"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 4.01,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.02,
+            "4": 0.92,
+            "5": 0.06
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.75,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.25,
+            "4": 0.74,
+            "5": 0.01
+          }
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.2,
+            "peripheral": 0.01,
+            "transfer_agent": 0.72,
+            "transfer_business": 0.07
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.62,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.02,
+            "2": 0.29,
+            "3": 0.38,
+            "4": 0.22,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.91,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.09,
+            "3": 0.9,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.75,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.21,
+            "4": 0.77,
+            "5": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.32,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.65,
+            "3": 0.34,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5167,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.93,
+            "anti_hype": 0.81,
+            "category": 0.65,
+            "decision_action": 0.46,
+            "evidence": 0.94,
+            "grounding": 0.83,
+            "relevance": 0.76
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "digitalocean",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179855381,
+                    "endTime": 1791179855619,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000217014",
+          "marketCost": "0.000217014",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000217014",
+          "inferenceCost": "0.000217014",
+          "inputInferenceCost": "0.000217014",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A75G4VP6N90Y48GZ0A02Z"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:34.844Z"
+  }
+}

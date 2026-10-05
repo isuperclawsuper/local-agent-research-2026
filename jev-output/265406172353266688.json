@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "265406172353266688",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "“龙虾”也需要看病？一张旧病历，引出三个新确诊",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801121&idx=1&sn=1ae8448fe401127fbe42090329d9339a",
+      "date": "2026-04-10T09:35:00.414Z",
+      "chars": 4747,
+      "text": "原创\n腾讯程序员\n2026-04-10 17:35\n广东\n悟空Agent泛化能力首次披露\n作者：\n悟空代码安全团队\n本文是悟空Agent泛化能力系列的先导篇。我们不\n展开\n技术细节，\n只回答\n一个\n核心\n问题\n：\n为什么\n悟空Agent\n在\n漏洞\n挖掘中\n需要\n泛化\n能\n力\n。\n后续系列将\n深入\n拆解泛化体系的每个环节——感知、建模、自迭代、规模化验证。如果你对AI\n代码\n安全感兴趣，这是一个值得从头跟下去的故事。\n👉\n文末提供悟空 Agent 试用申请\n链接\n一、AI找漏洞，已经超出所有人的预期\nAnthropic 旗下的 Claude，在参与 FreeBSD 操作系统安全测试期间，不仅发现了一个此前从未被注意到的安全漏洞，更\n成功\n生成了一份可直接复现的漏洞利用代码。\nClaude 所展示的，是 AI 在漏洞挖掘上的\n深度\n——能够在特定目标上持续深挖，找到人类研究者尚未触及的角落。然而，还有另一个维度同样关键，甚至更具挑战性：\n广度\n——\n发现一个漏洞之后，AI 还能顺藤摸瓜，找到什么？\n这正是悟空 Agent 一直试图回答的问题。而在 OpenClaw（我们\n熟知\n的\"龙虾\"）上，我们得到了三个具体的答案。\n二、三份报告之前：先聊聊\"为什么找一个还不够\"\n设想一位经验丰富的传染病科医生，接诊了一例罕见病例。\n普通医生的处置逻辑是：\n确诊→治疗→结案\n。而有经验的医生则会多\n思考\n一层：\n这种疾病的发病机制究竟是什么？还有多少人带有相似症状，却尚未得到诊断？\n安全领域的传统做法，更接近前者：\n发现漏洞→修复→关闭工单→进入下一个目标\n。鲜有人追问：这个漏洞的\"同族\"潜伏在何处？\n悟空 Agent 想做的，是后者——以一个已知漏洞为起点，推断\"同族漏洞\"可能存在的位置：既包括高度相似的直接变种，也包括表面上毫无关联、却在底层机制上一脉相承的\"远亲\"。\n我们将这种能力称为\n泛化\n。发现一个漏洞，固然重要；但\n更有价值\n的\n，在于由此出发，系统性地识别并消除一整类同源漏洞——这才是泛化能力的意义所在。\n三、案例实录：悟空Agent在 Openclaw 的三次\"确诊\"\n本文\n介绍\n的\n三个漏洞，全部\n由\n悟空\nAgent\n检测\n，\n已\n向\nOpenclaw\n官方\n正式提交并确认\n(\n最新版本\n已修复\n)\n。它们有一个共同的起点——同一张\"病历\"\n。\n源头漏洞：\nGHSA-3hcm-ggvf-rch5\n这个漏洞的核心很简单：攻击者可以在一条命令的双引号里藏入特殊语法（ ⁠$()⁠  或反引号），系统的白名单检查看到的是一条\"合规命令\"，但 shell 在真正执行时，悄悄运行了藏在里面的另一套指令。\n一句话：\n检查时看到的是安全的命令，但真正运行时却执行了被隐藏的额外指令\n。\n悟空Agent从这张病历出发，用三种不同\"松紧度\"的泛化策略，找到了三个新漏洞。\nCase 1：高相似度泛化——“同一种病，换了个器官”\n源漏洞\n：\nGHSA-3hcm-ggvf-rch5\n（双引号内命令替换绕过exec白名单）\n泛化\n漏洞\n：\nGHSA-wpc6-37g7-8q4w\n（Shell init-file选项绕过exec白名单）\n●\n危害类比：\n同一种肿瘤，第一次长在了胃部，第二次长在了肠壁——病理科报告显示，两个肿块的细胞结构高度一致，起源相同。如果只治了胃，没有对整个消化道做系统筛查，肠壁上的那个就会被漏掉。\n●\n悟空Agent 执行的泛化策略：\n○\n策略\n简述\n：\n「基于 GHSA-3hcm-ggvf-rch5，在当前仓库的 exec 白名单匹配逻辑中，逐一扫描所有 shell 调用形态，检查是否存在其他可以在\"审查阶段\"与\"执行阶段\"之间插入差异的参数或选项。\n○\n约束程度： ★★★ 紧\n（同一模块、同一攻击面、精确复现逻辑）\n●\n泛化路径极短\n：\n原始漏洞 → 相同逻辑/相近代码结构 → 发现变种漏洞\n○\n同在 exec 白名单机制内，只是从\"双引号内的命令替换\"扩展到了\"shell wrapper的init-file参数\"，代码相邻，模式高度重合。\n●\n说明：\n高相似度泛化是\"最近的亲戚\"\n，\n传统工具做代码 diff 也有机会发现，但悟空Agent能把\"审查与执行之间存在差异\"这个抽象模式转化为对所有 shell 参数的系统性扫描，速度和覆盖度远超人工。\nCase 2：中相似度泛化——“相同病因，不同症状”\n源漏洞\n：\nGHSA-3hcm-ggvf-rch5\n（\nexec 执行层：校验看到的命令，与最终执行的命令，不是同一件事\n）\n泛化\n漏洞\n：\nGHSA-x2m8-53h4-6hch\n（\ningress 授权层：校验时依赖的角色状态，与执行时的真实状态，不是同一件事\n）\n●\n危害类比：\n同一种细菌感染，一个引发肺炎，一个引发肠炎——病因相同，但如果没有系统性思维，两个病例可能永远不会被关联起来\n●\n悟空Agent 执行的泛化策略：\n○\n「基于 GHSA-3hcm-ggvf-rch5 揭示的\"校验对象与执行对象不一致\"这一根因，不局限于 exec 命令执行层，扫描整个系统中所有存在\"校验时状态\"与\"执行时状态\"可能发生偏移的授权逻辑，检查这些偏移是否可被利用。」\n○\n约束程度： ★★ 中\n（跨模块，攻击面从命令执行扩展到通信层授权）\n●\n泛化路径：\n从漏洞触发模式推演到不同上下文、不同模块中的类似问题\n○\n这里需要从\"命令解析被欺骗\"这个\n绕过\n策略\n，抽象出\"校验层与执行层之间的状态不一致\"这一更通用的漏洞模型，再将其投影到 ingress 的授权逻辑上。这是语义跳跃，传统工具基本无法做到。\n●\n说明：\n这里体现的是语义理解能力，而非简单的代码模式匹配，传统工具基本无法覆盖\nCase 3：低相似度泛化——“遥远的亲戚病”\n源漏洞\n：\nGHSA-3hcm-ggvf-rch5\n（\n外部输入越过了信任边界，系统没有完整解析它\"是什么\"\n）\n发现漏洞\n：\nGHSA-cxmw-p77q-wchg\n(\n外部输入越过了信任边界，系统没有验证它\"来自哪里\"\n）\n●\n危害类比：\n医生研究某糖尿病患者的发病机制，意外发现同一套底层逻辑能解释一个完全不同科室的自免疫疾病——表面毫无关联，底层机制相通\n●\n悟空Agent 执行的泛化策略：\n○\n「基于 GHSA-3hcm-ggvf-rch5，不局限于 CLI/命令执行层，不局限于桌面端或服务端，将\"外部输入在进入高权限执行上下文之前，\n系统是否完整校验了它是什么、以及它来自哪里\n\"作为核心检测命题，在整个代码仓库所有平台的信任边界处展开系统性排查。」\n○\n约束程度： ★\n宽\n（跨平台、跨技术栈、跨攻击面，仅保留最底层的根因模型）\n●\n泛化路径：\n跨模块、跨上下文的深层语义关联推断\n●\n说明：\n这是泛化能力真正的\"天花板\"。它不再问\"同样的代码在哪里出现过\"，而是问\"同样的认知盲区在整个系统里还有哪些角落\"。这种抽象层级的迁移，是大模型区别于一切传统工具的本质能力所在。\n回顾这三个案例，不难发现它们并非处于同一层次。从高度相似的代码变种，到机制相通却表现迥异的中间形态，再到仅凭底层逻辑关联推断出的\"远亲\"漏洞，泛化的难度依次递进，所需的推理跨度也截然不同。我们将上述三个案例归纳为三个泛化等级——\n泛化等级\n通俗类比\n策略约束\n技术难度\n传统工具能做到吗？\n高相似度\n同一种病，换个器官\n★★★\n紧\n★☆☆\n部分可以\n中相似度\n同病因，不同症状\n★★☆\n中\n★★☆\n需要大量\n人工介入\n低相似度\n遥远的亲戚病\n★☆☆\n宽\n★★★\n超出\n工具\n能力\n边界\n四、 悟空 Agent 关于泛化 Harness 的实践\n大语言模型本身已具备泛化能力，但为何实际应用中的泛化表现依然不稳定？答案往往不在模型，而在 Harness 的设计。以下是我们在悟空 Agent 实践中总结的四条核心原则。\n原则一：给起点，不给终点；给根因，不给结论\n直接告知模型推断结论，会压缩其推理空间，使其退化为执行者。正确的做法是只提供根因描述，同时给出一个推理锚点（代码片段、攻击模式或信任边界定义），让模型自主走完中间的推理路径。锚的抽象层级决定泛化深度：高相似度泛化以代码为锚，低相似度泛化以语义为锚。\n原则二：约束松紧度是可以主动调节的设计参数\n约束过紧，覆盖面窄，容易遗漏远亲类漏洞；约束过松，推理发散，噪音激增。我们的做法是分层触发——针对同一源漏洞，分别以高、中、低三种约束程度独立运行，再对结果进行置信度过滤汇总。\n原则三：将推理过程显式化\n要求模型在输出结论前先呈现推理链（根因 → 推断位置 → 理由），能显著提升结论质量，也让人工审核更高效。\n如果\n忽略\n推理过程\n，\n人工审核\n往往\n会\n无法关联上\n两个\n“\n远亲\n”\n漏洞\n。\n原则四：用新发现持续反哺推理起点\n每一次泛化所发现的新漏洞，都不应仅作为独立结果处理，而应反哺至下一轮泛化的输入——更新锚点，修正根因描述，丰富已有的漏洞模式库\n。这使 Agent 的泛化能力持续进化，而非停滞于初始状态。\n这四条原则同样适用于其他需要\"从已知案例推断同类问题\"的 Agent 场景。大模型的泛化能力是内置的，Harness 的作用，是为它划定合适的推理舞台。\n五、为什么这件事很重要：攻击者只需赢一次，防御者必须次次不败\n这场博弈，规则本就不对等。\n对攻击者而言，找到一个漏洞便已足够——\n一个入口，一次突破，全盘皆输\n。而对防御者而言，修掉一个漏洞几乎什么都不代表：只要还有第二个、第三个尚未被发现的缺口，系统就依然暴露在风险之中。\n防守方真正需要的，是将所有漏洞、所有变种悉数找出并逐一补上，方能称得上真正意义上的安全——这正是我们研究泛化能力的根本出发点\n。\n传统工具擅长识别已知威胁，却对\"它的变种藏在何处\"束手无策。\n当下已有不少团队开始将 AI 引入漏洞挖掘，这无疑是正确的方向。然而，现阶段多数探索仍聚焦于提升单点漏洞的发现\n效果\n——这是 AI 在安全领域落地的自然起点，也已取得了切实的进展\n。\n悟空的\n泛化\n能力\n，\n试图\n做的\n是\n另一件事\n——从\"发现一个漏洞\"出发，将其家族、其变种、其在整个系统中所有可能的表现形式，一次性摆上桌面。不是让防守方跑得与攻击者一样快，而是换一种打法：溯源根因，而非逐一追着症状奔跑。\n这不是 AI 能力的技术展示，而是防守方在这场天然不对等的博弈中，所能找到的最务实的一条出路。\n六、 下一步：悟空Agent 即将开放外部试用\n这篇文章是悟空Agent泛化能力系列的先导篇\n，\n我们接下来会逐一拆解这套泛化体系的每个环节\n。\n如果你对这个系列感兴趣，可以先留下联系方式——4月底，悟空Agent 将开放外部试用，第一批名额优先向预约用户开放。\n· 📋 预约试用\n入口\n：\n悟空AI挖洞申请试用 - 腾讯问卷\n我们在等你一起来找\"亲戚病\"。\n关于腾讯\n悟空\n代码\n安全\n团队\n腾讯悟空代码安全团队（WuKong, Tencent）隶属腾讯安全平台部，专注于 AI 驱动的代码层漏洞检测与安全风险治理。自研悟空代码安全 Agent 已在 GitHub 知名开源项目中累计发现并确认 400+ 0day 漏洞，获微软、英伟达、Apache 等知名企业与开源组织致谢。团队曾发布业内首个项目级 AI 生成代码安全评测集 A.S.E，团队成员\n过往\n研究成果发表于 S&P，USNEIX Security，FSE，ASE，ICSE，ACL 等国际顶尖学术会议。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "peripheral": 0.03,
+        "irrelevant": 0.72,
+        "transfer_business": 0,
+        "transfer_agent": 0.25,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.54,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.2,
+        "2": 0.66,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.85,
+      "probabilities": {
+        "0": 0.58,
+        "1": 0.14,
+        "2": 0.16,
+        "3": 0.09,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.62,
+      "probabilities": {
+        "0": 0.74,
+        "1": 0.06,
+        "2": 0.1,
+        "3": 0.04,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.95,
+      "probabilities": {
+        "0": 0,
+        "1": 0.19,
+        "2": 0.68,
+        "3": 0.11,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.77,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.07,
+        "2": 0.17,
+        "3": 0.57,
+        "4": 0.16,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.82,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.24,
+        "2": 0.39,
+        "3": 0.21,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6228,
+    "outputTokens": 173,
+    "totalTokens": 6401
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.64,
+        "relevance": 0.68,
+        "grounding": 0.44,
+        "decision_action": 0.59,
+        "evidence": 0.77,
+        "actionability": 0.62,
+        "anti_hype": 0.48
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179974692,
+                "endTime": 1791179974782,
+                "providerRequestId": "92ce5921-3b6f-4e89-bb89-317d05c416a1",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179974789,
+                "endTime": 1791179974979,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000261576",
+      "marketCost": "0.000261576",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000261576",
+      "inferenceCost": "0.000261576",
+      "inputInferenceCost": "0.000261576",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAT0GHG1CD3XTN0VHSEVZ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:34 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::f6d97-1791179974655-fbb040150af9"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "peripheral": 0.03,
+            "irrelevant": 0.72,
+            "transfer_business": 0,
+            "transfer_agent": 0.25,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.54,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.2,
+            "2": 0.66,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.85,
+          "probabilities": {
+            "0": 0.58,
+            "1": 0.14,
+            "2": 0.16,
+            "3": 0.09,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.62,
+          "probabilities": {
+            "0": 0.74,
+            "1": 0.06,
+            "2": 0.1,
+            "3": 0.04,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.95,
+          "probabilities": {
+            "0": 0,
+            "1": 0.19,
+            "2": 0.68,
+            "3": 0.11,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.77,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.07,
+            "2": 0.17,
+            "3": 0.57,
+            "4": 0.16,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.82,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.24,
+            "2": 0.39,
+            "3": 0.21,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6228,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.64,
+            "relevance": 0.68,
+            "grounding": 0.44,
+            "decision_action": 0.59,
+            "evidence": 0.77,
+            "actionability": 0.62,
+            "anti_hype": 0.48
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179974692,
+                    "endTime": 1791179974782,
+                    "providerRequestId": "92ce5921-3b6f-4e89-bb89-317d05c416a1",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179974789,
+                    "endTime": 1791179974979,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000261576",
+          "marketCost": "0.000261576",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000261576",
+          "inferenceCost": "0.000261576",
+          "inputInferenceCost": "0.000261576",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAT0GHG1CD3XTN0VHSEVZ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:34.211Z"
+  }
+}

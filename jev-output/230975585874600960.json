@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "230975585874600960",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "拥抱大模型：深入剖析ReAct的核心原理、技术架构及其对AI领域的深远影响",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798179&idx=1&sn=d3cff266926c5cf4ebff97a7a73897a5",
+      "date": "2026-01-05T09:37:00.664Z",
+      "chars": 13508,
+      "text": "2026-01-05 17:37\n广东\nReAct范式\n作者：lingnyliang\n在人工智能的演进历程中，大语言模型展现出了令人惊叹的文本生成能力，但其“黑箱”特性也带来了显著挑战——模型经常产生看似合理但实际错误的“幻觉”回答，缺乏透明推理过程，且无法与外部世界交互获取实时信息。\nReAct（Reasoning+Acting）通过将思考过程外显化和工具使用标准化，构建了一个可解释、可验证、可扩展的智能体架构。本文将深入剖析ReAct的核心原理、技术架构及其对整个AI领域的深远影响。\n一、什么是ReAct？\n2022年，普林斯顿大学和谷歌的研究团队在论文《ReAct: Synergizing Reasoning and Acting in Language Models》中提出的ReAct范式，通过构建“推理-行动-观察”（TAO）的闭环机制，首次实现了语言模型推理能力与外部环境交互能力的深度协同，为解决上述瓶颈提供了里程碑式的方案。\nReAct = Reasoning（推理）+  Acting（行动），本质是一种让语言模型通过与外部工具、环境动态交互完成复杂任务的智能体架构范式。其核心目标是打破传统语言模型“输入-输出”的单向链路，构建“感知-决策-执行-反馈”的智能闭环，使模型从“被动应答者”升级为“主动问题解决者”。\n与传统AI技术相比，ReAct具备三个核心特征：\n显式推理轨迹\n：模型在执行行动前会生成可追溯的“推理过程”（Thought），清晰说明行动的决策依据，解决了传统模型“黑箱决策”的可解释性问题；\n外部环境锚定\n：通过调用搜索、计算、数据库查询等外部工具（Act）获取客观反馈（Observe），将推理过程锚定到真实数据，从根源上抑制“事实幻觉”；\n少量样本泛化\n：依托LLM的上下文学习能力，仅需1-5个包含“推理-行动-观察”的完整示例，即可快速适配多场景任务，无需大规模微调。\n从技术本质来看，ReAct并非单一算法，而是“语言模型+工具集+循环调度机制”的集成架构。其核心创新在于将人类解决问题的认知模式（分析-操作-反馈）抽象为机器可执行的框架，使AI具备了自主拆解任务、动态调整策略的能力。\n二、核心思想与设计理念\n2.1 核心思想：模拟人类认知的TAO闭环\nReAct的核心思想源于人类解决复杂问题的认知过程：当面对“规划一次跨城旅行”这类任务时，人类会先分析需求（推理），再执行查机票、订酒店等操作（行动），最后根据航班余票、酒店价格等反馈（观察）调整计划，形成循环。ReAct将这一过程抽象为“Thought（推理）→Act（行动）→Observe（观察）”的TAO闭环，其中：\nThought：模型的“内心独白”，用于分析任务目标、历史反馈和当前状态，明确下一步行动的逻辑依据；\nAct：模型与外部交互的“执行动作”，如调用搜索引擎、计算工具或控制设备；\nObserve：外部环境对行动的“客观反馈”，如搜索结果、计算答案，为下一轮推理提供真实数据支撑。\n这一闭环机制使ReAct摆脱了对模型内部知识库的依赖，能够处理超出预训练数据范畴的实时、专业或动态任务。\n2.2 四大设计理念：保障范式落地的核心原则\n环境锚定原则\n：强制模型在涉及事实性问题时优先调用外部工具获取证据，禁止仅凭内部知识生成结论。例如在“核查2024年诺贝尔物理学奖得主”任务中，模型必须通过搜索工具获取权威信息，而非依赖预训练记忆；\n可解释性优先原则\n：要求推理轨迹必须包含“任务现状-行动目的-预期结果”三个要素，确保人类可追溯决策逻辑。例如推理过程需明确“当前缺少XX信息，调用XX工具可获取，预期得到XX结果”；\n模块解耦原则\n：将推理逻辑、行动执行、循环调度拆分为独立模块，通过标准化接口通信。这种设计使ReAct可快速适配不同场景，仅需替换工具集即可从“多跳问答”切换到“机器人控制”；\n容错性设计原则\n：通过异常捕获、行动重试、上下文裁剪等机制处理工具调用失败、格式解析错误等问题，提升系统鲁棒性。例如当搜索工具超时后，模型会生成“搜索失败，尝试更换关键词重新搜索”的推理与行动。\n三、ReAct工作原理\nReAct的工作流程可分为“初始化-循环迭代-终止输出”三个阶段，每个阶段的核心操作与逻辑衔接如下，完整展现TAO闭环的动态执行过程：\n3.1 初始化阶段：任务与环境准备\n该阶段为TAO循环提供基础输入，核心操作包括三项：\n任务解析\n：接收自然语言任务目标，明确任务类型（如事实核查、数据分析）、核心约束（如时间范围、精度要求）；\n示例加载\n：输入1-3个Few-shot示例，每个示例包含“任务-推理-行动-观察-结果”的完整链路，帮助模型理解任务逻辑与格式要求；\n上下文初始化\n：创建上下文管理器，用于存储后续迭代过程中的TAO三元组，为模型提供历史状态参考。\n示例：用户说“帮我查询明天从深圳到海南的航班，选最便宜、航班时间在晚上的那班并预订”，初始化阶段会加载“查询明天深圳到海南最便宜的晚上航班”的示例，明确“搜索符合条件航班→筛选最优航班→预订航班”的链路。\n3.2 循环迭代阶段：TAO闭环的核心执行\n这是ReAct的核心阶段，每轮迭代均严格遵循“推理-行动-观察”的顺序执行，具体流程如下：\n步骤1：Thought（推理）—— 决策逻辑生成\n模型基于“任务目标+历史TAO轨迹”生成推理内容，核心输出两个关键信息：一是当前任务进展（已获取哪些信息、缺少哪些信息），二是下一步行动方案（调用什么工具、参数是什么、预期结果是什么）。推理轨迹的质量直接决定行动有效性，因此ReAct通过提示工程强制逻辑连贯性。\n示例推理：“当前任务是查明天从深圳到海南的航班，要选最便宜且晚上的并预订，历史未获取任何数据。需先调用航班查询工具，参数包含出发地深圳、目的地海南、日期明天、时段晚上，获取符合条件的航班列表后再筛选最便宜的，第一步调用航班查询工具。”\n步骤2：Act（行动）—— 标准化执行指令输出\n模型将推理结果转化为标准化行动指令，指令必须包含“工具类型”和“参数”，且遵循预定义格式（如“工具名[参数1,参数2]”），确保后续模块可解析执行。ReAct支持的行动类型主要分为四类：\n步骤3：Observe（观察）—— 客观反馈获取\n行动解析器对标准化指令进行校验（格式是否正确、参数是否完整），若校验通过则调用对应工具执行；若失败则生成异常反馈。工具执行后，将结果以“结构化、去冗余”的形式返回，形成观察结果。\n示例：航班查询行动“flight_search[深圳,海南,明天,晚上]”的观察结果为“航班列表：1.CA1234（20:00-21:30，票价500元）；2.CZ5678（21:10-22:40，票价650元）；3.MU9012（19:30-21:00，票价580元）”；若查询失败，观察结果为“航班查询工具调用超时，未获取航班数据”。\n完成观察后，上下文管理器将本轮“推理-行动-观察”三元组追加到历史轨迹中，若轨迹长度超出LLM上下文窗口，则通过“保留近期3轮+早期摘要”的策略裁剪，随后进入下一轮迭代。\n3.3 终止输出阶段：结果整理与提交\n当满足以下任一终止条件时，循环停止并输出结果：\n正常终止\n：模型输出finish行动，表明已完成任务目标；\n超时终止\n：达到预设最大迭代步数（通常5-10步，依任务复杂度调整）；\n异常终止\n：连续3次行动失败（如工具调用超时、参数错误），触发熔断机制。\n终止后，系统会整理历史TAO轨迹，输出“最终结果+核心执行链路”，确保结果可追溯。\n四、ReAct技术架构\n为实现TAO闭环的高效执行，ReAct采用“核心逻辑层-执行循环层-外部交互层”的三层模块化架构。各层职责明确、接口标准化，既保证了内部逻辑的连贯性，又提升了外部场景的适配能力。架构整体设计如下：\n4.1 核心逻辑层：智能体的“决策大脑”\n核心逻辑层是ReAct的决策核心，负责推理轨迹生成与行动规划，主要由“大型语言模型（LLM）+提示工程模块”构成，核心功能包括：\n推理引擎\n：基于任务目标与历史上下文，生成逻辑连贯的推理轨迹，明确行动依据。核心依赖LLM的上下文理解与逻辑推理能力，如GPT-4、Claude 3等；\n行动规划器\n：将推理结果转化为标准化行动指令，确保格式合规、参数完整。通过提示工程中的格式约束（如“行动必须为XX格式”）实现；\n提示优化模块\n：通过调整温度参数（0.2-0.3，降低随机性）、加入负面示例（如“避免重复调用同一工具”）等方式，优化LLM输出质量。\n该层的设计关键是“通过提示工程激活LLM的推理与行动规划能力”，无需对LLM进行微调，降低了技术落地成本。\n4.2 执行循环层：智能体的“中枢调度”\n执行循环层是TAO闭环的调度核心，负责串联推理、行动、观察三个环节，主要由三个模块构成，各模块功能与协作逻辑如下：\n上下文管理器\n：核心功能是“存储-裁剪-提取”历史TAO轨迹。当轨迹长度超出阈值时，采用“近期完整保留+早期关键信息摘要”的策略，确保上下文既精简又包含关键信息；\n行动解析器\n：负责行动指令的“格式校验-参数提取-工具路由”。校验通过后，提取工具类型与参数并路由至对应工具；校验失败则生成“格式错误，需按XX格式重新输出”的观察结果；\n循环调度器\n：控制迭代节奏，执行终止条件判断。每轮迭代后检查是否满足终止条件，若满足则触发结果输出，否则驱动流程返回核心逻辑层进入下一轮推理。\n该层是ReAct的“胶水层”，通过标准化接口实现核心逻辑层与外部交互层的协同，确保闭环流程顺畅执行。\n4.3 外部交互层：智能体的“手脚与五官”\n外部交互层是ReAct与外部环境交互的接口，负责执行行动指令并返回观察结果，主要由“工具集-交互环境-数据接口”三部分构成，核心设计要求是“模块化封装+标准化接口”：\n工具集\n：包含完成任务所需的各类工具，按功能可分为信息检索类（搜索引擎、知识库API）、数据处理类（Pandas封装工具、计算器）、设备控制类（机器人运动API、传感器工具）等。每个工具需实现统一的run()方法，接收标准化参数并返回结构化结果；\n交互环境\n：分为虚拟环境（如文本游戏ALFWorld、电商模拟平台WebShop）和物理环境（如家庭服务机器人的家居环境、自动驾驶的路况环境），为行动执行提供场景支撑；\n数据接口\n：负责工具与环境的通信适配，将行动解析器输出的参数转换为工具/环境可识别的格式，同时将执行结果转换为模型可理解的自然语言或结构化数据。\n五、ReAct解决了什么问题？\nReAct范式的核心价值在于针对性解决了传统AI技术在复杂任务中面临的四大关键痛点，显著提升了智能系统的实用性：\n5.1 破解传统LLM的“事实幻觉”难题\n传统LLM的推理完全依赖预训练阶段习得的内部知识，当面临实时信息（如最新政策、实时数据）、专业领域知识（如医疗诊断、法律条款）时，极易生成与事实不符的“幻觉内容”。ReAct通过“行动调用外部权威工具→观察获取客观事实→推理整合事实”的链路，将推理过程锚定到真实数据。实验数据显示，在Fever事实核查任务中，ReAct的幻觉率仅为8.2%，远低于纯思维链（CoT）的23.5%。\n5.2 破解纯行动模型的“策略僵化”难题\n传统机器人控制、游戏AI等纯行动模型，需通过大量强化学习训练才能形成固定任务策略，面对未训练场景时极易失败。ReAct依托LLM的推理能力，可通过少量示例快速生成动态策略。例如在文本游戏ALFWorld中，ReAct仅用2个示例即可实现71%的任务成功率，远超强化学习模型的37%。\n5.3 破解AI系统的“决策不可解释”难题\n传统深度学习模型的决策过程是“黑箱”，无法解释“为什么做出该决策”，这在医疗、金融等关键领域的应用中存在巨大风险。ReAct要求模型生成显式推理轨迹，每一步行动均有明确的逻辑依据。例如在银行理财咨询任务中，模型会明确推理“用户风险承受能力中等→推荐稳健型产品→调用知识库确认产品收益率”的完整逻辑，便于人类审计。\n5.4 破解多场景适配的“高成本”难题\n传统AI模型需针对不同任务进行定制化开发与训练，多场景适配的开发成本高、周期长。ReAct采用模块化解耦设计，核心逻辑层与执行循环层可复用，仅需替换外部交互层的工具与环境即可适配新场景。例如从“多跳问答”切换到“智能日程规划”，仅需替换工具集（从搜索工具改为地图API、日历工具），无需修改核心代码，适配周期从数周缩短至数小时。\n六、代码示例\nReAct的核心源码围绕“工具封装”与“TAO循环调度”展开，以下基于Python语言实现的极简版框架，解析关键模块的核心逻辑（完整框架需结合LLM API与具体工具实现）：\n6.1 工具封装：标准化接口设计\n工具封装遵循“基类定义接口+子类实现功能”的模式，确保所有工具调用方式统一。核心代码如下：\nfrom\ntyping\nimport\nAny, List\nclass\nBaseTool\n:\n\"\"\"工具基类，定义标准化接口\"\"\"\ndef\n__init__\n(self, name: str, description: str)\n:\nself.name = name\n# 工具名称（用于行动解析）\nself.description = description\n# 工具功能描述（用于模型理解）\ndef\nrun\n(self, params: Any)\n-> str:\n\"\"\"核心执行方法，子类必须实现，返回结构化观察结果\"\"\"\nraise\nNotImplementedError(\n\"所有工具子类必须实现run方法\"\n)\n# 航班查询工具实现示例（调用模拟航班查询接口）\nclass\nFlightSearchTool\n(BaseTool)\n:\ndef\n__init__\n(self)\n:\nsuper().__init__(\nname=\n\"flight_search\"\n,\ndescription=\n\"用于查询指定条件的航班信息，参数格式为'出发地,目的地,日期,时段'，时段支持'上午/下午/晚上'\"\n)\ndef\nrun\n(self, params: str)\n-> str:\n\"\"\"模拟航班查询工具执行逻辑，实际场景替换为真实航班API调用\"\"\"\ntry\n:\n# 解析参数（出发地,目的地,日期,时段）\ndep, arr, date, time_period = params.split(\n','\n)\n# 模拟符合条件的航班搜索结果\nflight_map = {\n\"深圳,海南,明天,晚上\"\n:\n\"符合条件航班列表：1. HU7089（深圳宝安→海口美兰，20:15-21:45，票价480元）；2. CZ6753（深圳宝安→三亚凤凰，21:30-23:05，票价620元）；3. MU2478（深圳宝安→海口美兰，19:40-21:10，票价550元）\"\n}\nreturn\nflight_map.get(\nf\"\n{dep}\n,\n{arr}\n,\n{date}\n,\n{time_period}\n\"\n,\nf\"未检索到\n{dep}\n到\n{arr}\n{date}\n{time_period}\n的相关航班信息\"\n)\nexcept\nException\nas\ne:\nreturn\nf\"航班查询工具调用失败：\n{str(e)[:\n50\n]}\n\"\n# 航班预订工具实现示例（调用模拟航班预订接口）\nclass\nFlightBookTool\n(BaseTool)\n:\ndef\n__init__\n(self)\n:\nsuper().__init__(\nname=\n\"flight_book\"\n,\ndescription=\n\"用于预订指定航班，参数格式为'航班号,乘客姓名,身份证号'\"\n)\ndef\nrun\n(self, params: str)\n-> str:\n\"\"\"模拟航班预订工具执行逻辑，实际场景替换为真实预订API调用\"\"\"\ntry\n:\n# 解析参数（航班号,乘客姓名,身份证号）\nflight_no, name, id_card = params.split(\n','\n)\n# 模拟预订成功反馈\nreturn\nf\"航班预订成功：航班号\n{flight_no}\n，乘客\n{name}\n（身份证号：\n{id_card[\n-4\n:]}\n），请携带有效证件提前2小时到机场办理登机手续\"\nexcept\nException\nas\ne:\nreturn\nf\"航班预订失败：\n{str(e)[:\n50\n]}\n\"\n代码解析：BaseTool类定义了工具的标准化接口（name、description、run方法），子类通过继承实现具体功能。此处新增了FlightSearchTool（航班查询工具）和FlightBookTool（航班预订工具），分别适配航班查询与预订的核心需求，其参数格式与功能描述的标准化设计，确保了执行循环层能准确路由与解析，同时降低了后续新增交通类工具的开发成本。\n6.2 TAO循环调度：核心流程控制\n循环调度模块是ReAct的“中枢神经”，负责串联推理、行动、观察三个环节，核心代码如下：\nclass\nContextManager\n:\n\"\"\"上下文管理器：存储、裁剪与提取历史TAO轨迹\"\"\"\ndef\n__init__\n(self, max_length: int =\n4000\n)\n:\nself.max_length = max_length\n# 上下文最大字符数\nself.tao_trajectory = []\n# 存储TAO三元组：[{\"thought\": \"\", \"action\": \"\", \"observation\": \"\"}]\ndef\nadd_tao\n(self, thought: str, action: str, observation: str)\n->\nNone\n:\n\"\"\"添加TAO三元组并裁剪上下文\"\"\"\nself.tao_trajectory.append({\n\"thought\"\n: thought,\n\"action\"\n: action,\n\"observation\"\n: observation\n})\nself._prune_trajectory()\ndef\n_prune_trajectory\n(self)\n->\nNone\n:\n\"\"\"裁剪超长轨迹：保留近期3轮+早期摘要\"\"\"\ntrajectory_str = str(self.tao_trajectory)\nif\nlen(trajectory_str) <= self.max_length:\nreturn\n# 保留近期3轮完整轨迹\nrecent_trajectory = self.tao_trajectory[\n-3\n:]\nif\nlen(self.tao_trajectory) >=\n3\nelse\nself.tao_trajectory\n# 生成早期轨迹摘要\nearly_actions = [item[\n\"action\"\n]\nfor\nitem\nin\nself.tao_trajectory[:\n-3\n]]\nif\nlen(self.tao_trajectory) >\n3\nelse\n[]\nearly_summary =\nf\"早期行动：\n{\n', '\n.join(early_actions[:\n2\n])}\n... 关键结果：\n{[item[\n'observation'\n][:\n30\n]\nfor\nitem\nin\nself.tao_trajectory[:\n-3\n]\nif\n'成功'\nin\nitem[\n'observation'\n]][:\n1\n]}\n\"\n# 重构上下文\nself.tao_trajectory = [{\n\"thought\"\n:\n\"【早期轨迹摘要】\"\n,\n\"action\"\n:\n\"\"\n,\n\"observation\"\n: early_summary}] + recent_trajectory\ndef\nget_context_str\n(self)\n-> str:\n\"\"\"生成模型可理解的上下文字符串\"\"\"\nif\nnot\nself.tao_trajectory:\nreturn\n\"无历史执行轨迹\"\nreturn\n\"\\n\"\n.join([\nf\"步骤\n{idx+\n1\n}\n：思维：\n{item[\n'thought'\n]}\n| 行动：\n{item[\n'action'\n]}\n| 观察：\n{item[\n'observation'\n]}\n\"\nfor\nidx, item\nin\nenumerate(self.tao_trajectory)\n])\ndef\nreact_core_loop\n(task: str, tools: List[BaseTool], max_steps: int =\n6\n)\n-> tuple[str, str]:\n\"\"\"ReAct核心循环：控制TAO迭代流程，返回最终结果与执行轨迹\"\"\"\n# 初始化组件\ncontext_manager = ContextManager()\ntool_map = {tool.name: tool\nfor\ntool\nin\ntools}\n# 工具名称到实例的映射\n# 提示词模板（含Few-shot示例，引导模型输出格式）\nprompt_template =\n\"\"\"\n你是ReAct智能体，需通过\"思维→行动→观察\"循环完成任务，严格遵循以下规则：\n1. 思维：分析任务目标与历史轨迹，说明下一步行动的逻辑依据；\n2. 行动：仅使用提供的工具，格式为\"工具名[参数]\"，支持工具：{tool_descriptions}；\n3. 观察：根据工具反馈调整后续策略，不可仅凭记忆回答。\n示例：\n任务：查询昨天从深圳到广州最便宜上午的航班\n历史轨迹：无历史执行轨迹\n思维：需获取昨天深圳到广州上午的航班信息，调用航班查询工具，参数为\"深圳,广州,昨天,上午\"\n行动：flight_search[深圳,广州,昨天,上午]\n观察：符合条件航班列表：1. CZ3201（深圳宝安→广州白云，08:30-09:10，票价230元）；2. HU7125（深圳宝安→广州白云，09:40-10:20，票价280元）\n思维：已获取航班列表，需筛选最便宜的航班（CZ3201，230元），调用航班预订工具完成预订\n行动：flight_book[CZ3201,张三,440301199001011234]\n观察：航班预订成功：航班号CZ3201，乘客张三（身份证号：1234），请携带有效证件提前2小时到机场办理登机手续\n思维：已完成航班查询与预订任务，提交结果\n行动：finish[昨天深圳到广州最便宜上午航班为CZ3201（08:30-09:10，票价230元），已完成预订，乘客张三]\n当前任务：{task}\n历史轨迹：{context}\n请输出当前步骤的思维和行动（仅输出思维和行动，无其他内容）：\n思维：\n行动：\n\"\"\"\n# 循环迭代\nfor\nstep\nin\nrange(max_steps):\n# 1. 构建提示词，调用LLM生成思维与行动（实际场景替换为真实LLM API）\ntool_descriptions =\n\"\\n\"\n.join([\nf\"-\n{name}\n：\n{tool.description}\n\"\nfor\nname, tool\nin\ntool_map.items()])\nprompt = prompt_template.format(\ntool_descriptions=tool_descriptions,\ntask=task,\ncontext=context_manager.get_context_str()\n).strip()\n# 模拟LLM输出（实际场景替换为OpenAI API等调用）\n# 此处根据任务逻辑生成模拟输出，真实场景由LLM自主生成\nif\nstep ==\n0\n:\nllm_output =\n\"\"\"思维：当前任务是查询明天从深圳到海南的航班，选最便宜、航班时间在晚上的那班并预订，无历史数据。需先调用航班查询工具，参数为\"深圳,海南,明天,晚上\"，获取符合条件的航班列表\n行动：flight_search[深圳,海南,明天,晚上]\"\"\"\nelif\nstep ==\n1\n:\nllm_output =\n\"\"\"思维：已获取明天深圳到海南晚上的航班列表，从观察结果可知最便宜的是HU7089（票价480元）。下一步需调用航班预订工具，参数包含航班号HU7089、乘客信息（假设乘客为李四，身份证号440301199505056789）\n行动：flight_book[HU7089,李四,440301199505056789]\"\"\"\nelif\nstep ==\n2\n:\nllm_output =\n\"\"\"思维：已完成最便宜晚上航班的查询与预订，观察结果显示预订成功，所有任务目标均达成，可提交最终结果\n行动：finish[明天从深圳到海南最便宜的晚上航班为HU7089（深圳宝安→海口美兰，20:15-21:45，票价480元），已完成预订，乘客李四（身份证号：6789）]\"\"\"\nelse\n:\nllm_output =\n\"\"\"思维：任务已完成，无需进一步行动\n行动：finish[任务已完成]\"\"\"\n# 2. 解析思维与行动（真实场景需增加格式校验）\nthought = llm_output.split(\n\"思维：\"\n)[\n1\n].split(\n\"行动：\"\n)[\n0\n].strip()\naction = llm_output.split(\n\"行动：\"\n)[\n1\n].strip()\n# 3. 执行行动并获取观察结果\nif\naction.startswith(\n\"finish[\"\n):\n# 任务完成，提取结果\nresult = action[len(\n\"finish[\"\n):\n-1\n].strip()\nreturn\nresult, context_manager.get_context_str()\nelif\naction.startswith(tuple(tool_map.keys())):\n# 解析工具类型与参数\ntool_name = next(name\nfor\nname\nin\ntool_map.keys()\nif\naction.startswith(name))\nparam_str = action[len(tool_name)+\n1\n:\n-1\n].strip()\n# 调用工具\nobservation = tool_map[tool_name].run(param_str)\nelse\n:\n# 无效行动\nobservation =\nf\"无效行动：\n{action}\n，支持的工具为\n{list(tool_map.keys())}\n\"\n# 4. 更新上下文\ncontext_manager.add_tao(thought, action, observation)\nprint(\nf\"步骤\n{step+\n1\n}\n：思维：\n{thought}\n| 行动：\n{action}\n| 观察：\n{observation}\n\"\n)\n# 超时终止\nreturn\nf\"任务未完成（已达最大步数\n{max_steps}\n）\"\n, context_manager.get_context_str()\n# 调用示例\nif\n__name__ ==\n\"__main__\"\n:\n# 初始化工具\ntools = [FlightSearchTool(), FlightBookTool()]\n# 定义任务\ntask =\n\"查询明天从深圳到海南的航班，选最便宜、航班时间在晚上的那班并预订\"\n# 运行ReAct循环\nfinal_result, trajectory = react_core_loop(task, tools)\n# 输出结果\nprint(\n\"\\n最终结果：\"\n, final_result)\nprint(\n\"\\n完整执行轨迹：\"\n, trajectory)\n代码解析：\n1）ContextManager类实现了TAO轨迹的存储与裁剪，确保LLM始终能获取关键历史信息且不超出上下文窗口；\n2）react_core_loop函数是核心调度逻辑，通过“构建提示词→调用LLM→解析行动→执行工具→更新上下文”的流程控制TAO循环，针对航班查询与预订任务，设计了“查询符合条件航班→筛选最便宜航班→完成预订”的三步核心链路；\n3）通过模拟LLM输出展示了完整任务执行过程，其中乘客信息为示例数据，真实场景中可通过调用用户信息工具获取；\n4）工具层面替换为航班查询与预订专属工具，保持了ReAct模块化封装的核心优势，真实场景中仅需替换工具的API调用逻辑即可落地。\n七、ReAct的应用场景\nReAct的模块化架构与TAO闭环机制使其具备极强的场景适配能力，目前已在知识密集型任务、交互式决策、具身智能等四大领域实现成熟应用，具体场景与适配方案如下：\n7.1 知识密集型任务：事实核查与多跳问答\n典型场景包括多跳问答（如HotpotQA数据集任务）、事实核查（如Fever任务）、学术文献检索与总结。适配方案：外部交互层采用维基百科API、学术数据库（CNKI、Google Scholar）、搜索引擎等工具；推理策略采用“任务分解→证据检索→信息整合”。例如在“爱因斯坦获得诺贝尔奖的原因及获奖年份”任务中，ReAct会先搜索“爱因斯坦 诺贝尔奖年份”，再搜索“1921年诺贝尔物理学奖 原因”，最终整合结果。\n7.2 交互式决策任务：智能规划与电商购物\n典型场景包括智能日程规划、电商平台商品筛选与购买、旅游路线规划。适配方案：外部交互层采用地图API、电商平台接口、日历工具等；推理策略采用“目标分解→状态跟踪→动态调整”。例如在“规划北京到上海3日游路线”任务中，ReAct会依次调用“搜索北京到上海交通方式”“预订酒店”“查询景点开放时间”等工具，根据余票、房价等反馈调整方案。\n7.3 智能客服与咨询：个性化服务与问题解决\n典型场景包括银行理财咨询、电商售后处理、医疗健康科普。适配方案：外部交互层采用客服知识库、用户信息数据库、问题分类工具；推理策略采用“需求澄清→证据检索→个性化解答”。例如在理财咨询中，ReAct会先调用“ask_user[您的风险承受能力？]”工具澄清需求，再调用知识库工具推荐适配产品。\n7.4 具身智能与机器人控制：物理世界交互\n典型场景包括家庭服务机器人（清洁、物品搬运）、工业机器人（零件装配）、自动驾驶（路况决策）。适配方案：外部交互层采用机器人传感器（摄像头、激光雷达）、运动控制API、环境监测工具；推理策略采用“运动规划→环境感知→安全保障”。例如家庭服务机器人可通过ReAct实现“检测水杯位置→规划抓取路径→抓取水杯→送到用户手中”的连贯任务。\n八、ReAct的优势对比\n为清晰体现ReAct的技术优势，我们将其与传统思维链（CoT）、Toolformer、强化学习（RL）三种主流方法进行对比，从核心能力、幻觉抑制、可解释性等五个维度展开分析：\n通过对比可见，ReAct在推理与行动的协同能力、幻觉抑制效果、场景适配性上均展现出显著优势，尤其适用于需要“主动决策+动态反馈”的复杂现实场景。\n九、一些思考\nReAct范式通过构建“思考-行动-观察”（TAO）闭环，创新性地破解了传统AI模型普遍存在的“事实幻觉”、“策略僵化”、“不可解释性”等核心痛点。但该范式存在明显局限：一方面，其依赖大语言模型（LLM）的上下文窗口存储历史TAO轨迹，当任务步骤超过10轮时，需通过“裁剪-摘要”方式压缩信息，这极易丢失关键推理逻辑；另一方面，当前ReAct的行动选择完全依赖LLM的推理输出，缺乏对行动效果的量化评估机制，易出现重复调用工具、执行无效行动等冗余问题，显著提升任务执行成本。\n从技术演进视角看，ReAct并非终局，而是下一代AI智能体的基础范式，我认为其核心优化方向在于与强化学习（RL）、外部记忆机制的深度融合：引入强化学习可构建精准的“奖励机制”，对有效行动给予正反馈、对重复查询等无效行动给予负反馈，进而优化行动选择策略、削减冗余步骤；引入向量数据库、知识图谱等外部记忆组件，则能突破LLM上下文窗口的物理限制，支撑ReAct高效处理超长步骤任务，同时大幅提升推理效率。\n参考文献\n[1] ReAct: Synergizing Reasoning and Acting in Language Models：\narxiv.org/pdf/2210.03629\n[2] REACT: SYNERGIZING REASONING AND ACTING IN LANGUAGE MODELS：\nreact-lm.github.io\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_agent": 0.37,
+        "peripheral": 0.51,
+        "irrelevant": 0.11,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0,
+        "1": 0.21,
+        "2": 0.71,
+        "3": 0.08,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.15,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.35,
+        "2": 0.37,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.88,
+      "probabilities": {
+        "0": 0.38,
+        "1": 0.04,
+        "2": 0.1,
+        "3": 0.28,
+        "4": 0.2,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.88,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.48,
+        "3": 0.16,
+        "4": 0.36,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.85,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.06,
+        "4": 0.9,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.6,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.38,
+        "3": 0.6,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 12223,
+    "outputTokens": 174,
+    "totalTokens": 12397
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.39,
+        "relevance": 0.8,
+        "grounding": 0.39,
+        "decision_action": 0,
+        "evidence": 0.41,
+        "actionability": 0.88,
+        "anti_hype": 0.72
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179987449,
+                "endTime": 1791179987772,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000513366",
+      "marketCost": "0.000513366",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000513366",
+      "inferenceCost": "0.000513366",
+      "inputInferenceCost": "0.000513366",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB6F77P9NX2FJD81RTJ91"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:47 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::5j45k-1791179987010-1323739eb260"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_agent": 0.37,
+            "peripheral": 0.51,
+            "irrelevant": 0.11,
+            "transfer_business": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0,
+            "1": 0.21,
+            "2": 0.71,
+            "3": 0.08,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.15,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.35,
+            "2": 0.37,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.88,
+          "probabilities": {
+            "0": 0.38,
+            "1": 0.04,
+            "2": 0.1,
+            "3": 0.28,
+            "4": 0.2,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.88,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.48,
+            "3": 0.16,
+            "4": 0.36,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.85,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.06,
+            "4": 0.9,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.6,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.38,
+            "3": 0.6,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 12223,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.39,
+            "relevance": 0.8,
+            "grounding": 0.39,
+            "decision_action": 0,
+            "evidence": 0.41,
+            "actionability": 0.88,
+            "anti_hype": 0.72
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179987449,
+                    "endTime": 1791179987772,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000513366",
+          "marketCost": "0.000513366",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000513366",
+          "inferenceCost": "0.000513366",
+          "inputInferenceCost": "0.000513366",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB6F77P9NX2FJD81RTJ91"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:47.031Z"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1179043422355324929",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "「腾讯云 NoSQL」 技术之 MongoDB 篇：物理备份磁盘膨胀率减少 90% 的内核优化实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696065&idx=2&sn=937a114aefb9c40f80d9858740341034",
+      "date": "2026-06-30T00:45:00.421Z",
+      "chars": 9312,
+      "text": "腾讯云数据库\n2026-06-30 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n作者：腾讯云\ncmongo\n内核团队\n-\n杨亚洲、尹超\n关键词：\nMongoDB\n、\nWiredTiger\n、物理备份、空间回收、备份回档提速\nMongoDB 常见的备份方式有两种：逻辑备份和物理备份。逻辑备份需要逐条遍历集合，期间持续消耗 CPU、内存与业务侧的查询带宽，TB 级实例往往要跑十几个小时，对线上业务影响明显；物理备份则直接以文件粒度拷贝 WiredTiger 的 `.wt` 数据文件，IO 几乎是顺序大块读，备份速度通常是逻辑备份的5~10倍以上，对业务读写影响小。也正因如此，物理备份成为大规模 MongoDB 集群的主流选择。\n在 MongoDB 的日常运维里，物理备份长期以来都有一个隐蔽的副作用：承接备份任务的 hidden 节点，磁盘占用经常比主节点和普通从节点高出一大截。线上某核心大客户就是典型案例——主节点和普通从节点磁盘占用始终稳定在 1TB 出头，而同副本集内承担备份任务的 hidden 节点，磁盘却随着备份任务的累计运行悄然膨胀到了 1.5TB+，膨胀幅度高达50%，且备份结束后这部分空间并不会自动回收，只能依赖人工介入或重建节点。\n为了解决该大客户遇到的膨胀问题，我们对 MongoDB 存储引擎做了深入分析，对 MongoDB 内核物理备份做了深入优化，最终形成了一套从 wiredtiger 内核到旁路服务的完整优化链路。结合线上真实业务场景测试验证，该优化可以保证线上业务99%的 MongoDB 集群，其物理备份膨胀率从之前极端的200%降到5%~10%以内，多表场景整体膨胀率可以减少90%。\n这篇文章想把整个过程讲清楚——为什么会膨胀、我们做了什么、为什么这样做是安全的、以及在不同生产场景下实测的效果。\n01\n背景：MongoDB 物理备份的几个长期痛点\nMongoDB\n的物理备份并不是把整个\ndbpath\n直接\ncp\n走那么简单。它的核心是\nwiredTiger\n提供的一个叫\nbackup cursor\n的能力：业务连上\nmongod\n，打开一个\nbackup: cursor\n，\nWT\n在那一刻冻结一份\ncheckpoint\n视图，给你一份这一刻所有数据文件的清单，旁路备份服务拿着这份清单，通过网络通路，把每个\n`xx.wt`\n文件直接拷贝到\ncos\n对象存储。整个\ncursor\n在拷贝期间一直保持打开状态，直到所有文件落到\nCOS\n才会关闭。\n听起来挺合理。但只要在线上跑，几个痛点会陆续浮现。\n第一个，也是最明显的\n——hidden\n节点的磁盘占用膨胀\n。\nbackup cursor\n一旦在\nhidden\n上打开，这个节点的所有\n`.wt`\n文件就开始集体膨胀，业务写入越多，膨胀越严重。更糟糕的是这部分膨胀出来的空间，在\nbackup\n结束之后并不会自动收回。\n第二个，单表膨胀时间随总数据量线性放大\n。\nbackup cursor\n是“全或无”语义\n——cursor\n不关，全部表都被锁住；\ncursor\n一关，所有表的状态一起恢复。这意味着即便某表已经拷贝完毕，由于还需要拷贝其他表，\ncursor\n一直打开，因此这个拷贝完成的表还是会持续膨胀。\n第三个，\noplog\n文件被无意义地拷贝\n。\n膨胀率越高的集群，一般其\nupdate\n等写入会较高，\noplog.wt\n占比也会更高，\noplog\n是\nMongoDB\n的复制日志，物理备份恢复时根本用不上它\n——\n恢复完成后节点会重新从复制集拉最新的\noplog\n追齐。但\nbackup cursor\n默认会把\noplog\n也列在文件清单里，于是旁路服务老老实实地把它拷到\nCOS\n。\noplog\n是\ncapped\n表，不仅用户请求\nupdate\n、\ndelete\n等会膨胀，甚至\ninsert\n也会膨胀，所以\nbackup\n期间它的膨胀很多时候是所有表里最严重的\n——\n典型生产环境，这部分数据拷贝既慢又没有回档价值。\n第四个，膨胀导致备份回档时间越来越长\n。\n膨胀不只是\nhidden\n节点磁盘账单这一环的事\n——\n最终影响旁路服务上传到\nCOS\n的就是这份膨胀后的数据，原本\n1TB\n的集群极端情况实际要上传\n2~3TB\n，\nCOS\n存储费、跨地域复制流量费同比例上涨；备份期间\nhidden\n节点到\nCOS\n的上行带宽也成倍占用，多个实例同时备份还会把出口带宽打满，挤压其他业务的网络资源；回档时同样要把这\n2~3TB\n重新从\nCOS\n拉回本地、写盘、由\nmongod\n加载，下载耗时、本地\nIO\n、\n`wiredtiger_open`\n时间全部翻倍，本来半小时能回档完的实例被拖到\n1-2\n小时以上。一次膨胀，\nhidden\n磁盘、\nCOS\n存储、网络带宽、回档时长四本账单一起被加价。\n总结一下，\nMongoDB\n的备份痛点其实是一个连环：\n膨胀\n→\n磁盘成本\n→\n备份慢\n→\n膨胀更严重\n→\n恢复也慢\n，每一环都在给下一环加压。我们的优化要解决的就是这个连环。\n02\n背景：MongoDB 物理备份的几个长期痛点\n2\n.1\n测试场景\n分析腾讯云线上多个膨胀率较高的用户实例，可以确认大部分实例为多个大表实例，通过腾讯云副本集实例模拟多表用户场景测试，写入\n4\n个表，每个表\n100G\n左右，然后启用备份，并且备份期间各个表的读写流量如下：\n文件\n稳态大小\n业务写入速率\n/s\n说明\n表\n1\n（热表）\n102 GB\n约 800 update+800 read\n频繁\nupdate\n的业务主表，典型中型\nOLTP\n场景的热点更新\n表\n2\n（温表）\n99 GB\n约\n400 update+800 read\n中等更新频率，业务次要热表\n表\n3\n（流水表）\n101 GB\n约\n1000 insert +   1000 read\nappend-only insert\n，例如订单流水\n/\n事件日志\n/IM\n消息这种典型的写入型业务表\n表\n4\n（冷表）\n98 GB\n100 read\n只读\n2\n.2\n收益对比\n腾讯云 MongoDB 优化前后的性能对比总结如下:\n指标\n优化前\n（实测）\n优化后\n（实测）\n优化收益\n备份总耗时\n~85.1 min\n~44.7 min\n缩短\n44.4%\nhidden\n节点峰值占用\n850.9 GB\n524.3 GB\n节省\n326.6 GB\n字节数膨胀（\nhidden\n相比主节点）\n+331.8 GB\n+28.8 GB\n减少\n91.3%\n膨胀率（严格意义）\n63.9%\n5.8%\n减少\n91%\nCOS\n实际上传量\n850.9 GB\n~524.3 GB\n节省\n~326.6 GB\n（\n−38.4%\n）\n回档要从\nCOS\n拉回的数据量\n850.9 GB\n~524.3 GB\n少传\n~326.6 GB\n（\n−38.4%\n）\n2.3 优化总结\n从上表可以看出，通过优化备份链路，备份耗时、hidden 节点峰值占用、字节数膨胀、COS 实际上传量、备份期间 COS 带宽占用、回档要从 COS 拉回的数据量等指标都有明显改善。该优化最终收益可以总结如下：\n1. 用户集群存储成本：\n减少\n38%\n2. 物理备份膨胀率：\n减少\n91%\n3. COS 存储成本：\n减少\n38.4%\n4. 备份回档效率：\n提升\n44.4%\n5. COS 带宽节省：\n节省\n38.4%\n03\n膨胀原理：为什么 backup 一开，hidden 节点就开始涨\n要解决膨胀，得先看清楚膨胀的物理过程。这一节会带读者走一遍 WiredTiger 在 backup 期间的内部状态变化，把“为什么会膨胀”讲彻底。\n3.1 WiredTiger 的空间回收链路\nWT 的存储基本单位是 page，每个 page 在落盘时会占用文件里一段连续的 extent（可以理解成一段连续的字节区间）。一个数据文件（`xxx.wt`）由很多 extent 拼起来，extent 之间可能有空洞。\nWT 维护三个核心的 extent 列表，理解了这三个列表，就理解了整个空间回收逻辑：\n列表\n含义\n谁能用它\nlive.alloc\n本\ncheckpoint\n周期内分配出去的\nextent\n当前\ncheckpoint\n的活跃\npage\nlive.avail\n当前可以被新写入复用的空闲\nextent\n新写入直接分配\nlive.discard\n被历史\ncheckpoint\n引用、暂时不能复用的\nextent\n等历史\ncheckpoint\n被\ndrop\n后，进入下一轮\nckpt_avail\n正常情况下，一个 page 被覆盖写（update）或者删除（delete），WT 的处理是这样的：\n老 checkpoint 被 drop，是空间回收的唯一触发器。mongo server 内核 checkpoint 默认每60秒触发一次，每次 checkpoint 会把“过时”的老 checkpoint 从元数据里 drop 掉，被 drop 的 checkpoint 所引用的所有 extent 才能进入下一轮的可复用池。\n这条链路在没有 backup 的情况下运转得非常顺畅：业务一边写，WT 一边把老 page 进 discard，下一轮 checkpoint 把老 ckpt drop 掉，extent 回到 avail 池，新写入复用空闲位置——文件大小保持稳态。\n3.2 backup cursor 是如何打断这条链路的\nbackup cursor 一打开，WT 立刻做两件事来“冻住”快照：\n第一件事，把 backup start 设成最近一次 checkpoint 的时间戳。这个时间戳是后续所有“是否能 drop 老 checkpoint”判断的依据。\n第二个判断是膨胀的真正源头，它的作用就是“backup期间，所有 backup 开始之前就存在的 checkpoint 都不能被删，因为旁路服务可能还在通过 backup 视图读这些 checkpoint 引用的数据”。\n正常情况下，extent 可被持续复用，如下图所示：\nbackup 期间，extent 无法复用 → 文件持续膨胀，如下图所示：\n膨胀总结：\n老 checkpoint 被 pin → 旧 extent 不能进入复用池 → 新写入只能往文件尾部 append。\n3.3 oplog.wt 是膨胀最严重的“双冠王”\n普通用户数据表的膨胀有上限：\n由于普通数据表默认需要保持2个 checkpoint，因此最坏情况下文件大小的理论上限大约为稳态的3倍，一般受 update、delete 相关操作影响。\nOplog\n表膨胀上限：\n但 oplog 完全不一样，oplog 记录全节点所有写操作——业务写一次， oplog 也写一次。也就是说，oplog 的写入速率可能是任何单张用户表的几十倍。更关键的是，oplog是capped collection，`OplogCapMaintainerThread` 会持续对 oplog 头部做 range truncate 来维持 `oplogSize` 配置上限——这个 B-tree 层的 range truncate 在 backup 期间照常进行（给头部 record 打 tombstone、触发后续 reconcile 重写 page），但被淘汰 page 占用的旧 extent 在 backup 期间始终卡在 `live.discard` 里、进不到 `live.avail`，新 oplog entry 找不到任何可复用空间，只能持续向文件尾部 append。\n理解了“wt 文件 size 只增不减”这一点之后，主从差异就清晰了——可以对比一下同一时刻、同一副本集内，主节点 vs hidden 节点上的 oplog.wt：两者业务负载完全一致（都收到全量写入）， `OplogCapMaintainerThread` 也都在正常运行、都在按相同节奏对 oplog 头部做 range truncate（B-tree 逻辑 truncate）。主节点上没有 backup cursor，老 checkpoint 能正常 drop，被淘汰 page 占用的旧 extent 通过 `live.discard → ckpt_avail → live.avail` 这条链路回到可复用池，新 oplog insert 直接覆写文件中段那些被腾出来的空洞，文件 size 因此长期稳定在 `oplogSize` 配置值附近——稳定的本质是“新写入填回老空洞”，不是 WT 把文件截短了；而 hidden 节点上 backup cursor 持有老 checkpoint，整个老 checkpoint 引用的 extent 都被 pin 住，旧 extent 卡在 `live.discard` 里出不来、永远到不了 `live.avail`，新 insert 找不到可复用空间只能向文件尾部 append，于是出现了 oplog 逻辑大小恒定在 `oplogSize`、物理文件 size 线性膨胀的分裂状态。因此，oplog 表除了 update 会膨胀，用户 insert 写入也会膨胀。\n更糟糕的是，oplo\ng 拷出去之后\n在物理恢复时根本用不上——如第一章第三个痛点所述，oplog 是 MongoDB 的复制日志，恢复完成后节点会重新从复制集拉最新的 oplog 追齐，备份产物里的那份 oplog.wt 在回档时会被直接丢弃。\n所以，oplog.wt 在很多时候是膨胀最严重 + 拷贝价值最低的“双冠王”。这是后面优化里会被特殊处理的对象。\n04\n优化过程：内核深度优化\n膨胀的物理原理梳理清楚之后，优化方向就比较自然了：让外部备份旁路服务告诉 WT “这张表我已经拷完了，你可以恢复它的空间回收”。我们把这个能力做成了 WT 的一个新 C API，叫`WT_CONNECTION::backup_release_checkpoint`。围绕这个 API，内核侧做了配套改造。整个优化分成三大块。\n4.1 内核侧改造一：精细化释放 checkpoint\n新增的 API 语义很简单：旁路服务每拷完一张表，就调一次`releaseBackupCheckpoint(ident)`通知 WT。WT 把这个 ident 加到一个内部 hash 表里。下一次内部 checkpoint 触发时，做“是否能 drop checkpoint”判断时多查一次这个 hash 表——如果命中，就跳过`backup start`的 pin 逻辑，让这张表的老 checkpoint 进入正常的 drop 流程，extent 进入`ckpt_avail`，新写入复用——膨胀停止。\n光有 API 还不够，旁路侧的拷贝顺序同样关键。一张表从`__backup_start`到被 release 之间的这段时间，就是它的“膨胀窗口”——窗口越长，文件被 append 出去的字节越多。所以最优策略是：按预估膨胀率从高到低排序，优先拷贝膨胀最快的表，让它们的窗口尽量短；膨胀慢的冷表/只读表放到最后，反正它们就算晚 release 也涨不了多少。\n在我们的实测里（4表场景，1个 update 热表 + 1个 update 温表 + 1个 insert 流水表 + 1个只读冷表），把这个调度策略加上之后，hidden 节点磁盘峰值又能再降20%~30%。\n整个流程可以用伪代码描述如下：\n端到端流程图（以本测试用例为例）\n下图把上述“4 张用户表 +\noplog\n”的实测场景串成一张时序图，体现出\n“\nopen backup cursor\n→立刻\nrelease oplog\n→按膨胀率降序拷表→\n每拷完一张就\nrelease\n一张→最后\nclose cursor\n”的完整链路：\n图中两个关键差异（相对优化前）：\n第\n0\n步：\n就把 oplog 这张膨胀最快的 capped 表从 backup snapshot 中摘掉，避免它在整个备份窗口里一直累积 freed block。\n第\n1\n步：\n每完成一张高膨胀率用户表的上传，就立刻对该表调用一次 WT_SESSION::backup_release_checkpoint(uri)，让该表的 freed block 在备份还没结束时就开始回流 free list —— 这是 hidden 节点峰值占用从 850.9GB 降到 524.3GB 的直接来源。\n4.2 内核侧改造二：oplog 不备份，并第一时间释放 ckpt\n接下来是 oplog.wt 这个“双冠王”的处理。前面已经论证过，oplog.wt 在backup 期间膨胀最严重、拷贝价值最低。我们的处理是两步走。\n第一步，在\nbackup\n一开始就立即\nrelease oplog\n：\n备份方拿到 file_list 之后，第一件事不是开始拷贝，而是先识别出`local.oplog.rs`对应 ident（通常是`collection-X-<oplogId>.wt`），立即调用`releaseBackupCheckpoint(oplog_ident)`。WT 收到通知后，下一次内部 checkpoint（~60秒内）就会把 oplog 的老 ckpt drop 掉，oplog.wt 在整个 backup 期间保持稳态大小。\n第二步，备份流程跳过\noplog.wt\n的拷贝：\n既然 release 之后 WT 可能在任何时候开始改写 oplog 的 extent，我们就不能再去拷贝它了。但简单跳过会带来一个新问题：MongoDB 的 catalog 元数据（`_mdb_catalog.wt`）和 WT 的 metadata（`WiredTiger.wt`）里都记录了`local.oplog.rs`这张集合，恢复时如果元数据指向一个不存在的 wt 文件，mongod 会启动失败。具体解决优化方法参考我们之前的分享: 《「腾讯云NoSQL」技术之MongoDB 篇:MongoDB 存储引擎备份性能70%提升内幕揭秘》\n备份端流程图如下(跳过 oplog.wt)：\n恢复端流程图如下：\n4.3 内核侧改造三：crash recovery 路径切换\n前面还有一个潜在问题没处理——backup 期间 mongod 进程异常退出之后的恢复路径。\n内核逻辑是：mongod 启动时检查 dbpath，看到`WiredTiger.backup`元文件，就认为这是个 backup 中间状态，走 hot backup restore 路径，从 backup 开始那一刻的 LSN 重放 WAL。如果 backup 已经持续了几小时，这一段 WAL 可能有 几百GB，重放下来要数十分钟级。\n目前内核没有给 mongod 留下“上次进程死亡时是否处于 backup 中”这个信息——`WiredTiger.backup`元文件本身只能表示“曾经开过 backup”，无法区分“backup 还活着”和“backup 已经完成但元文件未清理”两种情况，更没法和“crash 自愈”逻辑联动。我们的做法是在 mongod 进程内部引入一个 sentinel 标记文件（`backup.in_progress`，下文简称sentinel），让进程自己负责打标和清理；下次启动时由 mongod 启动路径自检该文件是否残留，自动完成`WiredTiger.backup`的invalidate。整个机制全部内聚在mongod 内部，运维侧零介入，不需要外部 wrapper、systemd 钩子或人工脚本。\nsentinel 的三处时机如下：\n05\n注意事项：备份过程中crash异常处理与解法\n还\n有一类隐患是 crash 后 mongod 自身能否正常启动：backup 期间若有部分表已 release，其老 ckpt 已被 drop、extent 已被新写入覆盖；若此时crash，dbpath 里`WiredTiger.backup`元文件仍然残留，原生路径会据此走 hot backup restore，试图按“backup开始那一刻的视图”打开这些表，而它们的老 ckpt 在物理上已不复存在——轻则`wiredtiger_open`报元数据不一致，重则读到错乱数据，启动直接失败。也就是说，release 优化本身在语义上已经让原生 hot backup restore 路径不再可用，必须有配套的启动路径切换。\n上文介绍的4.3节的 sentinel 方案也把这条路径堵住了：mongod 启动时若发现`backup.in_progress`残留，会主动把`WiredTiger.backup`删除掉，强制走 normal crash recovery——只依赖最新checkpoint + WAL，不再尝试还原任何已被 release 的视图，正确性与启动速度一次性兜住。\n换句话说，4.3节的优化不只是“启动快了10x”，更是 release 机制能安全上线的必要前提。\n06\n总结\n这次备份膨胀的优化，本质上是把 WiredTiger 的 hot backup 从“全或无”语义升级到“表级粒度”，把备份对生产环境的副作用降到最低。\n结合本文这套表级 release 优化 + 凌晨低峰期错峰备份的调度策略，腾讯云MongoDB 线上99%的实例膨胀率可以从最极端场景下的200%收敛到5%~10%的稳定区间——这意味着 hidden 节点的磁盘 buffer 预留可以从原来的2x大幅压缩到1.1x以内，单实例磁盘成本下降约60%，TB 级大集群的备份窗口也不再需要为膨胀峰值留冗余。剩余不足1%的极端场景（典型如备份期间超大写入压力 + 单表体量极大）我们通过无损在线 compaction 进一步优化解决——在不阻塞业务读写、不影响主从同步的前提下回收备份遗留的碎片空间，把这部分尾部实例也拉回到正常水位。\n该方案的技术细节与生产实践我们将在后续文章中专门分享。\n客户价值：\n前文提到的线上客户多表核心集群在启用本优化后，集群在数月间进行了上百次全量物理备份，Hidden 节点磁盘占用空间始终保持平稳，未再因备份导致的显著空间膨胀、需人工介入清理的情况。整体 Hidden 节点的磁盘空间膨胀率由约50%下降至5%，单节点磁盘空间节省约500GB。\n-End-\n感谢你读到这里，不如关注一下？👇\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

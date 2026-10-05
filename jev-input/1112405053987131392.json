@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1112405053987131392",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元推出轻量翻译大模型，无需联网，手机直接运行！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801544&idx=1&sn=2577b3e0d9118e271227e5bfd3e76f8a",
+      "date": "2026-05-15T09:37:00.027Z",
+      "chars": 3188,
+      "text": "腾讯技术工程\n2026-05-15 17:37\n广东\n随时随地就能翻译\n你可能用过各种翻译\n工具\n，\n但是\n大部分\n的\n应用\n，\n如果\n要\n实现\n好\n的\n翻译\n效果\n都有一个共同的\n条件\n：\n必须联网\n。\n设想\n一下\n：\n你在异国自驾，警笛声骤然响起。还没回过神，警察就在窗边用陌生的语言严厉发问。你心跳漏了半拍：是我违章了？还是前面出了什么大事？你手忙脚乱地掏出手机想翻译询问一下，偏偏此时没信号，屏幕上转圈的界面简直让人绝望。到底发生了什么？我应该挪车，下车还是掉头？\n在\n这关键时刻\n，翻译软件掉链子真的让人\n绝望\n。\n针对这些难题，\n腾讯混元\n团队\n带来了一份硬核解决方案\n。\n最近，腾讯混元推出极致量化压缩版本翻译模型 Hy-MT1.5-1.8B-1.25bit，\n把\n支持 33 种语言的翻译大模型压缩至 440MB，无需联网，\n下载\n即\n可\n直接在手机本地运行，翻译质量优于谷歌翻译。\n来看看这个演示，翻译速度真的很快，质量也很好：\n演示设备：\n高通骁龙 865\n，\n8\nGB\n内存\n基于混元翻译大模型Hy-MT1.5打造，翻译效果比肩商用翻译模型\nHy-\nM\nT\n1.5 是腾讯混元团队打造的专业翻译大模型，原生支持 33 种语言、5 种\n方言\n/民汉及 1056 个翻译方向。从常见的中英互译，到法语、日语、阿拉伯语、俄语，甚至藏语、蒙古语等\n少数\n民族\n语言\n，它都能游刃有余地处理。\n仅以 1.8B 参数量，Hy-\nM\nT\n1.5 实现了比肩商业翻译 API 和 235B 级大模型的翻译效果 。在严格的评测基准中，其翻译质量不仅超越了谷歌翻译等主流系统，更证明了在高效优化下，轻量级模型能够迸发出令人印象深刻的翻译能力。\nHy-\nM\nT\n1\n.\n5\n-\n1\n.\n8\nB\n翻译\n效果评分，详情见文末链接「\nHy-\nM\nT\n1\n.\n5\n技术\n报告」\n但问题来了：原始的 1.8B 模型即使在 FP16 精度下，依然占用 3.3GB 内存。对于手机上金子般的内存来说，依然太大、太慢，所以需要量化压缩。\n最极致的量化压缩，把模型装进手机\n量化压缩，简单来说就是：把模型里原本用16位数字(16-bit)表示的参数转用更低位数字储存。这就像把一幅高清照片压缩成缩略图，文件小了很多，但你还是能看清楚里面的内容。 针对不同的手机用户，腾讯特别推出了2-bit 与 1.25-bit 两种极致的量化压缩方案。\n不同\n大小\n的\n模型\n在\nFLORES\n-\n2\n0\n0\n中外\n互\n译\n的\n效果\n评分\n2-bit\n模型\n：\n性能与质量的平衡（适用：中高端机型）\n2-bit\n模型\n采用\n了\n业内\n顶尖的\n拉伸弹性\n量化\n（\nSEQ\n）\n，\n将\n模型\n参数\n量化\n至\n{\n-\n1\n.\n5\n，\n-\n0\n.\n5\n，\n0\n.\n5\n，\n1\n.\n5\n}\n，\n并\n结合\n量化感知蒸馏\n，在将模型体积压缩至\n574\nMB\n的同时，实现了几乎无损的翻译质量\n，\n效果\n超越\n上百\nGB\n的\n大模型\n。\n在支持 Arm SME2 技术的移动设备上，2-bit 模型能够实现更快速、更高效的推理。\n2\n-\nb\ni\nt\n模型\n在\nSME2\n及\nN\neon\n内核\n的\n速度\n对比\n演示\n1.25-bit\n模型\n：\nSherry 极致压缩（适用：全系机型）\n为了达成极致的轻量化\n，腾讯推出了基于\nSherry（稀疏高效三值量化）\n技术的 1.25-bit 模型。\n该技术方案已经\n被NLP\n顶级\n学术\n会议\nACL 2026录用\n。\n链接：\nhttps://arxiv.org/abs/2601.07892\nSherry\n压缩\n方案的核心逻辑在于“\n细粒度\n稀疏”\n策略\n：\n每4个模型参数，3个最重要的\n用\n1\n-bit\n储存\n，1个\n用\n0\n储存\n，\n平均每个参数仅需 1.25-bit。\n配合腾讯专门为手机 CPU 设计的\nSTQ\n内核\n，该方案实现了对 SIMD 指令集的完美适配。最终，3.3GB 的原始模型被进一步压缩至\n440MB\n，\n轻松常驻后台，让内存紧张的普通手机也能顺滑\n进行\n高质量\n离线\n翻译。\nF\nP\n1\n6\n(\n八倍速\n)\nv\ns\n.\n1\n.\n2\n5\nb\ni\nt\n速度\n对比，\n演示设备：\n高通骁龙888\n，\n8GB\n内存\n实际体验：全离线、零成本、零隐私暴露\n本次开源不仅包含模型权重，我们还特别制作了一个实际可用\n的\n腾讯\n混元\n翻译Demo版\n，\n特\n别\n适配了\n“后台取词模式”\n。无论是在\n本地\n查看\n邮件\n还是\n浏览网页\n，\n混元翻译\n都能随叫随到。\n无需网络，\n无需订阅\n，\n完全本地处理、不涉及个人信息的采集和上传\n，\n一次下载永久使用\n！\n演示设备：高通骁龙\n7\n+\ng\ne\nn\n2\n，\n1\n6\nGB\n内存\n立即体验\n所有的模型权重、代码及技术\n报告\n均已全面开源。（暂时\n只支持安卓体验demo， 后续正式版会添加对IOS等平台的支持。\n）\n体验链接\n：\nHuggingface\n（海外用户）\n:\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF/resolve/main/Hy-MT-demo.apk\n魔搭社区（国内用户）：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF/resolve/master/Hy-MT-demo.apk\n模型\n下载\n1、Hugging\nf\na\nc\ne\n（\n海外\n用户\n）\n：\n2\n-\nb\ni\nt\n模型\n权重\n：\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-2bit\n2-bit\n模型\ng\ng\nu\nf\n：\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-2bit-GGUF\n1\n.\n2\n5\n-\nb\ni\nt\n模型\n权重\n：\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-1.25bit\n1\n.\n2\n5\n-bit\n模型\ngguf\n：\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF\n2、魔\n搭\n社区\n（\n国内\n用户）\n：\n2-bit\n模型\n权重\n：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-2bit\n2-bit\n模型\ngguf\n：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-2bit-GGUF\n1.25-bit 模型权重\n：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-1.25bit\n1.25-bit\n模型\ngguf\n：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF\n3、技术\n报告\n：\nS\nh\ne\nr\nr\ny\n论文\n地址\n：\nhttps://arxiv.org/abs/2601.07892\nAngelSlim 技术报告：\nhttps://arxiv.org/abs/2602.21233\nHy-\nM\nT\n1\n.\n5\n技术\n报告\n：\nhttps://arxiv.org/abs/2512.24092\n4、代码\n仓库\n：\nAngelSlim:\nhttps://github.com/tencent/AngelSlim\n欢迎下载体验，\n分享\n你\n的使用感受~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1163027446744776704",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Loop Engineering 概念解析、思考与实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509834&idx=1&sn=b514f1bc2616df514cb218a5bad28296",
+      "date": "2026-06-18T10:21:00.998Z",
+      "chars": 10077,
+      "text": "飞樰\n2026-06-18 18:21\n浙江\n技术探索过程中的一些心得与总结。\n这是2026年的第\n25\n篇文章\n（ 本文阅读时间：约20分钟 ）\n01\n背景\n此前已有不少文章围绕\nAgent\n自进化这个主题展开过讨论，内容涵盖了\nHermes Agent\n等自进化框架，以及\nSkill\n自进化等具体技术方向。而最近，\nAI\n领域又出现一个新的概念，叫做\nLoop\n（循环）或者叫\nLoop Engineering\n（中文翻译一般叫“\n循环工程”\n）。因此，本文将重点聊聊这个话题，尽量系统化地介绍一下\nLoop\n与\nLoop Engineering\n究竟是什么，以及它们背后有哪些思考。\n之所以关注\nLoop\n以及\nLoop Engineering\n的技术概念，主要是因为最近\nAI\n行业里不少大佬都在密集讨论这个话题。\n首先，作为\nAI\n领域的风向标，\nAnthropic\n公司\nClaude Code\n的负责人\nBoris Cherny\n就明确表示，他在使用\nClaude Code\n时已经\n不再手写提示词\nPrompt\n了，而是\n转向编写\nLoop\n，用\nLoop\n来驱动工作流的完成。与此同时，小龙虾\nOpenClaw\n的创始人\nPeter Steinberger\n也在\nX\n上指出过，不应该再用传统的提示词去指挥\nAgent\n，而应该\n通过设计\nLoop\n来引导\nAgent\n的行为\n。此外，\nAI\n大神，也是\nVibe Coding\n和\nLLM-Wiki\n的提出人\nAndrej Karpathy\n，也在同样强调说“\n你必须把你自己从\nLoop\n的执行过程中移除出去”\n。就在\n6\n月初（也就是上周），\nGoogle AI\n总监\nAddy Osmani\n专门写了一篇文章，正式定义了「\nLoop Engineering」\n这个概念\n[1]\n，并在文章开头就给出了一句核心定义：\nLoop engineering is replacing yourself as the person who prompts the agent. You design the system that does it instead.\n（\nLoop Engineering\n就是把你从“\n给\nAgent\n提示词的人”\n这个位置上替换掉。你不需要再亲自去写提示词，而是转而设计一套能够自动完成这件事的系统）。\n听到这里，可能很多同学会觉得：\nLoop\n？不就是循环吗？\nAgent\n本身不就是一个\nLoop\n吗？但需要强调的是，此\nLoop\n非彼\nLoop\n。接下来就重点拆解一下这背后的区别与深意。\n02\nAgent Loop vs Loop Engineering\n要理解\nLoop Engineering\n，首先需要搞清楚这个\nLoop\n与基础的\nAgent Loop\n的本质区别。\n先来看看\nAgent Loop\n。本质上讲，\nAgent\n本身就是一个\nLoop\n。正常情况下，大模型运行一次就是“\n输入一段话、输出一段话”\n，它本身并不会在一次回复里自动完成工具调用和推理，形成一条很长的\nAgent\n轨迹（\nTrajectory\n）\n。所以，想让\nAgent\n持续、自动化地运行，就必须把它构建成一个\nLoop\n。\nAgent Loop\n的核心逻辑其实很简单：当输入进去之后，大模型的输出通常有两种情况。一种是\n直接给出\nResponse\n，流程就结束了；另一种是\n返回\nFunction Call\n。如果把\nFunction Call\n对应的工具执行结果再次作为“\n输入”\n喂给大模型，这就形成了一个循环。如果下一轮模型输出的是\nResponse\n，循环就停止；如果依然是\nFunction Call\n，就会继续调用下一个工具，进入下一轮循环。换句话说，只要把所有关键步骤都设计成\nFunction Call\n，模型就能在这个过程中不停地循环调用各种工具链，同时穿插必要的\nResponse\n，从而形成一个完整的\nLoop\n。\n无论现在的\nAgent\n有多复杂，底层都是基于这个简单的原理构建的。当然，在实际运行中，\nLoop\n也可能会出现不可控的情况，比如模型该调用工具时突然断了、产生幻觉，或者陷入死循环等等。针对这些问题，业界也有很多应对做法。例如，可以引入一个\n额外的\nValidation Agent\n来做验证\n，发现任务中断时再把它拉起来继续跑；也可以设置一个\nMax Steps\n上限\n，让模型在陷入死循环时能够强制跳出，避免无谓地消耗\nToken\n资源。包括大家熟知的\nReAct\n、\nRalph Loop\n等，本质上都是\nAgent Loop\n的不同变种。归根结底，\nAgent\n最核心的逻辑就是一个\nLoop\n。\n那问题来了，既然\nAgent Loop\n早就有了，为什么最近各路\nAI\n大佬又开始密集讨论它？他们口中的\nLoop\n和\nLoop Engineering\n到底是什么？\n其实，大佬们说的这个\nLoop\n，跟刚才讲的底层\nAgent Loop\n完全不是一回事。底层的\nAgent Loop\n是\nAgent\n最核心的基础循环，现在已经是默认的基础设施了，没必要再单独拿出来强调。而他们真正想表达的\nLoop\n以及\nLoop Engineering\n，是构建在\nAgent\n之上或者说\nHarness\n之上的，是一种\n由人来设计和控制\nAgent\n使用方式的新的范式\n。\n举个例子，正常情况下用\nAgent\n，大概率是这样的流程：提一个需求，比如“\n帮我实现某某系统的代码”\n或者“\n搭建一个某某系统”\n，然后\nClaude Code\n、\nCodex\n这些工具就开始执行。虽然底层有\nAgent Loop\n在跑，中间也做了各种任务拆解，但最终它会把一个完整的系统交付过来。整体来看，这依然是一个“\n一次性”\n的过程：提需求，模型干活，最后交付结果。这时候人要做的就是验收：跑一下系统、看看效果、调试一下是否满足预期。\n但在实际使用中，经常会发现一次提了的需求，\nAgent\n最后的产出结果\n并不能完全满足预期，\n或者说在测试过程中暴露出来很多问题。于是网上就出现了一个很火的梗：以前写代码用的是标准的\nQWERTY\n键盘，到了\nAI\n时代，“\n键盘”\n变成了几个固定按钮，比如“\n说中文”\n、“\n继续”\n、“\n还是报错”\n、“\n你改了啥”\n、“\n先别重构”\n、“\n回滚”\n等等。用\nClaude Code\n或\nCodex\n时，指令还真就大概率是这些。虽然是个梗，但这确实是当下使用\nAI\n的真实常态。\n03\n「人机协同循环」重构为「自动化验收闭环」\n当高频地使用“\n继续”\n、“\n报错”\n、“\n回滚”\n这些指令去催促模型完善、调试或修改错误时，是不是可以思考，\n这个动作本身是不是也可以自动化？\n所以，大佬们提出所谓的\nLoop\n和\nLoop Engineering\n，本质上就是想解决这个问题：能不能在提完需求之后，模型不用等人再去喊“\n检查错误\n或”\n不符合预期”\n，而是自己先对自己说这些话，主动完成验证？也就是说，让模型\n把原本需要人来催的环节自动化掉。\n但光做到这一步可能还不够。因为在实际场景中，验证和测试往往比较复杂，可能有专门的验证集、测试用例。期望的流程是：第一步让模型完成开发，第二步让它基于测试集去跑，拿到反馈的错误后再去调优系统，然后再测试、再调优\n……\n这是一个大的循环。以前这叫「\n人在循环（环路）」\n（\nHITL\n，\nHuman-in-the-Loop\n），人在这个大循环里做验证和测试；而现在的思路是，能不能让模型自己在这个外部验收项目的\nLoop\n里闭环跑起来？注意，这已经不是底层那个小的执行\nAgent Loop\n了，而是一个\n更上层的、面向需求验收\n的外部\nLoop\n。\n但问题是，如果不去设计这个\nLoop\n，不把循环逻辑写清楚，模型很可能就不\nLoop\n，或者瞎\nLoop\n。这也是为什么现阶段大家都在提倡\nLoop Engineering\n，就是为了避免写一次性的\nPrompt\n、提一次性的需求，然后人在里面不停地跟\nAI\n人机协同、反复调试。那种方式既不自动化，又耗时耗力，人还特别累。如果能提前把\n开发需求、验证内容、预期目标都定义清楚\n，\nAgent\n是不是就能在整个过程中自己\nLoop\n起来？至少在不万不得已需要人介入的情况下，它能尽快自动化地达到想要的目标。\n这或许才是\nLoop Engineering\n最近兴起的根本原因：人们其实是在原有基础上再次追求效率的提升。回想一下\nAI Coding\n的演进过程：最开始人们不满足于自己写代码，于是\n让\nAI\n写\n；后来不满足于短任务，开始用\nAgent\n跑长链条任务；再后来不满足于\nAgent\n只在本机运行，让它\n上云端、上移动端\n，有了\nOpenClaw\n这样的产品；接着又不满足于\nSkill\n是静态固定的，希望它能\n自进化\n；而现在，人们已经不满足于使用这些工具本身了，因为里面还有大量的人工交互和参与。所以大家希望更进一步，\n把从开发到验证、再到反馈调优的整个循环\n都设计好，让\nAgent\n自己动起来，\nLoop\n出一个更完善的系统。如果一个系统能把这个外部\nLoop\n跑得又好又稳，那才真正体现了它处理长程任务的核心能力。\n说白了，\nLoop Engineering\n本质上就是一种可以循环起来的\nPipeline\n。这种\nPipeline\n的触发方式主要有两种：第一种是\n人工触发\n，就跟现在提需求一样，直接写一个\nLoop\n形式的\nPipeline\n，让它一步步自动执行下去，这在现阶段已经完全可以实现了；第二种是\n定时触发\n，适用于那些需要周期性执行的任务。比如在\nAI Coding\n场景下，很多开发者每天都要拉取\nPR\n、做\nReview\n、审核、合并分支，只要把评审和合并的逻辑定义清楚，这个任务就可以每天自动跑；再比如公司里的周报、日报，也可以根据预设好的数据源让模型每天自动抽取汇总；甚至像股票盯盘系统，每天定时抓取信息、选股、交易，这些过程都可以写成\nLoop\n定时完成。所以归根结底，这就是一种让\nAI\n自动运行的机制。\n这里面其实有一个非常关键的变化脉络：从\nCoding\n到\nVibe Coding\n，是\n从「\n写代码」\n变成了「\n提需求」\n；而从\nVibe Coding\n到\nLoop Engineering\n，则是从“\n提一个需求”\n变成了“\n提一套闭环流程”\n。不再只是告诉模型要\n做什么\n，而是把\n从开发、测试、验收、调优，再到反馈迭代\n的完整链路都定义好，让模型在这个流程里自己转起来。这或许才是\nLoop Engineering\n最核心的价值所在。\n04\nLoop Engineering 的六大核心框架\n其实关于\nLoop\n这个概念，业界已经关注了一段时间，但此前一直没有看到系统性的总结文章。主要原因在于，它当时还比较零散，更多只是大家在提需求时尝试用循环的方式去描述，没有形成一套系统化的方法论。直到最近，\nGoogle AI\n总监\nAddy Osmani\n对\nLoop Engineering\n做了相对完整的梳理和定义，这个概念总算有了比较清晰的雏形，也到了可以拿出来系统讨论的时候。做科普的同时，也希望大家能借此思考一下：在自己的项目或日常工作、生活中，是否可以引入这种\nLoop Engineering\n的思维，让\nAgent\n真正自动化跑起来、闭环起来。\n根据\nAddy Osmani\n的定义，一个完整的\nLoop\n主要包含以下\n六个核心部分\n，下面逐一来看。\n1. Automations（自动化）\n有了\nAutomations\n（自动化），\nLoop\n就可以\n定时循环\n了，不然就只是手动跑一次的一次性操作。比如使用\nCodex\n就可以创建一个自动化任务：选好项目、定好要跑的\nPrompt\n、设好频率，还能选是在本地代码上跑还是在后台分支上跑。要是跑出来发现问题了，它就进\nTriage\n收件箱；没发现问题就直接自动归档。比如每天的一些问题分类、\nCI\n失败总结、写提交简报，还有排查上周别人引入的\nBug\n等等。\nCodex\n还有个命令，叫做\n/goal\n，会在多轮对话里持续工作，一直跑到设定的条件真正满足为止，还支持暂停、恢复和清除。\nClaude Code\n也类似，只不过它是靠\nCron\n调度和\nHook\n实现的。可以用\n/loop\n命令让某个\nPrompt\n或命令按间隔跑，可以设\nCron\n定时任务，也能在\nAgent\n生命周期的特定节点用\nHook\n触发\nShell\n命令。核心逻辑也一样：定义一个自主任务，给它定好节奏，然后等着结果就可以了。另外，\nClaude Code\n也支持\n/goal\n命令，每轮交互之后，会有个独立的小模型来检查是不是完成了，因此写代码的\nAgent\n不是给自己打分的那个。只要给它定个目标，比如“\ntest/auth\n下所有测试都通过且\nlint\n检查无误”\n，然后就可以不管了。\n2. Worktrees（工作树隔离）\n只要同时跑多个\nAgent\n，就很容易有文件冲突的问题，也很容易导致任务失败。两个\nAgent\n同时改同一个文件，就有点像两个工程师没打招呼就往同一行代码里提交修改一样，那么怎么解决呢？其实很简单，使用\nGit\n的\nWorktree\n就能解决这个问题，它本质上是一个独立的工作目录，有自己的分支，但共享同一个仓库历史，所以一个\nAgent\n的改动根本碰不到另一个\nAgent\n的代码。\nCodex\n是直接把\nWorktree\n支持内置进去了，这样多个线程可以同时操作同一个仓库而不会互相打架。\nClaude Code\n也提供了相同的隔离能力：可以用\n--worktree\n参数在一个独立的\ncheckout\n里开启会话，也可以给子\nAgent\n设置\niso\nlation: worktree\n，让每个\nAgent\n都拿到一份全新的、用完自动清理的代码副本。这样就让并行任务之间隔离了起来，避免\n\"\n打架\n\"\n。\n3. Skills（可进化的技能包）\n关于\nSkill\n，之前的文章中已讲过多次，这里就不赘述了。\nSkill\n就是一种可渐进式披露、可复用的能力包，基本上由\nMarkdown\n文档、代码脚本这些组成。但在\nLoop Engineering\n这里，如果\nSkill\n具备\n自我沉淀\n的能力，它就能在\nLoop\n的每一次循环中不断更新、积累经验，变成一种“\n活的知识”\n。这样\nAgent\n就不会每次都在同一个坑里跌倒，而是越跑越聪明，真正实现能力的迭代与复用。\n4. Connectors / Plugins（连接器 / 插件）\nConnectors / Plugins\n本质上就是\nMCP\n及其延伸的各类工具，负责把各种外部\nAPI\n工具接入\nAgent\n。有了这些，模型才能真正“\n伸手”\n触达现实世界中的各类服务与数据源。没有\nConnectors\n或者\nPlugin\n，\nAgent\n就只是一个封闭的推理引擎；有了它，\nAgent\n才具备完成实际任务的行动能力。这也早就是目前大家最熟悉、落地最广泛的基础设施了。\n5. Sub Agents（子智能体）\n第五个核心部分是\nSub Agents\n，也就是子\nAgent\n。可以把它理解为在主\nLoop\n运行过程中动态生成的\n「\n分支智能体」\n，它们各司其职，共同支撑整个循环的高质量运转。\n举个典型的例子：当主\nAgent\n完成开发任务后，可以生成一个独立的验收\nSub Agent\n来检查结果。这个验收\nAgent\n拥有自己专属的\nPrompt\n和验证标准，与主\nAgent\n完全解耦。这种设计刻意制造了一种“\n博弈”\n的关系，如果主\nAgent\n的产出不符合需求，验收\nAgent\n就会提出质疑和挑战。之所以不让主\nAgent\n自我检查，是因为它往往“\n当局者迷”\n，就有点像人一样，自己写完代码总觉得完美无缺，但换个人一看就能发现问题。引入独立的验证\nSub Agent\n，本质上就是用角色隔离来打破这种认知盲区。\n当然，\nSub Agent\n的价值远不止于验证。在复杂任务中，探索、设计、实现等环节都可以拆分为独立的\nSub Agent\n并行执行。它们各自拥有更大的发挥空间，又能通过相互制衡提升整体产出质量。不过需要注意的是，\nSub Agent\n并非越多越好。如果缺乏主\nAgent\n的有效调度，多个子\nAgent\n很容易各干各的，导致结果分崩离析、失去一致性。因此，是否拆分、如何拆分，必须根据具体任务特性来决定。\n关于这部分更细致的实践技巧，之前讨论\nClaude Code\n的文章中已有详细展开，这里不再赘述。核心原则是：对于探索性、分析性的子任务，可以大胆生成\nSub Agent\n来分担；但最终结果必须汇总回主\nAgent\n进行整合；而验证类\nSub Agent\n，则务必保持独立，避免“\n既当运动员又当裁判员”\n。只有这样，\nLoop\n才能在自动化运转的同时，守住质量的底线。\n6. 状态（State）\n最后，是状态管理，也就是怎么追踪\n「\n哪些事已经做完了」\n。这块可以用\nMarkdown\n文件来记录，比如搞个\nAGENTS.md\n或者专门的进度文件；要是习惯用\nLinear\n这类项目管理工具，也可以通过\nMCP\n连接器直接对接上去，让\nAgent\n自动同步状态。\n05\n简单实践与思考\n讲了这么多理论，接下来举一个实际落地的\nLoop\n例子。\n如果看\nAddy Osmani\n的原文或者网络上其他文章谈\nLoop Engineering\n的案例，会发现绝大多数都是围绕代码审查、自动\nPR\n、\nCI/CD\n这些场景展开的。这些例子确实经典，这里就不再赘述了。这里分享的是一个经过小测试验证过的、用\nClaude Code\n或\nCodex\n都能轻松实现的\nLoop\n实践。\n具体来说，是一个简单的\n文本分类任务\n：手头有一批文本，需要按预设标准分成几个类别。\n传统方式：\n写一个提示词，告诉模型分类标准和数据样例，让它输出分类结果；然后人工检查准确率，发现不准就手动反馈调整；最后把调好的提示词沉淀成\nSkill\n，供下次复用。整个过程高度依赖“\n人”\n在中间反复校验和修正。\nLoop\n方式：\n把“\n验证”\n和“\n迭代”\n直接写进\nLoop\n的定义里。具体来说，可以这样描述任务：“\n请完成文本分类，分类标准为\n1/2/3/4/5\n；完成后，请严格按照该标准对结果进行自评；若发现错误，请主动修正分类逻辑或标准，直到满足要求；最终将稳定的分类能力沉淀为\nSkill\n。”\n同时设定量化目标，比如“\n在\n100\n条测试数据上，准确率\n≥95%\n或者错误率\n≤5%”\n。那么这个目标写入\nLoop\n之后，\nAgent\n就会自主循环打磨，不断逼近这个指标，无需人工中途干预。\n看到这里，可能有同学会问：这不就是之前文章里提到比如\nEvoSkill\n、\nSkillOpt\n这些\nSkill\n自进化差不多吗？\n确实很像，主要区别就在于：\n这个过程完全由\nAgent\n自主驱动完成的\nLoop\n，不依赖任何外部开源框架或预置代码。\nAgent\n会在\nLoop\n运行中自己构建一套类似\nEvoSkill\n的验证与优化机制，自己跑测试、自己改逻辑、自己沉淀能力。\n其实，这也是一个值得关注的趋势：在\nAI\n时代，未必需要先造一个全新的框架才能实现高级能力，只要用\nClaude Code\n或\nCodex\n写一个结构化的\nLoop\n，很多原本需要工程化封装的能力，现在可以直接\n\"\n跑\n\"\n出来。\n这个小例子也再次印证了\nLoop Engineering\n的核心意义：它不是取代\nAI Coding\n，而是在\nAI Coding\n的基础上，进一步压缩了\nHuman-in-the-Loop\n的比例。人不再需要全程盯着、反复纠错，只需\n设定清晰的目标和验收标准\n，然后等待\nAgent\n自主达到预期水位后再做\n最终确认\n。所以\nLoop Engineering\n概念也没那么复杂，它可以被普通人快速上手，并在真实任务中显著提升自动化程度与交付质量。上面提到的文本分类的例子，就是抛砖引玉做个简单实验，大家完全可以照着这个思路，在自己的日常工作里多试一试。\n比如文本分类任务如果每天都要跑，也可以设成定时\nLoop\n每天去运行。不过更推荐的做法是把这类成熟任务沉淀成脚本或者\nSkill\n，而不是每天现开一个\nLoop\n去跑。原因很简单：一是每天重跑\nLoop\n太费\ntoken\n；二是大模型每次跑\nLoop\n的实现路径不一定一样，哪怕需求没变，今天和明天的代码、实现方式也可能有较大差别，结果就容易漂移，不好复现。\n所以比较合理的建议是：如果流程是固定的、不需要模型每次都重新推理，那就直接写成脚本；如果确实需要模型每天介入、做动态判断，那就把它做成可复用的\nSkill\n。这样既用上了\nLoop Engineering\n的思路，又能保证运行的稳定、成本可控。\n当然这只是一点经验之谈，不是什么标准做法。具体怎么技术选型，大家还是结合自己的业务、成本和质量要求，自己评估着来就好。\n06\nLoop 不是银弹，用之前需要先想清楚\n最后还需要补充几点。虽然\nLoop\n确实是个提效的好手段，但用的时候一定要清醒：\n它不是什么横空出世的全新技术，只是在原有基础上把自动化又往前推了一步。\nAI\n的发展本来就是循序渐进的，很少有突然蹦出来一个完全颠覆的东西，更多是量变引起质变，慢慢长出新的效果。\n另外特别要提醒的是：用\nLoop\n的时候，\n需求和验证标准必须比原来写得更加明确。\n为什么？因为以前提需求哪怕模糊一点也没关系，模型先出个初版，人在\nHuman-in-the-Loop\n的过程中可以\n不断纠偏、调整，靠人工反馈\n来保证最终结果的可靠性。但用了\nLoop\n之后，中间过程人不参与了，如果开头没把需求写清楚、没把验证逻辑定义明白，\nLoop\n很可能从一开始就跑偏了，验证也不是按预想来的。跑了一大圈、烧了很多\ntoken\n，最后出来的东西还是跟预期差十万八千里。\nLoop\n虽然好用，但它对使用者描述需求和验证的能力要求其实更高了。因为希望模型自闭环跑，它就没机会中途确认，只能自己发挥。而模型的“\n自己发挥”\n跟真实想法之间往往是有\ngap\n的。对于顶尖大牛来说这可能不是问题，所以他们用得飞起；但对大多数人来说，如果发现很难把需求和验证写清楚、把控不住\nLoop\n的效果，那还是建议老老实实回到\nHuman-in-the-Loop\n的模式，先人工迭代几轮再说。毕竟\ntoken\n烧起来成本不低，盲目让模型自主跑一大通却拿不到想要的结果，其实是时间和钱的双重浪费。\n所以这次聊\nLoop Engineering\n，好处和坑都尽量讲清楚了：\n当有明确的需求和清晰的验证标准\n时，\nLoop\n绝对是\n提效神器\n，能省下大量时间和成本；但如果需求和验证都是\n模糊\n的，那人在中间不停反馈、校正、确认，反而可能是更稳妥、更经济的选择。\n技术方法论没有对错，只有适不适合。\nAI\n时代从来没有万金油，每种思想都有它的适用边界。这点格外提出来，就是希望大家用的时候能多留个心眼，别为了用而用。\n07\n总结\n这篇文章的内容到这里就全部结束了。如果看完之后有什么疑问、不同的看法，或者在实践中遇到了什么问题，都非常欢迎在评论区留言交流探讨。\n最后还是要说明一下，本文内容只是技术探索过程中的一些心得与总结，纯属一家之言、经验之谈。受限于认知和实践范围，文中难免存在疏漏、片面甚至错误的地方，还请各位读者朋友不吝批评指正。互相学习、共同提升，才能更好地将\nAgent\n技术应用到各自所属的业务领域中。\n在\nAI\n时代浪潮奔涌向前的当下，技术迭代日新月异，唯有保持开放心态、持续精进，才能不被落下。愿大家都能在这条路上携手同行，一起往前走，再进一步！\n08\nReferences\n[1] Loop Engineering：\nhttps://addyosmani.com/blog/loop-engineering/\n[2] Loop Engineering: Build Self-Running Coding Agents 2026\nhttps://www.the-ai-corner.com/p/loop-engineering-coding-agents-2026\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.77,
+        "irrelevant": 0.1,
+        "peripheral": 0.13,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.82,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.18,
+        "2": 0.79,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.06,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.17,
+        "2": 0.45,
+        "3": 0.18,
+        "4": 0.09,
+        "5": 0.02
+      }
+    },
+    "decision_action": {
+      "score": 1.33,
+      "probabilities": {
+        "0": 0.41000000000000003,
+        "1": 0.06,
+        "2": 0.38,
+        "3": 0.11,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.07,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.85,
+        "3": 0.11,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.85,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.19,
+        "4": 0.64,
+        "5": 0.14
+      }
+    },
+    "anti_hype": {
+      "score": 3.76,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.03,
+        "3": 0.16,
+        "4": 0.8,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 10046,
+    "outputTokens": 172,
+    "totalTokens": 10218
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.71,
+        "relevance": 0.85,
+        "grounding": 0.49,
+        "decision_action": 0.12,
+        "evidence": 0.89,
+        "actionability": 0.72,
+        "anti_hype": 0.83
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179802025,
+                "endTime": 1791179802187,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000421932",
+      "marketCost": "0.000421932",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000421932",
+      "inferenceCost": "0.000421932",
+      "inputInferenceCost": "0.000421932",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5HCSD8YSC3RMRBPETRVW"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:42 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::l2mg5-1791179801767-0e74c61deb85"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.77,
+            "irrelevant": 0.1,
+            "peripheral": 0.13,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.82,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.18,
+            "2": 0.79,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.06,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.17,
+            "2": 0.45,
+            "3": 0.18,
+            "4": 0.09,
+            "5": 0.02
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.33,
+          "probabilities": {
+            "0": 0.41000000000000003,
+            "1": 0.06,
+            "2": 0.38,
+            "3": 0.11,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.07,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.85,
+            "3": 0.11,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.85,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.19,
+            "4": 0.64,
+            "5": 0.14
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.76,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.03,
+            "3": 0.16,
+            "4": 0.8,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 10046,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.71,
+            "relevance": 0.85,
+            "grounding": 0.49,
+            "decision_action": 0.12,
+            "evidence": 0.89,
+            "actionability": 0.72,
+            "anti_hype": 0.83
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179802025,
+                    "endTime": 1791179802187,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000421932",
+          "marketCost": "0.000421932",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000421932",
+          "inferenceCost": "0.000421932",
+          "inputInferenceCost": "0.000421932",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5HCSD8YSC3RMRBPETRVW"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:41.411Z"
+  }
+}

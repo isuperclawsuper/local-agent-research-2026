@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1168945864601800704",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "你讲卫生吗？ \n \n \n \n\n\nEnri，一位腾讯AI产品工程师，\n过去半年Enri和大模型打交道，最大收获就两个字：卫生。 \n不是物理卫生，是交互习惯的卫生。Token 越来越便宜，但你的注意力和决策带宽不会。脏活干多了，模型变傻，脑子也跟着乱。 \n\n以下七条实战经验：\n\n一、锁死模型配置 \n很多工具默认\"自适应思考\"，实际上它会让Token 消耗失控。正确做法是固定配置：推理档位锁死 high，关掉自适应，思考预算设上限 32K，关掉超长上下文，设定 200K 自动压缩。降智是你没把档位锁死，不是模型变笨。  \n \n二、固定内容别动，利用缓存 \n模型对完全相同的输入前缀有缓存命中机制，重复使用只需十分之一的费用。长期不变的内容（如身份、业务、输出偏好、原则、约束）固定下来，不要每次重新组织语言。临时放本次任务、材料、目标、截止时间。变动的成本远高于你想象。 \n \n三、别喂 PPT \nPPT、Word 这类复杂格式文件包含大量排版控制信息，喂给模型会消耗 80% 以上的无效 Token。先转成 Markdown 再喂。格式是给人看的，Markdown 是给模型看的。 \n \n四、别让会话变垃圾桶 \n超长会话堆积历史日志和工具调用记录，模型翻旧账，又贵又慢。换任务就开新对话，跑偏了重开重说背景，距上一条超一小时也重开。只有同一任务连续推进且不足一小时，留原对话才划算。 \n \n五、让 AI 看一段，别扫一片 \n用 @ 精准指定文件或函数，别让 AI 自己扫描整个项目。@文件名引用文件，@函数名引用函数，选中代码直接改。改一个验证规则从扫几十个文件降到几百 Token，差距是几十倍。能 @ 函数不 @ 文件，能 @ 文件不靠扫描。 \n \n六、让模型先问 \n告诉模型\"你一次问我一个问题，帮我把思路理清\"，等它问完再整理成文档，产出的 AI 感会弱很多。或先问\"你需要我给你什么信息才能完成得更好？\"，让模型主动暴露你的盲区。让模型先问，比让模型先猜便宜。 \n \n七、把想和干拆开 \n用顶配模型讨论方案，只出方案不动文件；然后交给便宜模型机械执行。顶配模型不需要读取整个项目，消耗降 3-5 倍；便宜模型不思考只管干，Token 极便宜。机械的活交给机器，思考留给最贵的脑子。 \n\n这些习惯不是为了省钱。Token 会继续变便宜，但你的思考带宽和注意力不会。AI 太便宜反而容易滥用——一十个 Agent 全开，扫整个项目，无限试错无限返工。 \n你的决策带宽有限。对自己前额叶好点，注意 AI 时代的工作卫生。",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802164&idx=1&sn=cbd6e39ed31765be87a5a97846dab9a8",
+      "date": "2026-06-23T10:45:00.270Z",
+      "chars": 1055,
+      "text": "腾讯技术工程\n2026-06-23 18:45\n广东\n你讲卫生吗？\nEnri，一位腾讯AI产品工程师，\n过去半年Enri和大模型打交道，最大收获就两个字：卫生。\n不是物理卫生，是交互习惯的卫生。Token 越来越便宜，但你的注意力和决策带宽不会。脏活干多了，模型变傻，脑子也跟着乱。\n以下七条实战经验：\n一、锁死模型配置\n很多工具默认\"自适应思考\"，实际上它会让Token 消耗失控。正确做法是固定配置：推理档位锁死 high，关掉自适应，思考预算设上限 32K，关掉超长上下文，设定 200K 自动压缩。降智是你没把档位锁死，不是模型变笨。\n二、固定内容别动，利用缓存\n模型对完全相同的输入前缀有缓存命中机制，重复使用只需十分之一的费用。长期不变的内容（如身份、业务、输出偏好、原则、约束）固定下来，不要每次重新组织语言。临时放本次任务、材料、目标、截止时间。变动的成本远高于你想象。\n三、别喂 PPT\nPPT、Word 这类复杂格式文件包含大量排版控制信息，喂给模型会消耗 80% 以上的无效 Token。先转成 Markdown 再喂。格式是给人看的，Markdown 是给模型看的。\n四、别让会话变垃圾桶\n超长会话堆积历史日志和工具调用记录，模型翻旧账，又贵又慢。换任务就开新对话，跑偏了重开重说背景，距上一条超一小时也重开。只有同一任务连续推进且不足一小时，留原对话才划算。\n五、让 AI 看一段，别扫一片\n用 @ 精准指定文件或函数，别让 AI 自己扫描整个项目。@文件名引用文件，@函数名引用函数，选中代码直接改。改一个验证规则从扫几十个文件降到几百 Token，差距是几十倍。能 @ 函数不 @ 文件，能 @ 文件不靠扫描。\n六、让模型先问\n告诉模型\"你一次问我一个问题，帮我把思路理清\"，等它问完再整理成文档，产出的 AI 感会弱很多。或先问\"你需要我给你什么信息才能完成得更好？\"，让模型主动暴露你的盲区。让模型先问，比让模型先猜便宜。\n七、把想和干拆开\n用顶配模型讨论方案，只出方案不动文件；然后交给便宜模型机械执行。顶配模型不需要读取整个项目，消耗降 3-5 倍；便宜模型不思考只管干，Token 极便宜。机械的活交给机器，思考留给最贵的脑子。\n这些习惯不是为了省钱。Token 会继续变便宜，但你的思考带宽和注意力不会。AI 太便宜反而容易滥用——一十个 Agent 全开，扫整个项目，无限试错无限返工。\n你的决策带宽有限。对自己前额叶好点，注意 AI 时代的工作卫生。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.67,
+        "direct_local": 0,
+        "transfer_business": 0,
+        "peripheral": 0.13,
+        "irrelevant": 0.2
+      }
+    },
+    "relevance": {
+      "score": 1.73,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.22,
+        "2": 0.75,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.12,
+      "probabilities": {
+        "0": 0.27,
+        "1": 0.45,
+        "2": 0.19,
+        "3": 0.08,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.91,
+      "probabilities": {
+        "0": 0.57,
+        "1": 0.09,
+        "2": 0.21,
+        "3": 0.13,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.67,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.28,
+        "2": 0.65,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.1,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.03,
+        "2": 0.04,
+        "3": 0.68,
+        "4": 0.24,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.1,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.13,
+        "2": 0.43,
+        "3": 0.33,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3798,
+    "outputTokens": 172,
+    "totalTokens": 3970
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.59,
+        "relevance": 0.81,
+        "grounding": 0.56,
+        "decision_action": 0.39,
+        "evidence": 0.73,
+        "actionability": 0.75,
+        "anti_hype": 0.53
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179959741,
+                "endTime": 1791179959878,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000159516",
+      "marketCost": "0.000159516",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000159516",
+      "inferenceCost": "0.000159516",
+      "inputInferenceCost": "0.000159516",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AABDCBGGM27PMH9DAD710"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:19 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::fbw58-1791179959719-6c37df4ca870"
+    },
+    "body": {
+      "answers": {
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.67,
+            "direct_local": 0,
+            "transfer_business": 0,
+            "peripheral": 0.13,
+            "irrelevant": 0.2
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.73,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.22,
+            "2": 0.75,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.12,
+          "probabilities": {
+            "0": 0.27,
+            "1": 0.45,
+            "2": 0.19,
+            "3": 0.08,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.91,
+          "probabilities": {
+            "0": 0.57,
+            "1": 0.09,
+            "2": 0.21,
+            "3": 0.13,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.67,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.28,
+            "2": 0.65,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.1,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.03,
+            "2": 0.04,
+            "3": 0.68,
+            "4": 0.24,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.1,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.13,
+            "2": 0.43,
+            "3": 0.33,
+            "4": 0.03,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3798,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.59,
+            "relevance": 0.81,
+            "grounding": 0.56,
+            "decision_action": 0.39,
+            "evidence": 0.73,
+            "actionability": 0.75,
+            "anti_hype": 0.53
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179959741,
+                    "endTime": 1791179959878,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000159516",
+          "marketCost": "0.000159516",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000159516",
+          "inferenceCost": "0.000159516",
+          "inputInferenceCost": "0.000159516",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AABDCBGGM27PMH9DAD710"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:19.124Z"
+  }
+}

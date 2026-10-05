@@ -1,0 +1,353 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6336,
+      "text": "取参考资料（含路径穿越安全检查）═══\ndef\nread_skill_resource\n(\nself, skill_name:\nstr\n, resource_path:\nstr\n) ->\nstr\n:\nskill =\nself\n.skills.get(skill_name)\nif\nnot\nskill:\nreturn\nf\"Skill '\n{skill_name}\n' not found.\"\nfull_path = os.path.join(skill.directory, resource_path)\n# 关键安全检查：防止 LLM 被注入后通过 \"../../../etc/passwd\" 读取系统文件\nreal_skill_dir = os.path.realpath(skill.directory)\nreal_resource_path = os.path.realpath(full_path)\nif\nnot\nreal_resource_path.startswith(real_skill_dir):\nreturn\n\"Access denied: resource path escapes skill directory.\"\nif\nnot\nos.path.isfile(full_path):\n# 贴心提示：列出可用资源帮助 LLM 自我修正\navailable_resources = []\nfor\nsubdir\nin\n[\n\"references\"\n,\n\"assets\"\n]:\nsubdir_path = os.path.join(skill.directory, subdir)\nif\nos.path.isdir(subdir_path):\nfor\nfilename\nin\nos.listdir(subdir_path):\navailable_resources.append(\nf\"\n{subdir}\n/\n{filename}\n\"\n)\nhint =\nf\" Available:\n{\n', '\n.join(available_resources)}\n\"\n\\\nif\navailable_resources\nelse\n\"\"\nreturn\nf\"Resource not found in skill '\n{skill_name}\n'.\n{hint}\n\"\nwith\nopen\n(full_path,\n\"r\"\n, encoding=\n\"utf-8\"\n)\nas\nfile:\nreturn\nfile.read()\n# ═══ 阶段 4: Run — 执行脚本（30s 超时保护）═══\ndef\nrun_skill_script\n(\nself, skill_name:\nstr\n, script_path:\nstr\n,\nargs:\nlist\n[\nstr\n] |\nNone\n=\nNone\n) ->\nstr\n:\nskill =\nself\n.skills.get(skill_name)\nif\nnot\nskill:\nreturn\nf\"Skill '\n{skill_name}\n' not found.\"\nfull_path = os.path.join(skill.directory, script_path)\n# 同样的路径穿越安全检查\nreal_skill_dir = os.path.realpath(skill.directory)\nreal_script_path = os.path.realpath(full_path)\nif\nnot\nreal_script_path.startswith(real_skill_dir):\nreturn\n\"Access denied: script path escapes skill directory.\"\ncommand = [sys.executable, full_path] + (args\nor\n[])\ntry\n:\nresult = subprocess.run(\ncommand,\ncapture_output=\nTrue\n, text=\nTrue\n,\ntimeout=\n30\n,\n# 30 秒超时防止死循环\ncwd=skill.directory,\n# 工作目录设为 skill 目录\n)\noutput = result.stdout\nif\nresult.returncode !=\n0\n:\noutput +=\nf\"\\n[stderr]:\n{result.stderr}\n\"\nif\nresult.stderr\nelse\n\"\"\noutput +=\nf\"\\n[exit code]:\n{result.returncode}\n\"\nreturn\noutput\nexcept\nsubprocess.TimeoutExpired:\nreturn\nf\"Script '\n{script_path}\n' timed out after 30 seconds.\"\nSkill 系统的工具注册不是\"一股脑全注册\"，而是\n按能力有无条件注册\n——如果没有任何 skill 包含脚本，就不注册\nrun_skill_script\n工具，避免给 LLM 无用选项。\n# skill/skill_service.py — 条件注册的关键逻辑\nclass\nSkillService\n:\ndef\nregister_tools_to_registry\n(\nself\n) ->\nNone\n:\n# load_skill — 始终注册（只要有 skill 就需要加载能力）\nregistry.register(name=\n\"load_skill\"\n, handler=_handle_load_skill,\ntoolset=SKILLS_TOOLSET, ...)\n# read_skill_resource — 仅当存在含资源文件的 skill 时注册\nhas_resources =\nany\n(\nself\n.loader.has_resources(name)\nfor\nname\nin\nself\n.loader.skills\n)\nif\nhas_resources:\nregistry.register(name=\n\"read_skill_resource\"\n, ...)\n# run_skill_script — 仅当存在含脚本的 skill 时注册\nhas_scripts =\nany\n(\nself\n.loader.has_scripts(name)\nfor\nname\nin\nself\n.loader.skills\n)\nif\nhas_scripts:\nregistry.register(name=\n\"run_skill_script\"\n, ...)\n为什么条件注册而不是全部注册\n：每个注册的工具都会出现在 LLM 的 tools 列表中占用 tokens。如果系统中没有任何 skill 包含脚本，\nrun_skill_script\n这个工具定义就是纯浪费（约 200 tokens）。条件注册确保 LLM 看到的每个工具都是实际可用的。\n如下代码示例可以看到，会根据skill中的内容，判断是否需要加载以及按需加载执行脚本工具、加载资源工具、mcp工具等。\n# skill/skill_service.py — 四源工具组装\ndef\nget_all_tools_for_skill\n(\nself, skill_name:\nstr\n) ->\nlist\n[\ndict\n]:\n\"\"\"构建 skill 的完整工具列表。\"\"\"\ntools = []\n# ── 来源 1: scoped 原生工具 - run_script ──\n# 只有当 skill 目录下有 scripts/ 子目录时才提供\nif\nself\n.loader.has_scripts(skill_name):\nscripts =\nself\n.loader.list_scripts(skill_name)\n# 列出可用脚本\nscripts_desc =\n\", \"\n.join(scripts)\nif\nscripts\nelse\n\"scripts/ 目录下的脚本\"\ntools.append({\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"run_script\"\n,\n# scoped 命名（不含 skill_name 参数）\n\"description\"\n:\nf\"执行当前 skill 内置的 Python 脚本。可用脚本：\n{scripts_desc}\n\"\n,\n# 把可用脚本列表写入 description，帮助 LLM 选择正确的脚本\n\"parameters\"\n: {...},\n},\n})\n# ── 来源 2: scoped 原生工具 - read_resource ──\nif\nself\n.loader.has_resources(skill_name):\nresources =\nself\n.loader.list_resources(skill_name)\nresources_desc =\n\", \"\n.join(resources)\nif\nresources\nelse\n\"references/ 下的文件\"\ntools.append({\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"read_resource\"\n,\n\"description\"\n:\nf\"读取当前 skill 的参考文档。可用资源：\n{resources_desc}\n\"\n,\n\"parameters\"\n: {...},\n},\n})\n# ── 来源 3: 全局 MCP 工具（SKILL.md 的 tools: 字段引用）──\n# 从 SKILL.md 的 tools: [query_sls_logs] 字段读取工具名\n# 再从 McpService 获取对应的完整工具定义\nglobal_mcp_defs =\nself\n.get_mcp_tool_definitions_for_skill(skill_name)\ntools.extend(global_mcp_defs)\n# ── 来源 4: skill 专属 MCP 工具（SKILL.md 的 mcp_servers: 字段）──\n# 这些 MCP 服务器在启动时已经连接，工具定义已经缓存\nskill_mcp_defs =\nself\n._skill_mcp_tools.get(skill_name, [])\ntools.extend(skill_mcp_defs)\nreturn\ntools\nSkill调用工具逻辑方面，当 skill 执行期间 LLM 发起工具调用时，\ndispatch_tool_call\n按优先级路由到正确的后端。\n# skill/skill_service.py — 统一分发路由\ndef\ndispatch_tool_call\n(\nself, skill_name:\nstr\n, tool_name:\nstr\n, arguments:\ndict\n) ->\nstr\n:\n\"\"\"统一分发工具调用到正确的后端。\"\"\"\n# 优先级 1: scoped 原生工具 - run_script\nif\ntool_name ==\n\"run_script\"\n:\nreturn\nself\n.loader.run_skill_script(\nskill_name, arguments.get(\n\"script_path\"\n,\n\"\"\n), arguments.get(\n\"args\"\n))\n# 优先级 2: scoped 原生工具 - read_resource\nif\ntool_name ==\n\"read_resource\"\n:\nreturn\nself\n.loader.read_skill_resource(\nskill_name, arguments.get(\n\"resource_path\"\n,\n\"\"\n))\n# 优先级 3: skill 专属 MCP 工具\n# 检查该工具是否属于当前 skill 的专属 MCP 服务器\nif\ntool_name\nin\nself\n._skill_tool_to_client:\nowner_skill, client =\nself\n._skill_tool_to_client[tool_name]\nif\nowner_skill == skill_name:\n# 确认工具归属正确\nreturn\nrun_async(client.call_tool(tool_name, arguments))\n# 优先级 4: 全局 MCP 工具（兜底）\nreturn\nself\n.mcp_service.call_tool(tool_name, arguments)\n为什么 scoped 优先级最高\n：scoped 原生工具（run_script、read_resource）是 skill 自带的，不依赖外部服务，执行最快且最可靠。如果全局 MCP 恰好有同名工具，scoped 版本应该优先，因为它是 skill 作者特意为这个场景定制的。\n端到端流程：一次 Skill 调用的完整生命周期\n用户:\n\"帮我查一下圈子服务昨天的报错日志\"\n│\n▼\nLLM 看到 system prompt 中的 skill 摘要:\n\"- log-diagnosis: 闲鱼圈子日志诊断助手。当用户需要排查...\"\n│\n▼ LLM 判断匹配 → 调用\nload_skill\n(\n\"log-diagnosis\"\n)\n│\n▼ 返回完整 SKILL.md body（工作流程、输出格式、边界处理...）\n│ 同时触发 inject_skill_mcp_tools → query_sls_logs 注入 LLM tools 列表\n│\n▼ LLM 按 SKILL.md 中的工作流程执行:\n│\n1\n. 调用\nquery_sls_logs\n(time_range=\n\"昨天\"\n, keyword=\n\"ERROR\"\n)\n│\n2\n. 调用\nread_resource\n(\n\"references/error-patterns.md\"\n)\n│\n3\n. 综合分析 → 输出结构化诊断报告\n│\n▼\n用户看到:\n\"发现 3 类错误: 1) NullPointerException...\"\n三、写在最后\nAgent 不像传统的 Java 工程——写完、测完、上线，就算交付了。它本质上是一个\n概率系统嫁接在确定性工程上\n的产物：今天跑得好好的链路，明天模型升级一个版本，可能 tool calling 的格式变了、推理偏好漂移了，一批业务场景就悄悄退化了。\n这意味着两件事：\n1.观测比开发更重要\n。\n建立完善的可观测体系（轨迹录制、成功率统计、badcase 自动归因），然后结合真实业务场景持续挖掘退化 case、持续打磨 prompt 和容错逻辑——这不是上线后的\"维护\"，而是 agent 工程的常态。\n2.保持对前沿方案的敏感度\n。\n这个领域半年一个代际，一个好的架构思路（比如渐进式加载、结构化压缩）往往比堆人力调参有效 10 倍。与其闷头优化旧方案，不如花 20% 的时间看看社区在做什么。\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true,
+      "chunk_index": 19,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.05,
+        "transfer_agent": 0.94,
+        "peripheral": 0,
+        "direct_local": 0,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.95,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.93,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.62,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.09,
+        "2": 0.45,
+        "3": 0.16,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.66,
+      "probabilities": {
+        "0": 0.46,
+        "1": 0.07,
+        "2": 0.07,
+        "3": 0.16,
+        "4": 0.24,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.53,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.47,
+        "3": 0.53,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.76,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.11,
+        "4": 0.83,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.6,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.04,
+        "2": 0.32,
+        "3": 0.6,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.81,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4783,
+    "outputTokens": 172,
+    "totalTokens": 4955
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "decision_action": 0,
+        "evidence": 0.69,
+        "actionability": 0.81,
+        "anti_hype": 0.69,
+        "category": 0.92,
+        "relevance": 0.95,
+        "grounding": 0.43
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791180422781,
+                "endTime": 1791180422941,
+                "providerRequestId": "fc3b7854-9257-4095-870d-648e913e4e4a",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180422966,
+                "endTime": 1791180423131,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000200886",
+      "marketCost": "0.000200886",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000200886",
+      "inferenceCost": "0.000200886",
+      "inputInferenceCost": "0.000200886",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARFJ7G1A4ZGHFVZTHP7V1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:03 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::c6qn4-1791180422720-7f4385be0fac"
+    },
+    "body": {
+      "answers": {
+        "decision_action": {
+          "type": "score",
+          "score": 1.66,
+          "probabilities": {
+            "0": 0.46,
+            "1": 0.07,
+            "2": 0.07,
+            "3": 0.16,
+            "4": 0.24,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.53,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.47,
+            "3": 0.53,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.76,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.11,
+            "4": 0.83,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.6,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.04,
+            "2": 0.32,
+            "3": 0.6,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.81
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.05,
+            "transfer_agent": 0.94,
+            "peripheral": 0,
+            "direct_local": 0,
+            "transfer_business": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.95,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.93,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.62,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.09,
+            "2": 0.45,
+            "3": 0.16,
+            "4": 0.04,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4783,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "decision_action": 0,
+            "evidence": 0.69,
+            "actionability": 0.81,
+            "anti_hype": 0.69,
+            "category": 0.92,
+            "relevance": 0.95,
+            "grounding": 0.43
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791180422781,
+                    "endTime": 1791180422941,
+                    "providerRequestId": "fc3b7854-9257-4095-870d-648e913e4e4a",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180422966,
+                    "endTime": 1791180423131,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000200886",
+          "marketCost": "0.000200886",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000200886",
+          "inferenceCost": "0.000200886",
+          "inputInferenceCost": "0.000200886",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARFJ7G1A4ZGHFVZTHP7V1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:02.365Z"
+  }
+}

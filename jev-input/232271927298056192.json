@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "232271927298056192",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "告别碎片化日志：一套方案采集所有主流 AI 编程工具",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557222&idx=1&sn=1a31ba26e3407af3e1a67eb7d0388798",
+      "date": "2026-01-09T00:31:00.854Z",
+      "chars": 8785,
+      "text": "原创\n剑江\n2026-01-09 08:31\n浙江\n在AI编程工具快速普及的今天，如何有效采集和分析AI代码生成数据成为了一个重要课题。我们设计并实现了一套基于MCP（Model Context Protocol）架构的多AI工具代码采集方案，支持claude-code、iflow、codex等CLI工具以及qoder IDE。这套方案具有轻量化、用户无感、可扩展等特点，目前已经和Aone团队合作，数据将自动采集到Aone的日志平台用作团队AI采纳率数据加工的基础。当前已支持claude-code、codex、gemini、ykcli、iflow/iflow-aone、qwen-code、qoder等工具，平台覆盖 macOS + Windows。\n一、背景\n行业现状与挑战\n随着AI编程助手的快速普及，开发者的日常工作中涌现出了众多AI工具，在不同场景下发挥着重要作用。然而，AI工具的多样化也带来了新的挑战：\n缺乏统一的数据收口\n：\n每个AI工具都有自己独特的数据格式和接口，缺乏统一的标准。开发团队难以全面了解AI工具在组织内的使用情况，无法建立统一的数据视图。\n平台支持不足\n：\n大多数AI工具专注于功能实现，对数据采集和分析的支持有限。即使有数据输出，格式也往往不够标准化，难以进行跨工具的对比分析。\n度量数据缺失\n：\n最关键的问题是，团队无法有效度量AI生成代码的采纳率、质量和影响。这些数据对于评估AI工具的ROI、优化开发流程、制定技术决策都至关重要。\n基于这些痛点，我们团队决定建立一套统一的AI工具代码采集方案，为组织提供全面、准确的AI代码生成数据支撑。\n二、业界方案分析与设计思路\n在调研过程中，我们发现业界主要存在以下几类AI代码采集方案：\n高德采集方案\n高德团队在Cursor数据采集方面采用数据库文件解析方式\n。但在其他AI工具的采集上，高德选择了基于MCP在编辑文件前后记录diff数据的方案。这种实时拦截的方式虽然能够获取到相对完整的编辑历史，但存在明显的体验问题。由于需要在每次文件编辑时进行MCP调用和数据记录，会显著影响AI工具的响应速度，用户在使用过程中能明显感受到延迟。同时，这种方案依赖上下文保障数据一致性，在复杂的编辑场景下容易出现数据不准确的问题，特别是当编辑操作被中断或异常时，很难保证数据的完整性。\nAIDC的VSCode插件方案\nAIDC团队提供了基于VSCode插件的采集方案，这种方式相对比较重量级，需要用户主动安装和配置插件。目前该方案仅支持cursor，扩展性有限。插件形式虽然功能完整，但对用户的侵入性较强，需要用户感知并配置相关设置。\n我们的设计思路\n基于对业界方案的深入分析，我们确定了以下设计原则：\n轻量化优先\n：\n采集机制必须对原有工具完全无侵入，不能影响用户的正常使用体验。\n多样化适配\n：\n针对不同类型的AI工具（CLI工具、IDE工具、Web工具），采用最适合的采集策略。\n标准化输出\n：\n虽然采集方式多样，但最终输出的数据格式必须标准化，便于后续分析和处理。\n可靠性保障\n：\n通过本地缓存、重试机制、版本兼容性检查等手段，确保数据采集的可靠性。\n三、技术方案\n整体架构设计\n我们的采集方案基于MCP架构设计，采用了分层解耦的思路。整个系统由三个核心组件构成：\n采集层（Collection Layer）\n负责从不同AI工具获取原始数据。对于CLI工具（claude-code、iflow、codex），我们通过Hook机制在工具执行时拦截相关事件；对于IDE工具（qoder），我们通过解析其历史快照文件获取代码变更信息。\n处理层（Processing Layer）\n将来自不同工具的异构数据标准化为统一格式。每种工具都有对应的Collector组件，负责解析原始数据并转换为标准的事件格式。这一层还包含了Git信息解析、文件路径规范化等通用处理逻辑。\n上报层（Reporting Layer）\n将标准化后的数据上报到SLS日志系统。这一层实现了数据的批量处理、重试机制和错误恢复，确保数据上报的可靠性。\n统一的加工指标\nAI 生码率（AI-Generated Code Ratio, AGCR）:\nAI有效提交行数/分支Diff总行数*100%\nCLI工具采集机制\nHook类型\n对于claude-code和iflow这类CLI工具，我们采用了Hook机制进行数据采集。系统会自动在用户的配置文件中注入Hook脚本，当工具执行文件操作时，Hook脚本会捕获相关事件并将数据写入本地日志文件。\n#!/usr/bin/env bash\nset\n-euo pipefail\nCLIENT_TYPE=\n\"claude\"\nresolve_cache_dir\n() {\nif\n[[ -n\n\"\n${R2C_CACHE_DIR:-}\n\"\n]];\nthen\nprintf\n'%s'\"\n$R2C_CACHE_DIR\n\"\nreturn\nfi\nlocal\nhome=\n\"\n${HOME:-}\n\"\nlocal\ntarget=\n\".r2c\"\nif\n[[ -n\n\"\n$home\n\"\n]];\nthen\ntarget=\n\"\n$home\n/.r2c\"\nfi\nif\nmkdir\n-p\n\"\n$target\n\"\n2>/dev/null;\nthen\nprintf\n'%s'\"\n$target\n\"\nreturn\nfi\nlocal\nfallback=\n\"\n${PWD:-.}\n/.r2c\"\nmkdir\n-p\n\"\n$fallback\n\"\nprintf\n'%s'\"\n$fallback\n\"\n}\nCACHE_DIR=\n\"\n$(resolve_cache_dir)\n\"\nHISTORY_DIR=\n\"\n$CACHE_DIR\n/logs/\n$CLIENT_TYPE\n/history\"\nmkdir\n-p\n\"\n$HISTORY_DIR\n\"\nread_payload\n() {\nif\n[[ -t 0 ]];\nthen\nprintf\n''\nreturn\nfi\ncat\n||\ntrue\n}\ncompact_json\n() {\nlocal\npayload\npayload=\n\"\n$(cat)\n\"\nif\n[[ -z\n\"\n$payload\n\"\n]];\nthen\nreturn\n1\nfi\nif\ncommand\n-v python3 >/dev/null 2>&1;\nthen\nif\nprintf\n'%s'\"\n$payload\n\"\n| python3 -c\n'import json,sys;\\nprint(json.dumps(json.loads(sys.stdin.read()), ensure_ascii=False, separators=(\",\", \":\")))'\n2>/dev/null;\nthen\nreturn0\nfi\nfi\nif\ncommand\n-v node >/dev/null 2>&1;\nthen\nifprintf\n'%s'\"\n$payload\n\"\n| node -e\n\"let data='';process.stdin.on('data',c=>data+=c).on('end',()=>{try{const parsed=JSON.parse(data);process.stdout.write(JSON.stringify(parsed));}catch{process.exit(1);}});\"\n2>/dev/null;\nthen\nreturn0\nfi\nfi\nif\ncommand\n-v jq >/dev/null 2>&1;\nthen\nifprintf\n'%s'\"\n$payload\n\"\n| jq -c\n'.'\n2>/dev/null;\nthen\nreturn0\nfi\nfi\nprintf\n'%s'\"\n$payload\n\"\n|\ntr\n-d\n'\\n'\n|\ntr\n-d\n'\\r'\nreturn0\n}\nPAYLOAD_RAW=\n\"\n$(read_payload)\n\"\nPAYLOAD_RAW=\n\"\n${PAYLOAD_RAW//$'\\r'/}\n\"\nTRIMMED=\n\"\n$(printf '%s'\n\"\n$PAYLOAD_RAW\n\"\n| sed 's/^[[:space:]]*//;s/[[:space:]]*$//')\n\"\nif\n[[ -z\n\"\n$TRIMMED\n\"\n]];\nthen\nexit0\nfi\nFIRST_CHAR=\n\"\n${TRIMMED:0:1}\n\"\nLAST_CHAR=\n\"\n${TRIMMED: -1}\n\"\nif\n[[\n\"\n$FIRST_CHAR\n\"\n!=\n\"{\"\n&&\n\"\n$FIRST_CHAR\n\"\n!=\n\"[\"\n]];\nthen\nexit0\nfi\nif\n[[\n\"\n$LAST_CHAR\n\"\n!=\n\"}\"\n&&\n\"\n$LAST_CHAR\n\"\n!=\n\"]\"\n]];\nthen\nexit0\nfi\ndetect_hook_event\n(){\ncase\n\"\n$1\n\"\nin\n*\n'\"hook_event_name\":\"PostToolUse\"'\n*)\necho\n\"PostToolUse\"\n;\nreturn\n;;\n*\n\"\\\"hook_event_name\\\":\\\"PreToolUse\\\"\"\n*)\necho\n\"PreToolUse\"\n;\nreturn\n;;\n*\n'\"hookEvent\":\"PostToolUse\"'\n*)\necho\n\"PostToolUse\"\n;\nreturn\n;;\n*\n'\"hookEvent\":\"PreToolUse\"'\n*)\necho\n\"PreToolUse\"\n;\nreturn\n;;\nesac\necho\n\"unknown\"\n}\nHOOK_EVENT=\n\"\n$(detect_hook_event\n\"\n$TRIMMED\n\"\n)\n\"\nif\n! DATA_COMPACT=\n\"\n$(printf '%s'\n\"\n$TRIMMED\n\"\n| compact_json 2>/dev/null)\n\"\n;\nthen\nexit0\nfi\nUTC_DAY=\n\"\n$(date -u +\n\"%Y-%m-%d\"\n)\n\"\nLOG_FILE=\n\"\n$HISTORY_DIR\n/\n${CLIENT_TYPE}\n-\n${UTC_DAY}\n.jsonl\"\nLOG_TIME=\n\"\n$(date -u +\n\"%Y-%m-%dT%H:%M:%SZ\"\n)\n\"\nuuid_fallback\n() {\nlocal\nbytes\nbytes=\n\"\n$(LC_ALL=C dd if=/dev/urandom bs=16 count=1 2>/dev/null | hexdump -v -e '/1\n\"%02x\"\n')\n\"\nprintf\n'%s-%s-%s-%s-%s\\n'\"\n${bytes:0:8}\n\"\"\n${bytes:8:4}\n\"\"\n${bytes:12:4}\n\"\"\n${bytes:16:4}\n\"\"\n${bytes:20:12}\n\"\n}\nUUID=\n\"\"\nif\ncommand\n-v uuidgen >/dev/null 2>&1;\nthen\nUUID=\n\"\n$(uuidgen | tr 'A-Z' 'a-z')\n\"\nelse\nUUID=\n\"\n$(uuid_fallback)\n\"\nfi\nif\n[[\n\"\n$HOOK_EVENT\n\"\n!=\n\"unknown\"\n]];\nthen\nRECORD=\n\"{\\\"uuid\\\":\\\"\n$UUID\n\\\",\\\"logTime\\\":\\\"\n$LOG_TIME\n\\\",\\\"reported\\\":false,\\\"clientType\\\":\\\"\n$CLIENT_TYPE\n\\\",\\\"hookEvent\\\":\\\"\n$HOOK_EVENT\n\\\",\\\"data\\\":\n$DATA_COMPACT\n}\"\nelse\nRECORD=\n\"{\\\"uuid\\\":\\\"\n$UUID\n\\\",\\\"logTime\\\":\\\"\n$LOG_TIME\n\\\",\\\"reported\\\":false,\\\"clientType\\\":\\\"\n$CLIENT_TYPE\n\\\",\\\"data\\\":\n$DATA_COMPACT\n}\"\nfi\nexec\n9>>\n\"\n$LOG_FILE\n\"\nif\ncommand\n-v flock >/dev/null 2>&1;\nthen\nflock 9\nelif\ncommand\n-v lockf >/dev/null 2>&1;\nthen\nlockf -k 9\nfi\nprintf\n'%s\\n'\"\n$RECORD\n\"\n>&9\nexec\n9>&-\nHook脚本的设计非常轻量化，主要功能是接收工具传递的JSON数据，进行基本的格式验证和清理，然后以JSONL格式写入按日期分割的日志文件。脚本使用bash实现，具有良好的兼容性，支持多种JSON处理工具的降级策略。\n采集到的数据会暂存在本地的历史日志文件中，后台服务会定期扫描这些文件，解析其中的事件数据并进行标准化处理。这种设计的好处是完全不影响CLI工具的执行性能，用户在使用过程中完全无感知。\nTelemetry类型\n对于Gemini/YKCLI/Qwen这类工具，我们采用了Telemetry机制进行数据采集。同样也会在用户的配置文件中注入Telemetry配置，使其工具在生成代码时，能够将相关事件数据写入到采集服务日志文件中。虽然流程和落盘目录上有些区别，但本质上类似都是对过程数据的收集和存储。\n{\n\"telemetry\"\n:\n{\n\"enabled\"\n:\ntrue\n,\n\"target\"\n:\n\"local\"\n,\n\"outfile\"\n:\n\"/Users/xxx/.r2c/logs/gemini/raw-telemetry.log\"\n,\n\"otlpEndpoint\"\n:\n\"\"\n,\n\"logPrompts\"\n:\nfalse\n,\n\"useCollector\"\n:\nfalse\n}\n}\n我们利用其内置的telemetry配置，可以让我们接收工具内部的所有遥测数据。但是由于其遥测数据量级比较大（每次操作均可输出MB级别的文件大小日志内容），我们对采集工具日志的过滤和控制体积大小方面做了一些优化，使其能够在捕获目标日志后解析组装成我们需要的Write工具调用日志格式，在随后上报后同步清理掉原始日志中废弃和无关的其他日志，保障日志落档文件的IO效率。\nQoder采集机制\nQoder的采集机制需要解析其本地历史快照与工作区存储数据。Qoder会将编辑历史保存在本地的History与workspaceStorage目录中，我们通过解析这些快照来重建代码变更事件。\n我们实现了QoderCollector组件，能够读取Qoder的快照格式，提取文件路径、变更类型与diff等关键信息。系统同样维护SnapshotStore来记录已处理快照，避免重复上报。Qoder采集器也支持工作区过滤配置，可按指定项目采集，避免无关数据进入日志。\nCodex OTLP采集机制\n对于Codex工具，我们实现了OTLP（OpenTelemetry Protocol）HTTP接收器，能够接收Codex发送的遥测数据。Codex本身支持OTLP协议，我们只需要在其配置文件中指定我们的接收端点即可。\nOTLP接收器会解析接收到的日志数据，提取出工具调用信息，特别是apply_patch事件。通过分析patch内容，我们能够准确识别出文件变更的类型、影响范围和具体内容。\n通用采集机制\n为支持非标准工具或轻量接入场景，我们在 Codex 遥测 HTTP 服务中扩展了通用“Code Report”入口（/v1/code）。该入口仅接收 JSON 请求、限制体积，并通过 clientType 白名单做准入控制，确保不会被随意注入无效数据。请求进入后会触发processCodeReportPayload完成日志数据统一标准化。\n核心逻辑分三步：\n1. 校验与归一化：检查 clientType / toolName / content，若 filePath 缺失则尝试从 diff 内容推断；再结合 cwd 归一化路径。\n2. 工具分类与解析：将工具映射为 create_file / replace_in_file 两类。新增文件会把正文转换为统一 diff 结构；修改类则解析 unified diff，统计增删行数并构建 inline diff。\n3. 统一上报：补齐 repo 信息（从 cwd 解析，缺失则给默认值），生成 sessionId/uuid，最终拼成标准 SLS 上报 payload，并落盘日志与统计处理结果。\n最终只要能按约定把“文件路径 + diff/内容 + 工具类型”通过 HTTP 上报，就可以复用现有的标准化与上报链路，实现更多生码工具接入的采集诉求。\n服务部署与管理\n整个采集系统以后台服务的形式运行，我们提供了完整的服务管理脚本。在macOS平台上，系统会自动创建LaunchAgent服务，确保采集服务在用户登录后自动启动并持续运行。\n服务安装脚本会自动检测系统环境，创建必要的日志目录，配置环境变量，并注册系统服务。服务支持自动重启、日志轮转等企业级特性，确保长期稳定运行。卸载过程同样简单，只需要运行卸载脚本即可完全清理服务和相关文件，不会在系统中留下任何残留。\n自动更新机制\n为了降低维护成本，我们引入独立的AutoUpdater守护进程，负责定期检查并自动升级采集服务版本。AutoUpdater与采集主服务分离运行，通过统一的Service Manager在macOS/Windows上安装为系统服务，避免影响用户日常工作。\n自动更新在后台定时每小时检查仓库源版本号，若有新版本就停采集服务 → npx @ali/ai-coding-trace@latest 自动升级 → 启动校验，失败则回滚旧版；状态/锁写入日志文件。自动更新服务采用延迟 60 秒后台启动，除了不阻塞 CLI，还用于给采集服务的安装/启动与旧版 AutoUpdater 的停止/锁释放留出缓冲，避免在服务切换窗口内并发启动导致的锁冲突或状态不一致。等采集服务稳定后再接管更新，整体更稳定。\n平台兼容性\n当前采集服务已支持 macOS 与 Windows。两端差异主要体现在：\n为此我们做了统一抽象与兼容处理，保证在采集路径、日志落盘和服务生命周期上行为一致、可控：\n通过统一的路径解析函数屏蔽差异，在Windows上将日志根目录放在ProgramData中以保证服务可写，在启动时从env中自动识别USERPROFILE/HOME/APPDATA等路径，避免后续路径偏移。\n服务安装层统一走platform-service-manager模块来适配不同系统平台。\nHook 注入时自动根据平台选择合适的脚本。\n方案技术优势\n在轻量化设计方面，我们的方案彻底摆脱了传统侵入式修改的弊端。CLI工具的Hook脚本仅有几十行代码，执行时间控制在毫秒级别，对原有工具的运行性能几乎没有任何影响。用户不需要维护任何定制版本，当工具升级时采集功能能够自动保持兼容。这种设计哲学让我们避免了重量级插件方案的复杂性，用户只需要一条简单的命令就能完成整个接入过程，极大地降低了使用门槛。\n用户体验的无感化是我们方案的另一个突出特点。与高德团队采用的MCP拦截方案不同，我们选择了异步采集策略，所有的数据处理工作都在后台静默进行，不会在文件编辑时产生任何可感知的延迟。用户完全不需要改变现有的工作习惯，也不需要主动安装配置任何插件，整个采集过程对用户来说是完全透明的。这种设计让开发者能够专注于代码创作本身，而不会被采集机制所干扰。\n在可靠性保障方面，我们构建了多层次的防护机制。本地文件缓存确保了数据的持久性，即使在网络异常的情况下也不会丢失重要信息。重试机制和版本兼容性检查进一步增强了系统的鲁棒性，能够有效应对各种异常情况。特别值得一提的是，我们通过解析工具的原生数据存储（比如Qoder的SQLite数据库）来获取信息，这种方式比MCP拦截方案更能保证数据的完整性和准确性。同时，各个工具的采集模块相互独立，当某个工具出现问题时不会影响其他工具的正常工作，系统具备了良好的故障隔离能力。\n扩展性设计是我们方案的长远考虑。整个系统采用了插件化架构，当需要支持新的AI工具时，开发者只需要实现对应的Collector组件，而无需对核心框架进行任何修改。我们将来自不同工具的异构数据统一转换为标准格式，这不仅便于后续的分析处理，也为未来的功能扩展打下了坚实基础。系统同时支持Hook机制、数据库解析、OTLP协议等多种采集方式，能够灵活适配各种类型的AI工具，为生态的持续发展提供了技术保障。\n采集效果预览\n四、总结与展望\n经过近期的线上运行，我们的采集系统已经稳定采集了大量的AI代码生成数据。这些数据为我们分析AI工具的使用模式、评估代码生成质量、优化开发流程提供了重要支撑，最终会在数据报表上统一加工，实现对AI代码采纳率的统一计算。\n我们未来计划在以下几个方向继续优化：一是扩大工具支持范围，覆盖更多的AI编程工具；二是增强数据分析能力，提供更加丰富的统计和洞察功能；三是优化部署和运维体验，让更多团队能够便捷地使用我们的采集方案。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

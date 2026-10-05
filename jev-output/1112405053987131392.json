@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1112405053987131392",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元推出轻量翻译大模型，无需联网，手机直接运行！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801544&idx=1&sn=2577b3e0d9118e271227e5bfd3e76f8a",
+      "date": "2026-05-15T09:37:00.027Z",
+      "chars": 3188,
+      "text": "腾讯技术工程\n2026-05-15 17:37\n广东\n随时随地就能翻译\n你可能用过各种翻译\n工具\n，\n但是\n大部分\n的\n应用\n，\n如果\n要\n实现\n好\n的\n翻译\n效果\n都有一个共同的\n条件\n：\n必须联网\n。\n设想\n一下\n：\n你在异国自驾，警笛声骤然响起。还没回过神，警察就在窗边用陌生的语言严厉发问。你心跳漏了半拍：是我违章了？还是前面出了什么大事？你手忙脚乱地掏出手机想翻译询问一下，偏偏此时没信号，屏幕上转圈的界面简直让人绝望。到底发生了什么？我应该挪车，下车还是掉头？\n在\n这关键时刻\n，翻译软件掉链子真的让人\n绝望\n。\n针对这些难题，\n腾讯混元\n团队\n带来了一份硬核解决方案\n。\n最近，腾讯混元推出极致量化压缩版本翻译模型 Hy-MT1.5-1.8B-1.25bit，\n把\n支持 33 种语言的翻译大模型压缩至 440MB，无需联网，\n下载\n即\n可\n直接在手机本地运行，翻译质量优于谷歌翻译。\n来看看这个演示，翻译速度真的很快，质量也很好：\n演示设备：\n高通骁龙 865\n，\n8\nGB\n内存\n基于混元翻译大模型Hy-MT1.5打造，翻译效果比肩商用翻译模型\nHy-\nM\nT\n1.5 是腾讯混元团队打造的专业翻译大模型，原生支持 33 种语言、5 种\n方言\n/民汉及 1056 个翻译方向。从常见的中英互译，到法语、日语、阿拉伯语、俄语，甚至藏语、蒙古语等\n少数\n民族\n语言\n，它都能游刃有余地处理。\n仅以 1.8B 参数量，Hy-\nM\nT\n1.5 实现了比肩商业翻译 API 和 235B 级大模型的翻译效果 。在严格的评测基准中，其翻译质量不仅超越了谷歌翻译等主流系统，更证明了在高效优化下，轻量级模型能够迸发出令人印象深刻的翻译能力。\nHy-\nM\nT\n1\n.\n5\n-\n1\n.\n8\nB\n翻译\n效果评分，详情见文末链接「\nHy-\nM\nT\n1\n.\n5\n技术\n报告」\n但问题来了：原始的 1.8B 模型即使在 FP16 精度下，依然占用 3.3GB 内存。对于手机上金子般的内存来说，依然太大、太慢，所以需要量化压缩。\n最极致的量化压缩，把模型装进手机\n量化压缩，简单来说就是：把模型里原本用16位数字(16-bit)表示的参数转用更低位数字储存。这就像把一幅高清照片压缩成缩略图，文件小了很多，但你还是能看清楚里面的内容。 针对不同的手机用户，腾讯特别推出了2-bit 与 1.25-bit 两种极致的量化压缩方案。\n不同\n大小\n的\n模型\n在\nFLORES\n-\n2\n0\n0\n中外\n互\n译\n的\n效果\n评分\n2-bit\n模型\n：\n性能与质量的平衡（适用：中高端机型）\n2-bit\n模型\n采用\n了\n业内\n顶尖的\n拉伸弹性\n量化\n（\nSEQ\n）\n，\n将\n模型\n参数\n量化\n至\n{\n-\n1\n.\n5\n，\n-\n0\n.\n5\n，\n0\n.\n5\n，\n1\n.\n5\n}\n，\n并\n结合\n量化感知蒸馏\n，在将模型体积压缩至\n574\nMB\n的同时，实现了几乎无损的翻译质量\n，\n效果\n超越\n上百\nGB\n的\n大模型\n。\n在支持 Arm SME2 技术的移动设备上，2-bit 模型能够实现更快速、更高效的推理。\n2\n-\nb\ni\nt\n模型\n在\nSME2\n及\nN\neon\n内核\n的\n速度\n对比\n演示\n1.25-bit\n模型\n：\nSherry 极致压缩（适用：全系机型）\n为了达成极致的轻量化\n，腾讯推出了基于\nSherry（稀疏高效三值量化）\n技术的 1.25-bit 模型。\n该技术方案已经\n被NLP\n顶级\n学术\n会议\nACL 2026录用\n。\n链接：\nhttps://arxiv.org/abs/2601.07892\nSherry\n压缩\n方案的核心逻辑在于“\n细粒度\n稀疏”\n策略\n：\n每4个模型参数，3个最重要的\n用\n1\n-bit\n储存\n，1个\n用\n0\n储存\n，\n平均每个参数仅需 1.25-bit。\n配合腾讯专门为手机 CPU 设计的\nSTQ\n内核\n，该方案实现了对 SIMD 指令集的完美适配。最终，3.3GB 的原始模型被进一步压缩至\n440MB\n，\n轻松常驻后台，让内存紧张的普通手机也能顺滑\n进行\n高质量\n离线\n翻译。\nF\nP\n1\n6\n(\n八倍速\n)\nv\ns\n.\n1\n.\n2\n5\nb\ni\nt\n速度\n对比，\n演示设备：\n高通骁龙888\n，\n8GB\n内存\n实际体验：全离线、零成本、零隐私暴露\n本次开源不仅包含模型权重，我们还特别制作了一个实际可用\n的\n腾讯\n混元\n翻译Demo版\n，\n特\n别\n适配了\n“后台取词模式”\n。无论是在\n本地\n查看\n邮件\n还是\n浏览网页\n，\n混元翻译\n都能随叫随到。\n无需网络，\n无需订阅\n，\n完全本地处理、不涉及个人信息的采集和上传\n，\n一次下载永久使用\n！\n演示设备：高通骁龙\n7\n+\ng\ne\nn\n2\n，\n1\n6\nGB\n内存\n立即体验\n所有的模型权重、代码及技术\n报告\n均已全面开源。（暂时\n只支持安卓体验demo， 后续正式版会添加对IOS等平台的支持。\n）\n体验链接\n：\nHuggingface\n（海外用户）\n:\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF/resolve/main/Hy-MT-demo.apk\n魔搭社区（国内用户）：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF/resolve/master/Hy-MT-demo.apk\n模型\n下载\n1、Hugging\nf\na\nc\ne\n（\n海外\n用户\n）\n：\n2\n-\nb\ni\nt\n模型\n权重\n：\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-2bit\n2-bit\n模型\ng\ng\nu\nf\n：\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-2bit-GGUF\n1\n.\n2\n5\n-\nb\ni\nt\n模型\n权重\n：\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-1.25bit\n1\n.\n2\n5\n-bit\n模型\ngguf\n：\nhttps://huggingface.co/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF\n2、魔\n搭\n社区\n（\n国内\n用户）\n：\n2-bit\n模型\n权重\n：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-2bit\n2-bit\n模型\ngguf\n：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-2bit-GGUF\n1.25-bit 模型权重\n：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-1.25bit\n1.25-bit\n模型\ngguf\n：\nhttps://modelscope.cn/models/AngelSlim/Hy-MT1.5-1.8B-1.25bit-GGUF\n3、技术\n报告\n：\nS\nh\ne\nr\nr\ny\n论文\n地址\n：\nhttps://arxiv.org/abs/2601.07892\nAngelSlim 技术报告：\nhttps://arxiv.org/abs/2602.21233\nHy-\nM\nT\n1\n.\n5\n技术\n报告\n：\nhttps://arxiv.org/abs/2512.24092\n4、代码\n仓库\n：\nAngelSlim:\nhttps://github.com/tencent/AngelSlim\n欢迎下载体验，\n分享\n你\n的使用感受~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "peripheral": 0.55,
+        "direct_local": 0,
+        "irrelevant": 0.44,
+        "transfer_agent": 0.01,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.06,
+      "probabilities": {
+        "0": 0.31,
+        "1": 0.33,
+        "2": 0.36,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.24,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.29,
+        "2": 0.41000000000000003,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.07,
+      "probabilities": {
+        "0": 0.94,
+        "1": 0.06,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.59,
+      "probabilities": {
+        "0": 0,
+        "1": 0.14,
+        "2": 0.48,
+        "3": 0.04,
+        "4": 0.34,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.55,
+      "probabilities": {
+        "0": 0.27,
+        "1": 0.08,
+        "2": 0.05,
+        "3": 0.07,
+        "4": 0.51,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 0.57,
+      "probabilities": {
+        "0": 0.69,
+        "1": 0.09,
+        "2": 0.19,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.88,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4413,
+    "outputTokens": 174,
+    "totalTokens": 4587
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.43,
+        "relevance": 0.37,
+        "grounding": 0.42,
+        "decision_action": 0.96,
+        "evidence": 0.41,
+        "actionability": 0,
+        "anti_hype": 0.62
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179969460,
+                "endTime": 1791179969616,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000185346",
+      "marketCost": "0.000185346",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000185346",
+      "inferenceCost": "0.000185346",
+      "inputInferenceCost": "0.000185346",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAMX6RZ3YZNY8MJVYB64Z"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:29 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::bsp7l-1791179969435-b47b8457208e"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "peripheral": 0.55,
+            "direct_local": 0,
+            "irrelevant": 0.44,
+            "transfer_agent": 0.01,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.06,
+          "probabilities": {
+            "0": 0.31,
+            "1": 0.33,
+            "2": 0.36,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.24,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.29,
+            "2": 0.41000000000000003,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.07,
+          "probabilities": {
+            "0": 0.94,
+            "1": 0.06,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.59,
+          "probabilities": {
+            "0": 0,
+            "1": 0.14,
+            "2": 0.48,
+            "3": 0.04,
+            "4": 0.34,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.55,
+          "probabilities": {
+            "0": 0.27,
+            "1": 0.08,
+            "2": 0.05,
+            "3": 0.07,
+            "4": 0.51,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.57,
+          "probabilities": {
+            "0": 0.69,
+            "1": 0.09,
+            "2": 0.19,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.88
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4413,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.43,
+            "relevance": 0.37,
+            "grounding": 0.42,
+            "decision_action": 0.96,
+            "evidence": 0.41,
+            "actionability": 0,
+            "anti_hype": 0.62
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179969460,
+                    "endTime": 1791179969616,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000185346",
+          "marketCost": "0.000185346",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000185346",
+          "inferenceCost": "0.000185346",
+          "inputInferenceCost": "0.000185346",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAMX6RZ3YZNY8MJVYB64Z"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:28.844Z"
+  }
+}

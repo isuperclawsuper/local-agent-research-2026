@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "241696563309038593",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "言出法随 -- Chaterm如何通过ASR精准操作K8S",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694348&idx=2&sn=688269877d325a9b032e387d98ab7cb9",
+      "date": "2026-02-04T00:46:00.257Z",
+      "chars": 5268,
+      "text": "原创\n双承、DYin\n2026-02-04 08:46\n美国\n关注腾讯云开发者，一手技术干货提前解锁👇\n作为程序员，幸幸苦苦忙碌一年，春节回家也未必轻松，赶火车回家团圆，参加爸妈安排的相亲，同学的婚礼随份子， 被七大姑问候工资，然而最恐怖的却是突如其来的 --\n「[P0 级报警] 核心交易服务响应超时！」\n身为一个程序员，每每看到类似的场景我都感同身受\n为了过个好年，我们打造了一个能够在极端环境下 单手完成生产系统的救火工具！\n然而，碰到的第一个挑战就是，如何让传统的语音识别，能够100%准确的转化成各个云平台API，或者K8S，Linux的操作指令？\n01\nK8S 命令语音识别的技术挑战\n1.1 问题背景\n首先要解决的是，工程师经常需要在移动端通过语音快速执行各种命令，各种参数，比如 kubectl 等等。在移动端，这个过程面临一个显著的体验问题：\n在手机虚拟键盘上输入复杂的 Kubernetes 命令极其痛苦，而且效率低下。\n语音输入\n是一个自然的解决方案。然而，传统 ASR（Automatic Speech Recognition，自动语音识别）系统在处理 K8S 命令时面临严峻挑战：\n挑战类型\n具体表现\n示例\n专有名词识别\n命令动词被识别为谐音词\nkubectl\n→ \"酷 B 控制\"、\"cube ctl\"\n参数组合复杂\n长命令参数丢失或错位\nkubectl get pods -n default -o wide\n→ \"kubectl get pods default wide\"\n资源类型混淆\n缩写与全称混用导致歧义\nsvc\nvs\nservices\n、\ndeploy\nvs\ndeployments\n命名空间参数\n短参数容易被忽略\n-n\n、\n--namespace\n被吞噬或误识别\n特殊字符处理\n符号无法正确识别\n-\n、\n--\n、\n/\n等符号丢失\n1.2\n传统方案的局限性\n传统语音识别方案主要存在以下问题：\n通用模型泛化能力不足：\nASR 模型基于海量通用语料训练，对垂直领域专业术语覆盖有限\nOOV（Out-of-Vocabulary）问题：\nkubectl\n、\nnamespace\n、\ndeployment\n等词汇不在常规词表中\n上下文理解缺失：\n无法理解命令语义，难以进行智能补全和纠错\n中英文混合识别困难：\nK8S 命令涉及大量英文术语与中文口语混合\n1.3 Chaterm 的解决思路\nChaterm 通过双层架构设计，实现了 K8S 命令接近 100% 的精准识别率：\n02\nK8S 命令语音识别的技术挑战\n2.1\n核心组件架构\n在核心组件的实现层面，整体架构遵循「客户端 → 网关 → 外部服务」的设计模式，其中各层级之间通过WebSocket协议进行双向数据交互。\nFlutter 移动端：架构分为用户界面（UI）组件\n与\n服务层\n两大模块。在UI层面，VoiceInputButton 组件为用户提供了一个语音输入的接口，并通过WaveAnimation 实时反馈用户的操作状态；而在服务层面上，AudioStreamService 负责处理PCM格式的音频流采集工作，SpeechService 则封装了基于WebSocket协议的数据传输逻辑，同时，VoiceCommandCorrection 模块封装了精心设计的Prompt，实现了对大型语言模型(LLM)进行调用来完成语音命令的纠正功能。\n网关层：\n采用了Go语言构建后端服务，其核心组成部分包括WebSocket处理器和认证模块。特别地，在建立连接的过程中，会附加一个名为\nhotword_id\n的参数，这使得自动语音识别(ASR)系统能够加载相应的热词列表，从而实现“一次握手，全程优化”的效果。\n外部服务体系：\n主要集成了两方面的关键能力：一是利用腾讯云提供的实时语音识别引擎，该引擎支持热词表、替换词、权重增强等音频处理能力；二是集成LLM服务以提供高级别的语义理解和指令生成能力。这两项技术相互配合，共同提升了系统的整体性能。\n2.2\n语音执行执行全流程解析\n语音驱动运维指令执行：以 kubectl get pods -A 为例\n该流程演示了当用户直接口述技术命令时，系统如何处理识别误差并最终精准执行：\n阶段一：实时语音采集与传输\n指令输入：\n用户在 Flutter 客户端按下按钮，口述指令：“kubectl get pods -A”。\n音频处理：\n客户端\nAudioStreamService\n实时采集 16khz/16bit 的 PCM 音频帧。\n阶段二：低延迟 ASR 实时反馈\n通信链路：\nFlutter 客户端通过 WebSocket 接口（\n/v1/speech/asr\n）连接\nGo 后端\n，后端同步建立与\n腾讯云 ASR\n的连接，并携带\nhotword_id\n（热词表）以增强专业术语识别。\n识别挑战：\n由于“kubectl”等词汇在非运维语境下容易被误识别，系统通过挂载\n运维热词表（hotword_id）\n来增强准确性。\n实时预览：\nASR 实时返回中间识别结果，由后端推送到客户端，用户可以在界面上看到实时返回的识别文字，例如：“q... q币... cube control...”。\n阶段三：LLM 语义纠错（核心环节）\n原始文本获取：\n语音识别结束，ASR 返回的最终文本可能存在严重偏差，例如：\n“cube control get pods 杠 a”\n（将 kubectl 误听为 cube control，将 -A 误听为“杠 a”）。\n调用 LLM：\n调用\nVoiceCommandCorrection\n接口。\n纠错输出：\nLLM 结合运维知识库进行语义分析，将上述混乱的文本精准修正为标准的：\nkubectl get pods -A\n。\n阶段四：终端写入与人工确认\n终端写入：\n纠错后的标准指令被发送至输入框。\n最终把关：\n为了安全起见，指令不会立即运行，而是\n等待用户在客户端二次确认\n后，才正式在终端环境中触发执行。\n03\n第一层：ASR 热词表精准识别\n3.1\n热词表技术原理\n热词表（Hotword List）\n是 ASR 系统提供的一种领域适配机制，通过提升特定词汇在解码过程中的先验概率，显著提高目标词汇的识别准确率。\n3.1.1\n为什么需要热词表\n通用 ASR 模型基于海量日常语料训练，对专业术语覆盖不足，存在\nOOV（Out-of-Vocabulary）问题\n。\n当用户说 \"kubectl\" 时，模型倾向于输出训练时见过的近音词（如\"酷B控制\"），而非低频专业术语。\n3.1.2 工作原理\nASR 解码时，会计算每个候选词的输出概率。\n热词表通过对特定词汇施加概率加成来改变解码结果：\n无热词表：                      有热词表（kubectl 权重\n100\n）：\n─────────────────────          ─────────────────────\n\"酷B控制\"\nP=\n0.35\n← 选中\n\"kubectl\"\nP=\n0.15\n×\n5\n=\n0.75\n← 选中\n\"kubectl\"\nP=\n0.15\n\"酷B控制\"\nP=\n0.35\n数学表达：\nP'(热词) = P(热词) × boost_factor\n权重越高，boost_factor 越大，热词在同音竞争中获胜概率越高。\n3.1.3\n热词权重设置\n腾讯云 ASR 支持 1-11,100 的权重范围：\n权重范围\n适用场景\n说明\n1-10\n常规业务词汇\n轻度提升，避免过拟合\n11\n专业术语\n中度提升，平衡准确率与泛化\n100\n核心关键词\n强制识别，适用于 OOV 词汇\nK8S 命令场景采用权重 100\n，确保\nkubectl\n、\nnamespace\n等核心词汇被优先识别。\n3.2 K8S 热词表设计\n我们构建了包含 K8S 专用热词表，覆盖以下类别：\n3.2.1\n核心命令动词\nkubectl\n|\n100\nkubectl\nget|\n100\ncube\ncontrol|\n100\n3.2.2\n资源类型词汇\npods\n|\n100\npod\n|\n100\nservices\n|\n100\n3.2.3\n常用参数组合\n杠n|\n100\n杠n\ndefault\n|\n100\n杠杠\nnamespace\n|\n100\n3.2.4\n完整命令模板\nkubectl\nget\npods|\n100\nkubectl\nget\npods -A|\n100\nkubectl\nget\npods -n\ndefault\n|\n100\n3.3 热词表集成流程\n04\n第二层：LLM 智能纠错\n4.1\nLLM 纠错的必要性\n尽管热词表显著提升了专业术语的识别率，但 ASR 输出仍可能存在以下问题：\n残留谐音错误：\n部分词汇仍被识别为近音词（如 \"kube ctl\"）\n自然语言表达：\n用户可能说 \"查看所有 pod\" 而非 \"kubectl get pods -A\"\n参数顺序混乱：\n\"-n default\" 可能出现在命令中间\n格式不规范：\n缺少必要的空格、连字符等\nLLM 层的作用：\n作为语义理解层，将 ASR 的原始输出（自然语言、谐音词、不完整命令）转换为\n标准的、可执行的 K8S 命令。\n4.2\nPrompt Engineering 设计\n业界对\nPrompt Engineering（提示词工程）\n普遍采用的设计范式包括：明确的角色定义（Role Definition）、清晰的任务边界约束、结构化的处理流程，以及高质量的\nFew-shot 示例\n。一个设计良好的 Prompt 能显著提升模型输出的准确性和一致性。\n在 Chaterm 的语音命令纠错场景中，我们遵循上述原则，设计了如下 System Prompt 结构：\n角色定义：\n将模型定位为「语音转终端命令助手」，明确其职责边界——只做命令转换，不做额外解释或建议。\n核心原\n则：\n强调保守策略，即「不生造」——不添加用户未提及的参数，避免模型过度推理导致的错误命令。\n处理流程：\n分为两个阶段执行，先完成ASR残留的谐音纠错（文本矫正），再进行K8s命令格式规范化（结构补全）。\n纠正规则：\n通过不断调试，进一步内置谐音映射表、符号标准化规则、缩写展开规则等领域知识，为模型提供明确的转换依据。\nFew-shot 示例：\n覆盖谐音纠错、自然语言转换、参数规范化等典型场景，通过示例引导模型输出符合预期的格式。\n4.3\nLLM 纠错效果\n典型场景纠错示例\n场景\nASR 原始输出\nLLM 纠错输出\n谐音纠错\n\"酷 B 控制 get 跑的\"\nkubectl get pods\n自然语言转换\n\"查看所有 pod\"\nkubectl get pods -A\n参数规范化\n\"kubectl get pods 杠 n default\"\nkubectl get pods -n default\n混合纠错\n\"kube ctl describe 的 ployment nginx\"\nkubectl describe deployment nginx\n资源操作\n\"删除 default 下面的 nginx\"\nkubectl delete pod nginx -n default\n05\n实际案例展示\n案例 ：使用语音输入恢复payment-deployment服务\n06\n总结\n通过\nASR与热词增强 + LLM 纠错\n的双层架构，Chaterm 实现了 K8S 命令接近 100% 的精准识别：\n热词表：\nK8S 命令热词，权重 增强，确保专有词识别准确率\nLLM 纠错：\n将自然语言、同音词、不完整命令转换为标准 K8S 命令\n端到端优化：\n从语音输入到命令执行，全链路保障准确率\n未来优化方向：\n对短命令、\n高置信度场景支持跳过 LLM 调用实现本地规则快速修正，根据用户习惯优化热词表进行命令历史学习，支持保存常用命令模板等\n最后，祝大家春节快乐，业务稳定0告警！\n欢迎大家试试 Chaterm 移动端，也欢迎从工程视角给我们提意见。\n📱 移动端\niOS：\n在 App Store 搜索 Chaterm\nAndroid：\n在 Google Play 等应用商店搜索 Chaterm\n💻 桌面端\n国内版：\nhttps://chaterm.cn/download/\n国际版：\nhttps://chaterm.ai/download/\n🧑‍💻 开源仓库\nGitHub：\nhttps://github.com/chaterm/Chaterm\n本文由 Chaterm 技术团队撰写，介绍了在移动端实现 K8S 命令高精度语音识别的技术方案。如有问题或建议，欢迎交流讨论。\n-End-\n原创作者丨\n双承、DYin\n感谢你读到这里，不如关注一下？\n👇\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

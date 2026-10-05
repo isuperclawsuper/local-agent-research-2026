@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1143267672796893184",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "CCIG 2026 | TaoAvatar：3D真人数字人在淘宝Vision领域的应用",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650544017&idx=1&sn=7c1a0cc4a43ea9b7cd5417ed44822e76",
+      "date": "2026-06-05T07:53:00.984Z",
+      "chars": 5202,
+      "text": "原创\nMeta技术团队\n2026-06-05 15:53\n浙江\n淘天Meta技术团队受邀在“三维建模生成与具身智能”学术论坛上的分享报告全文。\n2026年5月29日至31日，中国图像图形大会（CCIG 2026）在广州召开，论坛内容涵盖大模型、三维建模生成与具身智能、空间智能、脑机接口、机器视觉等热点方向，覆盖学术前沿、产业应用和技术创新，与会学术界和产业界同仁近4200余人。\n作为中国图像图形学学会的常任理事单位，淘天业务技术Meta技术团队连续第四年受邀出席大会\n，\n在专属展位区展示了Meta技术团队介绍与核心技术成果。此外，Meta技术团队受邀在“三维建模生成与具身智能”学术论坛上发表演讲，分享\n3D真人数字人在淘宝Vision领域的应用\n，\n报告现场有诸多相关方向高校老师和学生主动联系，表达未来加强交流合作，深化产学研协同创新，共同攻克关键核心技术难题的愿景。\n以下为本次论坛分享报告全文——\n数字人的多元风格与应用场景\n我们知道，数字人的风格非常多样，比如我们现在比较常见的，有偏轻量化的2D数字人，也有基于视频生成或视频驱动的视频数字人。最近像Seedance、LPM这类工作都非常火，代表了视频数字人在表现力和生成效率上的快速提升。而如果进一步往3D方向看，像Meta的Codec Avatar也在往3D生成和驱动大模型方向上走，追求更低成本的生成和部署。应用场景也是比较丰富。数字人的形态也很多元，涵盖了二次元、超写实、真人等不同风格，其应用领域包括影视、游戏、通信、电商等，前景广泛。\nMeta技术团队陈志文(塞远)在CCIG2026报告现场\nTaoAvatar技术体系总览\n去年淘天集团推出了TaoAvatar这样一种3D真人数字人形态，并且已经在XR眼镜端做出了完整体验。今年TaoAvatar的发力方向主要有两个：第一，是继续扩充它能支持的形象和服饰类型；第二，是围绕一些重点数字人IP，提升它们可驱动动作的丰富度和质量。\n具体来说，团队现在主要有三类能力：\n第一类是TaoModel——3DGS人体静态建模。\n它通过标定、分割、几何重建和高斯静态重建，快速生成高质量的3D人体静态模型。这个能力一方面可以帮助业务方快速预览建模效果，另一方面在一些特定场景下，也可以直接作为最终交付物使用。\n第二类是TaoAvatar——3DGS可驱动数字人重建。\n它基于多视角拍摄、SMPLX++几何重建和3DGS动态重建，生成可以被语音、手势、动作等方式驱动的3D真人数字人资产。不过目前它对素材还有一定要求，比如服饰需要相对紧身，动作幅度不能太大，手部末端也要尽量清晰可见。\n第三类是TaoVideo——4DGS人体体积视频。\n它可以支持任意服饰、发型和身材的模特拍摄，并且通过时间轴做动态重建，比较完整地记录像裙摆这类复杂动态效果，所以能给业务创意带来更大的空间。当然，这类方案目前也需要在重建质量和存储成本之间做一定平衡。\n核心技术详解\n▐\n3D真人数字人技术框架\nTaoAvatar是一套基于3D Gaussian Splatting（3D高斯泼溅技术）的3D真人数字人方案。它主要解决的是传统3D建模里几个比较典型的问题，比如计算量大、细节还原不够，以及在移动端运行比较困难。\n在能力上，TaoAvatar集成了3D高斯重建、语音口唇驱动、身体姿态和手势驱动、端侧实时渲染，以及大语言模型推理引擎MNN-LLM。基于这些能力，它可以服务电商导购、虚拟陪伴等场景，提供更拟真的数字人形象。\n这里也补充一下，为什么选择用XR设备来呈现。因为人眼本身就是天然双目的，XR设备更能体现3D数字人的立体感。而在目前的眼镜设备里，Apple Vision Pro在分辨率和稳定性上表现比较好，虽然它也有一些问题，但现阶段来看，仍然是比较适合用来呈现这类体验的设备。\nTaoAvatar的核心技术指标包括：清晰度PSNR大于35、稳定性高；实时表情和身体驱动，自然程度高、实时性达到90 FPS；高精度实时渲染，双目分辨率2K、实时性90 FPS；多模态智能交互，首字延迟小于2秒、内存占用小于2.5GB。整体方案实现了高分辨率2K、实时驱动和渲染90fps、制作成本低于2万元、交付效率低于1周，并且已经从ToB的特定IP形象重建扩展到ToC的用户数字分身构建。\n▐\n真人体型和动作捕捉\n这里主要讲TaoAvatar的第一个算法核心：真人体型和动作捕捉。它的输入是多视角视频，输出的是和被拍摄者体型、姿态一致的SMPLX动捕数据，这些数据可以直接用来驱动3DGS数字人。\n团队在SMPLX基础上做了几层扩展：比如SMPLX++用来表达头发和服饰Mesh的非刚性形变；SMPLX-Ace用来做自动骨骼绑定；再通过Retargeting，把动捕演员的动作迁移到目标数字人身上。\n具体算法流程上，会逐帧提取分层监督信号：脸部用EMOCA，手部用HaMeR，身体用SAM-3DBody的3D关键点。然后先优化每一帧的SMPLX初值，再结合图像和监督信号做mesh tracking，保证时序平滑、减少抖动（Tracking模型还提供了非常丰富的语义parsing结果）。最后再基于图像学习服饰Mesh的非刚性形变，产出最终的SMPLX++动捕数据。\n这里有两个比较关键的创新点：第一是脸、手、身体分层解耦监督，分别约束再做时序跟踪，让动捕结果更稳定；第二是小棚和大棚联动，也就是大棚负责大范围动作驱动，小棚负责叠加非刚性形变，从而实现跨棚一致的迁移和驱动。\n在大小棚联动上，具体做法是：小棚先用1帧重建锁定统一的骨架和体型，大棚再复用这套骨架和体型去采集更大范围的动作。同时，为了增强稀疏视角下的tracking稳定性，要求至少5个全身可见视角来稳定身体绑定，至少3个手部可见视角来稳定手势绑定。效果上，客观指标显示平均PVE误差在6到7毫米，整体精度优于开源SOTA框架EasyMocap，动捕更全面，体型估计也更准确。\n▐\n真人动态重建\n这里讲一下TaoAvatar在可驱动3DGS数字人重建上的新思路。团队之前的核心做法，是通过教师-学生框架、轻量化设计，以及非刚性形变烘焙和轻量化BS补偿，让数字人资产既能保持较高清晰度，又能控制资产大小，从而实现端侧实时渲染。\n但新的问题是：同一个数字人ID，如何支持不同服饰、不同动作的统一驱动。为了解决这个问题，团队从过去的\"单人、单服装、单动作片段\"的训练，升级到\"单ID、多服饰、多动作\"的一体化建模。\n具体来说，会先基于多视角影棚数据，对同一个ID采集多套服饰和多段动作，完成SMPLX++绑定和tracking。然后通过人体部件Parsing，把身体、服饰、发型等区域做细粒度分割，并在UV空间里统一学习肌肉和服饰的非刚性形变。不同服饰之间可以共享权重，实现跨服饰复用。\n最后，会把这些形变通过PCA烘焙成端侧可实时运行的几何形变场和高斯形变场。这样在推理时，只要输入这个ID的姿态驱动信号，就可以驱动它在不同服饰下产生自然运动，包括肌肉形变和服饰形变。整体资产规模大约400MB，并且可以在端侧做到90 FPS的实时推理和渲染。\n展示效果方面，团队展示了不同Pose下衣服几何的非刚性形变效果，以及用同一组驱动信号驱动相同ID不同服饰的效果。虽然还是会有一些穿模，但整体的驱动效果是比较一致的。\n同时也展示了在相同ID、相同服饰，但不同动作下的驱动效果，包括走路引导、互动游戏、店铺讲解等应用场景。\n▐\n真人语音驱动手势\n这里讲一下TaoAvatar的语音和文本驱动手势算法框架。简单来说，系统接收语音和文本输入后，会生成两类动作：一类是基础手势，比如说话时自然的节奏型肢体反应；另一类是强语义手势，也就是根据文本含义触发特定动作，最后再通过SMPLX驱动3DGS数字人。\n在算法上，基础手势主要由GestureDiT生成，它会结合语音和文本特征，对SMPLX人体结构做分层建模：先生成上半身动作，再预测手指姿态，下半身则根据上半身动作条件化生成。这样可以让\"原地讲话\"场景下的动作更自然、更稳定。\n对于强语义手势，团队会用Qwen-LLM理解文本内容，检索匹配的预制语义动作，并在GestureDiT的去噪过程中注入进去，让数字人在说到关键语义时能做出更匹配的手势。\n训练上，团队使用了单目视频动捕数据和3D影棚多模态数据。推理时，模型一次预测1秒的动作，并且可以实时运行，RTF小于1，在3090这类消费级显卡上也能部署。效果上，系统在相同语义下用中文和英文表达都能生成对应的手势效果。\n▐\nTaoVideo：真人4DGS体积视频\n这里讲一下TaoVideo-4DGS人体体积视频重建。它的特点是输入多视角视频，不限制人物和服饰，也不依赖SMPLX这类显式人体模型，直接输出一段4DGS动态重建序列。\n核心思路是把高斯点的运动和外观都做成\"样条曲线\"。运动上，用样条曲线来描述高斯点的位置和旋转变化；外观上，也用样条来描述颜色变化，并加入生命周期机制，表示高斯点什么时候出现、什么时候消失。这样就能更好地还原衣服飘动、裙摆变化这类复杂动态。\n同时，团队引入了非均匀时间控制点和自适应分段建模。简单说，就是动作快、细节多的地方分配更多控制点和高斯容量，动作慢的地方就减少冗余，从而在质量和存储之间取得平衡。\n训练上，一段20到25秒的多视角视频会先用静态3DGS初始化，再通过coarse-to-fine的方式逐步优化动态细节。推理时，端侧可以实时渲染到约90 FPS，单段资产在FP16存储下大约400MB。整体来看，这个方案更适合任意服饰、复杂外观和动态效果丰富的数字人视频重建。\n主观效果上，对帽子、复杂发型及裙摆等宽松服饰的外观细节与摆动形变刻画稳定，资产内部无明显闪烁。客观指标方面，TaoVideo平均重建清晰度PSNR为31至35，LPIPS为0.06至0.1。团队也展示了TaoVideo和TaoAvatar的效果对比，特别是裙摆动态效果方面的差异。\n淘宝Vision落地应用\n从去年到今年，团队把基于XR眼镜的3D版淘宝体验，从线上扩展到了线下，在杭州、上海、长沙、深圳等城市陆续开业了淘宝Vision未来旗舰店。\n淘宝Vision（线上）是基于Vision Pro的空间购物App，荣获2025年度Apple Design Awards。该奖项设立36年来，这是国内互联网平台首次获奖。淘宝Vision以3D沉浸式体验呈现商品造型、尺寸、材质等细节，支持多商品同屏对比，提升购买决策效率。依托自研AI的三维重建能力，并提供语音搜索、图片搜索等自然交互，让购物更直观、更流畅。\n淘宝Vision未来旗舰店（线下）打造了全新的未来购物空间，融合\"AI+3D+XR\"技术，为品牌提供提升线下门店效率的一体化解决方案：在有限空间内实现海量SKU的沉浸式展示，支持消费者自由选配，带来更真实、更具参与感的到店体验。目前已在杭州、上海、长沙、郑州、南京、深圳开业。\n在具体的品牌合作案例中，伯希和虚拟服装店提供了3D人工智能导购和多模态智能问答服务。此外，团队还为米兰冬奥会打造了服饰数字人，在意大利米兰开设了虚拟服装店，提供3D服饰模特展示。\n淘宝 Vision 未来旗舰店3D智能导购\n淘宝 Vision 伯希和3D虚拟服装导购\n淘宝 Vision 米兰冬奥会3D服饰数字人\n未来技术演进\n相较于影棚拍摄数字人，团队也在探索用单图/稀疏视角的低成本数字人生成方案，进一步降低门槛、扩大规模。\n今年CVPR团队提出了FHAvatar：从任意数量的视角快速重建可组合的3D高斯人头，并把人脸和头发在纹理空间拆开建模——面部用平面高斯，头发用Strand高斯。只要少量照片，几分钟就能做出高质量结果，还能实时驱动表情嘴型、轻松换发型、做风格化编辑等。\n团队介绍\n淘天Meta技术团队，核心做的事情是面向消费场景的3D基础技术和XR创新应用，打造以手机和XR设备为载体的购物新体验。如手机淘宝里的AR试商品，以及基于XR眼镜的纯3D版淘宝——淘宝Vision等。围绕这些场景，团队沉淀了TaoAvatar 3D数字人、Taobao3D商品重建与生成技术、Ace渲染引擎以及AI推理引擎MNN等核心技术产品。欢迎关注我们的主页：\nhttps://github.com/alibaba/Taobao3D\n我们27届毕业的实习生招聘还在火热进行中，欢迎感兴趣的同学投递简历至\nzhiwen.czw@taobao.com\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0.01,
+        "transfer_agent": 0.01,
+        "peripheral": 0.35,
+        "irrelevant": 0.63,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.2,
+      "probabilities": {
+        "0": 0.31,
+        "1": 0.19,
+        "2": 0.49,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.71,
+      "probabilities": {
+        "0": 0.48,
+        "1": 0.35,
+        "2": 0.15,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.14,
+      "probabilities": {
+        "0": 0.89,
+        "1": 0.1,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.45,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.21,
+        "3": 0.09,
+        "4": 0.69,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.9,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.09,
+        "2": 0.09,
+        "3": 0.14,
+        "4": 0.49,
+        "5": 0.05
+      }
+    },
+    "anti_hype": {
+      "score": 2.18,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.06,
+        "2": 0.49,
+        "3": 0.38,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6607,
+    "outputTokens": 173,
+    "totalTokens": 6780
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.54,
+        "relevance": 0.46,
+        "grounding": 0.53,
+        "decision_action": 0.91,
+        "evidence": 0.63,
+        "actionability": 0.2,
+        "anti_hype": 0.6
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179888009,
+                "endTime": 1791179888166,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000277494",
+      "marketCost": "0.000277494",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000277494",
+      "inferenceCost": "0.000277494",
+      "inputInferenceCost": "0.000277494",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A85BT692MKPBNXCDGX9PD"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:08 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::5z7cw-1791179887871-0f3a078621d1"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0.01,
+            "transfer_agent": 0.01,
+            "peripheral": 0.35,
+            "irrelevant": 0.63,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.2,
+          "probabilities": {
+            "0": 0.31,
+            "1": 0.19,
+            "2": 0.49,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.71,
+          "probabilities": {
+            "0": 0.48,
+            "1": 0.35,
+            "2": 0.15,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.14,
+          "probabilities": {
+            "0": 0.89,
+            "1": 0.1,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.45,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.21,
+            "3": 0.09,
+            "4": 0.69,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.9,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.09,
+            "2": 0.09,
+            "3": 0.14,
+            "4": 0.49,
+            "5": 0.05
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.18,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.06,
+            "2": 0.49,
+            "3": 0.38,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6607,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.54,
+            "relevance": 0.46,
+            "grounding": 0.53,
+            "decision_action": 0.91,
+            "evidence": 0.63,
+            "actionability": 0.2,
+            "anti_hype": 0.6
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179888009,
+                    "endTime": 1791179888166,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000277494",
+          "marketCost": "0.000277494",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000277494",
+          "inferenceCost": "0.000277494",
+          "inputInferenceCost": "0.000277494",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A85BT692MKPBNXCDGX9PD"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:07.400Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1106567922580430848",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "IGA Pages × TRAE ：TRAE 如何快速实现一键部署",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247519758&idx=1&sn=2a3cb2f76c01e5134c0af2e62bfbec3a",
+      "date": "2026-05-11T10:03:00.647Z",
+      "chars": 5363,
+      "text": "视频与边缘\n2026-05-11 18:03\n江苏\n前言\n想象这样一个场景：你是独立开发者、产品经理，或者负责活动落地页的运营同学。一个想法突然冒出来，借助 TRAE 中国版，你在一个下午就把原型跑通了。\n但是真正的部署难题从这里才开始：你需要让本地能打开的页面，变成全球用户能访问的链接，中间要过一整条清单。它与业务逻辑无关，却常常决定了上线的节奏。\n💡\n部署前，你可能要面对：\n购买和配置服务器\n繁琐的 Nginx 规则\n编写复杂的 Dockerfile\n搭建 CI/CD 流水线\n申请与续期 SSL 证书\n解决本地与线上环境不一致的“玄学 Bug”\n💡\n上线后，挑战仍在继续：\n应对突发流量的服务器扩容\n全球访问速度慢，海外用户体验差\n每次更新都要手动刷新 CDN 缓存\n管理不同环境的大模型 API Key\n对于一个原型、一个落地页、或一个对话式应用而言，这些负担的成本经常高于这个项目本身。\nTRAE 中国版当前还未支持一键部署的能力，今天为大家介绍一种新的实现方式：\nTRAE CN（AI IDE） × IGA Pages（应用部署及加速平台）\n。\nTRAE 负责创意生成与迭代，IGA Pages 负责部署、分发与运行时能力。\n如果你的项目使用了 TRAE 国际版，这套开发与部署最佳实践同样适用。\n一、基本介绍\nTrae：\nAI 原生 IDE。支持自然语言生成完整项目、编码时的智能补全、内置预览。承担“创意生成”这一步。\nIGA Pages：\n火山引擎一站式 AI 应用部署与全球加速平台。提供零配置的部署流程、全球边缘网络和 Serverless 函数能力。承担“部署上线”这一步。它把过去部署需要的繁琐步骤整体接管：\n小编了解到，当前 IGA Pages 核心功能限时免费，个人开发者和小团队均可零成本上手。\n控制台一键直达链接：\nhttps://console.volcengine.com/dcdn/pages\n两者接通后，开发态产出可以不离开 IDE，直接进入部署态；部署态不要求开发者理解节点、证书、缓存。从代码到全球可访问的链路，被压缩到命令行两三步之内。\n责任的切分：生成归 AI，部署归平台，项目归开发者。\n二、适合场景\n在开始实践之前，你可以先看看自己是否有以下需求\n适合：\n想把 AI 生成的原型 / Demo / 活动页快速推到公网不想管服务器、证书、CDN；需要在几分钟内产出一个可分享的链接。\n也适合：\n正在做前后端一体化应用，并且依赖大模型 API；希望环境变量、部署、灰度都在同一个控制台完成。\n不适合：\n需要常驻后台服务、定时任务、数据库常连接等超出 Serverless 能力边界的场景；需要深度定制 Nginx / 容器镜像的团队。\n三、环境准备\n以下实践都在 TRAE 中国版演示，国际版大家也可以自己尝试\n1. 安装 TRAE 中国版\n访问\nhttps://www.trae.cn/\n下载并安装 TRAE IDE\n2. 安装 IGA Pages 工具\n方式一（推荐）：使用 Skill 直接部署\n通过自然语言安装\n直接在 AI 对话框中输入：\n安装这个\nskill\n:\nhttps\n:\n//github.com/volc-iga-pages/iga-pages-skills\n通过命令行安装\nnpx skills add volc-iga-pages/iga-pages-skills\n方式二：使用 CLI 部署\n1. 在终端执行以下命令全局安装 CLI 工具：\nnpm install -\ng\n@iga-pages\n/cli\n如果遇到权限问题可使用\nsudo npm install -g @iga-pages/cli\n。\n2. 安装完成后验证：\niga pages\n--version\n3. 准备火山引擎账号\nIGA 产品目前通过火山引擎平台对外提供服务，你需要在\n「火山引擎控制台」\n注册一个火山引擎账号。\n四、最佳实践\n下面我们分别通过\n「快速上手操作」\n和\n「复杂场景」\n2个案例为大家进行演示，复杂场景会在快速上手操作的基础上增加大模型调用与生产环境配置的演示，大家可以根据自己的需求选择。\n快速上手：个人作品集网站（预计 5-10 分钟）\n这是一个纯前端项目\n第一步：在 TRAE 中与 AI 对话，生成页面\n打开 TRAE，在\nBuilder\n模式下输入你的想法：\n帮我生成一个产品经理的个人主页。深色模式，现代简约风。需要包含个人简介、过往项目（以卡片形式展示，含标题、简介、链接）、技能标签和联系方式。使用 React 和 Tailwind CSS。\nAI 会帮你生成完整项目。你可以在内置的预览窗口中查看效果，并继续通过对话微调，比如“把主题色换成蓝色”或“给卡片增加一个悬停动效”。\n第二步：“一键部署”到 IGA Pages\n对预览效果满意后，在 TRAE 的集成终端里，你只需一个简单的部署指令，平台会自动检测到这是纯静态项目，并采用最优方式部署。\n本案例中选择用 Skill 方式部署。\n在 TRAE Builder 中输入：\n将当前项目部署到 IGA Pages\n已安装的 Skill 会先引导完成 IGA Pages 平台登录（如已登录则跳过），登录完成后自动部署，打开返回的链接即可查看效果。\n💡\n这次实践的三个关键点：\n描述驱动生成：\n用户描述“想要什么”，AI 产出“如何实现”。\n预览先于部署：\n在 TRAE 中实时预览，部署前已可验证最终效果。\n部署被抽象为一个指令：\n构建、分发、证书等最佳实践由平台内置承接。\n复杂场景：AI 连环绘本生成智能体（预计 10-20 分钟）\n这是一个 Next.js 全栈项目\n目标：\n构建一个依赖大模型 API 的全栈应用——以「根据用户需求生成多页连环绘本」为例。\n第一步：在 TRAE 中创建全栈应用\n打开 TRAE，创建一个新的空文件夹，切换到 Builder 模式，输入：\n使用nextjs写一个生成绘本的智能体，使用 Seedream 生成连环绘本的智能体，它能够根据用户的需求，使用 seedream 4.5 生成画风连续的多页绘本。\n工作流程：\n1.\n首先理解用户需求，使用 agent 自身的 llm 进行漫画分镜拆分，绘本页数范围 2-10 页。默认 4 页。\n2.\n生成一个绘本的角色卡片，里面包含全部的绘本角色。这张角色卡片同时也是风格参考卡片。在后续生成中，会作为绘本生成的风格参考系，作为图片参数传入。\n3.\n根据 agent 生成的绘本分镜，将风格参考图 + 绘本分镜描述，传入生图模型，进行单页生图。这里可以给 agent 提供一个并发生图的工具，同时生成后续所有分镜。\n4.\n在回复中，使用 md 语法将图片链接渲染出来，回复给用户。以文字、图片穿插的方式，返回结果给用户。\n5.\n如果用户需要修改单张图片，可以使用图生图能力，将需要修改的图片 + 修改需求，传入 seedream，再次进行单张生图。生成完毕后，将完整的多页图片链接再次以 md 形式返回。\n因为这个案例涉及文生图模型（以 doubao-seedream-4.5 为例）调用，开发完成后需在本地添加环境变量，启动开发服务器验证。\n配置\n.env.local\n：\nARK_BASE_URL\n=\nhttps://ark.cn-beijing.volces.com/api/v3\nSEEDREAM_MODEL\n=doubao-seedream-\n4\n-\n5\n-\n251128\nARK_API_KEY\n=your-api-key-here\n遇到问题时，可以在 TRAE Chat 模式中：\n选中报错信息 → 提问“帮我解决这个错误”\n选中代码 → 提问“优化这段流式响应的错误处理”\n第二步：部署到 IGA Pages\n对预览效果满意后，在 TRAE 的集成终端里，执行部署操作：\n本案例中选择用 CLI 方式部署。\n在 TRAE 的终端中执行：\n# 首先登录火山引擎账号\niga\nlogin\n命令会跳转火山引擎控制台登录链接，登录成功后返回 TRAE 继续执行部署操作：\n# 执行部署\niga\npages deploy\n终端会提示输入项目名称；部署成功后，会输出形如下列的链接，点击即可访问。\n✅\nProject\ndeployed!\nConsole\n:\nhttps\n:\n//console.volcengine.com/dcdn/pages/detail/xx\nPreview\nURL\n:\nhttps\n:\n//trae-ivytest-xx.preview.iga-pages.com?iga_token=xx&iga_time=121\n第三步：在控制台配置大模型环境变量\n这一步的目的：让第一步在本地\n.env.local\n里定义的三个变量在生产环境同样生效。本地开发读文件，生产环境读控制台——两套来源，同一个\nprocess.env\n接口。\n进入火山引擎控制台 → 全站加速 → Pages → 选择你的项目 → 项目设置 →\n环境变量\n。\n配置完成后重新部署，IGA Pages 会自动写入三个环境变量，应用代码通过\nprocess.env\n直接读取。\n第四步：验证与迭代\n这一步的目的：\n确认部署后的应用行为符合预期，并把修改闭环回 TRAE。\n打开部署返回的预览 URL，输入一段绘本需求，验证分镜拆分、风格卡片生成、多页出图三段链路是否正常\n如需调整 UI 或功能，回到 TRAE 使用 Builder 或 Chat 模式修改\n修改后通过 iga pages deploy 命令或 Skill 重新部署\n五、如果让部署可持续\n部署成功只是起点。这一节讨论三件事——它们都指向同一个主题：\n让部署变成持续发生的动作，而不是一次性事件。\n自动化：\n把触发部署的动作交给 Git。\n域名：\n把默认预览链接换成自有域名。\n运行时：\n让静态站点具备后端能力。\nGitHub 集成实现自动部署\n除了手动 CLI 和 Skill 部署，IGA Pages 支持 GitHub 仓库集成，实现\ngit push\n自动部署。\n配置步骤\n将项目代码推送到 GitHub 仓库。\n在 IGA Pages 控制台创建项目时，选择\nGitHub 仓库\n作为代码源。\n3. 授权\nvolc-iga-dev OAuth\n应用访问你的仓库。\n4. 选择仓库名。\n配置完成后，每次\ngit push\n到指定分支，IGA Pages 会自动执行：\ngit\npush → 触发 Webhook → 拉取代码 → 安装依赖 → 执行构建 → 部署上线\n在 TRAE 中的开发流程\n1.\nTRAE Builder 生成/修改代码\n2.\n在 TRAE 终端中 git add → git commit → git push\n3.\nIGA Pages 自动构建部署\n4.\n访问预览 URL 验证效果\n这种方式适合团队协作：多人在各自的 TRAE 中开发，推送到 GitHub 后由 IGA Pages 统一构建部署。\n绑定自定义域名\n预览链接已可全球访问。若需使用自有域名：\n进入火山引擎控制台 → 全站加速 → Pages → 项目设置。\n点击\n添加自定义域名\n，输入域名（如\nblog.example.com\n）。\n3. 在 DNS 服务商处添加 TXT 记录验证域名所有权。\n4. 绑定成功后，系统分配 CNAME 地址，添加 CNAME 记录指向该地址。\n5. 配置 SSL 证书（可上传已有证书或使用平台托管证书）\n利用 Edge Functions 实现动态功能\nIGA Pages 不止于静态站点，还支持边缘函数（Edge Functions），结合前端项目可完成一个全栈项目的开发：\n在项目中创建 api 目录\n添加 JS/TS 函数文件，实现 API 接口功能\nexport\nasync\nfunction\nGET\n(\nrequest\n){\nreturn\nResponse\n.\njson\n({\nmessage\n:\nHello\nfrom\nIGA\nPages\n!  });\n}\n执行\niga pages dev\n开发服务器，访问\nhttp://localhost:3000/api/hello\n，将看到以下响应：\n{  message :\nHello\nfrom\nIGA\nPages\n!  }\n更多用法参考：IGA Pages Functions。\n写在最后\nTRAE × IGA Pages 的意义不在“更快”，而在责任的切分——生成归 AI，部署归平台，业务归开发者。\n更低的门槛：\n无需运维知识，产品与运营也能独立完成上线。\n更快的节奏：\nAI 辅助开发、无缝预览、一键部署、GitOps 工作流环环相扣，原型与 Demo 在分钟级内上线，契合敏捷与 Hackathon 场景。\n现在立即打开 TRAE，把第一个想法交给它，让你的创意在几分钟内立即被更多人看到！\n进群了解更多详细信息\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.65,
+        "peripheral": 0.14,
+        "transfer_agent": 0.21,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.39,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.24,
+        "2": 0.57,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.57,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.07,
+        "2": 0.18,
+        "3": 0.55,
+        "4": 0.11,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.67,
+      "probabilities": {
+        "0": 0.69,
+        "1": 0.14,
+        "2": 0.03,
+        "3": 0.1,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.03,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.95,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.79,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.88,
+        "5": 0.05
+      }
+    },
+    "anti_hype": {
+      "score": 2.54,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.02,
+        "2": 0.53,
+        "3": 0.22,
+        "4": 0.2,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6042,
+    "outputTokens": 173,
+    "totalTokens": 6215
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.56,
+        "relevance": 0.59,
+        "grounding": 0.55,
+        "decision_action": 0.56,
+        "evidence": 0.96,
+        "actionability": 0.79,
+        "anti_hype": 0.53
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179924821,
+                "endTime": 1791179924977,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000253764",
+      "marketCost": "0.000253764",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000253764",
+      "inferenceCost": "0.000253764",
+      "inputInferenceCost": "0.000253764",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A99A13JHTWEEQTYXB450Y"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:44 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::jdxwh-1791179924786-23c220ad3617"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.65,
+            "peripheral": 0.14,
+            "transfer_agent": 0.21,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.39,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.24,
+            "2": 0.57,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.57,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.07,
+            "2": 0.18,
+            "3": 0.55,
+            "4": 0.11,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.67,
+          "probabilities": {
+            "0": 0.69,
+            "1": 0.14,
+            "2": 0.03,
+            "3": 0.1,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.03,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.95,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.79,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.88,
+            "5": 0.05
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.54,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.02,
+            "2": 0.53,
+            "3": 0.22,
+            "4": 0.2,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6042,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.56,
+            "relevance": 0.59,
+            "grounding": 0.55,
+            "decision_action": 0.56,
+            "evidence": 0.96,
+            "actionability": 0.79,
+            "anti_hype": 0.53
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179924821,
+                    "endTime": 1791179924977,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000253764",
+          "marketCost": "0.000253764",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000253764",
+          "inferenceCost": "0.000253764",
+          "inputInferenceCost": "0.000253764",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A99A13JHTWEEQTYXB450Y"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:44.210Z"
+  }
+}

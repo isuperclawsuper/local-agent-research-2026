@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "269641728369092608",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI实践｜基于 Spring AI 从0到1构建 AI Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559646&idx=1&sn=1abc5788cfe44b9820e5a0f4dfb3a336",
+      "date": "2026-04-22T00:32:00.966Z",
+      "chars": 15302,
+      "text": "原创\n觖弦\n2026-04-22 08:32\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n前言\nLinux说过一句很经典的话：\nTalk is cheap, show me the code\n.\n最近在学习AI Agent开发的时候，填鸭式地被灌输了很多新知识，但是这些新知识就像是漂浮的“空中楼阁”，看得见但摸不着，只知道理论如此但是不知道具体实现为何物。计算机工程的事儿，往往真的听再多毫无体感，看一遍代码就基本一通百通，由此产生一个很神奇的想法：\n“\n最好的学习资料是代码，既然我要学AI Agent开发，那就让AI Agent本身帮我生成学习资料\n。\n”\n于是乎，便有了这篇文章，即我本文的项目代码几乎是由AI生成，我在其中的角色只是指挥家与验收员。\n开始之前先作一些声明：\n1、该项目本身纯作为学习用途的Demo，只是用作展示“理论背后看得见的代码”。\n2、Agent的理解较为宽泛，从整体概念层面是包含LLM的，一般Agent开发往往指的是Harness开发，但本文不做具体区分。\n3、不深入每个概念的设计哲学，如Skill的渐进式披露，主要关注于实现层面。\n4、Function Calling：LLM本身不会调工具，工具调用都是Harness做的；实际上Function Calling是大地基，很多复杂能力都是作为tool的形式包装给LLM的，例如Skill与SubAgent调用。\n快速开始\n本项目是一个基于Spring AI的AI Agent应用（\n纯Demo，仅学习用途\n），集成了 RAG 检索增强生成、Function Calling 工具调用、MCP 协议、SubAgent 子代理、Skill 技能系统等核心能力。本文将从六个核心模块出发，深入剖析其架构设计和实现细节。\n代码仓库\ngithub地址：\nhttps://github.com/q644266189/aiagentdemo\ngit clone git@github.com:q644266189/aiagentdemo.git\n环境要求\nJava 21+\nMaven 3.9+\n核心模块\n模块\n说明\nAgentCore\n核心编排器，具备意图识别、记忆管理与大模型调用等能力。\nChatMemory\n对话记忆管理，支持三层上下文压缩（摘要压缩 → Assistant 裁剪 → 滑动窗口）。\nTool（Function Calling）\n可插拔的工具注册机制，通过\nInnerTool\n统一接口注册，LLM 自主决策调用\nRAG\n完整的检索增强生成流水线：文档加载 → 文档分块 → 向量化 → 向量存储 → 多路召回（语义 + BM25 + 查询改写）→ RRF 融合 → Rerank 重排 → LLM → 内容生成\nCommand & Skill\n两种 Markdown 驱动的 Prompt 模板机制：Command 由用户主动调用，Skill 本质作为Tool由 LLM 决策调用。\nSubAgent\n拥有独立记忆的子代理，支持内部 SubAgent 和外部 IdeaLab Agent 两种形态\nMCP\n双向 MCP 支持：作为 Client 动态连接外部 MCP 服务，作为 Server 对外暴露服务\n配置\n编辑\nsrc/main/resources/application.properties\n，配置大模型 API\nspring.ai.openai.base-url\n=\nhttps://open.bigmodel.cn/api/paas/v4\nspring.ai.openai.api-key\n=你的API密钥\nspring.ai.openai.chat.options.model\n=glm-\n4\nspring.ai.openai.embedding.options.model\n=embedding-\n3\n访问\n前端页面\n启动成功后，打开浏览器访问：\nhttp\n:\n//localhost:8080\n项目内置了一个完整的 Web 聊天界面（\nsrc/main/resources/static/index.html\n），支持：\n流式对话\n：\n实时逐字输出 AI 回复（SSE）\nMarkdown 渲染\n：\n自动渲染代码块、表格、列表等\n命令面板\n：\n输入\n/\n唤起快捷命令列表\n会话管理\n：\n支持清空对话历史\nAPI 直接调用\n# 非流式对话\ncurl\n-X POST\nhttp://localhost:\n8080\n/api/chat\n\\\n-H\n\"Content-Type: application/json\"\n\\\n-d '{\n\"message\"\n:\n\"你好，介绍一下你的能力\"\n,\n\"sessionId\"\n:\n\"test-001\"\n}'\n# 流式对话（SSE）\ncurl\n-X POST\nhttp://localhost:\n8080\n/api/chat/stream\n\\\n-H\n\"Content-Type: application/json\"\n\\\n一、核心编排器：AgentCore\nAgentCore\n是整个系统的\"大脑\"，负责编排对话的完整流程：\n意图识别 → RAG 注入 → 记忆管理 → 模型调用 → 工具执行\n。\n1.1 对话流程\n用户输入\n│\n▼\n意图识别（IntentRecognizer）\n│ 判断：这是知识问答还是通用对话？\n▼\nRAG 注入（RagService）\n│ 如果是知识问答，检索知识库，将参考资料拼入上下文\n▼\n记忆管理（ChatMemory）\n│ 自动摘要压缩 → 构建消息列表\n▼\n模型调用（ChatClient + ToolCallbacks）\n│ LLM 决策：直接回答\nor\n调用工具？\n│ 如果调用工具 → 执行工具 → 将结果返回 LLM → 继续决策（ReAct 循环）\n▼\n返回最终回复\n核心代码（\nAgentCore.chat()\n）：\npublic\nString\nchat\n(\nString\nsessionId,\nString\nuserInput\n) {\nChatMemory\nmemory =\ngetOrCreateMemory\n(sessionId);\n// 1. 意图识别\nIntent\nintent = intentRecognizer.\nrecognize\n(userInput);\n// 2. 如果是 RAG 意图，先检索知识库并注入上下文\nif\n(intent ==\nIntent\n.\nRAG\n&& ragService.\nisKnowledgeLoaded\n()) {\nString\nragContext = ragService.\nquery\n(userInput);\nif\n(ragContext !=\nnull\n&& !ragContext.\nisBlank\n()) {\nString\nenrichedInput =\n\"以下是从知识库中检索到的相关参考资料，\"\n+\n\"请结合这些资料回答用户的问题：\\n\\n\"\n+ ragContext +\n\"\\n\\n用户问题：\"\n+ userInput;\nmemory.\naddMessage\n(\nnew\nUserMessage\n(enrichedInput));\n}\nelse\n{\nmemory.\naddMessage\n(\nnew\nUserMessage\n(userInput));\n}\n}\nelse\n{\nmemory.\naddMessage\n(\nnew\nUserMessage\n(userInput));\n}\n// 3. 构建 Prompt 并Loop调用大模型（getMessages 内部自动触发摘要压缩）\nList\n<\nMessage\n> messages = memory.\ngetMessages\n();\nPrompt\nprompt =\nnew\nPrompt\n(messages,\nbuildChatOptions\n());\nChatClient\n.\nChatClientRequestSpec\nrequestSpec = chatClient.\nprompt\n(prompt);\nif\n(!toolCallbacks.\nisEmpty\n()) {\nrequestSpec.\ntoolCallbacks\n(toolCallbacks.\ntoArray\n(\nnew\nToolCallback\n[\n0\n]));\n}\nString\nresponse = requestSpec.\ncall\n().\ncontent\n();\nmemory.\naddMessage\n(\nnew\nAssistantMessage\n(response !=\nnull\n? response :\n\"\"\n));\nreturn\nresponse !=\nnull\n? response :\n\"\"\n;\n}\n1.2 Agent Loop\nSpring AI已实现Agent Loop。\n具体路径为\norg.springframework.ai.chat.client.advisor.ToolCallAdvisor#adviseCall\nAgent Loop代码片段\nboolean isToolCall =\nfalse\n;\ndo\n{\n// Before Call\nvar\nprocessedChatClientRequest = ChatClientRequest.builder()\n.prompt(new Prompt(instructions, optionsCopy))\n.context(chatClientRequest.context())\n.build();\n// Next Call\nprocessedChatClientRequest =\nthis\n.doBeforeCall(processedChatClientRequest, callAdvisorChain);\nchatClientResponse = callAdvisorChain.copy(\nthis\n).nextCall(processedChatClientRequest);\nchatClientResponse =\nthis\n.doAfterCall(chatClientResponse, callAdvisorChain);\n// After Call\n//\nTODO:\ncheck that this tool call detection is sufficient for all chat models\n// that support tool calls. (e.g. Anthropic and Bedrock are checking for\n// finish status as well)\nChatResponse chatResponse = chatClientResponse.chatResponse();\nisToolCall = chatResponse !=\nnull\n&& chatResponse.hasToolCalls();\nif\n(isToolCall) {\nAssert.notNull(chatResponse,\n\"redundant check that should never fail, but here to help NullAway\"\n);\nToolExecutionResult toolExecutionResult =\nthis\n.toolCallingManager\n.executeToolCalls(processedChatClientRequest.prompt(), chatResponse);\nif\n(toolExecutionResult.returnDirect()) {\n// Return tool execution result directly to the application client.\nchatClientResponse = chatClientResponse.mutate()\n.chatResponse(ChatResponse.builder()\n.from(chatResponse)\n.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))\n.build())\n.build();\n// Interrupt the tool calling loop and return the tool execution\n// result directly to the client application instead of returning\n// it to the LLM.\nbreak\n;\n}\ninstructions =\nthis\n.doGetNextInstructionsForToolCall(processedChatClientRequest, chatClientResponse,\ntoolExecutionResult);\n}\n}\nwhile\n(isToolCall);\n// loop until no tool calls are present\n1.3 意图识别\nIntentRecognizer\n通过 LLM 判断用户输入的意图，目前支持两种：\nRAG\n：\n用户在问知识库相关的问题，需要先检索知识库再回答\nGENERAL\n：\n通用对话，直接交给 LLM 处理\n意图识别前置的好处是：\n避免每次对话都触发 RAG 检索\n，节省不必要的向量检索和 Rerank 开销。\n1.4 对话记忆：ChatMemory\n每个\nsessionId\n对应一个独立的\nChatMemory\n实例，天然支持多客户端并发。\nChatMemory\n设计了\n三层递进的上下文压缩策略\n，防止对话过长导致 token 溢出或成本失控：\n第一层：摘要压缩（智能压缩）\n当历史消息超过 16 条时，自动将较早的消息通过 LLM 总结为一段 300 字以内的摘要，注入到 system prompt 中。原消息从 history 中移除。\n核心代码（\nChatMemory.getMessages()\n和\ncompressIfNeeded()\n）：\npublic\nList<Message>\ngetMessages\n()\n{\n// 在构建消息列表之前，自动尝试摘要压缩\ncompressIfNeeded();\nList<Message> messages =\nnew\nArrayList<>();\n// 将原始 system prompt 与摘要合并为一条 SystemMessage\nif\n(systemMessage !=\nnull\n|| (summaryText !=\nnull\n&& !summaryText.isBlank())) {\nString systemContent = systemMessage !=\nnull\n? systemMessage.getText() :\n\"\"\n;\nif\n(summaryText !=\nnull\n&& !summaryText.isBlank()) {\nsystemContent +=\n\"\\n\\n【以下是之前对话的摘要，请参考】\\n\"\n+ summaryText;\n}\nmessages.\nadd\n(\nnew\nSystemMessage(systemContent));\n}\n// ... 添加历史消息（跳过早期 Assistant 消息）\nreturn\nCollections.unmodifiableList(messages);\n}\nprivate\nvoid\ncompressIfNeeded\n()\n{\nif\n(chatClient ==\nnull\n|| history.size() <= COMPRESS_THRESHOLD_MESSAGES) {\nreturn\n;\n}\nint\ncompressEndIndex = history.size() - PRESERVE_RECENT_MESSAGES;\n// 确保不会在 TOOL 消息的前面截断\nwhile\n(compressEndIndex < history.size()\n&& history.\nget\n(compressEndIndex).getMessageType() == MessageType.TOOL) {\ncompressEndIndex--;\n}\nif\n(compressEndIndex <=\n0\n)\nreturn\n;\nList<Message> messagesToCompress =\nnew\nArrayList<>(history.subList(\n0\n, compressEndIndex));\nString newSummary = SummaryCompressor.compress(chatClient, messagesToCompress, summaryText);\nif\n(newSummary !=\nnull\n&& !newSummary.isBlank()) {\nthis\n.summaryText = newSummary;\nhistory.subList(\n0\n, compressEndIndex).clear();\n}\n}\n这一层的核心设计：\n内聚透明\n：\n压缩逻辑完全封装在\ngetMessages()\n内部，调用方无感知。压缩器\nSummaryCompressor\n作为\nChatMemory\n的私有静态内部类，不对外暴露；\n增量压缩\n：如果已有历史摘要，新的压缩会将旧摘要与新对话合并总结，避免信息随多次压缩逐渐丢失；\nTOOL 消息边界保护\n：截断时自动避开 TOOL 消息，确保 TOOL 消息始终紧跟在对应的 ASSISTANT 消息后面，不会破坏工具调用上下文。\n第二层：Assistant 消息裁剪（精准裁剪）\n只保留最近 3 条 Assistant 回复。因为 LLM 的回复通常很长，是 token 消耗的大户，裁剪早期的 Assistant 消息能显著减少上下文体积。\n第三层：滑动窗口（兜底保护）\n当消息总数超过\nmaxRounds × 4\n时，直接丢弃最早的消息。这是最后一道防线，确保上下文不会无限增长。\n三层策略协同工作：\n摘要压缩优先触发\n（保留信息），\nAssistant 裁剪持续生效\n（精准省 token），\n滑动窗口兜底\n（硬性保护）。\n1.5 多会话隔离与运行时配置\n多会话\n：\nConcurrentHashMap<String, ChatMemory>\n按 sessionId 隔离，支持并发\n运行时切换模型\n：\n通过 API 动态切换模型提供商（如从智谱切到通义千问），无需重启\n运行时调参\n：\n支持动态调整 temperature、maxTokens、topP 等推理参数\n二、Tool 机制（Function Calling）\nLLM 只能\"想\"，Tool 让它能\"做\"。\nLLM本身是不会去调用各种服务，Agent服务端只是告诉大模型“有哪些工具可以调用”，LLM返回给Agent服务端的是“要去调哪些工具”，真实调用实在Agent服务端。\n本项目基于 Spring AI 的 Function Calling 能力，设计了一套\n可插拔的工具注册机制\n。\n2.1 工具注册机制\n所有工具实现统一的\nInnerTool\n接口：\npublic\ninterface\nInnerTool\n{\nList<ToolCallback>\nloadToolCallbacks\n()\n;\n}\n启动时，Spring 自动扫描所有\nInnerTool\nBean，调用\nloadToolCallbacks()\n收集所有工具，统一注册到\nAgentCore\n。新增工具只需实现这个接口，无需修改任何已有代码。\nToolCallbackBuilder\n提供了简洁的工具构建 API，将工具名、描述、参数定义（JSON Schema）和执行函数组装为 Spring AI 标准的\nToolCallback\n。\n2.2 工具调用流程\n用户：\n\"杭州今天天气怎么样？\"\n│\n▼\nLLM\n分析意图，决定调用 get_weather 工具\n│\n▼\nSpring\nAI\n自动执行工具：\nget_weather\n({\n\"city\"\n:\n\"杭州\"\n})\n│\n▼\n工具返回结果：\n\"杭州，晴，22°C\"\n│\n▼\nLLM\n基于工具结果生成最终回复：\n\"杭州今天天气晴朗，气温 22°C，适合出行。\"\nSpring AI 的 ChatClient 内置了\nReAct 循环\n：LLM 可以连续调用多个工具，直到认为信息充足后给出最终回复。整个过程对开发者透明。\n2.3 内置工具一览\n工具名\n功能\n说明\nknowledge_search\n知识库检索\n将 RAG 检索能力封装为工具，LLM 可主动检索\ncreate_sub_agent\n创建子代理\n创建拥有独立记忆的 SubAgent\nchat_with_sub_agent\n与子代理对话\n在 SubAgent 的独立上下文中继续对话\ndestroy_sub_agent\n销毁子代理\n释放 SubAgent 资源\ncall_ideas_{name}\n调用 IDEAs 应用\n调用外部 IdeaLab 平台的 AI 应用（支持多个）\n{skill_name}\n执行技能\n由 Markdown 文件定义的技能，动态注册\n{mcp_tool_name}\nMCP 工具\n从外部 MCP Server 发现并注册的工具\nget_weather\n天气查询\n示例工具\nget_stock_price\n股票价格查询\n示例工具\n三、RAG 模块：检索增强生成\nRAG（Retrieval-Augmented Generation）让 Agent 能够基于私有知识库回答问题。\n3.1 RAG完整流水线\n3.2 文档分块策略\n分块质量直接决定检索质量。项目提供了多种分块策略，分为\n确定规则分块\n和\n智能分块\n两类：\n确定规则分块（Definite）\n策略\n原理\n适用场景\nTextSplitter\n（默认）\n递归语义分块，按标题 → 段落 → 句子 → 固定字符的优先级依次尝试切分\n通用文档，兼顾语义完整性\nFixedSizeSplitter\n按固定字符数切分\n结构不明确的纯文本\nParagraphSplitter\n按段落（连续换行）切分\n段落结构清晰的文档\nSentenceSplitter\n按句子（句末标点）切分\n需要细粒度检索的场景\nSlidingWindowSplitter\n滑动窗口切分，相邻块有重叠\n需要保留上下文连续性\n智能分块（Intelligent）\n策略\n原理\n适用场景\nSemanticChunkSplitter\n基于语义相似度判断切分点\n语义边界不明确的长文本\nPropositionSplitter\n将文本拆解为独立命题\n需要精确事实检索\nAgenticSplitter\n使用 LLM 判断最佳切分方式\n复杂混合格式文档\n默认使用\nTextSplitter\n（递归语义分块），分块大小 500 字符，重叠 50 字符。\n3.3 检索流程核心代码\nRagService.query()\n封装了完整的检索流程：\npublic String query(String question) {\n// 1. 多路召回（语义 + BM25 + 查询改写，共 9 个候选）\nList<Document> candidates = multiRecaller.recall(question, RECALL_CANDIDATE_COUNT);\n// 2. Rerank 重排（取最相关的 3 个）\nList<Document> relevantDocuments = llmReranker.rerank(question, candidates, TOP_K);\n// 3. 拼接上下文\nStringBuilder contextBuilder =\nnew\nStringBuilder();\nfor\n(\nint\ni =\n0\n; i < relevantDocuments.size(); i++) {\ncontextBuilder.\nappend\n(\n\"【参考资料 \"\n).\nappend\n(i +\n1\n).\nappend\n(\n\"】\\n\"\n);\ncontextBuilder.\nappend\n(relevantDocuments.get(i).getContent()).\nappend\n(\n\"\\n\\n\"\n);\n}\nreturn\ncontextBuilder.toString().trim();\n}\n3.4 召回策略\n单一召回策略总有盲区，项目使用\n多路召回 + RRF 融合\n的方案：\n召回器\n原理\n擅长\nSemanticRetriever\n基于 EmbeddingModel 的向量余弦相似度检索\n语义相近但措辞不同的查询\nBm25\nRetriever\n基于 BM25 算法的关键词匹配（TF-IDF 变体）\n精确关键词匹配\nQueryRewriteRetriever\n先用 LLM 将问题改写为 3 种不同表达，再分别做向量召回\n扩大语义覆盖面\n三路召回结果通过\nRRF（Reciprocal Rank Fusion）\n算法融合：\n// MultiRecaller 核心逻辑\npublic\nList\n<\nDocument\n>\nretrieve\n(\nString\nquery, int topK\n) {\nMap\n<\nString\n,\nDouble\n> rrfScores =\nnew\nHashMap\n<>();\nMap\n<\nString\n,\nDocument\n> keyToDocument =\nnew\nLinkedHashMap\n<>();\nfor\n(\nRecaller\nretriever : retrievers) {\nList\n<\nDocument\n> results = retriever.\nretrieve\n(query,\nPER_ROUTE_CANDIDATE_COUNT\n);\n// RRF 公式：score(d) = Σ 1 / (k + rank)，k=60 为平滑常数\naccumulateRrfScores\n(results, rrfScores, keyToDocument);\n}\nreturn\nrrfScores.\nentrySet\n().\nstream\n()\n.\nsorted\n(\nMap\n.\nEntry\n.<\nString\n,\nDouble\n>\ncomparingByValue\n().\nreversed\n())\n.\nlimit\n(topK)\n.\nmap\n(entry -> keyToDocument.\nget\n(entry.\ngetKey\n()))\n.\ntoList\n();\n}\nRRF 只看排名不看绝对分数，天然适合融合不同算法的结果。\n3.5 Rerank 重排\n多路召回后通常有 9 个候选文档，通过专用的\nRerank 模型\n精排，取最相关的 3 个。\n3.6 向量存储\nVectorStore\n是一个轻量级的内存向量存储实现，使用 Spring AI 的\nEmbeddingModel\n生成向量，通过余弦相似度检索。适合中小规模知识库，生产环境可替换为 Milvus、Pinecone 等专业向量数据库。\n四、Command 与 Skill：两种 Prompt 模板机制\nCommand 和 Skill 都是基于 Markdown 文件定义的 Prompt 模板，但它们的设计理念和使用方式截然不同。\n4.1 Skill：LLM 自主调用的工具\nSkill 文件使用\nYAML Front Matter + Prompt 模板\n格式：\n---\nname: summarize\ndescription: 对用户提供的文本内容进行摘要总结\n---\n请对以下文本进行摘要总结，提取核心要点：\n{{input}}\nSkillManager\n在启动时扫描\nclasspath:skill/*.md\n，解析元数据后由\nSkillTool\n将每个技能转换为\nToolCallback\n注册到 Agent。LLM 在对话中根据\ndescription\n自主判断\n是否需要调用某个技能。\n4.2 Command：用户主动调用的快捷指令\nCommand 文件是\n纯 Prompt 模板\n，文件名即为命令名：\n请对以下代码进行\nCode\nReview，从代码质量、潜在 Bug、性能、可读性等维度给出改进建议：\n{{\ninput\n}}\nCommandManager\n在启动时扫描\nclasspath:command/*.md\n，加载到内存。用户通过 REST API（\nPOST /api/command/execute\n）\n主动指定\n命令名来执行。\n4.3 核心区别对比\n维度\nCommand\nSkill\n设计理念\n用户快捷指令\nLLM 可调用的工具\n文件格式\n纯 Prompt 模板\nFront Matter（name + description）+ Prompt\n是否注册为工具\n❌ 不注册\n✅ 注册为 ToolCallback\n调用触发方\n用户主动指定命令名\nLLM 根据 description 自主决策\n执行路径\n用户 → Controller → AgentCore\n用户 → AgentCore → LLM 决策 → SkillTool\n适用场景\n用户明确知道需要什么功能\n需要 LLM 理解上下文后智能判断\n一句话总结\n：\nCommand 是\"用户告诉 Agent 做什么\"，Skill 是\"Agent 自己判断该做什么\"。两者互补——Command 提供确定性的快捷入口，Skill 提供智能化的能力扩展。\n五、SubAgent：独立记忆的子代理\n5.1 为什么需要 SubAgent\n有些任务需要独立的上下文。比如用户说\"帮我写一篇技术文章\"，这个任务可能需要多轮对话来完善，但不应该污染主对话的记忆。SubAgent 就是为此设计的。\n5.2 记忆隔离机制\nSubAgent 的核心是\n记忆隔离\n：每个 SubAgent 拥有独立的\nChatMemory\n实例，与主 Agent 的记忆完全隔离。\npublic\nSubAgent\n(\nString\nid,\nString\nname,\nString\nsystemPrompt,\nChatClient\nchatClient) {\nthis\n.\nmemory\n=\nChatMemory\n.\nforSubAgent\n();\n// 独立记忆！\nthis\n.\nmemory\n.\nsetSystemPrompt\n(systemPrompt);\n// ...\n}\nSubAgent 共享主 Agent 的\nChatClient\n（即共享同一个大模型连接），但对话历史完全独立。这意味着：\nSubAgent 内部的多轮对话不会影响主对话的上下文\n主 Agent 可以同时管理多个 SubAgent，各自互不干扰\nSubAgent 销毁后，其记忆随之释放\n5.3 交给LLM：Tool\nSubAgent 的能力通过\n3 个工具\n暴露给主 Agent，本质上就是 Function Calling，由LLM决策启用SubAgent：\n工具\n参数\n说明\ncreate_sub_agent\nname、system_prompt、task\n创建 SubAgent 并执行首个任务\nchat_with_sub_agent\nagent_id、message\n与已有 SubAgent 继续对话\ndestroy_sub_agent\nagent_id\n销毁 SubAgent，释放资源\n主 LLM 根据对话上下文自主决定是否需要创建 SubAgent。整个生命周期（创建 → 多轮对话 → 销毁）都由主 LLM 通过工具调用来驱动。\n六、MCP：连接一切外部服务\nMCP（Model Context Protocol）\n是 Anthropic 提出的开放协议，让 AI 应用能够标准化地连接外部工具和数据源。本项目同时实现了\nMCP Server\n（对外暴露能力）和\nMCP Client\n（连接外部服务）。\n6.1 MCP Server：对外暴露知识库检索能力\n项目通过\nSimpleMcpServer\n对外提供知识库检索工具，其他 AI 应用可以通过 MCP 协议来调用：\n工具：\nknowledge_query\n参数\n类型\n说明\nkeyword\nString\n检索关键词\ncategory\nString\n知识分类（java_basic / jvm / concurrent / spring / design_pattern / all）\nmaxResults\nint\n返回的最大结果条数，默认 3\n内部调用\nRagService\n执行检索，将结果格式化后返回。这意味着本项目的 RAG 能力可以被任何支持 MCP 协议的 AI 应用复用。\n6.2 MCP Client：动态连接外部 MCP 服务\nMcpClient\n封装了连接外部 MCP Server 的完整逻辑：\n核心代码（\nMcpClient.connect()\n）：\npublic\nToolCallback\n[]\nconnect\n(\nString\nserverUrl\n) {\nMcpSyncClient\nmcpClient;\nMcpSchema\n.\nInitializeResult\ninitResult;\n// 优先尝试 Streamable HTTP，失败后回退到 SSE\ntry\n{\nmcpClient =\nconnectWithStreamableHttp\n(serverUrl);\ninitResult = mcpClient.\ninitialize\n();\n}\ncatch\n(\nException\nstreamableException) {\nmcpClient =\nconnectWithSse\n(serverUrl);\ninitResult = mcpClient.\ninitialize\n();\n}\n// 自动发现远程工具\nSyncMcpToolCallbackProvider\nprovider =\nSyncMcpToolCallbackProvider\n.\nbuilder\n()\n.\nmcpClients\n(mcpClient).\nbuild\n();\nToolCallback\n[] toolCallbacks = provider.\ngetToolCallbacks\n();\n// 持久化 URL，下次启动自动恢复\nstore.\nadd\n(serverUrl);\nreturn\ntoolCallbacks;\n}\n关键特性\n：\n传输协议自动适配\n：\n优先 Streamable HTTP（2025-03-26 规范），失败自动回退 SSE（2024-11-05 规范）\n工具自动发现\n：\n连接成功后自动获取远程工具，转换为\nToolCallback\n注册到 Agent\n持久化与自动恢复\n：\nURL 持久化到\nmcp-servers.json\n，应用重启时自动重连\n运行时动态管理\n：\n通过 REST API 在运行时动态管理 MCP 连接：\n接口\n方法\n说明\n/api/manage/mcp/connect\nPOST\n连接新的 MCP 服务，工具立即可用\n/api/manage/mcp/disconnect\nPOST\n断开 MCP 服务，移除对应工具\n/api/manage/mcp/list\nGET\n查看所有 MCP 服务及其工具列表\n结尾感言\nLLM就像一个问答黑箱，不管内部支持多丰富的能力，对使用者本质只有一个能力：\n“\n你问，我答\n”\n。\n使用者做的事情几乎是一致的：调整输入给LLM的内容，尽量让其输出预期内的内容。而对于“调整输入内容”这一块看似轻巧，实际上正是工程化发展的源泉，从Prompt\nEngineering到Context Engineering到Harness Engineering本质解决的就是\n“\n有限的上下文窗口中该放什么内容\n”\n。\n脑暴枚举目前上下文窗口可能放的内容有：系统提示词、工具定义、历史对话、参考文档等。目前AI Agent正高速发展，最终浪淘沙到尽头什么会是最终答案不由而知，但是其中工具定义可能会走到最后。至少目前而言\nFunction Calling\n是Harness的大地基，实际上很多能力的实现都是基于\nFunction Calling\n，比如Skill本质就是一种Tool，而RAG、SubAgent与外部MCP服务等能力在工程实践中也大量被做成一种Tool由LLM决策调用。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

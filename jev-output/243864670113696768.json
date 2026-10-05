@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "243864670113696768",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "别再让语音机器人“答非所问”：AI Force任务型语音对话技术总结",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558288&idx=1&sn=1e34f7eae3421e09e8f2f78baeb5f066",
+      "date": "2026-02-10T00:32:00.979Z",
+      "chars": 7604,
+      "text": "原创\n曦晨\n2026-02-10 08:32\n浙江\n阿里妹导读\n本文围绕企业级任务型语音 Agent（如营销、催收、教培等场景）的核心挑战，提出：要让 AI 语音助手真正胜任“真人小二”角色，必须同步解决 “拟人化” 与 “专业化” 两大维度。\n背景\nAI Force在营销、催收、客服服务等多个业务场景都大量依赖了外呼语音对话能力，且都对语音效果有着非常高的要求，AI Force 在过去一年持续投入了语音对话技术建设，逐步沉淀出一套三段语音架构下的的语音对话交互范式，支持了营销，催收，服务等多个业务场景，本文主要总结在这一年中语音对话场景遇到的挑战，技术解法，技术架构的演进以及达到的效果。\n快速对话体验：\nhttps://yunxiao-portal.alipay.com/home\n语音对话技术挑战\nAI Force的业务场景主要是面向企业的服务，语音对话也是面向任务的场景，而我们的语音agent也是面向任务型对话来构建的，例如在营销场景，语音agent需要充当营销专家的角色，进行电话营销，包括汽车行业邀约试驾，装修行业确认用户家装需求，教培行业授课等；而在催收行业，语音agent需要充当催收专员，进行电话催收。\n这些不同场景的语音对话都有一个要求：语音agent需要像一个真人小二一样，通过语音对话的方式，完成既定的任务。\n那么如何让语音agent能像真人一样完成任务？\n这里可以抽象成两个要回的问题：\n1.如何让机器人更拟人：\n首先说话表达上如何更拟人，像真人一样表达；对话体验延迟是否低，是否能像人一样快速的反应和回复；对话上能否像人对话一样自然，包括被打断，抢话，实时回应等。\n2.如何让机器人更聪明，更专业：\n首先要能清晰识别用户的话的含义，即ASR识别的准；能明白自己的任务，基于任务与用户进行对话，完成给的任务，包括：能高效地完成对话流程；能用专业的知识进行回答；能使用工具辅助自己完成任务等。\n三段式语音对话的解法\n面对这两个核心问题，因端到端语音模型技术目前尚不够成熟，我们采用传统的三段是架构，技术上首先从架构层面将对话拆解为各个模块，然后进行针对性的解决：\n面对更拟人的问题的解法\n1.TTS：\n除采购第三方TTS服务商外，还进行了自研，对客服的小二声音进行了精调，在实际电话对话上明显提高了拟人化的表达，首问语挂断率大大降低。\n2.双工对话模块：\n主要包含四块：\na.打断判断：\n机器人说话时，监测用户说话的状态，并且通过微调的打断模型进行语义上的打断判断，实现机器人能自然的被打断；\nb.抢话判断：\n在机器人准备说话时，会判断用户此时的语音活动，用户没有语音活动时，才进行播报；\nc.倾听与实时回复：\n用户说话时，出现思考停顿时，会判断用户连续说话的状态，若判断到有思考或打断机器人说话时，机器人能像人给出衔接反应表示在倾听，说出：“嗯”，“嗯，您说”这样的衔接语；\nd.办公网环境声模拟：\n外呼等客服场景机器人声音通道添加办公网环境声，模拟客服作业，让用户认为就是在和小二对话；\n3.极致耗时架构：\n采用one-server对话技术架构，一通会话除依赖必要的ASR，TTS模型外，对话主链路上的所有核心链路模块在一台服务器上完成，不涉及任何其他的RPC，DB，中间件缓存等操作，极致耗时处理。\n面对如何让机器人更聪明，更专业问题的解法\n1.ASR：\n目前主要还是采购云ASR模型，基于场景热词提高行业场景的准确率，自研ASR已在调试中\n2.agent推理技术架构持续演进：\n从最初的SOP对话到 基于one model多轮对话，再到自研“衍算”语音推理框架，逐步解决了不支持全双工，模型指令遵循不可控，成本高及复杂业务不能支持的问题；在LLM推理，RAG检索，工具调用上都沉淀了一套语音交互对话上的范式。\n3.统一对话上下文管理：\n统一语音上下文管理【打断，抢话，倾听等控制】和agent对话上下文控制，能更自然的控制语音到agent的上下文信息，控制agent更好的，更专业的表达。\nAI Force语音对话技术的架构演进\n在对这些问题做解法时，技术上也踩了非常多的坑，架构和能力上也在持续的演进，主要分为三个大的阶段：\n第一代对话架构【2024-11~2025-03】\n方案&技术解法\nASR：基于采购的ASR；\nAgent：复用的在线对话agent，基于大模型+规则构建SOP对话流的方式，整体是基于大模型意图判断后，基于配置的边条件判断选择走到哪个回复节点，在回复节点基于prompt再进行话术生成或返回话术；\nTTS：基于采购的阿里云cosyvoice；\n上下文工程：语音上下文 和 agent文本对话上下文分开管理；\n双工对话工程：打断上只要检测到用户说话就打断；没有抢话等逻辑处理；\n技术效果\n基于三段式初步实现了一套语音对话链路。\n效果问题\n耗时很长：SOP两段式调用大模型，语音和agent处理分开带来的耗时，tts等连接耗时都影响了耗时，统计端到端录音的平均耗时 > 3.4s；\n泛化能力差 & 运营成本高：agent基于sop流程推进，泛化差，需要穷举；\n双工对话问题：无法实现全双工对话，一旦打断，如果sop没有边的穷举，很容易就跳转到其他节点；\n交互体验差：打断过于灵敏，且频繁出现机器人抢话问题。\n第二代对话架构【2025-04~2025-10】\n在第一代的基础上，面对在实际业务中遇到的问题，我们在agent推理架构，tts，上下文工程和双工对话工程上做了大量的优化和改进。\n方案&技术解法\nAgent：得益于LLM的效果突破，多轮对话效果上有了明显的提升，我们也从放弃了第一代SOP的推理方案转为全部用LLM进行推理，将整个任务交给大模型进行推理，每轮请求大模型的内容由四部分构成：任务System prompt + 用户对话上下文 + 用户个人背景信息 + 用户当前问题输入。\nTTS：基于开源的cosyvoice，基于真实服务对话数据进行了精调，在客服，营销场景语音表达上拟人度有明显的提升。\n上下文工程：将语音对话上下和agent文本对话上下文统一管理，更好的控制双工对话。\n双工对话工程：\n打断：升级成支持语义打断，在外呼任务型场景下，主要是用户“听我说”，大部分是不需要打断的，有明确的打断语义才进行打断。技术上通过：【黑名单 + 语义打断模型 + 白名单】规则+模型双重判断下进行用户真实意图的判断；\n抢话：引入话轮判断，agent在准备说话时会判断用户的说话状态，若检测到用户有语音活动，则先停止说话，防止agent抢用户话；\n倾听模式：语音agent双工对话上新建了倾听模式，用户说话时，出现思考停顿时，会判断用户连续说话的状态，若判断到有思考或打断机器人说话时，机器人能像人给出衔接反应表示在倾听，说出：“嗯”，“嗯，您说”这样的衔接语；\n背景声模拟：在agent声音通道模拟办公白噪声，模拟小二作业环境，用户交互更真实；\n对话架构上：升级到one-server架构，一通对话，所有逻辑在一台服务上处理，在工程链路上的处理耗时减小到极致。\n技术效果\n耗时：\n平均耗时 <= 1.7s\n，对话体验明显提升；\n对话流畅性：升级到\n全双工交互\n，打断等效果明显提升，基本没有抢话；\nTTS表达拟人感：基于自研的TTS，真人感明显提升，TTS对话评测评分多项优于云TTS。\n体验示例\n也可直接在上面的链接直接体验最新效果。\n云tts & 没有开启相应能力\n自研tts & 开启相应能力\nTTS\n倾听模式\n背景声\n效果问题\n文本对话不可控：多轮对话非常依赖基模效果，目前的对话都只能选择最高的qwen3-plus-prem或qwen-max-prem高性能模型；\n复杂业务需求无法承接：再面对更复杂的对话场景下，基于one-model推理的方式已无法支持，模型Prompt太大，导致模型更容易发挥，同时更复杂的场景也要求更严格的对话流程和更专业的agent，需要调用rag和工具等；\n成本高：每次请求都需要完整的剧本prompt 和对话上下文，输入token非常高，必须使用prem高性能模型，整体成本也比普通的plus或max贵5倍；\n耗时不稳定：每轮传入的prompt大，若没有命中模型缓存，首包耗时非常长，而在外呼语音对下，这种现象可能会让用户直接挂掉电话。\n第三代对话架构【2025-10~至今】\n在第二代技术的基础上，我们主要优化了agent推理框架，自研了一套语音场景的agentic推理框架。\n通过自研一套语音对话场景的agent推理框架，结合语音场景【强耗时短】的特点，构建了一套语音agent，语音对话场景下rag检索和语音对话工具执行的交互和推理范式，目前效果正在真实场景验证中。\n目前的对话架构及特点\n基于以上一年的架构和技术演进，逐步沉淀了一套三段式的语音对话架构，主要特点：\none server架构\n一通语音对话，所有服务，会话上下文管理，agent推理等集中在一台服务器，极致耗时处理。\n模型插件化\nASR，TTS，语义打断模型插件化，可平滑切换其他模型或三方服务进行支持。\n“衍算”推理框架\n融合并行推理思路，多轮对话agentic任务状态推进，建立语音场景的RAG和工具调用技术范式。\n同时与one-model方式并存，可多项选择。\n三段式语音对话交互范式\n分为五大模块，各个模块协同控制，解决拟人对话和专业对话的问题。\n整体对话架构如下：\n语音对话场景下agent推理的技术挑战\n语音场景下的对话相较在线agent对话，主要有两个很大的特点：“延迟要足够短”，“双工交互能顺畅执行”\n而结合我们在实际业务中遇到的问题，任务型语音对话下的agent可以归为六类问题：\n耗时问题：\n语音场景对耗时非常敏感；\n双工对话问题：\n语音对话用户会随时打断或切换状态，agent需要基于用户的话进行快速切换并能继续完成任务；\n推理准确性问题：\n如何让agent指令遵循的更好，更好的完成对应的任务，在多次对话下不发散，不发挥；\n专家问题：\n在引入rag和工具调时候如何流畅对话交互？\nASR识别不准后对话完成度问题\n：\nasr识别不准的情况下，仍需要尽可能的完成对话；\n成本问题：\n如何有效地控制模型的成本以及运营的成本。\n在结合第一代和第二代的对话架构里，采用的sop推理和one-mode推理都有不同的问题：\nAI Force “衍算”语音对话推理框架\n我们在建设语音对话的过程中，agent推理分别经历了SOP方式的推理和one-model方式的推理，我们期望能结合两者的优势：强指令遵循和内容可控性，低成本，支持语义双工等，建设一套适合语音对话场景下的推理引擎。\n整体的思路大致是一个学生执行，一个老师教，学生的职责是对当前用户的问题进行回复以及执行对话任务；老师的角色主要是对对话做总结以及指导学生在下一轮进行更好的对话，在经过大量的实验和验证后，逐步形成了现在的V1版本。\nPS：为什么叫“衍算”，运行时推理链路包含两个主要的子agent:\nplanner：充当老师的角色，主要负责推衍和指导下一轮对话；\nreasoner：充当学生的角色，执行对话，主要负责计算；\n衍算框架的主要架构和推理思路如图：\n主要分为两部分：\n对话剧本的生成与运营\n：\n通过具体的场景任务 + 衍算任务生成提示词 -> 生成衍算任务思维图，运营可基于生成的任务思维图进行可视化运营，最后生成可实际对话的任务思维；\n对话推理：\n在实际对话中，基于任务思维一步步完成对话任务。\n架构特点及推理思路\n面向任务型：\n我们主要是外呼场景，而外呼场景都是面向既定任务的，无论是营销，还是服催，还是服务，都是围绕一个范围-将剧本的大任务拆分成多个子任务，每次LLM只需要专注于完成这个分任务下的某几个子任务即可，降低了给LLM的输入，从而让LLM有更好的指令遵循能力\nagentic推进：\n基于LLM自动化的规划和推进到下一轮任务【planner】，从而解决传统SOP无法回退，语音上无法双工交互问题；并行subAgent处理，保证每一轮次的语音交互耗时。一个轮次的对话由多个subAgent组成，多个subAgent共同作业保障交互效果：\n并行推理\n：\n将推理分为多个agent并行执行，各个agent只关注自己的任务，耗时只由reasoner决定，其他agent都是并行推理，各个agent的交互和通信由对话上下文统一管理：\nplannerSubAgent：\n一次对话输入后，由plannerSubAgent 进行并行规划，确认当前对话已推进到哪个子任务下。对整个任务进行状态的管理，规划下一轮应该执行的子任务块，不影响当前轮对话。\nreasonerSubAgent：\n实际推理并回复给用户，先进行全局的检索，检索出对应的规则&限制&知识知识，基于plannerSubAgent规划指导的分任务和子任务，将任务prompt进行组合，直接交由大模型进行推理，将reasonerSubAgent的推理prompt限制在：当前检索的规则&限制 + plannerSubAgent规划的当前轮应该执行的分任务及其子任务，从而约束LLM的prompt的size大小，降低推理耗时，提高指令遵循效果。\nvoiceUnderstandingSubAgent：\n并行音频理解，理解音频的信息，获取音量，音调，识别情绪，识别性别等，从而将音频理解上下文带入到reasonerSubAgent，从而更好的让agent有更好的共情能力，理解能力【规划建设中】。\n语音对话下RAG的处理\n在复杂场景下，特别是一些需要专业知识背景的场景下，需要进行知识检索，以让agent完成更专业的解答。\n而在在线，入呼和外呼场景下对RAG的要求也是不一样的。\n一般的RAG链路主要包括以下几个部分，其中query改写和re-rank耗时较高。\n在外呼语音对话场景下，知识较少，同时耗时也更敏感【给知识检索预留的耗时 <= 150】。\n基于此，外呼任务型场景下我们做了以下处理以达到我们的效果：\nquery改写部分：我们去除了query改写，改为补全【因前置asr，可能存在断句不准的问题】；\n召回部分：qa对和doc文档并行检索；\n文档切分：改为默认的512大小切分，若切分太大，prompt太大会影响推理耗时，同时我们更多会采用faq召回的方式；\nre-rank：去除，不需要精排；\nembedding模型：算法微调了向量模型，耗时更短；\n检索链路：agent知识库一般是独立应用，我们为了极致耗时，才去近端包的方式，检索整体与对话链路同属一台服务器，去除了分布式RPC调用的耗时以及知识库内部自己的处理逻辑，只保留调用向量库检索的逻辑；\n技术效果\nRT_p95 <= 150ms，平均只有100ms\n召回率：基于某汽车场景评估top3召回率 >= 80%\n语音对话工具调用交互\n在一些更复杂的场景下，我们需要调用工具辅助agent进行推理，例如某家居对话场景下，需要搜集用户所在地地址，搜集后需要调用客户的接口进行门店判断，若当地有门店，就执行A逻辑，若没有门店就执行B逻辑。\n我们在语音对话场景下也设计了一套工具调用交互的范式，大致如图所示：\n衍算框架的某个任务可以挂上一个工具，执行到具体的任务时，整个推理过程会立即返回一个承接语【减少用户静默等待时间】，然后同步调用具体，调用工具后会再调用模型进行下一步的推理。\n技术效果\n对话能力上\n：\n可支持更复杂的业务场景，例如条件互斥任务推进等；\n端到端耗时【基于某物流外呼客户场景评测】：\none-model架构下：平均值约1.7s，RT_p95：约2.32s；\n衍算引擎：平均值：约1.54s，RT_p95: 约1.72s【\n平均RT降低160ms，RT_p95降低600ms\n】；\n成本：\n目前复杂场景成本约为one-model的4/5；目标LLM成本可降低到one-model方式的1/10。\n对话评测上-某物流行业\n：\n未来技术演进\n目前我们的版本还存在一些问题，例如多人声环境下识别准确率的问题【典型的鸡尾酒会问题】，双工交互效果仍不够顺畅；衍算框架是强任务流，主要面向外呼任务型对话，若用户突然问题跨度大，存在回复不准或重复询问同一个任务等问题，并且无法满足入呼等更加发散的语音对话场景。因此，为了满足更加复杂的业务需求，我们仍需要在整个对话上做更精细化的打磨，提高各个模块的效果从而让整个对话对话效果提升。\n未来的方向包括但不限于以下几个方面：\n衍算效果持续优化：\n持续优化衍算框架推理效果，包括不限于推理架构，微调行业模型等，从而提高整体的指令遵循准确率；\n录音：\n融合传统录音切片优势，支持录音播报；\n泛服务类agent：\n衍算框架升级到支持泛服务类对话推理，除外呼任务场景外，支持更复杂的任务型语音对话推理场景；\n双工交互优化：\n持续优化打断顺畅度，倾听衔接准确率，打造更自然的对话交互；\n3a模块&注意力锁定机制探索\n：\n对声音做降噪，增强等处理，探索对话注意力锁定机制，优化多人声对话下识别错误问题；\n多agent协同\n：\n目前我们的对话架构初步具备了多个agent协同推理的能力，未来还要继续丰富语音理解agent，plannerAgent多agent的协同的能力，以满足更复杂的业务对话场景和提高交互效果；\n随着大模型技术的持续演进，agent的能力边界也在不断拓展，我们也会积极拥抱最新的AI模型，最先进的agent架构，结合这些前沿技术不断优化和丰富我们的语音对话产品。\n团队介绍与招聘\n我们来自AI force团队，AI force是蚂蚁集团旗下聚焦智能企业服务的业务板块，通过人机融合的智能解决方案和分布式服务资源网络，向企业提供各类服务，帮助企业在实现降本的同时，在价值创造环节也能够有更好的效果。AI force的核心业务已覆盖云客服、AI客服、AI培训、AI营销等。目前，已为零售、电商、3C、出行、金融等8大行业，提供30+产品及解决方案。截至目前，已合作近了100家行业头部客户及品牌，帮助他们加速企业服务创新。\n每一位年轻的技术同学在AI force可以：\n亲身参与蚂蚁集团的创新业务，感受来自当前最火热的大模型赛道的一线AI战场。\n参与跨多个异构复杂业务场景的AI产品解决方案设计，提升自己在AI时代的职业竞争力。\n与业内头部技术精英深度交流，携诚合作，探索AI应用的可能性。\n联系人邮箱：zhanze.zz@antgroup.com\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.01,
+        "irrelevant": 0.32,
+        "transfer_agent": 0.66,
+        "peripheral": 0.01,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.92,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.09,
+        "2": 0.85,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.66,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.11,
+        "2": 0.19,
+        "3": 0.4,
+        "4": 0.24,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.19,
+      "probabilities": {
+        "0": 0.49,
+        "1": 0.16,
+        "2": 0.1,
+        "3": 0.2,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.88,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.07,
+        "4": 0.91,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.74,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.03,
+        "3": 0.19,
+        "4": 0.67,
+        "5": 0.08
+      }
+    },
+    "anti_hype": {
+      "score": 3.13,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.81,
+        "4": 0.16,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8738,
+    "outputTokens": 172,
+    "totalTokens": 8910
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.57,
+        "relevance": 0.89,
+        "grounding": 0.44,
+        "decision_action": 0.21,
+        "evidence": 0.92,
+        "actionability": 0.72,
+        "anti_hype": 0.87
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179860116,
+                "endTime": 1791179860285,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000366996",
+      "marketCost": "0.000366996",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000366996",
+      "inferenceCost": "0.000366996",
+      "inputInferenceCost": "0.000366996",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7A3CJPCX31ZKMWVEQK7H"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:40 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::w55p2-1791179859822-9e250058a840"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.01,
+            "irrelevant": 0.32,
+            "transfer_agent": 0.66,
+            "peripheral": 0.01,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.92,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.09,
+            "2": 0.85,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.66,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.11,
+            "2": 0.19,
+            "3": 0.4,
+            "4": 0.24,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.19,
+          "probabilities": {
+            "0": 0.49,
+            "1": 0.16,
+            "2": 0.1,
+            "3": 0.2,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.88,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.07,
+            "4": 0.91,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.74,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.03,
+            "3": 0.19,
+            "4": 0.67,
+            "5": 0.08
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.13,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.81,
+            "4": 0.16,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8738,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.57,
+            "relevance": 0.89,
+            "grounding": 0.44,
+            "decision_action": 0.21,
+            "evidence": 0.92,
+            "actionability": 0.72,
+            "anti_hype": 0.87
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179860116,
+                    "endTime": 1791179860285,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000366996",
+          "marketCost": "0.000366996",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000366996",
+          "inferenceCost": "0.000366996",
+          "inputInferenceCost": "0.000366996",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7A3CJPCX31ZKMWVEQK7H"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:39.507Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1173163547719401472",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "OpenSandbox 再进化：Credential Vault 让真实密钥不再进入沙箱",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509853&idx=1&sn=ddffff2caf6f9e08a10dba04a8adb384",
+      "date": "2026-06-26T08:07:00.037Z",
+      "chars": 3466,
+      "text": "原创\n靳文祥\n2026-06-26 16:07\n浙江\nAI Agent 走向生产环境，OpenSandbox 如何解决密钥暴露风险？\n这是2026年的第\n27\n篇文章\n（ 本文阅读时间：约20分钟 ）\n前言\nOpenSandbox 是一个阿里巴巴开源的面向 AI Agent 的通用沙箱平台，提供多语言 SDK、CLI、MCP Server，以及 Docker / Kubernetes 运行时，在阿里内部广泛应用于 Coding Agent、GUI Agent、代码执行、Agent 评测、RL 训练等场景。\nOpenSandbox 正在成为 AI Agent 基础设施领域里一个重要的开源项目。\n随着 AI Agent 从 Demo 走向生产环境，沙箱要解决的问题也不再只是“代码在哪里执行”，还包括“真实凭据应该如何安全使用”。\n这就是 Credential Vault 要解决的问题：让工具照常工作，但让真实密钥不再进入沙箱。\n01\n为什么不能直接把密钥放进沙箱\n在过去，想让 Agent 在沙箱里调用外部服务，最直接的方式往往是把 API Key、Git Token、Registry 凭据等塞进环境变量、命令行参数或配置文件里。\n这种方式虽然简单，不过，风险也很直接：沙箱本来是用来隔离不可信代码和工具执行的，一旦真实密钥进入沙箱，Prompt Injection、恶意依赖、日志泄露、文件读取等风险都会被放大。\n例如，一个 Coding Agent 可能需要：\n调用模型 API；\nclone 私有 Git 仓库；\n安装私有包；\n用 curl 访问内部 API；\n运行第三方 CLI 或依赖脚本。\n这些操作都可能需要凭据。如果凭据直接暴露在沙箱环境变量、命令参数、配置文件或日志里，那么，只要沙箱内的任意工具链环节失控，真实密钥就可能被读取、打印或转发。\n02\nCredential Vault 的核心思路\nCredential Vault 是 OpenSandbox 的出站凭据代理能力。它把真实凭据保存在沙箱外，由 OpenSandbox 的 egress sidecar 在出站请求经过时按规则注入认证信息。\n整体流程可以理解为：\n宿主侧 SDK 创建 sandbox，并启用 Credential Proxy；\nSDK 将真实凭据和绑定规则写入 egress sidecar 的 Credential Vault；\n沙箱进程只拿到假值或空值，例如一个假的 API Key；\n当沙箱内工具发起 HTTPS 出站请求时，egress sidecar 检查请求的 scheme、host、port、method 和 path；\n如果请求精确匹配某条 Credential Vault binding，sidecar 就在出站时注入对应的认证 Header；\n真实凭据不会返回给沙箱，也不会出现在沙箱环境变量、命令行、文件系统和日志里。\n换句话说，沙箱仍然可以运行 Claude Code、Git、curl、包管理器或模型 API 客户端，但真实密钥不再交给这些工具所在的运行环境。\n03\n一个典型场景：沙箱内的 Claude Code 调用模型 API\n我们以 Claude Code 调用 Anthropic API 为例。\n传统做法通常是在沙箱里设置真实的\nANTHROPIC_API_KEY\n，让 CLI 读取这个环境变量后访问\napi.anthropic.com\n。使用 Credential Vault 后，沙箱里可以只设置一个假的\nANTHROPIC_API_KEY\n，例如：\nANTHROPIC_API_KEY\n=fake-key-inside-sandbox\n这个假值只是为了让 CLI 正常启动。真正的 Anthropic API Key 由宿主侧 SDK 写入 Credential Vault，并绑定到明确的出站请求范围，例如：\nscheme：\nhttps\nhost：\napi.anthropic.com\nport：\n443\nmethod：\nGET\n、\nPOST\npath：\n/v1/*\nauth header：\nx-api-key\n当 Claude Code 在沙箱里访问\nhttps://api.anthropic.com/v1/*\n时，egress sidecar 会在请求离开沙箱前注入真实的\nx-api-key\nHeader。对 Claude Code 来说，请求可以正常完成；对沙箱进程来说，它从未见过真实密钥。\n04\n不只适用于模型 API\nCredential Vault 也适用于更多常见开发者工具场景。\n私有 Git 仓库 clone 可以使用 Basic Auth binding。真实的\nusername:token\n先在宿主侧编码后写入 Vault，沙箱里执行的仍然是普通无密钥 URL：\nGIT_TERMINAL_PROMPT=0 git\nclone\nhttps://api.github.com/org/private-repo.git\n访问内部 API 时，也可以把 Token 绑定到明确的 Header、Host、Path 和 Method 上。沙箱命令保持干净：\ncurl -fsS\nhttps://api.github.com/v1/projects/\n真正的认证信息由 egress sidecar 在出站链路上补齐。这种设计的价值在于，凭据不再是一个进入沙箱后任意可读、任意可复制的字符串，而变成一条受控的出站授权规则。\n05\n更细粒度的安全边界\nCredential Vault 通常应该和默认拒绝的出站网络策略一起使用。这也就意味着，沙箱默认不能访问任意外部地址，只允许访问工具真正需要的服务 Host，再通过 Credential Vault 将凭据绑定到更窄的请求范围。\n例如，对模型 API 可以只允许\n/v1/*\n；对 Git 仓库可以只绑定某个私有仓库路径；对内部 API 可以限制到具体 Method 和 Path。\n这带来以下几项直接收益：\n真实密钥不进入沙箱环境；\n密钥不会自然残留在命令行、文件和日志中；\n凭据只能在匹配的出站请求上被使用；\n不同服务、不同路径可以绑定不同凭据；\n平台可以更容易审计和收敛凭据使用边界。\n需要注意的是，Credential Vault 依赖 egress sidecar 的透明出站拦截和 MITM路径。\n如果 sandbox pod 同时注入 Istio / Envoy 这类透明 service mesh sidecar，两层拦截会在同一个网络命名空间内冲突。OpenSandbox 当前不支持 Credential Vault 与这类透明 service mesh sidecar 同时工作在同一个 sandbox pod 内。\n06\n从沙箱隔离到凭据隔离\n沙箱平台过去关注的重点，通常是进程隔离、文件系统隔离、网络隔离和资源隔离。Credential Vault 进一步补上了 AI Agent 生产化过程中的关键一环：凭据隔离。\nAI Agent 的执行链路往往更长，也更难完全预测。它可能会调用外部 CLI，安装依赖，执行仓库脚本，访问模型 API，甚至被用户输入或网页内容间接影响。如果真实密钥直接暴露给这条链路，风险很难收敛。\nCredential Vault 给出的答案是：真实密钥应该留在沙箱外，由平台在受控的出站链路上按规则注入。沙箱负责执行，Vault 负责授权，egress policy 负责边界。\n这让 OpenSandbox 不只是一个“能运行 Agent 的地方”，而是向生产级 Agent Runtime 又推进了一步。\n一句话总结：Credential Vault 不是让沙箱更方便地保存密钥，而是让沙箱不再需要保存真实密钥。\nReferences\n[1]\nOpenSandbox GitHub\nhttps://github.com/opensandbox-group/OpenSandbox\n[2]Credential Vault 文档\nhttps://github.com/opensandbox-group/OpenSandbox/blob/main/docs/guides/credential-vault.md\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.49,
+        "transfer_agent": 0.49,
+        "peripheral": 0.02,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.9,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.08,
+        "2": 0.9,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.46,
+      "probabilities": {
+        "0": 0.34,
+        "1": 0.13,
+        "2": 0.32,
+        "3": 0.18,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.58,
+      "probabilities": {
+        "0": 0.78,
+        "1": 0.05,
+        "2": 0.07,
+        "3": 0.03,
+        "4": 0.07,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.27,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.73,
+        "3": 0.27,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.55,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.02,
+        "2": 0.04,
+        "3": 0.28,
+        "4": 0.63,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.53,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.02,
+        "2": 0.42,
+        "3": 0.54,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4103,
+    "outputTokens": 172,
+    "totalTokens": 4275
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.36,
+        "relevance": 0.92,
+        "grounding": 0.03,
+        "decision_action": 0.62,
+        "evidence": 0.81,
+        "actionability": 0.68,
+        "anti_hype": 0.67
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179801046,
+                "endTime": 1791179801190,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000172326",
+      "marketCost": "0.000172326",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000172326",
+      "inferenceCost": "0.000172326",
+      "inputInferenceCost": "0.000172326",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5GE8C331MRM5MPFH7TZJ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:41 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7j5dm-1791179801025-f11ae479e694"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.49,
+            "transfer_agent": 0.49,
+            "peripheral": 0.02,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.9,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.08,
+            "2": 0.9,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.46,
+          "probabilities": {
+            "0": 0.34,
+            "1": 0.13,
+            "2": 0.32,
+            "3": 0.18,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.58,
+          "probabilities": {
+            "0": 0.78,
+            "1": 0.05,
+            "2": 0.07,
+            "3": 0.03,
+            "4": 0.07,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.27,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.73,
+            "3": 0.27,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.55,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.02,
+            "2": 0.04,
+            "3": 0.28,
+            "4": 0.63,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.53,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.02,
+            "2": 0.42,
+            "3": 0.54,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4103,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.36,
+            "relevance": 0.92,
+            "grounding": 0.03,
+            "decision_action": 0.62,
+            "evidence": 0.81,
+            "actionability": 0.68,
+            "anti_hype": 0.67
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179801046,
+                    "endTime": 1791179801190,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000172326",
+          "marketCost": "0.000172326",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000172326",
+          "inferenceCost": "0.000172326",
+          "inputInferenceCost": "0.000172326",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5GE8C331MRM5MPFH7TZJ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:40.425Z"
+  }
+}

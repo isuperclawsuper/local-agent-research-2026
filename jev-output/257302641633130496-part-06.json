@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "257302641633130496",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深入理解OpenClaw技术架构与实现原理（上）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558933&idx=1&sn=926e244c855c44c818d83c6c7d57d4d3",
+      "date": "2026-03-19T00:32:00.643Z",
+      "chars": 6500,
+      "text": "────────────────────────────────────────────────────┤\n│ config       │ 账户配置管理        │ outbound    │ 消息发送        │\n│ setup        │ 账户设置流程        │ status      │ 状态探测        │\n│ gateway      │ Gateway生命周期     │ security    │ 安全策略        │\n│ pairing      │ 配对管理            │\ngroups\n│ 群组管理        │\n│ threading    │ 线程处理            │ mentions    │ 提及解析        │\n│ messaging    │ 消息扩展            │ directory   │ 目录查询        │\n│ resolver     │ 路由解析            │ actions     │ 消息动作        │\n├─────────────────────────────────────────────────────────────────────┤\n│ 可选: onboarding, auth, heartbeat, agentTools                      │\n└─────────────────────────────────────────────────────────────────────┘\n消息流转完整架构\n消息流向图\n==============================================================================\nINBOUND（入站）                                               OUTBOUND（出站）\n━━━━━━━━━━━━━━━━                                             ━━━━━━━━━━━━━━━━\n┌──────────────┐\n│ 外部平台      │\n│ Telegram     │\n│ Discord      │\n│ Slack        │\n│ WhatsApp     │\n│ iMessage     │\n│ MSTeams...   │\n└──────┬───────┘\n│\n│ 1. Webhook/Gateway Event\n▼\n┌──────────────┐       ┌─────────────────────────────────────────────┐\n│ Channel      │       │              PLUGIN REGISTRY                 │\n│ Monitor      ├──────▶│  - channels: PluginChannelRegistration[]   │\n│ (接收层)     │       │  - plugins: PluginRecord[]                  │\n└──────┬───────┘       │  - Lazy Loading + Caching                  │\n│               └─────────────────────────────────────────────┘\n│ 2. 去重 & 预处理\n▼\n┌──────────────┐\n│ Allowlist    │       优先级（从高到低）：\n│ 验证         │       1. binding.peer (精确用户/群组)\n└──────┬───────┘       2. binding.peer.parent (线程继承)\n│               3. binding.guild + roles\n│ 3. 通过       4. binding.guild\n▼               5. binding.team\n┌──────────────┐       6. binding.account\n│ resolveAgent │       7. binding.channel\n│ Route        │       8.default agent\n│ (路由解析)   │\n└──────┬───────┘\n│\n│ 4. 返回 {agentId, sessionKey, matchedBy}\n▼\n┌──────────────┐\n│ Session      │       Session Key格式:\n│ 管理         │       {agentId}:{mainKey}:{channel}:{accountId}:{peerKind}:{peerId}\n│              │\n└──────┬───────┘\n│\n│ 5. 持久化会话元数据\n▼\n┌──────────────┐\n│   Agent      │\n│  AI Engine   │\n│  处理消息    │\n└──────┬───────┘\n│\n│ 6. 生成回复\n▼\n┌──────────────┐                    ┌──────────────────────┐\n│   Outbound   │                    │   ChannelDock        │\n│   Deliver    │                    │   (轻量级元数据)     │\n│              │                    │  - capabilities      │\n└──────┬───────┘                    │  - outbound config   │\n│                            │  - threading rules   │\n│ 7. 加载 OutboundAdapter    └──────────────────────┘\n▼\n┌──────────────┐\n│  消息分块    │\n│  (chunker)   │\n└──────┬───────┘\n│\n│ 8. 文本/媒体发送\n▼\n┌──────────────┐                    ┌──────────────────────┐\n│  Channel     │                    │   具体实现           │\n│  Outbound    ├───────────────────▶│  - Telegram: bot.ts │\n│  Adapter     │                    │  - Discord: send.ts │\n└──────────────┘                    │  - Slack: send.ts   │\n│  - WhatsApp: web    │\n└──────────────────────┘\n插件生命周期\n┌─────────────────────────────────────────────────────────────────────┐\n│                         Channel 生命周期                            │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│\n1\n. 注册阶段                                                        │\n│     └─ 插件通过 registerChannel() 注册到 PluginRegistry            │\n│                                                                     │\n│\n2\n. 初始化阶段                                                       │\n│     ├─ 轻量加载:\ngetChannelDock\n() → 仅元数据                       │\n│     └─ 完整加载:\ngetChannelPlugin\n() → 完整插件                      │\n│                                                                     │\n│\n3\n. 配置阶段                                                        │\n│     ├─ SetupAdapter:\nresolveAccountId\n(),\napplyAccountConfig\n()      │\n│     └─ ConfigAdapter:\nlistAccountIds\n(),\nresolveAccount\n()            │\n│                                                                     │\n│\n4\n. 运行阶段                                                        │\n│     ├─ Gateway启动:\nstartAccount\n() [可选]                          │\n│     ├─ 消息接收: inbound handlers                                   │\n│     ├─ 路由解析:\nresolveAgentRoute\n()                                │\n│     └─ 消息发送: OutboundAdapter.sendText/\nsendMedia\n()               │\n│                                                                     │\n│\n5\n. 监控阶段                                                        │\n│     ├─ StatusAdapter:\nprobeAccount\n(),\nauditAccount\n()               │\n│     └─ HeartbeatAdapter:\ncheckReady\n()                               │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘\n核心适配器架构\n┌─────────────────────────────────────────────────────────────────────┐\n│                      ChannelPlugin 适配器矩阵                       │\n├──────────────────┬──────────────────────────────────────────────────┤\n│ 核心适配器        │ 职责                                            │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ config           │ 账户配置: listAccountIds, resolveAccount,       │\n│                  │ isEnabled, isConfigured, setAccountEnabled       │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ setup            │ 账户设置: resolveAccountId, applyAccountConfig, │\n│                  │ validateAccountConfig                            │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ outbound         │ 消息发送: sendText, sendMedia, sendPoll,        │\n│                  │ editText, deleteMessage, chunker                 │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ status           │ 状态探测: probeAccount, auditAccount,            │\n│                  │ formatStatusSnapshot                             │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ gateway          │ 生命周期: startAccount, stopAccount,             │\n│                  │ getRunningAccountIds, createInboundHandler       │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ security         │ 安全策略: resolveDmPolicy, collectWarnings       │\n├──────────────────┼────────────────────────────────────────────────",
+      "fulltext_obtained": true,
+      "chunk_index": 6,
+      "chunk_count": 10
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.48,
+        "transfer_agent": 0.52,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.5,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.26,
+        "2": 0.62,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.05,
+      "probabilities": {
+        "0": 0.96,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.18,
+      "probabilities": {
+        "0": 0.9,
+        "1": 0.07,
+        "2": 0.01,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.78,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.14,
+        "2": 0.78,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.35,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.07,
+        "2": 0.08,
+        "3": 0.37,
+        "4": 0.25,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.81,
+      "probabilities": {
+        "0": 0.2,
+        "1": 0.8,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.56,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6074,
+    "outputTokens": 172,
+    "totalTokens": 6246
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.39,
+        "relevance": 0.66,
+        "grounding": 0.97,
+        "decision_action": 0.88,
+        "evidence": 0.81,
+        "actionability": 0.24,
+        "anti_hype": 0.86
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180424134,
+                "endTime": 1791180424381,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000255108",
+      "marketCost": "0.000255108",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000255108",
+      "inferenceCost": "0.000255108",
+      "inputInferenceCost": "0.000255108",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARGXCSVW5GPE407YBH6WF"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:04 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::2n5bf-1791180424108-5df3df8bd289"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.48,
+            "transfer_agent": 0.52,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.5,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.26,
+            "2": 0.62,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.05,
+          "probabilities": {
+            "0": 0.96,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.18,
+          "probabilities": {
+            "0": 0.9,
+            "1": 0.07,
+            "2": 0.01,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.78,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.14,
+            "2": 0.78,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.35,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.07,
+            "2": 0.08,
+            "3": 0.37,
+            "4": 0.25,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.81,
+          "probabilities": {
+            "0": 0.2,
+            "1": 0.8,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.56
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6074,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.39,
+            "relevance": 0.66,
+            "grounding": 0.97,
+            "decision_action": 0.88,
+            "evidence": 0.81,
+            "actionability": 0.24,
+            "anti_hype": 0.86
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180424134,
+                    "endTime": 1791180424381,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000255108",
+          "marketCost": "0.000255108",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000255108",
+          "inferenceCost": "0.000255108",
+          "inputInferenceCost": "0.000255108",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARGXCSVW5GPE407YBH6WF"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:03.646Z"
+  }
+}

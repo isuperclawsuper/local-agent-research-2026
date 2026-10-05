@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1132646940832468992",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "OpenClaw与Hermes：源码里的 AI Agent 架构知识大复盘",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801805&idx=1&sn=9c7e3936218bba9c8d0ee6c04afb1615",
+      "date": "2026-05-29T09:36:00.904Z",
+      "chars": 6500,
+      "text": "Gateway 下多个 Agent 各用不同 backend——\nAgent A 用\nclaude-cli\nbackend → 复用 Claude Code 的文件编辑/终端/浏览器等内置工具链，适合重度编程任务\nAgent B 用\nembedded\nbackend + DeepSeek → 自有 API Key 直连，token 成本低，适合日常问答\nAgent C 用\ncodex-cli\nbackend → 走 ChatGPT Plus 订阅额度，不额外花钱\nCLI Backend 的协议适配\n把\"Claude Code, Codex CLI 当 backend 用\"听起来像是接入一个标准协议——但实际上\n没有这样的协议\n。这一节讲 OpenClaw 是怎么解决这个问题的。\n各家 CLI 的输出协议互不相同\nBackend\n命令\n输入方式\n输出协议\nclaude-cli\nclaude -p --output-format stream-json --verbose --permission-mode bypassPermissions\nprompt 作为命令行参数（超长走 stdin）\nClaude Code 自定义的\nstream-json\n（一行一个 JSON 对象，含 message / tool_use / tool_result 事件）\ncodex-cli\ncodex exec --json --color never --sandbox workspace-write\n命令行参数\nCodex 的\nJSONL 事件流\n（fresh）/ 纯文本（resume，因 codex quirk）\ngemini-cli\ngemini --prompt --output-format json\n命令行参数\n单一\nJSON 对象\n输出\n关键事实\n：这三种格式\n互不相同\n——不是 ACP、不是 MCP、不是 OpenAI Chat Completions、不是 Anthropic Messages，是各家 CLI 各自定义的 stdout 协议。Claude CLI, Codex CLI, Gemini CLI 的输出格式都是为各自 IDE 集成（VSCode 插件等）设计的私有协议，\n早于 ACP 标准出现\n。\nCliBackendConfig\n——配置驱动的适配层\n由于没有标准协议，OpenClaw 用一个\n配置对象\n来抽象差异（\nsrc/config/types.agent-defaults.ts:47\n）：\nexport\ntype\nCliBackendConfig = {\ncommand:\nstring\n;\n// 可执行文件名\nargs?:\nstring\n[];\n// 默认参数\noutput?:\n\"json\"\n|\n\"text\"\n|\n\"jsonl\"\n;\n// 输出解析模式\nresumeOutput?:\n\"json\"\n|\n\"text\"\n|\n\"jsonl\"\n;\n// resume 模式可独立设置\ninput?:\n\"arg\"\n|\n\"stdin\"\n;\n// prompt 怎么喂\nmaxPromptArgChars?:\nnumber\n;\n// arg 超长就转 stdin\nmodelArg?:\nstring\n;\n// 怎么传模型 ID（如 --model）\nmodelAliases?: Record<\nstring\n,\nstring\n>;\n// OpenClaw model id → CLI model id\nsessionArg?:\nstring\n;\n// 怎么传 session id\nsessionMode?:\n\"always\"\n|\n\"existing\"\n|\n\"none\"\n;\nsessionIdFields?:\nstring\n[];\n// 从输出哪个字段读 session id\nsystemPromptArg?:\nstring\n;\n// 怎么传 system prompt\nsystemPromptMode?:\n\"append\"\n|\n\"replace\"\n;\nimageArg?:\nstring\n;\n// 怎么传图片\nimageMode?:\n\"repeat\"\n|\n\"list\"\n;\nclearEnv?:\nstring\n[];\n// 启动前清的 env vars\nserialize?:\nboolean\n;\nreliability?: { watchdog: { fresh: {...}, resume: {...} } };\n};\n**整个适配器层做的事就是把\"OpenClaw 抽象的请求\"翻译成\"目标 CLI 能听懂的命令行 + stdin\"**：\nOpenClaw runtime 请求\n├─ prompt:\n\"Help me debug...\"\n├─ model:\n\"claude-cli/claude-sonnet-4-6\"\n├─ systemPrompt:\n\"You are...\"\n└─ sessionId:\n\"abc-123\"\n↓\nbuildCliArgs (cli-runner/helpers.ts)\n↓\nspawn(\n\"claude\"\n, [\n\"-p\"\n,\n\"--output-format\"\n,\n\"stream-json\"\n,\n\"--verbose\"\n,\n\"--permission-mode\"\n,\n\"bypassPermissions\"\n,\n\"--model\"\n,\n\"sonnet\"\n,                              ← 经 modelAliases 映射\n\"--session-id\"\n,\n\"abc-123\"\n,                        ← sessionArg 决定\n\"--append-system-prompt\"\n,\n\"You are...\"\n,           ← systemPromptArg 决定\n\"Help me debug...\"\n← input=arg\n])\n↓\n子进程 stdout 输出 stream-json\n↓\ncli-runner/execute.ts 按 output=\n\"jsonl\"\n行解析\n↓\n翻译回 OpenClaw 抽象的 AgentMessage 流\n反向 MCP 注入——隐藏的协议\n这是 CLI Backend 设计里\n最巧妙的一环\n。Claude CLI 自己有原生工具集（read, write/bash 等），但 OpenClaw 还想让 CLI 能用\n自己的扩展工具\n（比如\nsend_message\n,\nsubagents\n等）。怎么做？\n// extensions/anthropic/cli-backend.ts:17\n{\nid: CLAUDE_CLI_BACKEND_ID,\nbundleMcp:\ntrue\n,\n// ← 关键\nconfig: { command:\n\"claude\"\n, args: [...] },\n}\nbundleMcp: true\n让 OpenClaw 在启动 CLI 时，\n通过 Claude CLI 的 MCP 配置注入一个本地 MCP 服务器\n——这个 MCP 服务器就是 OpenClaw 自己跑起来的（\nsrc/mcp/channel-server.ts\n）。Claude CLI 通过 MCP 协议反过来调 OpenClaw 提供的工具：\nOpenClaw runtime\n↓ spawn\n┌──────────────────────┐\n│  Claude CLI 子进程   │\n│                       │\n│  → Anthropic API      │ ◄── LLM 调用是 CLI 自己做的\n│                       │      （用 CLI 已登录的 OAuth）\n│  → MCP Client         │ ◄── 调 OpenClaw 工具\n└─────────┬─────────────┘\n│\nstdio MCP\n│\n▼\n┌────────────────────┐\n│ OpenClaw MCP Server │ ◄── 提供 send_message /\n│  (channel-server)   │      subagents / 等扩展工具\n└────────────────────┘\n所以 CLI ↔ OpenClaw 之间实际是混合协议\n：LLM 输出走各家 CLI 的私有 stdout 协议，工具调用走 MCP。这是文章第 22 章讲到的\"反向 MCP\"在 CLI 路径上的\n第二处应用\n——不只是面向第三方 IDE 暴露，也面向自己 spawn 的 CLI 子进程暴露。\n与 ACP 路径的对比\n文章 6.1 图里有三种 provider 类型：embedded, CLI provider, ACP provider。它们的协议是这样的：\nProvider 类型\n协议\n适用\nembedded\n各 LLM 厂商的 HTTP API（Anthropic Messages / OpenAI Responses / Google generateContent / ...）\n走自己的 API Key\nCLI provider\n每家 CLI 各自的 stdout 流格式\n（stream-json / jsonl / json）+ 反向 MCP 注入工具\n复用本地 CLI 的登录态（Claude OAuth, ChatGPT 订阅、Gemini 账号）\nACP provider\nACP 协议\n（JSON-RPC over stdio，由\n@agentclientprotocol/sdk\n定义）\n把别的 ACP agent（GitHub Copilot ACP 等）当 LLM backend\nACP 路径不是直接调\"gemini\"或\"copilot\"的同一个二进制——\nextensions/acpx/\n是 OpenClaw 的 ACP 客户端代理，它启动的是专门的 ACP wrapper 脚本（如\ncodex-acp-wrapper.mjs\n,\nclaude-agent-acp-wrapper.mjs\n），走标准的 ACP 协议（JSON-RPC over stdio）。支持的 ACP harness（注：\nharness 是 OpenClaw 内部用语\n，不是 ACP 协议规范术语，指\"被 OpenClaw 通过 ACP 协议驱动的外部 Agent 运行时\"，见\nextensions/acpx/skills/acp-router/SKILL.md\n和\ndocs/tools/acp-agents.md\n）包括：\ncodex\n,\nclaude\n,\ngemini\n,\ndroid\n,\nopencode\n等。\n同一个\"codex\"既可以作为 CLI provider（走 JSONL stdout 流），也可以作为 ACP harness（走 JSON-RPC 协议）——取决于配置里选哪条路径\n。\n设计哲学\n：CLI Backend 走的是\"已存在生态优先\"路线——不要求 CLI 厂商支持 ACP，而是用\nCliBackendConfig\n写适配器吃掉各家差异。\n双向连接——OpenClaw 也是别人的 Backend\n6.4 和 6.4.1 讲了\"OpenClaw 把 CLI 当 backend\"的方向。但这个故事还有\n另一半\n——OpenClaw 自己也被设计为别人的 backend。这一节讲反方向。\n先解决一个疑问：私有协议为什么能\"当 backend 用\"？\n理解反方向之前，要先回答 6.4.1 留下的隐含问题——既然 stream-json, codex jsonl, gemini json 都是私有协议，OpenClaw 为什么能稳定接入？\n三个原因\n：\n私有协议是\"事实开放\"的\n——CLI 厂商为了支持自家 IDE 集成（VSCode 插件, Cursor, Zed），必须让协议\n对外可解析且稳定\n。一旦改动会破坏所有下游集成，所以厂商有强烈动机保持向后兼容。OpenClaw 把自己当成\"另一个下游集成\"——和写一个 VSCode 插件没有本质区别。可以类比\ngh\nCLI 的\n--json\n输出：没有 RFC 标准，但全世界写脚本的人都在用。\n协议适配做成可配置层\n——\nCliBackendConfig\n是外部可注册的（\napi.registerCliBackend(...)\n）。任何人都能加一个新 CLI backend，不改 OpenClaw 核心代码。所以\"协议私有\"不是问题，**问题是\"协议是否稳定 + 是否可解析\"**——这两条满足了，谁定的协议都不重要。\nOpenClaw 不需要懂 LLM 协议本身\n——这是最关键的一点：\nembedded 路径：\nOpenClaw 必须自己实现 anthropic-messages, openai-responses、\ngoogle-generateContent 等多套 HTTP 协议适配\nCLI 路径：\nOpenClaw 只需要 spawn CLI、解析 stdout\nLLM 协议适配的复杂度被 CLI 吃掉了\n**复杂度从\"N 套 HTTP 协议\"降到\"N 套 stdout 格式\"**——后者天然更简单（行 JSON 比 SSE + tool call schema + thinking blocks 简单太多）。CLI backend 实质是把\"LLM 协议适配\"委托给 CLI 厂商，OpenClaw 只解决\"如何驱动 CLI\"这个更窄的问题。\n反方向：OpenClaw 提供三种暴露面\n那 Claude Code, Codex CLI, Cursor, Zed 这些工具能反过来调用 OpenClaw 吗？\n能\n——而且 OpenClaw 主动设计了三种粒度的暴露面：\n外部工具想要什么粒度的访问？\n│\n┌───────────┼───────────┐\n▼           ▼           ▼\n工具粒度     Agent 粒度    系统粒度\n│           │           │\n▼           ▼           ▼\nMCP Server    ACP Server   HTTP API\n路径 1：MCP Server——工具粒度\nopenclaw mcp serve\n把 OpenClaw 暴露为一个\nMCP server\n。任何支持 MCP 的客户端都可以连接：\nClaude Code (用户主动启动的)\n↓ stdio MCP 协议\n↓\nOpenClaw MCP Server (channel-server.ts)\n↓ 暴露 9 个具体工具：\n│\n├─ conversations_list      （列出聊天会话）\n├─ conversation_get        （读会话详情）\n├─ messages_read           （读 QQ Bot、飞书、Discord 历史消息）\n├─ messages_send           （从 Claude Code 反向发消息到 QQ Bot）\n├─ attachments_fetch       （拉取附件）\n├─ events_poll / events_wait（监听新消息）\n├─ permissions_list_open   （看待审批列表）\n└─ permissions_respond    ",
+      "fulltext_obtained": true,
+      "chunk_index": 5,
+      "chunk_count": 18
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.31,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_agent": 0.68,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.78,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.16,
+        "2": 0.81,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.17,
+      "probabilities": {
+        "0": 0.91,
+        "1": 0.03,
+        "2": 0.04,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.23,
+      "probabilities": {
+        "0": 0.88,
+        "1": 0.05,
+        "2": 0.04,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.51,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.47,
+        "3": 0.53,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.37,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.03,
+        "2": 0.04,
+        "3": 0.13,
+        "4": 0.7,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.02,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.31,
+        "2": 0.24,
+        "3": 0.38,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.78,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5479,
+    "outputTokens": 172,
+    "totalTokens": 5651
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.6,
+        "relevance": 0.85,
+        "grounding": 0.88,
+        "decision_action": 0.85,
+        "evidence": 0.67,
+        "actionability": 0.57,
+        "anti_hype": 0.32
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180432422,
+                "endTime": 1791180432629,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000230118",
+      "marketCost": "0.000230118",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000230118",
+      "inferenceCost": "0.000230118",
+      "inputInferenceCost": "0.000230118",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARS0RBJ30Z6CB84MVJPMK"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:12 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::4bg8n-1791180432394-42d8e740bcbc"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.31,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_agent": 0.68,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.78,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.16,
+            "2": 0.81,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.17,
+          "probabilities": {
+            "0": 0.91,
+            "1": 0.03,
+            "2": 0.04,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.23,
+          "probabilities": {
+            "0": 0.88,
+            "1": 0.05,
+            "2": 0.04,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.51,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.47,
+            "3": 0.53,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.37,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.03,
+            "2": 0.04,
+            "3": 0.13,
+            "4": 0.7,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.02,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.31,
+            "2": 0.24,
+            "3": 0.38,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.78
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5479,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.6,
+            "relevance": 0.85,
+            "grounding": 0.88,
+            "decision_action": 0.85,
+            "evidence": 0.67,
+            "actionability": 0.57,
+            "anti_hype": 0.32
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180432422,
+                    "endTime": 1791180432629,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000230118",
+          "marketCost": "0.000230118",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000230118",
+          "inferenceCost": "0.000230118",
+          "inputInferenceCost": "0.000230118",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARS0RBJ30Z6CB84MVJPMK"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:11.852Z"
+  }
+}

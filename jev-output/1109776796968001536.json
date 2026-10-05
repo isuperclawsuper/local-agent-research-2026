@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1109776796968001536",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "业务团队也能“手搓”应用？火山 Supabase 助力猿辅导对话式 Agent 落地",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247519770&idx=1&sn=f9593f3795dbc93e14a1d54941874a89",
+      "date": "2026-05-13T03:02:00.837Z",
+      "chars": 5683,
+      "text": "字节跳动数据库\n2026-05-13 11:02\n江苏\n客户介绍\n在快速变化的在线教育市场，内容和活动的迭代速度，直接决定了用户增长和留存的生命线。当一位教学教研老师可能需要一个工具来快速追踪新课程的学员反馈时、当一位市场运营同学希望能迅速搭建一个招生季的活动介绍页时、当一位数据分析师则期望能将复杂的报表固化为一个可交互的数据看板时，这些创意最理想的落地路径是什么？是等待数周的研发排期，还是在几小时内就变成一个可交互、可投放的线上工具？\n猿辅导作为国内 K12 教育领域的标杆企业，业务覆盖教研、教学、运营、管理等多个环节，内部每天都面临着如此大量、琐碎，但关键的个性化“微需求”。\n这些需求变化快、生命周期短，如果都投入正式的研发资源，不仅流程漫长，成本高昂，更会挤占核心业务的迭代精力。如何让这些拥有第一手业务体感、最懂需求的“一线员工”也能将自己的创意快速落地为生产力工具？\n这就是猿辅导内部“Rush”平台诞生的初衷。\n猿辅导自主研发了内部 Vibe Coding 平台——\nRush\n，其定位并非传统的低代码平台，而是更进一步，拥抱了\n“Vibe Coding”\n的前沿理念——即通过对话式的自然语言交互，让用户描述自己的需求，AI 则自动完成从数据结构设计、前后端代码生成到应用部署的全过程。它的目标，是让任何岗位的员工都能成为“创造者”，将脑海中的想法“说”成一个可用的应用。\n历史痛点\n对话式应用生成看似美好，但从一个酷炫的 Demo 到一个能在企业内部安全、稳定、规模化运行的平台，中间隔着巨大的工程鸿沟。Rush 团队在早期探索中，很快就遇到了 4 大挑战：\n痛点 1：内容与活动的“小时级”时效性\n教育行业的运营节奏，与课程周期、招生节点、社会热点紧密相连。一个精心设计的“暑期体验课报名页”，一个结合热点事件的“互动答题 H5”，或是一个用于收集家长反馈的“在线问卷”，其生命周期可能只有几天甚至几小时。\n机会窗口短暂：\n传统的“需求评审-UI设计-前后端开发-测试-上线”流程，周期通常以“周”为单位，早已无法匹配业务的“小时级”速度。当应用终于上线时，活动的黄金窗口期可能已经过去。\n需求高度定制：\n每个活动都有独特的页面布局、交互逻辑和数据字段，复用性低，导致研发团队频繁投入到“一次性”项目中，核心价值无法沉淀。\n痛点 2：数据治理与安全\n教育数据需要严格管理。这要求平台在提供便利性的同时，必须建立起可靠的数据安全管理保障。\n课程信息隔离：\n如何确保不同班级、不同科目的学生数据在物理和逻辑上严格隔离？一个班级的老师，绝不能看到另一个班级的学生名单，以防课程管理出错和混乱。\n访问权限精细化：\n平台需要支持复杂的角色体系，如校区管理员、年级负责人、授课教师、助教等，每种角色对数据的读、写、改、删权限都必须被精确控制。\n痛点 3：版本迭代的“稳定性”\n一个优秀的教研工具或课程模块，交付过程往往涉及多环境和多版本，需要能够保证多环境和多版本的稳定可靠。\n多环境协同：\n一个应用的开发，往往有多套环境，开发、预发、线上等，需要能够支持多环境使用，环境之间互不干扰。\n稳定的版本管理：\n任何一次发布都可能存在风险。平台必须支持一键回滚到上一个稳定版本，并能轻松创建测试分支，在不影响主应用的情况下验证新想法。\n痛点 4：供给侧效率与成本的“平衡木”\n对于内部平台而言，其最终价值在于能否以更低的成本、撬动更大的业务成果。这意味着要将有限的研发资源，从“通用后端基建”的重复劳动中解放出来，聚焦于平台能力的迭代和业务逻辑的创新。\n小团队闭环：\n如何让一个几人组成的敏捷团队，就能快速完成从业务想法到“可上线应用”的全过程，形成战斗力闭环？\n弹性成本控制：\n平台的资源消耗应与使用量成正比，避免为低频或临时性应用长期预留大量服务器资源，造成浪费。\n阶段效果\n面对上述挑战，Rush 团队意识到，他们需要的不是一堆离散的云服务组件，而是一个\n高度集成、AI 原生的一站式后端即服务（BaaS）平台\n。 经过多方评估，火山引擎 Supabase 成为最终选择。\n选择 Supabase 的核心逻辑在于，它完美地回答了 Rush 的核心诉求：将后端基础设施“产品化”与“标准化”。\n☁️火山\nSupabase 的理念与 Rush 不谋而合：让开发者（在这里是 Rush 平台本身）聚焦于业务逻辑（用户想要什么应用），而将所有通用的、繁琐的后端工作（数据库、认证、API、存储、实时消息通知等）交给一个可靠的平台去处理。这使得 Rush 团队可以将全部精力投入到优化“对话生成应用”这一核心体验上，而无需担心背后成千上万个应用的后端实现与运维。\nRush 平台上线后，迅速在猿辅导内部“生根发芽”，成为各业务团队不可或缺的提效工具。以下是几个典型的应用场景：\n场景一：教学侧“灵感捕获器”\n使用者：\nK12 教学教研团队\n痛点：\n教研老师们在打磨课程时，经常会产生一些工具类的“灵感”，例如“做一个错题收集器，方便学生按知识点复盘”、“搭建一个新课试听反馈看板，实时收集家长意见”。传统流程下，这些想法需要排期、评审，往往在落地前就“冷却”了。\nRush 解决方案：\n教研老师直接与 Rush 对话：“我需要一个‘新概念’课程的学员问题收集表，包含学员姓名、问题描述、截图上传、紧急程度（高/中/低）和跟进状态（待处理/已解决）”。几分钟内，一个包含数据录入、状态管理、附件上传功能的应用便生成了。老师可以立刻将链接分享到工作群中开始使用。\n业务收益：\n创意的实现周期从过去的数周甚至数月，缩短到了几分钟。工具与业务场景的贴合度极高，因为创造者就是使用者本人。\n场景二：运营侧“活动加速器”\n使用者：\n市场运营团队\n痛点：\n寒暑假等招生旺季，运营活动层出不穷，每个活动都需要配套的介绍页、报名表、物料分发追踪工具等。外包开发速度慢，内部研发资源紧张。\nRush 解决方案：\n运营同学通过 Rush 快速生成活动所需的系列应用。例如，为一场线上讲座生成一个包含活动介绍、主讲人信息、报名入口的单页应用；再生成一个后台管理系统，用于审核报名信息、统计渠道来源、并实时展示报名人数。\n业务收益：\n极大提升了市场活动的响应速度和迭代效率。运营人力从繁琐的工具开发协调中解放出来，更专注于活动策划与内容本身。相比外包开发，成本节约效果显著。\n场景三：职能侧“流程优化器”\n使用者：\nHR、行政等职能部门\n痛点：\n内部流程，如招聘面试进度追踪、固定资产领用登记、供应商信息管理等，往往依赖于多个不同的系统或大量离线的 Excel 表格，数据分散，协作困难。\nRush 解决方案：\nHR 团队使用 Rush 创建了一个“面试官时间预约与反馈系统”，候选人信息、面试排期、面试官反馈被集中在一个看板上，状态流转一目了然。\n业务收益：\n流程效率和数据透明度得到质的提升。原本分散在邮件、聊天、表格中的信息被统一管理，人力沟通成本降低约 1/3。\n猿辅导 Rush 平台的成功实践，生动地展示了在 AI 时代，企业应用开发范式的深刻变革。通过将火山引擎 Supabase 作为其坚实的后端底座，Rush 成功地将繁杂、耗时、高成本的后端开发工作，封装成了一个标准化、产品化、可无限复用的“能力集”。\n这使得 Rush 平台可以专注于前端的对话式创新，而每一个由业务人员创造的应用，背后都仿佛拥有一个由 Supabase 提供的、7x24 小时待命的专业“后端团队”，时刻保障着其性能、安全与稳定。\n展望未来，Rush 与 Supabase 的结合还将释放更大的潜力：\n更深度的 AI 融合：\n利用 Supabase 对 AI-Native 能力支持，如向量引擎、Duckdb、大模型访问，Rush 可以从“应用生成器”进化为“智能业务分析师助手”，主动洞察数据背后的规律，为用户提供决策建议。\n更广泛的生态连接：\n通过 Edge Functions，Rush 生成的应用将能更方便地与企业内外部的更多系统连接，打破数据孤岛，成为企业数字化转型的毛细血管。\n从内部提效到外部赋能：\n这套成熟的“对话式应用生成”模式，未来或许也可以作为一种标准能力，赋能给猿辅导的生态伙伴，乃至更广泛的教育行业客户。\n归根结底，技术服务的最终目标是创造业务价值。火山引擎 Supabase 通过提供极致易用、高度集成的一站式后端，让猿辅导 Rush 这样的创新平台得以将精力聚焦于离业务最近的地方，从而真正加速了从一个好想法到一个好产品的距离，让价值的流动更快、更顺畅。\n火山 Supabase 介绍\n火山引擎 Supabase，全称是“AI 原生 BaaS 平台 Supabase 版”，基于开源 Supabase 打造，100% 兼容 Supabase 开源用法，包括 PostgreSQL、Database、Authentication、Storage、Edge Function、Realtime、AI 助手、API Docs 等，具备云原生服务特有的高弹性低价格等特点。并且基于火山引擎数据库 Serverless 架构，实现了更好可用性、性能和成本优势。可以高性价比一站式地满足，用户在 AI Agent 开发构建、SaaS服务开发、原型系统快速构建等场景的诉求。\nSupabase 是一款 BaaS 服务软件（Backend-as-a-Service），BaaS 通过将通用后端功能（如数据库、用户认证、文件存储、实时通信和无服务器函数）封装为服务，显著提高了应用开发的速度和效率。它使团队能专注于前端和核心业务逻辑，而将后端基础设施的构建、扩展和维护工作外包给专业平台。对于追求快速上市、需要优化工程资源、并希望降低初始技术门槛的团队而言，BaaS 是一个极具吸引力的战略选项。\n以开发一个电商平台为例，后端工程师需要设计订单、用户、商品等模块，搭建 Spring Cloud 框架，配置用户鉴权系统，部署数据库，并编写大量接口代码，这些工作高达 60%～80%，整个过程可能需要数周甚至数月时间。BaaS 的出现不仅简化了开发流程，还降低了技术门槛，使小型团队和个人开发者能够构建复杂应用而不必担心后端基础设施的维护。这种“开箱即用”的模式特别适合快速原型开发和MVP验证，让开发者能够将精力集中在产品创新而非基础设施搭建上。\n尤其对于目前的 AI Agent 开发场景而言，能够帮助 AI Agent 达到快速入市的效果。常见的 BaaS，包括 Google 的 Firebase、AWS 的 Amplify、腾讯的 Cloudbase 等，不过这都是商业 BaaS 软件或者云服务。这些商业服务，存在收费贵、商业闭源、生态单一用户无法迁移等致命问题。\n应用场景\n适用场景\n初创公司和 MVP：\n需要快速验证想法，最小化初始投入。\n中小企业内部工具：\n如 CRM、报销系统、管理后台等。\n移动和 Web 应用：\n特别是内容展示、社交、电商等标准应用。\n黑客马拉松与原型开发：\n在极短时间内构建功能性原型。\n前端驱动的团队：\n团队成员以大前端技术栈为主，后端人力有限。\n不适用场景\n核心业务逻辑极其复杂：\n如复杂的金融交易引擎、大规模科学计算。\n需要特殊硬件或操作系统级优化：\n如游戏服务器、高性能计算集群。\n有极端安全或合规要求：\n无法使用任何第三方云服务，必须完全私有化部署。\n对性能有极致要求：\n如高频交易、实时竞价广告系统。\n已有成熟的后端技术体系：\n重构和迁移成本过高。\n产品能力\n根据不同使用场景通过公网或者私网连接 Supabase 服务，配置相关的 API Key 后，即可使用 Supabase 的各种BaaS 服务。\n功能模块 & 核心能力\n产品优势\n1.更完善的 BaaS 功能\n功能 100% 兼容 Supabase 开源用法。\n基于对象存储、veFaaS、豆包大模型等火山引擎云原生服务，实现了100% 兼容 Supabase 开源标准用法的 BaaS 功能，并更具高弹性低价格的特点。包括 Database、Authentication、Storage、Edge Function、Realtime、AI 助手、API Docs 等。\n多种集成方式。\n只需 SDK 快速集成即可使用 Supabase 服务，开发效率提升 3-5 倍。\n更多 AI 功能。\n后续还会有更多 Agent 所需的一站式能力，已在路上。\n2.更高性价比\n「真」Serverless。\n不仅仅 Supabase 服务层，并且 Database 层都可以做到按需自动伸缩资源，帮忙业务从小规格从容起步，丝滑应对流量高峰。\n彻底休眠，「零」收费。\n并且在业务无访问时，还可以进一步彻底休眠算力，完全释放算力资源，休眠期间「零」收费，可帮业务节省几十上百倍的费用。\n3.更强劲的数据库内核\n火山云原生 PostgreSQL 底座。\n除业界领先的 Serverless 能力，还融合了火山多年经验建设的高可用、高可靠、丰富管控能力的 PostgreSQL 数据库底座，用户可以更放心使用火山引擎 Supabase。\nData as Git（Branch 和 Timetravel）。\n可轻松实现数据试错、回滚与多方案并行验证。\n更多生态、更多功能用途的数据库引擎，已在路上。\n4.更易用的 AI Native 交互平台\n极简交互。\n通过界面重构优化视觉交互逻辑，将复杂任务流程压缩缩至 2-3 步；结合自然语言交互功能，实现操作效率提升 80% 以上。\nAI 原生能力。\n借助AI技术实现智能监控预测、自动化调优、数据安全治理及实例全生命周期智能管理，全面提升故障管理、服务水平。\n点击\n“阅读原文”\n即可试用产品或查阅技术文档，开启智能数据之旅！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_agent": 0.51,
+        "transfer_business": 0.02,
+        "irrelevant": 0.24,
+        "peripheral": 0.23
+      }
+    },
+    "relevance": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.15,
+        "2": 0.77,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.04,
+        "2": 0.07,
+        "3": 0.6,
+        "4": 0.25,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 1.1,
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.16,
+        "2": 0.07,
+        "3": 0.12,
+        "4": 0.09,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 1.96,
+      "probabilities": {
+        "0": 0,
+        "1": 0.11,
+        "2": 0.83,
+        "3": 0.05,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.31,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.14,
+        "2": 0.42,
+        "3": 0.31,
+        "4": 0.1,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.13,
+        "2": 0.62,
+        "3": 0.15,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7048,
+    "outputTokens": 172,
+    "totalTokens": 7220
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.39,
+        "relevance": 0.84,
+        "grounding": 0.66,
+        "decision_action": 0.27,
+        "evidence": 0.88,
+        "actionability": 0.53,
+        "anti_hype": 0.68
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179924657,
+                "endTime": 1791179924807,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000296016",
+      "marketCost": "0.000296016",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000296016",
+      "inferenceCost": "0.000296016",
+      "inputInferenceCost": "0.000296016",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9952JKKE066P3SV3Q63S"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:44 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::fntlx-1791179924599-27b48ca857d8"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_agent": 0.51,
+            "transfer_business": 0.02,
+            "irrelevant": 0.24,
+            "peripheral": 0.23
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.15,
+            "2": 0.77,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.04,
+            "2": 0.07,
+            "3": 0.6,
+            "4": 0.25,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.1,
+          "probabilities": {
+            "0": 0.55,
+            "1": 0.16,
+            "2": 0.07,
+            "3": 0.12,
+            "4": 0.09,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.96,
+          "probabilities": {
+            "0": 0,
+            "1": 0.11,
+            "2": 0.83,
+            "3": 0.05,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.31,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.14,
+            "2": 0.42,
+            "3": 0.31,
+            "4": 0.1,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.13,
+            "2": 0.62,
+            "3": 0.15,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7048,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.39,
+            "relevance": 0.84,
+            "grounding": 0.66,
+            "decision_action": 0.27,
+            "evidence": 0.88,
+            "actionability": 0.53,
+            "anti_hype": 0.68
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179924657,
+                    "endTime": 1791179924807,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000296016",
+          "marketCost": "0.000296016",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000296016",
+          "inferenceCost": "0.000296016",
+          "inputInferenceCost": "0.000296016",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9952JKKE066P3SV3Q63S"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:44.107Z"
+  }
+}

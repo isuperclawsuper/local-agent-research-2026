@@ -1,0 +1,41 @@
+elAttemptCount":1,"modelAttempts":[{"canonicalSlug":"typesafe-ai/jev","success":false,"providerAttemptCount":2,"providerAttempts":[{"provider":"typesafe-ai","credentialType":"system","success":false,"error":"{\\"error_type\\":\\"max_tokens_exceeded\\"}","startTime":1791180094533,"endTime":1791180094662,"statusCode":400},{"provider":"digitalocean","credentialType":"system","success":false,"error":"typesafe returned status 400","startTime":1791180094667,"endTime":1791180094883,"providerRequestId":"736b2961-f0e6-442f-a02b-ce867349cd52","statusCode":400}]}],"totalProviderAttemptCount":2},"generationId":"gen_01M45AEF13X236ZV1QH51KXCRJ"}}}',
+    isRetryable: false,
+    data: {
+      error: {
+        message: 'typesafe returned status 400',
+        type: 'AI_APICallError',
+        param: {
+          error: 'typesafe returned status 400',
+          statusCode: 400,
+          name: 'AI_APICallError',
+          message: 'typesafe returned status 400',
+          isRetryable: false,
+          type: 'AI_APICallError'
+        }
+      },
+      providerMetadata: {
+        gateway: {
+          routing: {
+            originalModelId: 'typesafe-ai/jev',
+            resolvedProvider: 'digitalocean',
+            fallbacksAvailable: [Array],
+            canonicalSlug: 'typesafe-ai/jev',
+            modelAttemptCount: 1,
+            modelAttempts: [Array],
+            totalProviderAttemptCount: 2
+          },
+          generationId: 'gen_01M45AEF13X236ZV1QH51KXCRJ'
+        }
+      }
+    },
+    [Symbol(vercel.ai.error)]: true,
+    [Symbol(vercel.ai.error.AI_APICallError)]: true
+  },
+  generationId: undefined,
+  isRetryable: false,
+  type: 'internal_server_error',
+  [Symbol(vercel.ai.gateway.error)]: true,
+  [Symbol(vercel.ai.gateway.error.GatewayInternalServerError)]: true
+}
+
+Node.js v22.23.0

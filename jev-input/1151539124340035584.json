@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1151539124340035584",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元AI Infra进化：HPC-Ops推理核心算子全面升级",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801982&idx=1&sn=25fb653637a2fbac015d46c265f8266e",
+      "date": "2026-06-11T08:20:00.101Z",
+      "chars": 5869,
+      "text": "腾讯技术工程\n2026-06-11 16:20\n广东\n全新更新升级\n一、 背景与成果介绍\nHPC-Ops 是腾讯混元 AI Infra 团队开源\n并\n长期维护的一套\n工业级、\n高性能\n的\n大模型推理底层算子库。在首轮开源中，HPC-Ops\n提供了\nAttention、GroupGEMM 等在内\n多个\n高性能算子\n，\n原生支持 BF16 与多种 FP8 量化方案\n，\n针对\n常见的\n主流推理硬件进行了深度优化\n。\n近日，\n为了\n进一步满足\n推理系统对动态业务负载的适应性、\n核心\n模块对\n复杂\n精度\n和高性能融合算子\n的\n需求\n，HPC-Ops 推出\n全新\n更新\n升级，包含\n五大\n关键\n算子\n。本次升级\n在主流推理平台上，有效缓解了Attention长尾延迟、显存搬运\n开销、\n跨卡通信等实际工程瓶颈，多项性能指标显著优于现有的开源基线。\n图\n1\nHPC-Ops 核心算子升级示意图\n本次升级的主要亮点包括：\nAttention\n：\n针对真实负载下\n长短请求混排导致的计算不均、推理长尾问题\n，采用\n运行时动态负载调度\n方案\n，实测长文本最高加速2.\n95\nx，端到端QPM最高提升17%。\nRoute\nr\nGEMM\n：\n以双BF16 GEMM组合实现FP32级高精度计算，兼顾推理精度与GPU算力利用率。精度显著优于常规BF16/TF32方案，\n对比\nC\nuBLAS FP32最高提速3.22x。\nFusedMoE\n：\n构建\nMoE全\n模块\n流水线，整合多阶段流程、消除显存搬运与内核\n启动\n开销。相较vLLM、SGLang等主流框架，性能提升1.2x～1.6x。\nFused AllReduce+Norm\n：\n深度融合跨GPU通信、残差叠加与归一化计算。对比NCCL、FlashInfer主流方案，性能实现1.04x～1.68x提速。\nSampler\n：\n将\n解码阶段的采样计算（原本需要十多个操作算子）\n融合为2个CUDA Kernel，大幅\n减少\n调度、读写与同步冗余开销。\n相\n较vLLM提速4.\n0\nx～\n7\n.5x、较FlashInfer提速\n1\n.\n9\nx～\n4.7\nx，补齐推理末端短板。\nHPC-Ops 希望持续开放来自真实业务场景验证的高\n性\n能算子能力，为社区提供更贴近生产实践的推理\n算子\n优化参考，帮助开发者\n更高效地\n构建和优化大模型推理系统\n，欢迎大家参与开源共建！\n👉\nHPC-Ops\nGitHub 项目地址：\nhttps://github.com/Tencent/hpc-ops\n二、核心算子更新详解\n随着大模型推理系统在业务侧的应用不断深入，推理优化面临的负载形态、精度要求和系统瓶颈也更加复杂。\n为了在真实复杂业务场景中进一步\n提升\n推理性能\n，\nHPC-Ops\n本次更新\n围绕两大核心工程\n思想\n进行了全面升级：一、\n深度适配线上复杂负载\n（应对多精度计算与长短请求混排）；二、\n多算子\n联合优化\n。\n本次更新内容主要包含以下五大核心算子：\n1.\nAttention：动态调度负载均衡，根治推理长尾延迟\n线上推理存在请求长度实时波动、batch 内长短请求混杂等特征。对于均匀长度负载，传统静态 split-k\nv\n已经可以稳定工作；但一旦进入长上下文混合负载，静态策略就需要在长序列吞吐和短序列开销之间做固定权衡：长序列需要更大的 split-k\nv\n才能充分并行，短序列则只需要少量拆分，固定策略很难同时兼顾。\n针对此问题，HPC-Ops对 Attention调度机制完成全面升级，将传统固定任务划分模式，迭代为更适配动态业务的运行时动态调度方案。\n该\n方案\n先将所有推理请求按统一Tile粒度拆分，依据全局Tile总量均衡分配各CTA任务规模，再通过贪心装桶算法实现Tile任务极致均分，从源头杜绝计算单元负载失衡问题。在执行链路中，Task Assign 模块会在每次推理前生成专属任务映射表，各层Attention Kernel依据映射表精准领取并执行对应任务，最终由Combine Kernel统一合并split-kv计算结果，实现全流程负载均衡、高效协同运算。\n图\n2\nAttention动态调度示意图\n本能力由腾讯混元AI Infra团队与NVIDIA联合优化打磨\n，围绕动态负载建模\n、\nTile粒度适配、CTA任务均衡策略完成多轮精细调优。目前该能力已同步适配HPC-Ops与FlashInfer仓库，可直接落地应用于线上真实推理场景。\n2\n. Route\nr\nGEMM：双BF16重构FP32计算，兼顾高精度与高性能\n在MoE路由、稀疏Attention等模块中，普遍存在激活为BF16\n，\n权重为FP32的\n高精度\nGEMM计算。若将权重降精度参与计算，其精度难以满足\nMoE\nR\nouter、\nA\nttention\nS\ncore等数值敏感算子，会直接影响模型效果；若将激活升精度至 FP32 或 TF32，则需引入逐元素类型转换的额外带宽与算力开销，且纯\nFP32\n计算只能使用CUDA Core运算单元，硬件利用率受限。\n针对上述问题，HPC-Ops提出双BF16\nGEMM组合模拟FP32精度的优化方\n案\n：\n离线阶段将 FP32 权重拆分为高位 BF16 与低位残差 BF16 两组张量，即W ≈ W_high + scale × W_low（缩放因子scale取 1/256，对齐BF16的8位尾数）。推理阶段执行两次 BF16 GEMM 并做线性组合，激活值全程保持 BF16，无需类型转换，且两路矩阵乘均运行在 BF16 Tensor Core 上，算力利用率得以充分释放。更进一步，实现时我们将双路计算融合至单一 Kernel：输入数据仅搬运一次，通过双寄存器累加器分别缓存两路中间结果，Epilogue 阶段经一次FMA修正出高精度结果写出到显存，全程无中间结果的 HBM往返开销。\n图\n3\nRouter gemm算子原理和设计架构图\n3.\nFusedMoE：全\n算子\n流水线重构，极致压缩推理开销\nHPC-Ops对MoE完整推理链路进行深度融合与执行逻辑重排，重构全新流水线架构，\n将路由与索引预处理、Gate-Up GEMM、激活量化、Down GEMM、Top-K 加权聚合五大核心阶段，整合为紧凑高效的一体化执行链路\n，彻底解决传统方案多阶段拆分带来的冗余开销问题。\n在路由与索引预处理阶段，\n采用共享内存分块统计，为每个专家预留连续显存输出区间，大幅降低大规模 Token 输入场景下的索引构建成本\n。在Gate-Up GEMM计算阶段，可直接通过路由索引读取原始输入数据，省去独立Gather数据搬运步骤；\n同时取消Warp Specialization，由同一\nW\narp\nG\nroup完成数据搬运与计算任务\n，将访存延迟掩盖逻辑从CTA内软件流水线，升级为跨CTA硬件调度，显著提升单SM可驻留线程块数量，最大化硬件资源利用率。\n推理过程中，激活量化结果按专家维度紧凑写入显存，保障 Down GEMM 无缝读取、高效计算，并在推理末端完成 Top-K 加权聚合。全流程通过 PDL 技术串联为无气泡执行链路，\n显著\n消除频繁Kernel启动带来的冗余开销。\n4\n. Fused AllReduce+Norm：通信计算深度融合，打通张量并行瓶颈\n针对张量并行场景下，通信、残差计算、归一化拆分执行导致的性能损耗，HPC-Ops 联合腾讯网络平台部，创新实现AllReduce通信、残差相加、RMSNorm归一化的全链路融合计算，封装为NVLink原生一体化操作：RMSNorm\n(\nAllReduce\n(\nx\n)\n+ residual, weight\n)\n。双方围绕通信拓扑优化、P2P同步机制、计算与通信\n融合\n逻辑完成协同打磨，让原本分段执行的离散链路，实现一体化、高效率运行。\n该能力基于 CUDA 多播\n(\nmultimem\n)\n与P2P点对点技术构建，原生支持 BF16 精度与单节点多GPU部署环境，采用Reduce-Scatter + All-Gather的 two-shot 高效执行策略。同时针对不同推理场景提供两套差异化实现方案，适配性更强\n：\n1.\n高吞吐版本\n（fuse_allreduce_rmsnorm_high_throughput）依托NVSwitch多播机制完成归约计算，适配大规模 Token 的 Prefill 预处理场景；\n2.\n低延迟版本\n（fuse_allreduce_rmsnorm_low_latency）基于Lamport P2P机制，通过PDL实现双Kernel重叠执行，适配小批量Token的Decode推理场景。\n5.\nSampler：极致大算子融合，终结后处理性能瓶颈\n针对传统采样后处理多Kernel串联、流程碎片化、冗余开销大的问题，HPC-Ops推出 fused_sampler算子，重构大模型推理后处理逻辑。该算子将主流框架中十余个零碎 Kernel串联实现的重复惩罚、温度缩放、Top-K、Top-P、Softmax、随机采样的全流程能力，端到端融合为2个核心CUDA Kernel，并封装为单一算子。针对差异化业务场景提供更加精简专用内核，算子内可自动适配调度，最大化释放GPU算力潜力。本次优化的性能增益主要来自\n五\n大维度：\n1.\n全流程内核融合，将采样场景全局\n词表大小的\nGPU 加载次数压缩至 1 次\n，且计算访存充分掩盖；\n2.\n在 GPU 内部闭环完成重复惩罚掩码计算，无需CPU-GPU数据拷贝，消除\n了\n重复惩罚阶段的最大开销；\n3.\n采用细粒度并行策略，将单\n请求\n拆分至多线程块并行执行，小批次场景\n并发度提升，\n推理延迟大幅降低；\n4.\n优化Top-K计算逻辑，当\nMax\nTop-K ≤64时，通过局部堆归并替代全局阈值扫描或拒绝采样，避免全词表重复读取\n，减少比较次数\n；\n5.\n合并计算链路，将Top-K归约\n过程\n与Softmax最大/求和计算融合，进一步削减\n加载和\n计算开销。\n三、 性能结果\n实验设置：以下性能数据均在CUDA13环境采集，PyTorch版本为 Torch2.11.0+cu130。各算子按照对应线上典型\n规格\n、并行配置和精度格式进行单算子测试；图中 latency 均表示算子级耗时，数值越低代表性能越好。\nAttention：\n在 Decode 阶段，请求长度实时波动和 batch 内长短请求混排会带来明显的负载不均。基于真实场景数据，动态调度方案在单 batch 长文本场景下单算子最高加速 2.\n95\nx，在混合长度 batch 场景下加速 1.\n59\nx~1.\n76\nx；端到端服务压测中，QPM 最高提升 17%。该能力已同步适配 HPC-Ops 与 FlashInfer，可直接用于在线推理中的长尾延迟治理。\n图\n4\nAttention性能对比图\nRouter GEMM：\n在 N=192、K=4096 的典型路由 GEMM 测试中，HPC-Ops Route\nr\nGEMM 在 M=2~4096 范围内最大绝对误差不超过 0.00177；TF32(cuBLAS) 对应最大绝对误差最高约 0.06464，约为 HPC-Ops 的数十倍。性能方面，HPC-Ops 相比 FP32(cuBLAS) 在 M=512 处最高获得 3.22x 加速，在 M=4096 处仍保持 2.86x 加速；相比 TF32(cuBLAS) 也可获得最高约 1.78x 的性能收益，适合 MoE Router GEMM 等精度敏感场景。\n图\n5\nRouter GEMM误差对比\n图\n图\n6\nRouter GEMM性能对比\n图\nFusedMoE：\n基于DeepSeek-V3、H\ny3\npreview\n、Qwen3-235B等典型MoE模型实测，在per-tensor FP8配置下，HPC-Ops FusedMoE相比vLLM CUTLASS、vLLM Triton 和SGLang当前实现，\nTP=8/EP=1场景整体获得约1.5x~1.6x的性能收益，TP=1/EP=8 场景获得约1.2x~1.5x的性能收益，并保持输出精度一致。\n图\n7\nFusedMoE性能对比\n图\nFused AllReduce+Norm：\n该\n融合算子\n测试\n覆盖\n了\n8~32\nk\ntokens的\nTP8\n张量并行\n场景\n。小token场景下，低延迟模式可将通信后处理链路压缩到约9~13us；大token场景下，高吞吐模式借助NVSwitch multicast\n能力\n获得更高带宽利用率。相比NCCL与FlashInfer同类路径，实测最高获得约1.\n68\nx的性能收益，有效缓解张量并行通信及后处理瓶颈。\n图\n8\nFused AllReduce+Norm性能对比\n图\nSampler：\n以下展示了\n三种Sampler方法基于两组真实业务参数在不同batch下的性能。简单的温度采样（Temperature Sampling）场景下，HPC-Ops Sampler 相比 vLLM/PyTorch 与 FlashInfer 平均提升约\n5.2\nx、\n2.6\nx；启用了各种采样测量的完整采样（Full Sampling)场景下，相比 vLLM/PyTorch 与 FlashInfer 平均提升约 5.\n4\nx、2.\n6\nx。可以看出无论batch大小和场景复杂度，采样算子均有较大的性能收益。\n图\n9\nSampler性能对比\n图\n四、结语\n从首轮开源聚焦单点高性能算子能力，到本轮实现推理全链路核心能力的系统性升级，HPC-Ops 已从单一高性能算子库，全面迭代进化为\n覆盖大模型推理全流程、兼顾精度与速度、适配规模化生产落地\n的系统级推理优化能力集合。\n本次所有优化能力，均沉淀于腾讯混元 AI Infra 团队长期的线上生产实践，深度适配真实、复杂的大规模推理业务场景，且全部正式开源、面向社区开放共享。未来，团队将持续深耕大模型推理底层核心技术，持续迭代优化 HPC-Ops 能力体系，助力全球研究者与工程团队以更低成本、更高效率搭建高吞吐、低时延的大模型推理服务，\n推动大模型推理系统性能边界\n不断\n突破。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

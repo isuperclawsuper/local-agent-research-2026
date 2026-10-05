@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "241696563309038592",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "用Go重构C++老系统，一次降本82%的极致之旅",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694348&idx=1&sn=9e955e9aec449ec3245339142575cd1e",
+      "date": "2026-02-04T00:46:00.294Z",
+      "chars": 5089,
+      "text": "原创\n陈颀玮\n2026-02-04 08:46\n美国\n关注腾讯云开发者，一手技术干货提前解锁👇\n01\n背景：当“大力”不再“出奇迹”\n该服务是 QQ 游戏生态中的核心基础设施之一，具有\n极高的并发写\n特性，直接关系到用户成就的实时展示与游戏权益的即时到账。\n重构前规模：\n部署\nXX台\n服务器（4核8G），在热门游戏活动期间仍面临巨大的资源压力和数据一致性挑战。\n重构前，系统是基于 C++ 的\n同步直写\n架构。这就好比你去银行存钱，柜员（服务器线程）必须当着你的面（同步），跑去金库（CMEM），确认金额，存进去，然后再跑回来告诉你“好了”。 如果是平时还好，但到了腾讯旗下国民级体量的游戏搞活动时，成千上万个玩家同时挤在柜台前，甚至同一个玩家的多个行为并发上报（比如同时触发“登录”和“等级提升”），面临的压力就非常大。\nC++ 老代码在处理这种并发时，采用的是乐观锁 CAS（Compare-And-Swap）机制。\n痛点很明显：\n资源利用率低：\n大量线程阻塞在 I/O 等待上，为了维持并发度，我们不得不往上堆服务器规模。\nCAS 碰撞惨烈：\n在\nCAchieveSetImpl::ProcessData\n中，多个线程同时抢占同一个用户的版本号，谁手快谁赢，手慢的只能报错重试或者丢弃。\n02\n架构演进：从“大乱斗”到“流水线”\n2.1\n痛点：同步直写的“大乱斗”\n在 C++ 旧版本中，我们的处理模型是典型的同步阻塞： Request→ProcessData\n→ Get(CAS Ver)\n→\nCalc\n→\nCommit(CAS Ver)。这就像 10 个线程同时去抢这一个数据版本号，只要有一个线程\nCommit\n成功，版本号变更，其余 9 个线程的\nCommit\n就会因为版本不一致而失败，导致大量的 CPU 浪费在无效计算和重试上。\n2.2\n破局：Kafka 分区的“单行道”\n重构的核心在于引入\nKafka\n并利用其\nPartition\n机制。我们将用户的 UIN 作为 Partition Key，确保同一个用户的请求永远落在同一个 Partition。 而后端的 Go 服务作为 Consumer，单协程顺序读取 Partition 数据。\n在物理层面，我们将“并发写”变成了“串行写”。\n03\n代码重构： 系统的“减脂增肌”\n架构决定上限，但代码细节决定下限。让我们把镜头拉近，看看 C++ 和 Go 在处理核心逻辑时的“降维打击”。\n3.1\n消失的 CAS 噩梦\n虽然新架构依然保留了 CAS 机制作为兜底防线，但两者的生存环境天差地别。\nC++ (achieve_set_impl.cpp):\n在 ProcessData 中，业务逻辑与存储 IO 高度耦合。代码先执行 oDs.Get 获取数据，经过一堆 UpdateOriginType 计算后，调用 oDs.QuickCommit。\n问题： 在 Get 和 Commit 之间的时间窗口（Time Window），其他线程随时可能修改数据，导致 QuickCommit 频繁返回失败，日志中充斥着大量的重试错误。\nGo (achieve.go):\n代码结构看似类似：GetAchieveData\n→\n逻辑处理\n→\nProxy.Set(... WithSetCas(cas))。\n优化： 得益于 Kafka 的串行化，当 Go 协程拿到数据时，几乎没有其他协程在竞争同一个 Key。这里的 CAS 仅仅是为了防止极端情况（如重平衡）下的数据覆盖，冲突率从重构前的两位数百分比降至接近 0%。代码逻辑变得异常纯粹：\n// Go 版本的逻辑：清晰、自信\nfunc\n(a *Achieve)\nProcessAchieveData(...)\nerror\n{\n// 1. 获取数据 (因为串行，这里的 CAS 版本号极大概率是最新的)\ncas, memAchieveInfo, err := a.GetAchieveData(ctx, cmemKey)\n// 2. 内存计算 (更新逻辑与 C++ 保持一致，但没有了锁的焦虑)\n// ...\n// 3. 落库 (这一步几乎不会因为 CAS 失败)\nif\nchanged {\na.Proxy.Set(ctx, cmemKey, memAchieveInfo, ..., WithSetCas(cas))\n}\n}\n3.2\n复杂用户数据的分裂\n当用户成就数据过大时，我们需要将其拆分存储到子 Key 中。这部分逻辑的重构，充分体现了 Go 在数据结构操作上的便捷性。\nC++ 的“迭代器地狱”：\n在\nClearOldAchieveInfo\n中，为了保留最新的 100 条数据，C++ 代码不得不创建一个\nmultimap\n，将\nlLastModifyTime\n作为 Key 进行排序。\n// C++ 代码片段：为了排序不得不折腾一遍 multimap\nmultimap<\nlong\nlong\n, SGCAchievePlayer> mapAllPlayerInfo;\nfor\n(; it != mapAllData.\nend\n(); ++it) {\nmapAllPlayerInfo.\ninsert\n(\npair\n<\nlong\nlong\n, SGCAchievePlayer>(stAchieveData.lLastModifyTime, it->first));\n}\n// 然后反向迭代器遍历删除...\n这种写法不仅内存开销大（这就解释了为什么旧服务需要 8G 内存），而且迭代器失效（Iterator Invalidation）的风险极高。\nGo 的“优雅切片”：\n同样的逻辑在 Go 的\nfillOldAchieveInfo\n中，我们利用\nsort.Slice\n轻松搞定：\n// Go 代码片段：原生切片排序，清爽自然\nsort.Slice(playerDataList,\nfunc\n(i, j\nint\n)\nbool\n{\nreturn\nplayerDataList[i].data.LLastModifyTime > playerDataList[j].data.LLastModifyTime\n})\n// 直接切片操作，无需额外的复杂容器\n逻辑更直观，内存抖动更小，代码量减少了近 40%。\n3.3\n数据合并策略优化\n通过按角色(player)维度对上报消息分组，并按时间戳排序，确保每个type类型只保留最新数据。这种合并策略将原本可能产生的多次CAS竞争减少为单次操作。\n// 按角色分组 + 时间戳排序 + 智能合并\ntype\nitemWithTS\nstruct\n{\nitem achieve.SAchieveReportItem\nts\nint64\n// Kafka消息的时间戳\n}\nfunc\n(a *AchievesLogic)\nReportAchieveData(ctx context.Context, aMsgs []*model.AchieveMsg) {\nplayerItems :=\nmap\n[common.SGCAchievePlayer][]*itemWithTS{}\n// 1. 按角色(平台+区+服+角色ID)分组\nfor\n_, aMsg :=\nrange\naMsgs {\nplayer, items := parseReportData(aMsg)\nplayerItems[player] =\nappend\n(playerItems[player], items...)\n}\n// 2. 每个角色的数据按时间戳倒序排列(新的在前)\nfor\n_, items :=\nrange\nplayerItems {\nsort.Slice(items,\nfunc\n(i, j\nint\n)\nbool\n{\nreturn\nitems[i].ts > items[j].ts\n})\n}\n// 3. 去重:同一个type只保留最新的\nfor\nplayer, items :=\nrange\nplayerItems {\nexistType :=\nmap\n[\nint32\n]\nstruct\n{}{}\ntypesTS :=\nmap\n[\nint32\n]\nint64\n{}\n// 记录每个type的最新时间戳\nmergedVecData := []achieve.SAchieveReportItem{}\nfor\n_, item :=\nrange\nitems {\nif\n_, ok := existType[item.item.IType]; ok {\ncontinue\n// 已经有更新的了,跳过\n}\ntypesTS[item.item.IType] = item.ts\nexistType[item.item.IType] =\nstruct\n{}{}\nmergedVecData =\nappend\n(mergedVecData, item.item)\n}\n// 4. 合并后的数据\nreportData := aMsgs[\n0\n].Data\nreportData.VecData = mergedVecData\nerr := a.Store.ProcessAchieveData(ctx, reportData, typesTS)\n}\n}\n04\n战果：用数据说话\n这次重构不仅是语言的迁移，更是对系统吞吐模型的重塑。\n1、资源成本骤降 82%\n从最初的堆服务器规模承压，到现在的服务器规模大幅减少。\n分析：\nGo 的 Goroutine 极大地降低了 IO 等待时的上下文切换开销，配合 Kafka 的削峰填谷，我们用\n26% 的算力\n支撑起了同样的业务量。\n2、稳定性指标跃升\nCAS 写入错误率：\n99.9% 消除。\n接口平均耗时：降低 40%（省去了无效的 CAS 重试时间）。\n指标\n重构前\n重构后\n优化幅度\n服务器数量\nxxx台\nxx台\n减少82%\nCPU核数\nxxx核\nxxx核\n减少73%\n内存规格\nxxxxG\nxxxG\n减少91%\n综合成本\n-\n-\n减少82%\n3、告警与监控能力提升\n告警降噪：\n之前大量由 CAS 冲突引发的“无效”告警被彻底清除，告警系统真正聚焦于底层存储异常或业务逻辑错误，提升了告警的\n有效性与优先级。\n关键指标细化：\n基于\n伽利略\n的监控指标集成，我们能够更精细地监控 Kafka 消费延迟、Goroutine 数量、内存分配等微观指标，对服务健康度有了\n更深层次的洞察。\n4、掌控核心业务数据大盘，实现精细化运营\n除了底层的系统指标，我还主导建设并完善了整个成就系统的业务大盘监控。通过对 Kafka 队列中流转的成就数据进行实时聚合和可视化，我们得以：\n核心业务指标一目了然：\n大盘能清晰展示\n“当日成就上报总量 ”、“当日上报用户总数”。\n这使得运营和产品团队能够实时掌握游戏活跃度与玩家行为情况，为决策提供数据支撑。\n实时趋势洞察\n： 通过\n“上报对量趋势”\n图，我们可以直观地看到流量波动，及时发现异常峰谷，预判业务走势。这在大型活动上线时尤为关键，能够提前做好扩容或限流预案。\n精细化运营支持：\n大盘还提供了按\nAPPID\n分类的数据，例如\n“APPID 上报量 Top 10”\n和\n“APPID 上报用户数 Top 10”\n。这使得我们能迅速识别出哪些游戏是核心流量来源、哪些游戏的玩家最为活跃，从而为运营策略调整和资源倾斜提供精确的数据依据。\n05\n写在最后\n从 C++ 到 Go，从同步直写到异步队列，这次重构本质上是一次\n“用架构空间换取计算时间”\n的胜利。\n我们不再让 CPU 在无休止的锁竞争和 IO 等待中空转，而是让每一行代码都运行在有效的业务逻辑上。这些服务器的轻装上阵，不仅承载了现有的业务压力，更为未来更高并发的游戏活动留足了想象空间。 对于后端工程师而言，最爽的时刻莫过于：看着监控大盘的流量波澜不惊，而服务器列表却缩减了一整页。\n-End-\n原创作者｜\n陈颀玮\n感谢你读到这里，不如关注一下？\n👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。2月5日中午12点开奖。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.25,
+        "transfer_business": 0.01,
+        "peripheral": 0,
+        "irrelevant": 0.74,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.41,
+      "probabilities": {
+        "0": 0.29,
+        "1": 0.02,
+        "2": 0.69,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.44,
+      "probabilities": {
+        "0": 0.49,
+        "1": 0.06,
+        "2": 0.08,
+        "3": 0.26,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.47,
+      "probabilities": {
+        "0": 0.83,
+        "1": 0.03,
+        "2": 0.05,
+        "3": 0.03,
+        "4": 0.04,
+        "5": 0.02
+      }
+    },
+    "evidence": {
+      "score": 3.17,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.29,
+        "3": 0.24,
+        "4": 0.47000000000000003,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.14,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.05,
+        "2": 0.06,
+        "3": 0.15,
+        "4": 0.6,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 1.09,
+      "probabilities": {
+        "0": 0.39999999999999997,
+        "1": 0.26,
+        "2": 0.18,
+        "3": 0.14,
+        "4": 0.01,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5459,
+    "outputTokens": 173,
+    "totalTokens": 5632
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.67,
+        "relevance": 0.6,
+        "grounding": 0.04,
+        "decision_action": 0.69,
+        "evidence": 0.45,
+        "actionability": 0.39,
+        "anti_hype": 0.27
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180033114,
+                "endTime": 1791180033263,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000229278",
+      "marketCost": "0.000229278",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000229278",
+      "inferenceCost": "0.000229278",
+      "inputInferenceCost": "0.000229278",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACK25NWF2S2XXSYGRTG62"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:33 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7cpgq-1791180033078-4a5e26914ace"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.25,
+            "transfer_business": 0.01,
+            "peripheral": 0,
+            "irrelevant": 0.74,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.41,
+          "probabilities": {
+            "0": 0.29,
+            "1": 0.02,
+            "2": 0.69,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.44,
+          "probabilities": {
+            "0": 0.49,
+            "1": 0.06,
+            "2": 0.08,
+            "3": 0.26,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.47,
+          "probabilities": {
+            "0": 0.83,
+            "1": 0.03,
+            "2": 0.05,
+            "3": 0.03,
+            "4": 0.04,
+            "5": 0.02
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.17,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.29,
+            "3": 0.24,
+            "4": 0.47000000000000003,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.14,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.05,
+            "2": 0.06,
+            "3": 0.15,
+            "4": 0.6,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.09,
+          "probabilities": {
+            "0": 0.39999999999999997,
+            "1": 0.26,
+            "2": 0.18,
+            "3": 0.14,
+            "4": 0.01,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5459,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.67,
+            "relevance": 0.6,
+            "grounding": 0.04,
+            "decision_action": 0.69,
+            "evidence": 0.45,
+            "actionability": 0.39,
+            "anti_hype": 0.27
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180033114,
+                    "endTime": 1791180033263,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000229278",
+          "marketCost": "0.000229278",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000229278",
+          "inferenceCost": "0.000229278",
+          "inputInferenceCost": "0.000229278",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACK25NWF2S2XXSYGRTG62"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:32.505Z"
+  }
+}

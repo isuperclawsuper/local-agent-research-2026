@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1142557410783657984",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "两个字符让Django接口快了8倍：一次险些翻车的线上性能排查实录",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695850&idx=1&sn=ecfbc2739caa6d9ebda151aadc400c8a",
+      "date": "2026-06-05T00:45:00.974Z",
+      "chars": 11191,
+      "text": "成帅涵\n2026-06-05 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n“在掌握数据之前就下结论，是最大的错误。人会不知不觉地扭曲事实，让事实去迎合理论，而不是让理论服从事实。”  阿瑟·柯南·道尔，《波希米亚丑闻》，夏洛克·福尔摩斯\n事情是怎么炸出来的\n5月某日下午，某直播业务监控系统开始告警，外部模块请求OSS的数据API出现抖动，成功率大幅下降。\n出问题的接口是\nget_svr_info\n。\n它跑在直播运营系统 OSS 里。项目本身很有年代感：Python 2.7.5、Django 1.11.3、MySQL 5.5。物理机，单体服务，十年前的技术栈，十年前的写法。没有k8s，没有微服务。它立项的时候，Python 3还没稳定，Django 2.0还是社区的讨论稿。\nget_svr_info\n的任务很简单：外部系统问“某个平台有哪些服务器”，它就把服务器信息查出来返回。\n问题在于，全量场景时，它一次可能返回 10000+ 台设备，响应体最大约 7MB。外部模块又会高频调用。\n我早就知道它慢在哪里。\n至少，我以为我知道。\n老代码大概是这种形态：\nclass\nGetServerInfoView\n(\nView\n):\ndef\nget\n(\nself\n, request\n):\nresult = {\n\"code\"\n:\n0\n,\n\"msg\"\n:\n\"ok\"\n,\n\"servers\"\n: []}\n# 一次查出很多 Server model 对象\nqueryset =\nServer\n.objects.filter(...)\n# 每个 model 对象再转换成对外返回的 dict\nresult[\n\"servers\"\n] = [\nself\n.gen_server_info(server)\nfor\nserver\nin\nqueryset\n]\nreturn\nStreamingHttpResponse\n(\njson.dumps(result),\ncontent_type=\n\"application/json\"\n,\n)\ndef\ngen_server_info\n(\nself\n, server\n):\nreturn\n{\n\"ip\"\n: server.outer_ip,\n\"lan_ip\"\n: server.inner_ip,\n\"idc_name\"\n: server.idc_name,\n\"isp_name\"\n: server.isp,\n\"status\"\n: server.status,\n# 还有一堆服务器字段...\n}\n看懂这段不需要懂业务。\n它的问题很朴素：\n一次查很多行。\nDjango ORM 把每行变成一个 model 对象。\nPython 再通过\nserver.xxx\n一个字段一个字段读。\n每台设备再重新构造一个 dict。\n最后把整个大 JSON 丢给\nStreamingHttpResponse\n。\n我的判断是：这是典型老 Django 项目的 ORM 对象构造开销。\nDjango 从数据库拿到原始行数据后，会为每一行创建一个 Server model 实例，把字段值转换成 Python 对象并填到实例属性里；后面\ngen_server_info()\n再通过\nserver.outer_ip\n、\nserver.idc_name\n这类属性访问把值读出来，重新组装成 dict。数据量一大，这些 model 实例创建、字段转换、属性访问和 dict 重建都会变成实实在在的 CPU 消耗。\n这个问题过去不是没人知道，只是一直能跑。\n老系统里最常见的债就是这样：不是不想还，是它一直没把桌子掀了。既然没掀桌，那就先让它继续坐着。\n直到 5 月 7 日，外部模块扩容了 30%，QPS 也增加了 30%。\n请求压力一上来，\nget_svr_info\n的抖动就冒出来了。\n大家一边盯着智研曲线，一边快速沟通回退方案。紧急取消扩容，把新增压力撤掉。监控指标很快恢复正常，成功率也拉了回来。\n那口气才算松下来：年终奖保住了。\n系统稳住以后，团队成员开始复盘。\n接下来就该还技术债了。\n我说：这个接口我知道，老代码一直有性能问题，主要是 ORM model 对象和 dict 构造的 CPU 开销。我们把它改成\nvalues()\n，让数据库结果直接变成 dict，再减少字段查询，应该很快就能解决。\n于是我写下需求单：优化\nget_svr_info\n接口性能。\n这是故事开始的地方。\n01\n第一刀：把 ORM model 改成 values 直出\n第一反应，是把老代码里最重的部分干掉。\n以前是这样：\nqueryset\n= Server.objects.filter(...)\nservers\n= [\nself.gen_server_info(server)\nfor server in queryset\n]\n这里的 server 是 Django model 实例。\n每个实例都要构造对象，每个字段都要通过属性访问拿出来。全量 10000+ 台设备时，这种写法就像在 CPU 上铺了一层地毯，走一步粘一下。\n优化后改成这样：\nrows\n=\nServer.objects.filter(...).\nvalues\n(\n*\ndb_fields)\nservers\n=\n[\nself.row_to_output(\nrow\n)\nfor\nrow\nin\nrows\n]\nvalues()\n返回的是 dict。\n它为什么能降低 CPU 消耗？\n简单说，Django 正常查询 model 时，会把数据库返回的每一行包装成一个 model 实例。这个过程不只是“拿数据”，还包括创建 Python 对象、填充字段、处理描述符、准备属性访问等步骤。\n而\nvalues()\n不构造完整 model 实例，它直接返回普通 dict。我们只要字段值，不需要 model 上的各种能力，比如\nsave()\n、关系对象、字段描述符。既然用不上，就没必要付这笔 CPU 账。\n这就像去仓库拿货。\nmodel 实例是把货装进精美礼盒，再贴标签，再附说明书。\nvalues()\n是直接把货装进袋子递给你。\n我们这个接口只是把服务器信息读出来返回，袋子就够了。\n然后进一步可以得出结论：既然已经是 dict 了，为什么还要重新构造一个新 dict？\n老逻辑是这样：\ndef\ngen_server_info\n(\nserver\n):\nreturn\n{\n\"ip\"\n: server.outer_ip,\n\"lan_ip\"\n: server.inner_ip,\n\"idc_name\"\n: server.idc_name,\n\"isp_name\"\n: server.isp,\n\"status\"\n: server.status,\n# 很多字段...\n}\n这意味着每台设备都会创建一个新的 dict。\n10000+ 台设备，就是 10000+ 个 dict。每个 dict 里几十个 key。CPU 和内存分配都不免费。\n所以我把它改成尽量复用\nvalues()\n返回的 dict，原地改字段名、补常量、做少量转换：\ndef row_to_output(\nrow\n):\nif \"outer_ip\"\nin\nrow\n:\nrow\n[\"ip\"]\n=\nrow.pop(\"outer_ip\")\nif \"inner_ip\"\nin\nrow\n:\nrow\n[\"lan_ip\"]\n=\nrow.pop(\"inner_ip\")\nif \"isp\"\nin\nrow\n:\nrow\n[\"isp_name\"]\n=\nrow.pop(\"isp\")\nreturn\nrow\n这就是当时最有信心的点：让数据库直接吐 dict，Python 少造对象，少搬字段，少做无意义劳动。\n除了这个，我还做了字段裁剪。\n以前调用方哪怕只要\nip\n，数据库也可能先把一堆字段都查出来，再由 Python 过滤。优化后先根据\nfields\n反推真正需要的数据库字段：\nOUTPUT_TO_DB = {\n\"ip\"\n:\n\"outer_ip\"\n,\n\"lan_ip\"\n:\n\"inner_ip\"\n,\n\"idc_name\"\n:\n\"idc_name\"\n,\n\"idc_id\"\n:\n\"idc_name_id\"\n,\n\"isp_name\"\n:\n\"isp\"\n,\n\"status\"\n:\n\"status\"\n,\n}\ndef\nresolve_fields\n(\nfields\n):\noutput_fields = {\n\"ip\"\n,\n\"lan_ip\"\n,\n\"idc_name\"\n,\n\"isp_name\"\n,\n\"status\"\n}\ndb_fields =\nset\n()\nfor\nfield\nin\noutput_fields:\ndb_field = OUTPUT_TO_DB.\nget\n(field)\nif\ndb_field:\ndb_fields.\nadd\n(db_field)\nreturn\noutput_fields, db_fields\n到这里，我的心态基本是：稳了。\n老 ORM 问题修了，dict 构造也省了，字段也少查了。\n这不得起飞？\n02\n第一盆冷水：只快了 1.12 倍\n为了避免“我觉得很快”的玄学，我写了一个对比脚本。\n脚本做两件事。\n第一，用现网真实的字段组合请求优化前和优化后的逻辑，每组跑多次，记录平均耗时。\n第二，对返回数据做一致性校验。因为这是给外部模块用的老接口，优化可以快，但不能改返回。\n结果第一眼还行：\n14\nok /\n14\ntotal\ntotal\nfield diffs =\n0\n说明返回数据没变。\n第二眼就不太行：\noverall\nspeedup =\n1\n.\n12\nx\n只快了 1.12 倍。\n当场沉默。\n更麻烦的是，越大的响应越没效果。\n小平台、小字段，约 75KB，能有 1.34x。\n小平台、全字段，约 700KB，反而只有 0.94x。\n全量场景、全字段，约 7MB，只有 1.03x。\n如果 ORM 和 dict 构造是最大瓶颈，数据越多，优化应该越明显。\n但实测刚好相反。\n响应越大，优化越没用。\n这就是第一次打脸。\n03\n第二轮怀疑：是不是 JSON 太大？\n既然 7MB 响应很大，我开始怀疑 JSON 序列化。\nPython 标准库自带\njson.dumps\n，稳定、通用、兼容性好。但它不是为极限性能设计的。\nujson\n是 UltraJSON 的简称，是一个更快的 JSON 编解码库，底层用 C 实现，在大 JSON 场景下通常比标准库更快。它很适合这种“大量 dict/list 转 JSON 字符串”的接口。\n于是我把主路径从标准库\njson.dumps\n换成\nujson.dumps\n：\ntry\n:\nfrom\nujson\nimport\ndumps\nas\nfast_dumps\nexcept\nImportError:\nfast_dumps = json.dumps\n再跑。\n整体 speedup 从\n1.12x\n到\n1.23x\n。\n有提升，但不多。\n这说明\njson.dumps\n确实有成本，但不是那个 13 秒大洞。\n就像你家漏水，你换了个更快的拖把，地是干了一点，但水管还在喷。\n04\n第三轮怀疑：是不是网络太慢？\n7MB 响应，听起来很像网络问题。\n这个项目的请求链路大概是：\nclient\n-> nginx -> uWSGI -> Django view\nDjango view 负责执行业务逻辑，uWSGI 负责承载 Python Web 应用，nginx 站在最前面做反向代理、连接管理和一些 HTTP 层能力。\n既然响应体很大，我开始看 nginx 能不能帮忙。\nJSON 很适合压缩，字段名重复，结构重复。于是我在 nginx 里打开 gzip，让 nginx 对接口响应做压缩：\nlocation\n/get_svr_info {\nuwsgi_pass\n127.0.0.1:8888\n;\ninclude\nuwsgi_params;\ngzip\non\n;\ngzip_types\napplication/json;\ngzip_proxied\nany;\ngzip_comp_level\n5\n;\ngzip_min_length\n1024\n;\n}\ngzip 确实生效。\n7MB 响应压到了约 400KB，压缩比 17.5x。\n但耗时不漂亮：\n不压缩：\nSize\n7\n,\n007\n,\n734\nB\nTTFB\n1.07s\nTotal\n13.67s\ngzip：\nSize\n400\n,\n155\nB\nTTFB\n3.05s\nTotal\n14.85s\n压缩生效了。\n接口更慢了。\n这事非常反直觉。\n如果真是网络慢，7MB 变 400KB，不说飞起来，至少应该明显变快。结果它不仅没快，还更慢。\n这时候我意识到：错了，我一直在错的地方挖坑。\n05\n第四轮证据：本机回环也只有 573KB/s\n要判断是不是网络问题，最简单的办法是让请求在服务端本机发起。\n也就是直接在预发布机器上\ncurl\n自己，让流量走\nlo\n回环网卡。\n命令大概这样：\ncurl\n-s -o /dev/null\n\\\n-H\n\"Accept-Encoding: identity\"\n\\\n-w\n\"TTFB: %{time_starttransfer}s | Total: %{time_total}s | Speed: %{speed_download} B/s\\n\"\n\\\n\"$GET_SVR_INFO_URL\"\n输出非常关键：\nTTFB\n:\n0\n.\n995\ns\nTotal\n:\n12\n.\n221\ns\nSize\n:\n7007734\nbytes\nSpeed\n:\n573431\nB/s\n本机回环，只有 573KB/s。\n这就不对了。\nlo\n网卡不是小水管，它通常是 GB/s 级别。外部机器请求大概 512KB/s，本机请求大概 573KB/s，两者几乎一个量级。\n这说明：慢不在外部网络，慢在服务端把响应体吐出来的过程。\n到这里，“网络慢”“带宽不够”“gzip 能救”这些猜想基本都可以先放下。\n06\nTTFB 把真凶圈出来了\n这次最关键的数字不是 Total，而是 TTFB。\nTTFB 是从发起请求到收到第一个字节的时间。\nTotal 是整个响应下载完成的时间。\nTotal 减去 TTFB，大致就是第一个字节之后，body 传完的时间。\n7MB 场景里：\nTTFB\n≈\n1\n.\n0\ns\nTotal\n≈\n13\n.\n6\ns\n这意味着 SQL、ORM、dict 转换、JSON 序列化，基本都在第一个 1 秒里完成了。\n剩下 12 秒多，不是在“生成 JSON”，而是在“把已经生成好的 JSON 发出去”。\n于是问题变成：一个已经在内存里的 7MB 字符串，为什么要花 12 秒才能发完？\n我重新盯着老代码最后一行：\neturn\nStreamingHttpResponse\n(\njson.dumps(result\n), content_type\n=\n\"application/json\"\n)\n然后突然反应过来：\njson.dumps(result)\n是字符串。\nStreamingHttpResponse\n要的是可迭代对象。\n而 Python 字符串，本身就是可迭代对象。\nlist(iter(\"hello\"))\n#\n[\n\"h\"\n,\n\"e\"\n,\n\"l\"\n,\n\"l\"\n,\n\"o\"\n]\n真相浮出水面。\n07\n真凶：以为在流式输出，其实是假流式\n旧代码用了\nStreamingHttpResponse\n。\n从名字看，它很像是在做流式输出。听起来很专业，也很适合大响应。\n但这里的问题是：代码并没有真正分块生成数据。\n它先把所有服务器数据查完，再把完整结果\njson.dumps\n成一个 7MB 字符串，最后把这个完整字符串传给\nStreamingHttpResponse\n。\n这不是真流式。\n这是假流式。\nDjango 1.11 里的逻辑可以简化成这样：\nclass\nStreamingHttpResponse\n(\nHttpResponseBase\n):\ndef\n_set_streaming_content\n(\nself\n, value\n):\nself\n._iterator = iter(value)\n@property\ndef\nstreaming_content\n(\nself\n):\nreturn\nmap(\nself\n.make_bytes,\nself\n._iterator)\n如果你传的是 list：\nStreamingHttpResponse(\n[\n\"hello\"\n]\n)\n它迭代一次，吐出\n\"hello\"\n。\n如果你传的是字符串：\nStreamingHttpResponse\n(\n\"hello\"\n)\n它迭代 5 次，分别吐出\n\"h\"\n、\n\"e\"\n、\n\"l\"\n、\n\"l\"\n、\n\"o\"\n。\n功能上完全正确。\n客户端最后拿到的 body 还是\n\"hello\"\n。\n但性能上非常要命。\n7MB JSON 大约 700 万个字符。\nStreamingHttpResponse(big_string)\n会让 Django、uWSGI、nginx 这条链路处理接近 700 万个小 chunk。每个字符都要过一遍\nmake_bytes()\n，再交给后面的链路。\n这就像你要搬一箱水，本来可以整箱抱走，结果系统特别认真地帮你一滴一滴递。\n态度很好。\n效率感人。\n这也解释了所有反常现象。\nTTFB 只有 1 秒，是因为 JSON 其实很快生成了。\nTotal 要 13 秒，是因为大量时间花在逐字符输出。\n响应越大越慢，是因为字符越多，迭代次数越多。\ngzip 反而更慢，是因为上游逐字符慢慢吐，nginx 还要额外做压缩。\n本机回环也慢，是因为瓶颈在 Python/uWSGI 输出，不在物理网络。\n到这里，我一开始的判断就变成了半对半错。\nORM 有问题，dict 构造也有问题。\n但它们不是最大的雷。\n最大的雷，是这行看起来很专业的\nStreamingHttpResponse\n。\n08\n正确的 StreamingHttpResponse 应该怎么用\nDjango 官方文档对\nStreamingHttpResponse\n的定位很明确：它用于把响应内容以 iterator 的形式流式传给浏览器，适合大文件下载、持续生成内容、或者不想把全部内容一次性放进内存的场景。\n官方文档里也强调，它和\nHttpResponse\n不同，使用的是\nstreaming_content\n，也就是一个可迭代内容。\n文档链接：Django StreamingHttpResponse 官方文档\n（\nhttps://docs.djangoproject.com/en/1.11/ref/request-response/#streaminghttpresponse）\n真正适合\nStreamingHttpResponse\n的代码应该长这样：\ndef\nstream_servers\n():\nyield\n'{\"servers\":['\nfirst =\nTrue\nfor\nbatch\nin\nquery_server_batches():\nfor\nserver\nin\nbatch:\nif\nnot\nfirst:\nyield\n\",\"\nfirst =\nFalse\nyield\njson.dumps(server)\nyield\n\"]}\"\n;\nreturn\nStreamingHttpResponse(\nstream_servers(),\ncontent_type=\n\"application/json\"\n,\n)\n这个例子里，数据是一边查、一边生成、一边 yield。\n这才叫流式。\n而我们的旧代码是：\nbig_json\n=\njson.dumps(\nresult\n)\nreturn\nStreamingHttpResponse(big_json, content_type\n=\n\"application/json\")\n它已经把完整 JSON 放进内存了，再交给\nStreamingHttpResponse\n。\n这不是流式输出。\n这是把一个大字符串交给 Django，让 Django 按字符串的迭代规则逐字符输出。\n09\n修复：一对方括号，两个字符，快了8倍。\n最小修复非常小：\n# 错误：字符串会被逐字符迭代\nreturn\nStreamingHttpResponse(big_json, content_type=\n\"application/json\"\n)\n# 正确：list 只迭代一次\nreturn\nStreamingHttpResponse([big_json], content_type=\n\"application/json\"\n)\n这一对方括号，就是标题里的“两个字符”。\n两种写法，客户端拿到的 body 完全一样。\n区别只在服务端怎么输出。\nStreamingHttpResponse(\"...7MB...\")\n会按字符迭代，约 700 万次输出。\nStreamingHttpResponse([\"...7MB...\"])\n会按 list 迭代，1 次输出完整字符串。\n最终修复时，我选择更直接的写法：\nreturn\nHttpResponse(fast_dumps(\nresult\n), content_type\n=\n\"application/json\")\n因为\nget_svr_info\n并不是真流式接口。\n它本来就是先查完、组装完、序列化完，再一次性返回。既然没有真正分块生成，就没必要挂着\nStreamingHttpResponse\n的名头。\n不要把一个完整大字符串塞进去假装 streaming。\n这不是流式，这是逐字朗读。\n10\n最终结果：13.6 秒降到 1.7 秒\n修复后，用测试脚本重新跑：\nAggregate\n:\n14\nok /\n14\ntotal\noverall\nspeedup =\n4\n.\n00\nx\ntotal\nfield diffs =\n0\n这组数据最有意思的地方，不是每个场景都变快，而是“越大的响应，提升越夸张”。\n最大的一组，全量字段，响应体约 7.0MB。定位到假流式问题之前，优化版仍然要 13593ms；修复之后只要 1731ms。单看这一刀就是 7.85x；如果和原始版本比，是 8.21x。\n另一组全量 8 字段，响应体约 2.6MB。耗时从 5400ms 降到 1049ms，提升 5.15x，相比原始版本提升 6.00x。\n全量 7 字段，响应体约 2.3MB。耗时从 5047ms 降到 997ms，提升 5.06x，相比原始版本提升 5.97x。\n再看小一点的响应，全量小字段，响应体约 662KB。耗时从 1986ms 降到 894ms，提升 2.22x，相比原始版本提升 3.52x。\n小平台全量字段，响应体约 645KB。耗时从 1861ms 降到 674ms，提升 2.76x。\n小平台只返回\nip,isp\n这类小字段，响应体约 67KB。这个场景本来就不大，最终优化版是 614ms，相比原始版本提升 1.47x。\n规律非常清楚：\n响应越大，提升越明显。\n这正好符合\nStreamingHttpResponse(big_string)\n的问题特征：性能损耗和字符数成正比。\n核心变化可以概括成三类：\nStreamingHttpResponse(json.dumps(result))\n改成\nHttpResponse(fast_dumps(result))\n。\nORM model 实例迭代改为\n.values()\n，减少对象构造和点属性访问。\n根据 fields 裁剪 DB 字段，并尽量复用\nvalues()\n返回的 dict 原地输出。\n这三类优化里，第一类贡献最大。\n后两类也有价值，但它们更像是给发动机换了好机油；真正让车跑不起来的，是轮子上还拴着一根铁链，名字叫\nStreamingHttpResponse(big_string)\n。\n11\n本次排查总结的经验\n11.1\n经验能提出假设，数据负责打脸\n我一开始的经验判断不是完全错。\nvalues()\n有用。\n字段裁剪有用。\n减少 dict 构造也有用。\n但这些都不是最大瓶颈。\n如果只凭经验，我可能会继续在 ORM 上抠细节，甚至开始怀疑 MySQL、索引、网络、机器负载。\n真正把方向扭过来的，是 TTFB 和本机回环测试。\n11.2\nTTFB 是 HTTP 接口性能排查的快刀\n一行命令就能把时间切开：\ncurl -w\n\"\nTTFB:  %{time_starttransfer}s\nTotal: %{time_total}s\nSize:\n%{size_download}\nbytes\nSpeed:\n%{speed_download}\nB/s\n\" -o /dev/null\n\"\n$URL\n\"\n如果 TTFB 接近 Total，重点看服务端处理，比如 SQL、RPC、序列化。\n如果 TTFB 很小，但 Total 很大，重点看 body 输出、网络传输、代理缓冲、压缩。\n这次\nTTFB 1s / Total 13s\n，其实早就告诉我：SQL 和 ORM 不是最大头。\n只是我一开始太相信自己了。\n11.3\n老代码最可怕的是“看起来没错”\n这行代码错不明显：\nreturn\nStreamingHttpResponse(json.dumps(\nresult\n), content_type\n=\n\"application/json\")\n它不报错。\n它返回正确。\n它上线很多年。\n它甚至看起来还挺高级，毕竟名字里有\nStreaming\n，让你以为“我们已经对大量数据场景做过流式优化了”。\n但它会把 7MB 字符串变成 700 万次小输出。\n这类问题最危险，因为它不会立刻炸。它只是稳定地慢，一直慢到某天流量上来，把系统拖下水。\n12\n写在最后\n这次最有意思的地方，是我一开始非常自信。\n我知道这个接口有老问题：10000+ 台设备，一次查询，走 ORM，对象构造重，dict 转换也重。\n我也确实把这些问题改了。\n但真正让接口从 13.6 秒降到 1.7 秒的，是最后发现的那个隐藏炸弹：\nStreamingHttpResponse(json.dumps(big_data))\n它把一个完整大字符串，当成可迭代对象逐字符输出。\n最终结果：\n全量场景：\n13.6\ns\n->\n1.7\ns\n最大场景提升：\n8.21\nx\n整体平均提升：\n4.00\nx\n数据一致性：\n14\n/\n14\nMATCH\n这次排查最有价值的地方，不是最后改对了哪一行代码。\n而是它再次提醒我：性能问题不能靠资历投票，也不能靠直觉结案。\n需求只是起点，经验只是猜想，数据才是答案。\n再说得朴素一点：\n拍胸脯之前，先跑\ncurl -w\n。\n-End-\n原创作者｜成帅涵\n感谢你读到这里，不如关注一下？👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。6月12日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.07,
+        "direct_local": 0,
+        "irrelevant": 0.93,
+        "peripheral": 0
+      }
+    },
+    "relevance": {
+      "score": 1.47,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.02,
+        "2": 0.72,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.35,
+      "probabilities": {
+        "0": 0.58,
+        "1": 0.03,
+        "2": 0.07,
+        "3": 0.13,
+        "4": 0.17,
+        "5": 0.02
+      }
+    },
+    "decision_action": {
+      "score": 0.94,
+      "probabilities": {
+        "0": 0.71,
+        "1": 0.05,
+        "2": 0.03,
+        "3": 0.07,
+        "4": 0.08,
+        "5": 0.06
+      }
+    },
+    "evidence": {
+      "score": 4.33,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0.66,
+        "5": 0.34
+      }
+    },
+    "actionability": {
+      "score": 4.28,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.58,
+        "5": 0.39
+      }
+    },
+    "anti_hype": {
+      "score": 3.42,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.33,
+        "4": 0.52,
+        "5": 0.07
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 9499,
+    "outputTokens": 173,
+    "totalTokens": 9672
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.91,
+        "relevance": 0.64,
+        "grounding": 0.1,
+        "decision_action": 0.38,
+        "evidence": 0.77,
+        "actionability": 0.66,
+        "anti_hype": 0.53
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791180010228,
+                "endTime": 1791180010373,
+                "providerRequestId": "6d5af7cc-8b68-4e1b-8986-39a06e2ffcee",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180010379,
+                "endTime": 1791180010591,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000398958",
+      "marketCost": "0.000398958",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000398958",
+      "inferenceCost": "0.000398958",
+      "inputInferenceCost": "0.000398958",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABWNMRPEYHYP2258Z5A4T"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:10 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::cq2bg-1791180009969-8ec8fb528158"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.07,
+            "direct_local": 0,
+            "irrelevant": 0.93,
+            "peripheral": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.47,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.02,
+            "2": 0.72,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.35,
+          "probabilities": {
+            "0": 0.58,
+            "1": 0.03,
+            "2": 0.07,
+            "3": 0.13,
+            "4": 0.17,
+            "5": 0.02
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.94,
+          "probabilities": {
+            "0": 0.71,
+            "1": 0.05,
+            "2": 0.03,
+            "3": 0.07,
+            "4": 0.08,
+            "5": 0.06
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 4.33,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0.66,
+            "5": 0.34
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.28,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.58,
+            "5": 0.39
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.42,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.33,
+            "4": 0.52,
+            "5": 0.07
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 9499,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.91,
+            "relevance": 0.64,
+            "grounding": 0.1,
+            "decision_action": 0.38,
+            "evidence": 0.77,
+            "actionability": 0.66,
+            "anti_hype": 0.53
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791180010228,
+                    "endTime": 1791180010373,
+                    "providerRequestId": "6d5af7cc-8b68-4e1b-8986-39a06e2ffcee",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180010379,
+                    "endTime": 1791180010591,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000398958",
+          "marketCost": "0.000398958",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000398958",
+          "inferenceCost": "0.000398958",
+          "inputInferenceCost": "0.000398958",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABWNMRPEYHYP2258Z5A4T"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:09.826Z"
+  }
+}

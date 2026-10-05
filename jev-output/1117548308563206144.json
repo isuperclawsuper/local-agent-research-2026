@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1117548308563206144",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "基于浏览器请求录制与AI代码生成的E2E接口自动化测试实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560132&idx=1&sn=9cc6429ef4d08a0f4d207cecf56671fd",
+      "date": "2026-05-19T00:32:00.453Z",
+      "chars": 7701,
+      "text": "原创\n康粟(陶光)\n2026-05-19 08:32\n浙江\n阿里妹导读\n以阿里云DataWorks为例，介绍如何通过浏览器录制插件捕获真实请求数据，结合AI编程工具自动生成接口封装与测试用例，解决复杂平台产品自动化测试中接口多、参数杂、数据流深的核心难题。（文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。）\n一、引言：复杂平台产品的自动化测试之痛\n在企业级软件测试领域，有一类产品让自动化测试工程师感到尤为头疼——\n复杂业务逻辑的平台型产品\n。\n以阿里云DataWorks为例，它是一个集数据开发、数据集成、数据质量、数据地图、数据服务、运维中心、数据治理等十余个子模块于一体的大型平台。这类产品有几个显著的测试难点：\n1. 接口数量庞大且无标准文档\n这类平台的前端与后端通过大量HTTP请求进行通信，涉及近20个微服务端点。这些接口大多是内部网关层封装，没有像OpenAPI那样标准化的接口文档——测试工程师想知道\"创建一个数据质量规则需要调哪个接口、传什么参数\"，唯一的办法就是打开浏览器开发者工具，手动操作一遍，然后从Network面板中找到对应请求。\n2. 接口间存在复杂的数据流依赖\n一个完整的测试场景往往需要串联5~20个接口调用。例如，测试\"创建数据质量自定义模板规则\"这一功能，需要先查询目录树，创建目录，检查名称是否冲突，再创建模板，最后查询验证——每个接口的返回值（如目录ID、模板ID）都是下一步的入参，数据流环环相扣。\n3. 多版本并行演进\n产品以季度为周期持续迭代，接口路径、参数结构、返回体格式都可能发生变化。测试框架需要同时维护多个版本的接口封装，旧版本不能动，新版本要新增。\n4. 认证机制复杂\n不同于简单的Token认证，这类平台的HTTP请求需要Cookie加CSRF Token双重认证，且不同版本的获取方式不同。\n二、传统人工编码时代：\n一个测试工程师的典型一天\n让我们回到AI辅助编码工具出现之前，看看一个测试工程师要怎样为这类平台编写一个E2E自动化测试用例。\n2.1 工作流程总览\n2.2 各阶段的具体工作\n阶段一：需求理解与抓包（约1小时）\n测试工程师首先需要理解这个测试用例要覆盖什么功能。然后打开浏览器，手动在平台上执行一遍完整的测试操作。\n这个过程中，工程师需要\n同时打开浏览器开发者工具\n，切换到Network面板，仔细观察每一步操作触发了哪些接口调用。关键问题在于：\n一次页面操作可能触发5到10个请求，其中只有1到2个是真正的业务请求，其余是心跳、静态资源、权限校验等\n工程师需要\n凭经验判断\n哪些请求是核心业务请求\n需要逐个点开请求，手动记录URL路径、请求方法、请求体结构、返回体结构\n阶段二：接口封装（约2小时）\n确认需要封装的接口后，工程师要做几件事：\n在现有代码中搜索\n：框架中有近20个接口封装模块，总计数千个方法，需要用IDE全局搜索确认是否已有同类封装\n理解HTTP请求封装模式\n：框架的HTTP请求通过统一方法发送，需要理解URL参数、Body参数的构建方式\n手动编写代码\n：将抓包得到的请求信息翻译为代码\n// 手动编写的HTTP请求封装示例\npublic\nApiResponse\ncreateQualityRule\n(\nLong\nprojectId,\nString\nruleName,\nInteger\nruleType,\nString\ncheckExpression,\nLong\ntenantId) {\nreturn\nhttpClient.\npost\n(\n\"/api/quality/rules\"\n)\n.\nqueryParam\n(\n\"projectId\"\n, projectId)\n.\nbody\n(\nnew\nJSON\nObject\n()\n.\nput\n(\n\"projectId\"\n, projectId)\n.\nput\n(\n\"ruleName\"\n, ruleName)\n.\nput\n(\n\"ruleType\"\n, ruleType)\n.\nput\n(\n\"checkExpression\"\n, checkExpression)\n.\nput\n(\n\"tenantId\"\n, tenantId)\n)\n.\nexecute\n();\n}\n这里最容易出错的地方是：\n参数名拼写错误、参数遗漏、数据类型不匹配\n。因为全程是人工从开发者工具面板中手抄过来的，一个驼峰拼写的差异就会导致接口调用失败。\n阶段三：用例编排（约1~2小时）\n接口封装完成后，需要在测试用例类中确定继承关系、编写初始化方法、将多个接口调用按正确的业务顺序编排、处理接口间的数据流（前一个接口的返回值作为后一个接口的入参）、编写断言。\n阶段四：调试修复（约1小时）\n这往往是最耗时的阶段：参数名写错导致接口返回400、数据类型不匹配导致JSON解析异常、接口调用顺序错误导致业务逻辑报错、返回体字段路径取错导致空指针。\n保守估计，传统方式编写一个中等复杂度的测试用例（涉及10到15个接口），需要5到6小时。\n三、新范式：录制插件 + AI编程的化学反应\n3.1 核心思路转变\n传统方式的本质问题在于：\n人需要充当\"接口信息的搬运工\"\n——从浏览器Network面板手动搬运到代码中。这个过程不仅低效，而且极易出错。\n新范式的核心思路是：\n让录制插件自动捕获完整的请求-响应信息，让AI自动理解这些信息并生成正确的代码。\n3.2 录制插件：从\"人眼抓包\"到\"机器捕获\"\n我们开发了一个浏览器扩展，专门用于自动捕获测试过程中的所有网络请求。\n使用流程\n从使用者的角度看，录制插件的操作极其简单：\n插件提供四按钮状态机（开始/暂停/继续/停止），并实时显示录制计数。录制过程中，插件在后台自动拦截页面发出的所有XHR/Fetch请求，捕获完整的请求体和返回体，自动过滤非业务请求（如静态资源、心跳包），并按时间戳统一排序。\n录制数据格式\n录制结果以JSON数组导出，每条记录包含完整的请求-响应对：\n[\n{\n\"method\"\n:\n\"GET\"\n,\n\"url\"\n:\n\"\nhttps://bff.example.com/api/quality/tree?projectId=100001\n\"\n,\n\"requestBody\"\n: null,\n\"responseBody\"\n:\n\"{\n\\\"\nrequestId\n\\\"\n:\n\\\"\nxxx\n\\\"\n,\n\\\"\ndata\n\\\"\n:[ ],\n\\\"\ncode\n\\\"\n:200}\"\n},\n{\n\"method\"\n:\n\"POST\"\n,\n\"url\"\n:\n\"\nhttps://bff.example.com/api/quality/catalog?projectId=100001\n\"\n,\n\"requestBody\"\n:\n\"{\n\\\"\nprojectId\n\\\"\n:100001,\n\\\"\nparentId\n\\\"\n:0,\n\\\"\nlevel\n\\\"\n:1,\n\\\"\nname\n\\\"\n:\n\\\"\n测试文件夹\n\\\"\n,\n\\\"\ntenantId\n\\\"\n:700000000000}\"\n,\n\"responseBody\"\n:\n\"{\n\\\"\nrequestId\n\\\"\n:\n\\\"\nxxx\n\\\"\n,\n\\\"\ndata\n\\\"\n:{\n\\\"\nid\n\\\"\n:12},\n\\\"\ncode\n\\\"\n:200}\"\n}\n]\n这份数据对AI来说是一份\"完美的接口说明书\"\n——它同时包含了接口路径和HTTP方法、完整的请求参数结构（字段名、类型、示例值）、完整的返回体结构（嵌套层级、字段路径），以及接口间的调用顺序和数据依赖关系。\n3.3 AI编程工具：从\"信息理解\"到\"代码生成\"\n有了录制数据后，AI编程工具可以执行以下自动化流程：\nStep 1：请求智能过滤\nAI自动识别并过滤掉非业务请求（静态资源、心跳、预检请求等），只保留与测试逻辑相关的核心业务请求。\nStep 2：框架复用性检查\nAI在已有的接口封装模块中搜索，按三级优先级查找可复用方法：业务封装层（最高优先级）→ HTTP请求层（次优先级）→ 公共SDK层（再次优先级）→ 需要新封装。\nStep 3：录制请求比对\n即使找到了已有方法，AI也会逐一比对录制请求与已有封装在URL路径、请求参数、返回体结构上的差异。发现差异时，AI会自动创建新版本方法，保证旧方法完全不受影响。\nStep 4：完整代码生成\nAI一次性生成HTTP请求封装层加测试用例编排层的完整代码，包括新的HTTP请求方法、测试类的初始化、步骤方法、断言、资源清理，以及正确的数据流传递（前一个接口返回的ID作为下一个接口的入参）。\n3.4 实际使用方式：测试工程师只需做两件事\n输入1：录制文件\n测试工程师打开产品页面 → 点击浏览器插件\"开始录制\" → 执行完整的测试操作 → 点击\"停止录制\" → 自动下载JSON文件\n输入2：用例描述\n（自然语言）\n测试用例名称: 数据质量自定义模板管理\n测试步骤:\n1.\n查询质量目录树，确认初始为空\n2.\n创建目录文件夹\n3.\n检查模板名称唯一性\n4.\n创建自定义规则模板\n5.\n查询用户自定义模板列表，验证创建成功\n输出：完整的可运行代码\nAI自动生成包含接口封装、测试用例编排、断言验证、资源清理的完整代码。\n四、两种方式的深度对比\n4.1 效率对比\n维度\n传统人工编码\n录制+AI生成\n提升倍数\n接口信息获取\n1小时（手动抓包+记录）\n5~10分钟（自动录制）\n6~12x\n接口封装编码\n2小时（手写HTTP方法）\n1~3分钟（AI自动生成）\n40~80x\n用例编排\n1~2小时（手动编排数据流）\n1~3分钟（AI自动编排）\n20~40x\n调试修复\n1小时（排查参数错误）\n10~30分钟（AI辅助修复）\n3~6x\n总计\n5~6小时\n20~50分钟\n7~15x\n4.2 准确性对比\n问题类型\n传统方式出错概率\nAI+录制方式出错概率\n原因\n参数名拼写错误\n高\n极低\nAI直接从录制JSON解析，不存在手抄问题\n参数遗漏\n中\n极低\n录制数据包含完整参数集\n数据类型不匹配\n中\n极低\nAI从录制的实际值推断类型\n返回体字段路径错误\n高\n极低\nAI从录制的完整返回体解析路径\n接口调用顺序错误\n低\n极低\n录制数据天然保留了正确的时间顺序\n编码规范违反\n高\n极低\nAI内置了完整的团队编码规范\n4.3 知识沉淀对比\n传统方式下，接口理解和框架使用的知识高度依赖个人经验，新人上手周期长。AI+录制方式将这些知识沉淀为结构化规范文档，AI作为\"最了解框架的助手\"，确保每个工程师都能输出符合规范的代码。\n五、核心优势深度剖析：\n为什么\"录制+描述\"天然适合AI\n5.1 录制数据是最佳的\"接口说明书\"\n传统的接口文档（如Swagger）往往存在滞后、不完整、与实际不符等问题。而\n录制数据来自真实的页面操作\n，它天然具备以下特征：\n绝对真实\n：录制的就是产品实际发送的请求，不存在文档与实现不一致的问题\n上下文完整\n：不仅有请求结构，还有完整的返回体，AI可以准确知道每个字段的实际类型和值\n顺序正确\n：录制按时间戳排序，天然保留了业务操作的正确顺序\n依赖可推导\n：前一个接口返回的ID出现在后一个接口的请求体中，AI可以自动推导数据依赖关系\n5.2 用例描述补充了业务语义\n录制数据告诉AI\"做什么\"（What），用例描述告诉AI\"为什么\"（Why）和\"验证什么\"（Assert）：\n录制数据 = 完整的接口调用序列（机器可理解的事实）\n用例描述 = 测试意图和验证目标（人类的业务期望）\n二者结合 = AI可以生成既技术正确又业务准确的代码\n5.3 有API文档也不够：\n同一接口在不同场景下的传参差异\n有人可能会问：如果产品提供了完整的API文档（比如Swagger），AI直接读文档生成代码不就行了，为什么还需要录制？\n答案是：\n同一个接口，在不同页面位置、不同业务场景下的调用方式可能完全不同。\nAPI文档只告诉你\"这个接口支持哪些参数\"，但不告诉你\"在这个具体场景下应该传哪些参数、传什么值\"。\n举一个真实例子：某个创建业务规则的接口，文档上列出了十几个参数。但实际上：\n从\"自定义创建\"入口操作时，规则类型传固定枚举值，表达式字段是必填的\n从\"从模板克隆\"入口操作时，规则类型从模板中继承，表达式字段不需要传递\n从\"跨空间导入\"入口操作时，还会额外传递可见范围和来源空间参数\n如果只看API文档，你根本不知道当前测试场景应该用哪种参数组合。只有\n真实录制\n——在页面上执行一遍具体的测试操作——才能捕获到这个场景下的精确参数排列组合。\nAPI文档是接口的\"能力边界\"，录制数据是场景的\"精确快照\"。AI需要的是后者。\n这也是为什么我们坚持\"录制驱动\"而非\"文档驱动\"的根本原因。\n5.4 一次性正确率极高\n这是这种方式最突出的优势：\n当测试工程师在页面上正确执行了完整的测试操作时，录制数据就是这个测试场景的\"标准答案\"。AI只需要将这个标准答案从JSON翻译为代码。\n具体来说：接口封装层一定是正确的（URL路径、请求方法、参数全部来自真实请求），用例编排层一定是正确的（调用顺序就是录制时间线），数据流传递一定是正确的（AI可以自动识别前后请求的参数依赖），返回体解析一定是正确的（AI直接看到了完整的返回体结构）。\n5.5 天然兼容版本演进\n当产品迭代导致接口变化时：\n传统方式：工程师需要重新抓包、比对差异、修改代码\n新方式：重新录制一次 → AI自动对比差异 → 自动生成新版本方法\n框架的版本兼容策略（旧方法不动，新增版本方法）与这种工作方式完美契合。\n六、测试框架与AI的协作机制\n6.1 分层架构设计\n为了让AI能够准确生成代码，我们建立了清晰的测试框架分层体系：\n测试用例层\n：编排业务逻辑、断言验证、功能点声明\n业务封装层\n：高层业务抽象，组合多个底层HTTP调用\nHTTP请求层\n：底层网络请求封装，一个方法对应一个API\n6.2 AI的知识体系\n我们将框架的所有规范编写为AI可理解的结构化知识文档，包含核心工作流程、编码规范与红线规则；类继承体系与模块架构地图；已封装接口的方法清单；以及典型用例的编写示例。AI在生成代码前会自动加载这些知识，确保生成的代码符合团队的所有规范约定。\n七、实战示例：从录制到代码生成\n以\"数据质量自定义模板管理\"为例，展示完整的工作流。\nStep 1：录制\n测试工程师在产品数据质量页面操作：查询目录 → 创建文件夹 → 检查模板名 → 创建模板 → 查询验证。\n浏览器插件自动录制，导出JSON文件包含5条请求。\nStep 2：AI分析与生成\nAI收到录制文件和用例描述后，自动完成以下工作：\n识别\n这是数据质量模块的测试场景\n搜索\n已有封装中的相关方法\n比对\n发现部分接口已有封装但参数有差异\n生成\n新版本方法和完整测试用例\n// AI自动生成的HTTP请求封装（参数精确匹配录制请求）\npublic\nApiResponse\ncreateCatalog\n(\nLong\nprojectId,\nLong\ntenantId,\nInteger\nparentId,\nInteger\nlevel,\nString\nname) {\nreturn\nhttpClient.\npost\n(\n\"/api/quality/catalog\"\n)\n.\nqueryParam\n(\n\"projectId\"\n, projectId)\n.\nbody\n(\nnew\nJSON\nObject\n()\n.\nput\n(\n\"projectId\"\n, projectId)\n.\nput\n(\n\"parentId\"\n, parentId)\n.\nput\n(\n\"level\"\n, level)\n.\nput\n(\n\"name\"\n, name)\n.\nput\n(\n\"tenantId\"\n, tenantId)\n)\n.\nexecute\n();\n}\n// AI自动生成的测试用例（正确编排数据流）\n@Test\n(description =\n\"数据质量自定义模板管理\"\n)\npublic\nvoid\ntestCustomTemplateManagement\n() {\nvar\ncatalogId =\nstepCreateCatalog\n();\n// 创建目录，获取ID\nvar\nisUnique =\nstepCheckNameUnique\n();\n// 用目录ID检查名称\nvar\ntemplateId =\nstepCreateTemplate\n(catalogId);\n// 用目录ID创建模板\nstepVerifyTemplateCreated\n(templateId);\n// 验证创建结果\nreportTestResults\n();\n}\n注意AI如何正确地将\nstepCreateCatalog()\n返回的目录ID传递给了后续步骤——这完全是从录制数据中的请求-响应关系自动推导的。\n八、适用场景与局限性\n8.1 最适合的场景\n接口数量多、无标准文档的内部平台产品\n接口间存在复杂数据流依赖的场景\n需要频繁跟随版本迭代更新用例的产品\n有成熟测试框架但方法封装工作量大的团队\n8.2 前提条件\n录制时测试过程必须正确\n：垃圾进→垃圾出，如果录制时操作有误，AI也会生成错误代码\n产品本身运行正常\n：如果产品的接口返回了错误数据，AI会按错误数据生成代码\n框架规范文档化\n：AI的知识库质量直接决定生成代码的质量\n需要有经验的测试工程师审核\n：AI生成的代码仍需人工审查业务合理性\n8.3 不适合的场景\n接口简单、数量少的轻量级应用\n纯UI自动化测试（虽然插件支持UI事件录制，但当前AI主要针对接口自动化）\n需要复杂数据Mock或外部依赖准备的场景\n九、总结\n录制驱动的AI自动化测试\n代表了一种新的测试开发范式，它将测试工程师从繁琐的\"接口信息搬运工\"角色中解放出来，转变为\n测试场景设计者和AI输出审核者\n。\n核心价值总结：\n价值维度\n具体体现\n效率提升\n单用例开发时间从5到6小时缩短到20到50分钟\n准确性提升\n参数拼写、类型匹配、路径解析的错误率趋近于零\n知识民主化\n新人+AI = 资深工程师的产出质量\n版本兼容\n天然支持多版本并行的接口封装策略\n规范一致性\nAI内置团队规范，每次输出都符合编码标准\n在AI编程工具日益成熟的今天，\n将录制数据作为AI的\"接口真相\"输入\n，结合结构化的测试框架规范作为AI的\"行为准则\"，可以在复杂平台产品的E2E自动化测试领域实现显著的效率和质量提升。这不是AI替代测试工程师，而是\nAI与测试工程师各自发挥所长的最佳协作模式\n。\n本文基于团队在大型平台产品E2E自动化测试领域的实践经验总结，文中涉及的浏览器录制插件和AI知识框架均为团队内部工具。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.35,
+        "irrelevant": 0.65,
+        "transfer_business": 0,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.7,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.09,
+        "2": 0.81,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.02,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.02,
+        "2": 0.03,
+        "3": 0.25,
+        "4": 0.51,
+        "5": 0.03
+      }
+    },
+    "decision_action": {
+      "score": 0.39,
+      "probabilities": {
+        "0": 0.8,
+        "1": 0.08,
+        "2": 0.04,
+        "3": 0.06,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.13,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.33,
+        "3": 0.21,
+        "4": 0.46,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.86,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.66,
+        "5": 0.22
+      }
+    },
+    "anti_hype": {
+      "score": 3.72,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.06,
+        "3": 0.08,
+        "4": 0.82,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8311,
+    "outputTokens": 173,
+    "totalTokens": 8484
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.56,
+        "relevance": 0.8,
+        "grounding": 0.31,
+        "decision_action": 0.74,
+        "evidence": 0.42,
+        "actionability": 0.62,
+        "anti_hype": 0.8
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179835175,
+                "endTime": 1791179835332,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000349062",
+      "marketCost": "0.000349062",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000349062",
+      "inferenceCost": "0.000349062",
+      "inputInferenceCost": "0.000349062",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6HRN5CJ4JJQK68BG4YCM"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:15 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::ldn22-1791179834914-7e1275bc1c9c"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.35,
+            "irrelevant": 0.65,
+            "transfer_business": 0,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.7,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.09,
+            "2": 0.81,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.02,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.02,
+            "2": 0.03,
+            "3": 0.25,
+            "4": 0.51,
+            "5": 0.03
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.39,
+          "probabilities": {
+            "0": 0.8,
+            "1": 0.08,
+            "2": 0.04,
+            "3": 0.06,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.13,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.33,
+            "3": 0.21,
+            "4": 0.46,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.86,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.66,
+            "5": 0.22
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.72,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.06,
+            "3": 0.08,
+            "4": 0.82,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8311,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.56,
+            "relevance": 0.8,
+            "grounding": 0.31,
+            "decision_action": 0.74,
+            "evidence": 0.42,
+            "actionability": 0.62,
+            "anti_hype": 0.8
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179835175,
+                    "endTime": 1791179835332,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000349062",
+          "marketCost": "0.000349062",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000349062",
+          "inferenceCost": "0.000349062",
+          "inputInferenceCost": "0.000349062",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6HRN5CJ4JJQK68BG4YCM"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:14.644Z"
+  }
+}

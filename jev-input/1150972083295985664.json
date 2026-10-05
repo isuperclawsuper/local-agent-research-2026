@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1150972083295985664",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "云原生 - AI Native 多智能体数字人架构实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560807&idx=1&sn=5b0681fdf88398b3eec92c20d897fb31",
+      "date": "2026-06-11T00:30:00.718Z",
+      "chars": 11134,
+      "text": "原创\n承吉\n2026-06-11 08:30\n浙江\n阿里妹导读\n我们以云原生应用部门为试验田，用商业化产品 AgentTeams 落地一支\"数字员工小分队\"，让它们承接日常研发、工单答疑、开源维护与运营等业务，把原本人肉串联的协作流程，做成 AI Native 的工作方式。（文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。）\n开场：凌晨三点的告警\n凌晨三点，值班同学的手机弹出一条告警：某云产品消息引擎消费堆积超阈值。\n按以往的剧本，接下来是这样的：被叫醒、登跳板机、翻 SLS 日志、对照 Runbook、判断到底是消费者挂了还是下游 RT 飙了、必要时拉群、必要时升级到二线、最后写一份故障复盘。一整套下来，MTTR（平均故障恢复时间，Mean Time To Recovery）轻则一两个小时，重则半个晚上。\n但在 AI Native 的今天，剧本被重写了：告警进来 30 秒内，一个叫\ntaishan-alert-agent\n的 Agent 数字人已经在群里贴出了第一轮诊断结论，并\n@\n上了\ntaishan-diagnosis-agent\n这个 Agent 数字人进一步定位；又过了 90 秒，根因定位完成，修复建议同步在 Team Room 里给出，附带一份可执行的脚本。值班同学起床洗脸的功夫，问题已经被 Agent 团队闭环了 80%，剩下 20% 是一个\"是否在生产环境直接执行修复\"的判断——这个判断，留给人。\n这套东西的底座，就是云原生推出的\nAgentTeams\n产品。基于它，我们可以快速声明出一支\"数字员工小分队\"，把内部一个个 AI Native 场景真正跑起来。今天就聊聊它是怎么长出来的、凭什么这么干，以及我们走到了哪一步。\n一、从 RPA 到大模型：\n自动化是怎么一步步演化到\"数字员工\"的\n要讲清楚 AgentTeams，得先把\"自动化\"这件事情的来龙去脉理一下。\n最早是\nRPA（Robotic Process Automation，机器人流程自动化）\n。RPA 的本质是\"录屏式\"自动化：你怎么点鼠标、怎么填表单、怎么从 A 系统复制到 B 系统，RPA 就照着复刻。它解决了大量\"流程清晰、规则固定、变化不多\"的重复劳动，比如财务对账、报表拼接、跨系统数据搬运。但 RPA 有个硬伤：它\n不理解业务\n，只要界面变了、字段顺序换了、弹窗多了一个，整条自动化脚本就得返工。\n接着是\n大模型（LLM，Large Language Model）\n。大模型的革命性在于它能\"理解\"——理解自然语言指令、理解上下文、理解模糊意图。于是，一种新的自动化形态出现了：\nAgent\n。Agent 不再是录屏脚本，而是一个能听懂\"帮我处理一下这个告警\"的人——它会查文档、调工具、做判断、给结论。\n但单 Agent 又有它的天花板：上下文窗口有限，工具调用复杂度上去后容易崩，遇到需要多角色协作的真实业务场景（产品提需求、研发写代码、测试跑回归、文档同步发布）就力不从心。\n自然的下一步就是\n多 Agent 协同\n。问题是：让多个 Agent 跑起来 ≠ 让它们像一个团队一样工作。没有组织结构就没有稳定的分派关系，没有通信策略就没有可控可审计的消息边界，没有共享状态和统一网关就没法把 LLM 和工具（MCP）安全地接进来。\nAgentTeams 就是来解决\"多 Agent 怎么真正像一个团队一样工作\"这件事的。\n二、什么是 AI Native？\n为什么我们要做 AI Native？\n很多人听说过\nCloud Native（云原生）\n——一套围绕\"应用就是围绕在云上跑而设计\"的方法论：容器化、微服务、声明式 API、持续交付、Kubernetes 编排。它的核心是\"应用不再需要适配云，而是天生就长在云上\"。\nAI Native\n是同一思路的下一代延伸：\n系统不再是\"额外集成了 AI 能力\"，而是\"天生围绕 AI Agent 来设计\"\n。\n维度\nCloud Native\nAI Native\n基本单元\n容器 / Pod\nAgent / Worker\n编排对象\n应用、副本、网络\n智能体、协作关系、对话拓扑\n声明式资源\nDeployment / Service / Ingress\nWorker / Team / Human / Manager\n控制循环\nkube-controller reconcile\nhiclaw-controller reconcile\n网关\nIngress / Gateway API\nAI 网关（LLM / MCP 凭证收敛）\n协作底座\nService Mesh\nMatrix Rooms（多方在场、可审计）\n为什么要做 AI Native？因为只有把 Agent 当作\"一等公民\"来声明、编排、治理，才能解决三个老大难：\n可复制\n——一个能跑的 Agent 团队，下一个业务团队拿过去就能用，而不是每次都从零搭。\n可治理\n——谁能\n@\n谁、谁能调哪个 LLM、谁能用哪个 MCP，都是策略，不是约定。\n可演进\n——今天用 OpenClaw，明天换 CoPaw（商业化语境中也称 QwenPaw，下文统一称 CoPaw），后天接 OpenKruise Agent Sandbox，业务编排不用动。\n这就是 AI Native 的价值，也是 AgentTeams 要做的事。\n三、AgentTeams 是什么\n先把名字理一下，避免误会：\nHiClaw\n：开源项目地址（\ngithub.com/agentscope-ai/HiClaw\n），未来也会更名为 AgentTeams，社区里能看到的所有 CRD、controller、Helm Chart 都来自这里。\nAgentTeams\n：HiClaw 在阿里云上的商业化云产品，提供托管版的多智能体协同平台。\n为了简化表述，下文统一称为\nAgentTeams\n。\nAgentTeams 的官方定位非常清晰：\n协作编排治理平面（Collaboration Orchestration Plane）\n。它不替代 Agent 运行时（OpenClaw / CoPaw 这一层），也不替代推理服务（LLM 提供商）和工具服务（MCP Server），它专注做一件事——\n让多个 Agent 像一个真正的组织一样运转起来\n。\n类比一下：\n层\nCloud Native\nAI Native (AgentTeams)\n工作负载运行时\ncontainerd / CRI-O\nOpenClaw / CoPaw\n编排控制面\nkube-controller-manager\nhiclaw-controller\n服务网关\nIngress / Envoy\nHigress AI Gateway\n共享存储\nPV / PVC\nMinIO / OSS（S3 兼容）\n通信底座\nService Mesh\nMatrix（Tuwunel homeserver）\n用户终端\nkubectl / Dashboard\nElement Web / 钉钉客户端\n如果你已经熟悉 Kubernetes，AgentTeams 可以很快熟悉。\n四、架构：平台 Manager+业务 TeamAdmin\n→TeamLeader→Workers\nAgentTeams 最重要的一个设计决策，是把\"组织结构\"做成了声明式 CRD，且\n把平台管控和业务协作显式分层\n。所有 API 资源都在\napiVersion\n: hiclaw.io/v1beta1\n下，核心四种 Kind：\nKind\n类比\n一句话定位\nManager\n平台管控者\n平台级管理 Agent，能创建 Team / Human / 平台资源。商业化版本中平台管控动作由控制台 UI 承接，默认禁用。\nTeam\n部门\n一个 TeamAdmin（Human Owner）+ 一个 TeamLeader（Worker）+ 若干 Worker，是真正\"做事\"的单元\nWorker\n员工\n最小执行单元：容器 + Matrix 账号 + MinIO/OSS 空间 + Gateway Consumer\nHuman\n真实用户\n真人 + 权限层级（L1/L2/L3），决定能进哪些房间、能\n@\n哪些 Agent；其中某个 Human 可被指定为某 Team 的\nTeamAdmin\n，代表业务方\"老板\"角色\n真实的协作链：谁跟谁说话\n很多人第一眼看到 Manager 会以为它是\"老板\"，其实不是。Manager 是\n平台管控角色\n——负责创建 Team / 创建 Human / 维护平台级配置。在商业化版本里，平台管控动作由产品控制台 UI 承接，业务协作链路收敛为 TeamAdmin → TeamLeader → Workers，Manager 不直接与 Worker 对话；而 HiClaw 开源侧仍保留 Manager 作为协调 Agent 的通用能力，开源用户可根据场景自行决定 Manager 的参与方式。\n真正\"老板派活给经理、经理带员工干活\"的链路在 Team 内部，由\nTeamAdmin（业务方真人）→ TeamLeader（Worker）→ Workers\n串起来：\nManager（平台管控）\n│ 仅做平台级动作：建 Team、建 Human、配权限\n│ ✗ 不直接和任何 Worker 对话\n▼\n──── 平台 ────────────────────────────────────\n──── 业务 ────────────────────────────────────\nTeamAdmin（业务方 Human Owner，真人）\n│  提需求、给反馈、确认成果\n▼\nTeamLeader（一个特殊的 Worker，本质是 Agent）\n│  拆任务、@ 派活、汇总结果\n▼\n┌──────────┬──────────┬──────────┐\n▼          ▼          ▼          ▼\nworker     worker     worker     worker\n（具体执行任务的 Agent）\n几个关键边界，直接决定了它\"像一个团队\"而不是\"一堆 Agent\"：\nManager 不进 Team Room、不\n@\nWorker\n（商业化版本）—— 平台管控动作由控制台承接，业务协作链路收敛为 TeamAdmin → TeamLeader → Workers。类比 Kubernetes 里的 cluster-admin，只管\"建集群、建 Namespace、发权限\"，不管业务怎么跑。HiClaw 开源侧仍保留 Manager 作为协调 Agent 的通用能力，开源用户可按需使用。\nTeamAdmin 才是真正的\"老板\"\n——它是 Team CRD\nspec.admin\n字段里指定的一个 Human，是该 Team 上的 Human Owner，通常由 L1/L2 权限的真人承担，代表业务方\"老板\"角色。TeamAdmin 不是独立于 L1/L2/L3 之外的新权限层级，而是某个 Human 在具体 Team 上的业务 Owner 身份。产品推荐实践是：TeamAdmin 只跟该团队的 TeamLeader 在 Leader DM Room 里对话，\"老板不越级管理\"作为房间拓扑层面的约束。\nTeamLeader 本质是一个特殊的 Worker\n——它是由 Team 声明出来的协调型 Agent，职责是接需求、拆任务、派活和汇总结果。它可以有自己的 Skills / MCP / Soul，归属在这个 Team 的所有 Worker 都会注册到 Leader，因此 Leader 清楚队伍里有谁、每个人会什么。但需要注意，TeamLeader 与普通 Worker 在产品语义、字段能力和运行时选择上并不完全等价——它承担了任务编排和结果收敛的额外职责，这些在 Team CRD 中有专门的配置入口。\nWorker 之间能不能互相\n@\n，由 Team 的\npeerMentions\n字段控制；能不能跨 Team\n@\n，由各自的\nchannelPolicy\n控制。一切\"谁能跟谁说话\"都是策略，不是约定。\n五、Human 资源与三层权限\n很多多 Agent 平台只解决了 Agent 之间的事，忘了\"人\"也是一等公民。AgentTeams 专门为真人设计了\nHuman\nCRD：\napiVersion\n: hiclaw.io/v1beta1\nkind\n: Human\nmetadata\n:\nname\n: zhangsan\nspec\n:\ndisplayName\n: 张三\nemail\n: zhangsan@example.com\npermissionLevel\n:\n2\n#\n1\n=Admin,\n2\n=Team,\n3\n=Worker\naccessibleTeams\n:\n[oncall-team]\naccessibleWorkers\n:\n[]\n三层权限设计直接映射进 Matrix 房间邀请和 Agent 的\n@\nmention\n允许名单：\n层级\n含义\n能力\nL1 Admin\n平台管理员\n进任何 Team Room、\n@\n任何 Worker；可被任意 Team 指定为 TeamAdmin\nL2 Team\n团队成员\n进自己\naccessibleTeams\n列表内的 Team Room、\n@\n该 Team 内任何 Worker；如果在某个 Team 的\nspec.admin\n里被点名，就是该 Team 的\nTeamAdmin\n，独占该 Team 的 Leader DM Room\nL3 Worker\n单 Worker 协作者\n只能跟自己\naccessibleWorkers\n列表内的 Worker 单聊\n注意：\nTeamAdmin 不是一个独立的权限层级，而是 L1/L2 Human 在某个具体 Team 上的\"业务 Owner\"身份\n。\n一个 Human 可以同时是 A 团队的 TeamAdmin、B 团队的普通成员、C 团队完全无关。这种\"权限 × 团队\"的二维设计，让真实组织里\"我是 X 部门的负责人但 Y 部门的旁听者\"这种关系能够原生表达。需要说明的是，上述约束在商业化版本中通过产品层面的房间拓扑和权限策略来保障，属于推荐实践；开源 CRD 层提供了声明这些关系的字段，但并非所有约束都由 CRD 层面天然强制执行。\n这套权限模型解决了一个生产场景里非常关键的问题：\nHITL（Human-in-the-Loop，人在回路）不是补丁，是一等公民\n。值班同学、研发同学、PM、运营，都是用同一套 Matrix 客户端进同一套房间，跟 Agent 自然对话。\n六、构建企业自己的 AI Native 体系\n6.1 部署形态与实践路径选择\nAgentTeams 提供两条落地路径：基于开源项目 HiClaw 自建，或直接使用阿里云托管的商业化云产品。两者共享同一套控制器语义（hiclaw-controller reconcile），核心差异在于运维方式和基础设施集成深度：\n维度\n开源自建（HiClaw）\n云产品（AgentTeams）\nWorker 后端\nDocker 容器（本地/演示）或 K8s Pod（生产）\nSAE / ECI 实例 / 安全沙箱\n运维\n企业自行运维控制面和基础设施\n云产品全托管，开箱即用，监管控一体化\n安全隔离\n由企业内部安全体系兜底\n成熟云模式，独立云账号/VPC + 安全容器\n内网访问\n天然可达企业内部服务\n需通过安全接入网关打通（详见 6.2）\n定制灵活性\n可深度定制 Agent 运行时与工具链集成\n提供产品级白屏化扩展支持\n适用场景\n对定制化要求高、有独立运维能力的团队\n希望快速落地/云产品兜底、专注业务的团队\n两条路径各有取舍，没有绝对优劣。\n我们选择了云产品路径，核心考量有两个：一是\n聚焦业务\n——团队精力有限，把运维交给云产品，把时间留给数字人团队本身的打磨。二是\n以客户视角反哺产品\n——用自己的产品服务自己的业务（dog-fooding），在真实场景中发现产品短板，推动产品持续演进。下文均以云产品模式展开探索与验证。\n6.2 基于云产品实施 AI Native 基础架构构建\n网络架构：公共云 <-> 安全网络通道 -> 内部服务\n通过前述 AI Native 场景分析，初期阶段主要依赖内部的代码仓库、项目协作平台、钉钉消息/文档、应用发布运维等系统。因此，只需打通这几类服务即可落地四类 AI Native 场景。以下是具体实施步骤：\n1）购买/开通 AgentTeams 服务\n购买一套 AgentTeams 服务，零改造接入。AgentTeams 运行在售卖区独立云账号、独立 VPC 及独立 ASI 集群中，无需自行运维产品本身，团队可专注于打磨业务数字人。该产品目前处于邀测阶段，预计很快会在阿里云正式上线。\n2）搭建模型及 Worker 团队\n首次登录控制台完成服务关联角色授权 → 创建实例（选择地域和网络配置）→ 添加模型并绑定供应商 → 创建用户 → 创建 Worker 团队（配置 Team Leader 的模型、SOUL.MD、AGENT.MD 及技能绑定）→ 创建 Worker 并关联团队 → 开启公网访问，通过 Element UI 验证团队功能。这样便获得了一支由 Team Leader 和多个 Worker 组成的数字人协作小组。\n3）通过安全网络通道实现云端 AI Agent 安全访问内部服务\n数字人团队就绪后，下一步是打通其与内部系统的连接。通过安全网络通道连接公共云 VPC 与内部网络，提供访问审计、权限管控和服务路由能力，仅定向开放必要的内部系统。这一机制兼顾开放与安全：企业可正常使用云产品推进 AI Native 实践，同时将 AI Agent 限制在云产品 VPC\n内，防止访问逃逸和模型幻觉引发的内网误操作。至此，完成公共云与内部服务的对接，实现安全可控的独立 AI Agent 环境构建。\n4）凭证收敛在网关，Agent 只拿 Consumer Token\n网络打通后，还需解决凭证安全问题。LLM、MCP、内部服务的 API Key 不应散落在每个 Agent 容器里——跨网络分区的场景下尤其关键。AgentTeams 的做法是\n- AI 网关（Higress / 阿里云 APIG）持有上游真正的凭证（OpenAI / Claude API Key、各种 MCP 上游 Token、内部服务的统一服务账号）。\n- 每个 Worker 只拿一个可吊销的 Consumer Token，通过网关访问 LLM、MCP、内部服务。\n- 网关层做 per-route allowedConsumers 授权——谁能调哪个 LLM、谁能用哪个 MCP、谁能访问哪个内部服务，都是策略，不是约定。\n通过以上四步，该方案在解决运维托管的同时安全打通了内部服务依赖，最终以标准云产品方式完成 AI Native 基础设施搭建。基础设施就绪后，接下来进入真正的核心环节——在平台上构建面向具体业务场景的数字人团队。\n七、15 个 Agent + 4 个 AI Native 场景实践\n在 AgentTeams 上，我们已经沉淀了\n15 个 Agent\n，覆盖研发、测试、诊断、答疑、经营分析、知识沉淀六大领域。如果只是单 Agent 各自为战，价值有限；真正的价值是把它们\n串成\"闭环 AI Native 场景\"\n——围绕一个真实工作场景，让多个 Agent 在 AgentTeams 上协同跑通端到端流程。\n围绕核心内部真实场景，第一阶段共计 4 个 AI Native 场景：\n#\nAI Native 场景\n数字人涵盖内容（TeamLeader + 多Worker）\n落地产品/项目\nA\n内部产品研发全链路\n一句话进来，整条\"需求 → Spec → 代码 → Review → 测试 → 发布\"链路由Team+不同数字人Agent自动跑通，文档同步维护；人只在需求澄清、PR 合并、生产发布等关键决策点介入。\nAgentLoop 云产品\nB\n7×24 智能值班答疑中心\n问题咨询和工单不再先经人工分流再排查，数字人团队全自动接管\"分诊 → 诊断 → 回复\"全程，值班同学只看数字人解决不了的疑难案例。\n云监控产品\nC\n开源研发流水线\n开源项目 Issue / 每个 PR 由数字人团队巡检 + 自动出 Patch + 自动 Review，人只在 PR 合并这一关键动作上决策。\nRocketMQ/Chaosblade 开源\nD\n经营 + 社区双驾驶舱\nPD / PDSA / 运营用自然语言问任意经营数据（收入、客户、订单等经营数据…），数字人取数、返回答案。\n运营 / PM\n过去人是工具的操作者，现在人是数字员工团队的决策者——业务方用自然语言或事件触发，一支声明出来的 Agent 团队自动跑完全程，工具反过来由 Agent 操作，人只在\"需求澄清、架构评审、关键动作决策\"等关键拐点介入。\n以下是两个业务团队分别在自己场景下的一个多数字人协同的实际运行的截图，仅供参考。\n示例1：7×24 智能值班答疑中心场景\n1、提供工单给数字人，进行工单分析\n2、TeamLeader 分析完毕后，安排其他数字人进行执行处理\n3、当本数字人发现自己无法解决时，需要转交给其他数字人继续解决\n4、最终问题解决，并告诉TeamLeader进行汇总给人，进行查阅。\n通过这套数字人的协同，可以看到以下优势：\n1、自动分诊路由 —— Leader 基于产品线标签 + 核心问题特征精准选派专家，不靠人肉判断。\n2、DAG 编排接力 —— 单节点起步、按需扩成多节点，专家间结论自动透传，无信息折损。\n3、诊断深入根因层 —— 不止\"复现/止损\"，而是直达指标 Dimensions 设计层面的链路断点。\n4、全程可追溯 —— 每个任务/产物都落到 shared/tasks/... 与 shared/projects/... 文件，人类可审计、可复盘。\n5、人机共治 —— Human、TeamLeader、Worker 同房间在线，工单负责人随时可接管、补刀、纠偏。\n6、输出工程化 —— 不只给\"答案\"，还给修复方案矩阵 + 工单回复建议，让人类值班 1 分钟收尾。\n最终实现了从一张工单链接出发，三位数字员工 6 分钟内（13:50 → 13:56）完成\"接单 → 路由 → 两阶段根因诊断 → 修复方案 → 工单回复建议\"全闭环，把传统值班需要多人协调半天的链路问题，压成了一段可复盘的对话流。不仅仅时间大幅缩短，还能给出非常详细的报告。\n示例2：开源研发流水线 - Chaosblade\n1、在github上提交一个issue\n2、让数字人针对性对某个issue进行分析并探索解决方案\n3、人工参与确认方案无问题后，让数字人推送到社区\n4、社区进行二次确认方案，并评论采纳\n5、继续在数字人团队推动下一个动作，提供修复PR\n6、若AI提供的PR有问题，也可以直接在github进行交互\n7、数字人团队检查到问题，进行修复\n8、社区确认无问题，同意合并，问题解决。\n以上在数字人团队中的各个人工介入的步骤，未来会升级为自动化的方式进行，人工只需要在社区进行Review及相关的确认交互，减少人工参与。\n通过这套数字人的协同，可以看到以下优势：\n1、一句话直达合并 —— 人类只下几句指令，全链路自动跑完。\n2、真读懂代码 —— 13 次源码定位，精准还原 ±1 振荡反馈回路。\n3、工程级输出 —— RCA + 风险评估 + 测试覆盖，资深贡献者水准。\n4、真写代码 + 测试 —— +60/-1 真实 diff，4 组测试用例。\n5、能扛 CI 反馈 —— DCO 失败自主 --amend --signoff + force push。\n6、完全融入开源语境 —— 英文 RCA、/approve 协作流，与人类贡献者同构。\n7、IM × GitHub 双通道 —— 内部下指令、外部交付，跨平台无缝协同。\n最终实现了数字员工 github-chaosblade 接到一句\"分析下 chaosblade\n#1301\n\"的指令后，自动完成读源码定位 ±1 振荡反馈回路根因 → 在 issue 下发布根因分析与修复方案 → 在 feature/blade-ai 分支生成代码与测试 → 提交 PR\n#1302\n→ 根据 reviewer 反馈修复 DCO 并 force-push → 最终被 /approve 合并的 issue 全链路闭环，把开源协作里\"提单—分析—编码—评审—合并\"的整条链路一次性自动跑通。\n八、写在最后：为什么 AI Native 值得做\n回到最开始那个凌晨三点的故事。\n过去十年，云原生让我们不再操心\"应用怎么在服务器上跑\"，让基础设施成了水电煤。下一个十年，AI Native 要让我们不再操心\"AI 怎么在业务里干活\"，让一支声明出来的数字人（Agent）团队，成为每个业务团队天然的\"数字同事\"。\nAgentTeams 的目标也很直接：\n多 Agent 协同不是写脚本能解决的事，它需要一套像 Kubernetes 一样的控制治理平面\n——声明式 API、持续 reconcile、清晰的资源边界、可治理的权限和通信。当组织结构、消息策略、网关侧 LLM/MCP 规则、共享存储能在同一条运维路径上被\n治理\n，\"数字员工\"才真正从 PPT 走向生产。\n如果你正在规划下一代 Agent 平台，建议把 AgentTeams 当作\n协作编排治理平面\n——让业务同学把精力真正聚焦在\"业务数字人\"的打磨上，把团队拉到 10x 效率。\n我们也在持续演进 AgentTeams 的能力边界：更深度的钉钉集成让人机交互更自然；安全体系持续加固，涵盖企业级账户打通、业务数据权限收缩、高风险 HITL 决策和零信任网络；异构 Agent 协作能力，通过标准化接入层连接不同 Runtime 和部署形态的 Agent；以及 TeamSpec 模板化，把\"角色配置、技能组合、协作策略\"沉淀为可复用、可调整的团队蓝图。\n附录\nAgentTeams 开源地址\n：\nhttps://github.com/agentscope-ai/HiClaw\n延伸阅读\n：\n《HiClaw: Kubernetes-native multi-agent collaboration orchestration》—— 官方架构博客。\nAgentTeams 产品概述：\nhttps://help.aliyun.com/zh/document_detail/3040377.html\nChaosBlade 开源流水线验证issue样例：\nhttps://github.com/chaosblade-io/chaosblade/pull/1302\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

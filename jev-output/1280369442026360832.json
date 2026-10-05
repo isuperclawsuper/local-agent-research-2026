@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1280369442026360832",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "天猫技术大型 AI 项目的研发协同实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650545718&idx=1&sn=97f7fc8fd31947c67deff2c77165be6a",
+      "date": "2026-09-07T12:09:00.131Z",
+      "chars": 21171,
+      "text": "原创\n天猫技术团队\n2026-09-07 20:09\n贵州\n天猫 MDI 项目 AI 研发协同四阶段实战\n本文以天猫新品 MDI 项目为例，阐述了大型 AI 项目研发协同从“超级个体”到“全员赋能”的四个进化阶段：在单兵攻坚期，通过构建结构化知识库让 AI 深度理解项目上下文，打造“超级个体”；在加人提速期，借鉴站点地图思路进行物理隔离分工，利用 Spec 变更规则及上下文缝补机制（MCP）解决多人协作冲突与推理链断裂，实现效率横向复刻；在高速迭代期，部署独立“技术哨兵机”还原预发合并态，通过云端 Agent 检测隐形业务逻辑冲突并闭环告警，保障研发质量不劣化；在稳定运作期，推出 NekoCollar 云端协作平台，通过沙箱环境、所见即所得的真实页面代理及 Git 软硬双锁，让非研发角色也能安全、高效地基于代码上下文参与协同，最终实现 AI 研发能力从个人到团队再到组织全员的规模化放大。\n写在前面：\n为什么这个项目值得写\nAI 作为生产力工具，带来的不是一次从顶层发生的效率革命，而是一条从一线生长、向组织逐级放大的生产力曲线。只有使效率从“个人偶得”转变为“团队可复制”，AI Native 的成熟实践才有可能跨团队、跨业务复制，形成组织乃至集团层面的规模效应。\n这几个月我们在做一个全新的业务项目——天猫新品 MDI 项目。我们在演进的过程就经历了上面所述的从\n超级个体 -> 超级研发小队 -> 超“稳”研发小队 -> 超级项目组\n的进化过程。\n这个多位同学并行采用 SDD 规格驱动高频敏捷开发，严格每周线上迭代一个大版本。最夸张的一次上线的时候，同时存在八个仓库、十几个分支在预发集成开发。本文就要说一下我们的这随着项目组进化的四个过程里，遇到了什么坑，又做了些什么。\n它不是一个单点功能，而是一个横跨 4 个角色端、约 40 个功能模块的全栈平台，再叠加一套外部智能投放系统、算法内核与自动化评测体系、阿里云百炼全模态等外部依赖，整体复杂程度非常大。\n这个初创项目几乎完整命中了「AI 时代项目」的所有显著特点，它经历了四个非常典型的阶段：\n单兵攻坚期\n：单兵如何启动探索，攻坚新领域与新知识\n加人提速期\n：如何把\n单人效率复刻到多人协同\n上，逐步加速项目进程\n高速迭代期\n：如何\n消解时间与规模带来的 AI 研发质量劣化\n稳定运作期\n：项目组全部成员如何\n共享上下文\n，推进非研发角色的群策群力\n这四个阶段串起来，要解决的其实就是一条朴素的如何「能力放大」的问题：\n第一步，让开发者成为“超级个体”。\n第二步，让超级个体组成“超级研发团队”。\n第三步，让这支团队可持续地跑下去。\n第四步，把研发能力辐射到项目组的每个非研发人员上。\n个体 → 团队 → 可持续 → 全员\n，一条不断往外放大的路。\nAI 项目的四阶段\n单兵攻坚期：构建极具纵深的\n「超级个体」编码上下文\n▐\n问题：如何驱动 AI 在新领域、新知识上开垦？\n项目启动时只有一两个人。做的是一个全新领域。单兵作战时，最大的痛点不是「不会写代码」，而是\nAI 不知道这个项目是什么\n。它不知道我们的业务地图、不知道我们踩过哪些坑、不知道我们为什么选了这个技术方案。每开一个新会话，上下文都要重新灌一遍，效率极低。\n我们的解题思路是：\n用一个结构化的知识库，把整个全栈项目集成在一起，让 AI 随时能“读懂”这个项目\n。这就是我们称之为 collar（项圈）的 SDD 研发体系。\ncollar（项圈），给自由奔放的 AI Agent 套上一个边界与知识的项圈。这个命名也有渊源：我们有一系列以 neko（日语「猫」）命名的产品（比如 neko，比如 nekoClaw，还有后文解法四的 NekoCollar），而 collar 正是给「猫」戴的项圈/牵引具（harness）\n▐\n手段一：AGENTS.md，任何时候都尤为重要的 AI 编码全栈地图\n根目录的一份\nAGENTS.md\n。\n它是 Agent 进入这个项目的唯一入口。设计上我们给它定了一条铁律，就写在文件开头：\n本文件是 Agent 的入口地图（≤120 行）。不放细节，只告诉你去哪里找。\n我们 MDI 是一个多仓库聚合工作区（multi-repo workspace）：前端主应用、5 个微应用/H5、Java 后端（DDD 四层）、Node 评测执行端、评测服务端……\n全都作为独立 git 仓库聚合在同一个\nworkspace-mdi/\n目录下。\nAGENTS.md 用几个精炼的板块把这一切串起来：\n仓库地图\n：一棵带注释的目录树，一眼看清 7 个子仓库各自是什么、端口多少、哪个是“唯一开发入口”、哪个“已废弃禁止改动”。\n快速命令\n：每个应用怎么启动、怎么 build/lint，AI 不用去翻各仓 README。\n关键约定速查表\n：用一张表格，把项目里所有“踩过坑才总结出来的强约定”浓缩成「一句话 + 详见链接」的形式。例如：\n|\n约定\n|\n一句话\n|\n详见\n|\n|\n---|---|---|\n|\n时间字段展示\n|\n禁止裸渲染时间戳，统一格式化为北京时间\n|\nCONVENTIONS.md\n|\n|\n日志体系\n|\n新增日志强制 BizLog，入口方法必加\n@BLog\n|\nCONVENTIONS.md\n|\n|\nMTOP 路由\n|\n新接口用\n@MtopController\n+\n@MtopMethod\n|\nADR\n-013\n|\n|\n踩坑必读\n|\n改代码前先看 PITFALLS\n|\nPITFALLS.md\n|\n当前状态表\n：每个应用「完成度 + 已具备能力」的实时快照，让 AI 知道现在做到哪了。\nAGENTS.md 入口地图 —— 每个会话必加载，所以它只导航、不堆细节\nAGENTS.md 的行数由\ncollar-runbook\nskill 主动“守卫”：一旦逼近 115 行，skill 会提醒把详情迁到\ndocs/\n、AGENTS.md 只留一行摘要 + 链接，保证入口地图永远精简可信。\n▐\n手段二：六个 Skill 全方位管理知识库的六个层级\n光有约束还不够，我们还要解决「知识往哪写、什么时候自动写」的问题。我们把项目知识库拆成 docs/ 下的六个模块，每个模块配一个\n唯一对应的 Skill\n（\n统一\ncollar-\n前缀命名\n），构成「模块 ↔ Skill ↔ README」三位一体：\ndocs/\n├── specs/        业务地图（要做什么）        → collar-specs\n├── changelog/    做了什么 + 将做什么（时间线） → collar-changelog\n├── architecture/ 系统怎么连的（8 类连接点）    → collar-architecture\n├── runbook/      零散过程知识（8 类）          → collar-runbook\n├── vendor/       外部源码选择性同步            → collar-vendor\n└── wiki/         自由知识库（人工维护，中文）   → collar-wiki\n这六个 Skill 最关键的设计，是它们的\n触发方式有主动和被动之分，自动化程度呈梯度\n：\n我们认为，\n「对 Agent 来说，看不到的知识等于不存在。」\n所以所有知识必须版本化落到仓库文件里，一旦发生就自动沉淀进\ndocs/\n，下一个会话或下一个人拉取仓库就能获得完整上下文。\n单个 Skill 好做，难的是让多个 Skill 不打架、还能配合。我们的办法是把\ngit commit 这个动作设计成统一的触发关卡\n——一次提交，三个 Skill 在同一时刻各司其职、从三个正交维度同时喂养知识库：\ncollar-changelog 记「做了什么」\n——从这次提交里提取变更，落到时间线。\ncollar-runbook 抽「学到了什么」\n——把这轮踩的坑、定的约定沉淀成过程知识。\ncollar-specs 检「代码是否偏离了意图」\n——比对代码和 spec，把差异摆出来让人决策。\n而且这里的「强制」是真强制，这样知识沉淀就从「靠自觉」变成了「流程门禁」，杜绝了「这次先算了、下次一定」的滑坡。毕竟一旦开始欠账，知识库很快就会烂掉。\n六个模块：本质上是知识“三”个方向上的互补的“两”面\n▐\n手段三：人工与自动双方式实现知识库冷启\n新领域的前期调研，最考验知识管理和冷启。我们的做法是把知识分成\n人工维护\n和\n自动维护\n两类，各归其位：\n人工维护（需要个人保障质量）\n：放进\nwiki/\n（自由知识库，如设计理念、竞品分析、blue-print 蓝图调研）\n自动维护\n：\nchangelog / architecture / runbook\n三层由 AI 从 git、代码、对话中自动提取沉淀。\n而对于\n官方 demo 代码\n这类外部参考资产，我们走\nvendor/\n模块，核心原则是「\n只做减法、只下载我们所需要的\n」。\ncollar-vendor\nSkill 定义了两种同步方式和一套选择算法来做外部代码资产管理，更妙的是，vendor 不只是“存代码”，它还是\ncollar-specs\n的\n实证参考源\n。当 specs 生成技术方案时，会自动扫描相关 vendor，提取代码模板、API 用法、架构模式，融入方案并标注来源。一句点睛的话（写在 skill 里）：\n「用户放进 vendor 的代码不一定完整阅读过，这一步帮用户『读』并提炼要点。」\n人在调研期把粗糙素材随手丢进 vendor 和 wiki，等真正做设计时，AI 自动把这些沉睡的知识拉进来参与决策。\n▐\n手段四： 给 AI 套一个「项圈」（渐进实现中）\n在 AGENTS.md 之外，我们还在根目录放了一份\ncollar.yaml\n。\n坦率说，这份文件还在后面的 nekoCollar 上渐进落地\n，所以这里只讲核心思想，不展开细节。我们把这个项圈抽象成三层，是一套值得记住的心智模型：\nIdentity（身份 / 知识入口）\n：告诉 AI「你是谁、去哪读知识」\nBoundary（边界 / 约束）\n：明确 AI「能碰什么、不能碰什么」。\n核心逻辑是\n默认拒绝（deny-by-default）\nValidation（验证）\n：改完代码必须过的门禁（lint / typecheck）。\n一句话：\nIdentity 管知道什么、Boundary 管能改什么、Validation 管改得对不对\n。即便 collar.yaml 本身还在完善，这套三层模型已经通过 AGENTS.md、pre-commit hook、以及后面解法四的软硬双锁在各处启用了。\n▐\n小结 - 超级个体篇\n通过入口地图 + collar 三层约束 + 知识库六模块 + 六个 Skill，把整个全栈项目结构化地“装进 AI 的脑子”。\n一套完整且具纵深的知识生命周期，让 AI 从第一天起就“懂”这个项目。也为后面加人提速打下了地基。\n加人提速期：基于能力分发，\n横向复刻出「超级研发小分队」\n▐\n问题：如何把超级个体效率复刻到整个研发小队上\n单人攻坚了一个月后，进入第二阶段，项目要加人了。于是核心问题变成：\n如何把单人的效率复刻到多人协同上\n？多人协同\n最怕两件事\n：一是\n冲突\n（大家改到同一处），二是\n上下文断裂\n（为了工程规范把逻辑外置，结果 AI 看不懂了）。\n▐\n手段一：借鉴 Web2.0 的站点地图，物理隔离分工\n熟悉 Web2.0 早期的同学会记得「站点地图（sitemap）」这个东西。一个网站上线前，先画出它有哪些分区、每个分区有哪些页面，然后不同人认领不同页面并行开发。站点地图的价值在于：\n在动工之前，就把整个系统的疆域横向铺开、切分清楚\n。\n我们把这个古典思路搬到了 AI 研发时代。\ndocs/specs/\n就是 MDI 的站点地图，它按业务地图横向铺开：\ndocs/specs/\n├──\n00\n_\n[站点设计]\n/          ← 站点整体骨架\n├──\n01\n_\n[业务地图]\n管理端/     ←\n16\n个功能模块（最重）\n├──\n02\n_\n[业务地图]\n用户端/     ←\n6\n个功能模块\n├──\n03\n_\n[业务地图]\n小二端/     ←\n14\n个功能模块\n├──\n04\n_\n[业务地图]\n专家端/     ←\n1\n个功能模块\n└──\n05\n_\n[业务地图]\n评测端/     ←\n2\n个功能模块\n一个业务地图 = 站点的一个分区，一个功能模块 = 分区里的一个页面/功能区。\n数字前缀保证目录天然有序。这就是「基于站点地图思路横向铺开」的直接映射。另外，我们在相关同学进入开发前，一开始就确认清楚其负责的产品前台路由、后台 API 领域、负责的产品模块、负责的 spec 范围。任何边界之外的协同都要和项目组对焦。\n▐\n手段二：四种变更类型满足所有需求演进行为\n站点地图铺开后，具体到每一次变更，我们用四种类型的需求迭代方式来组织：\n一个 feature 的三级结构长这样（以「管理端/创建项目」为例）：\n01\n_\n[业务地图]\n管理端/\n└──\n01\n_\n[功能模块]\n创建访谈/                    ← feature\n├── raw提示词\n.md\n← 原始需求（只追加）\n├──\n[技术方案]\n管理端-创建访谈\n.md\n← 主 spec\n└── patches/                              ← 挂在 feature 上的 patch 集\n├── PATCH-\n001\n_TPP同步代理接入/\n├── PATCH-\n002\n_TPP异步代理接入/\n└── ... PATCH-\n011\n（共\n11\n个 patch）\n这里藏着一个层次差异：\nfeature / patch / sunset 都活在\ndocs/specs/\n（正式规格层），而 blueprint 刻意放在\ndocs/wiki/blue-print/\n（自由探索层）\n。因为蓝图是“还没确认要如何沉淀成 spec 前的基础能力构思”，它的命名前缀体现「成熟度阶梯」：\n[调研]\n→\n[讨论稿]\n→\n[技术方案]...V4-MVP\n。当调研成熟，才“毕业”迁入 specs 成为正式 feature。\n一个功能的完整生命周期 —— 从蓝图预研到日落存档\n为什么这样切分能让人天然分开？\n三个层面：\n目录即认领单元\n：A 认领「创建项目」、B 认领「项目循环」，各自的 spec 目录物理隔离，冲突可能性降到最低。\npatch 让并行不打架\n：小改动走 PATCH 补丁，多人可以在同一 feature 下并行提交 patch，主 spec 只在稳定后收敛。\n生命周期明确\n：大前期设计走蓝图，功能下线走日落，稳定功能就走 feature + patch\n关键规格一：patch 的双向指针解决 “主文档与补丁” 的语义二义性\npatch 最值得展示的不是模板，而是\n双向指针（bidirectional pointer）\n机制。当一个 patch 要替代主方案里的某段内容时，如果只在 patch 里说“我改了 X”，读主文档的人不知道；如果只在主文档划掉“X”，读 patch 的人不知道来龙去脉。我们强制双向建立指针：\n# ① Patch → 主文档（Patch 开头声明覆盖范围）\n## 覆盖范围\n本 Patch **替代**主方案 `[技术方案]管理端-创建项目.md` 以下内容：\n| 被替代段落 | 原方案 | 新方案 |\n|---|---|---|\n| POST /api/project/{\nid\n}/refine-goals | SSE 流式，调 DashScope | 废弃，改走通用 TPP 代理 |\n# ② 主文档 → Patch（被替代段落加删除线 + superseded 指针）\n> **已被 [PATCH-001_TPP同步代理接入](./patches/PATCH-001_TPP同步代理接入/) 替代。**\n~~点击后调用 POST /api/project/{\nid\n}/refine-goals，SSE 流式展示~~\n我们会强制要求\nPatch 自身必须可独立阅读\n，不依赖读者先读主文档。这对 AI 尤其友好，其从任何文件切入都能拼出当前生效的真相，不被过期描述误导。\n关键规格二：sunset 实现旧功能优雅日落\n旧功能下线时，如果直接\ngit rm\n，那段历史上下文就永久丢失了，未来排查灰度期的线上问题会抓瞎。我们用 sunset（日落）机制让旧 spec 优雅退场。下面是真实案例，用户核心循环从 V1 自建 LLM Agent 迁移到算法团队的 TPP 服务：\n#\n[技术方案] 用户端 - 核心循环\n>\n⚠️ **日落声明（V1 范式 · 自建 LLM Agent）**\n>\n自 2026-05-26 起，用户核心链路迁移至算法团队 TPP 黑盒服务。本文档进入凝固期：\n>\n- ❌ 不再修订章节内容（保留 T0 时刻的纯粹历史）\n>\n- ❌ 不再新增 PATCH（V1 时代 PATCH-001~006 已封存）\n>\n- ✅ 仍可阅读用于排查灰度期 V1 范式的线上问题\n>\n迁移决策：ADR-010\n>\n预计清场时间：V2 全量切换且稳定 1 周后，本文档及关联 V1 文件将被 git\nrm\n。\n上面这个模块是全项目最佳的主线案例，它\n同时经历了四种类型\n：V4 全双工方案还在预研（blueprint）、V2 作为正式 feature、V1 时代累积了 PATCH-001~006（patch）、V1 整体日落（sunset）。一个模块把四种类型走了个遍。核心理念就是，\nsunset 在我们这里不是「把文件删掉」，而是一份带状态机的可执行迁移剧本\n。\n▐\n手段三：提交时，代码到 spec 的反向提醒\n「站点地图」把疆域切好了，但代码写着写着可能会偏离 spec。我们有专门的 skill 在\n提交代码时做代码到原始 spec 的检查\n。这里的设计哲学非常关键：\n「Spec 是意图源，比代码更早期。代码偏离 Spec 不一定是错误——可能是编码过程中发现了更好的方案。」\n所以提交时\n不自动反向更新 Spec\n，而是输出差异清单，把决策权交给人：\n### Git 提交触发：Spec-Code 差异检测（需求澄清）\n|\n# | 差异点 | Spec 描述 | 代码实现 | 建议 |\n|---|---|---|---|---|\n| 1 | 字段类型 | status: String | status: Integer（枚举值）| 反向更新 Spec |\n用户逐条决策：\n✅ 反向更新 Spec（以代码为准）\n❌ 保持 Spec 不变（代码后续修正回来，记 TODO）\n⏭️ 暂时搁置\n这把「文档变化」从静默忽略变成了显式决策。配合工程侧的 lint 质量门禁和 collar-changelog 强制约束，构成「Agent 语义检查 + git hook 质量检查」的双保险。\n▐\n手段四：上下文缝补\n现在讲这个阶段我认为\n最有价值\n的部分。\n多人协作到一定阶段，一定会为了发布效率，遵循工程范式把某些硬编码（比如 prompt 逻辑）迁移到 Diamond、DB 或其他持久化介质上。这在传统研发时代是标准的“最佳实践”，配置与代码分离嘛。\n但在 AI 研发时代，这是一个隐蔽的陷阱。\n想象一下：原本 Agent 的行为逻辑（提示词）写在代码里，codeAgent 一读代码就知道这个 Agent 会怎么干。现在你把提示词挪到了 DB，代码里只剩一个\npromptService.load(agentCode)\n的调用框架。codeAgent 再读代码，就完全不知道这个 Agent 的具体行为了——它会在关键决策上误判，或者给出那句让人血压升高的话：\n「但我不知道这个 Agent 的具体行为，请你去对应平台修改相关的提示词。」\n这就是\n推理链断裂\n。你以为做了工程优化，实际上把 AI 的上下文捅了个窟窿，研发效率断崖式下跌。\n我们 MDI 项目组内由此立下一条原则：\n任何导致上下文异常的研发架构变动，都必须用适合的方式缝补缺损的上下文。\n这背后是一个更根本的认知 ——\nAI 时代，human in the loop 越少效率越高，所以 AI 上下文始终是效率的关键\n（注意：这里说的是效率，不是质量）。DB 相关的 MCP 为什么好用？就是让业务逻辑链路重新完整、让 codeAgent 上下文齐全。\n从这个视角看，\nDB 等外接的查询类研发 MCP 的价值就是把“外置到 DB 的逻辑”重新拉回 AI 的视野\n。\n下面是我们缝补的三个真实案例。\n案例一：把外置的动态提示词/skill 拉回 AI 视野（MCP + 只读查询）\nMDI 的多 Agent 报告生成管线，其业务逻辑（prompt 内容）不在代码中硬编码，而是通过\nPrompt 工作台动态管理、独立发布\n。代码里只有调用框架和数据流转——典型的“上下文缺损”场景。\n我们的缝补方式是提供一个 MDI 专属的 MCP Server，暴露 20 个只读查询工具，其中第 7 组「Prompt 工程」专门做 “\n根据原本的锚点，查询当前实际生效的动态提示词/skill 内容\n”：\n# mdi-query MCP —— Prompt 工程组（缝补核心）\nquery_prompt_manifest(sceneCode,\nenv\n?)\n# 锚点=场景码+Agent码，返回每个 Agent 当前生效的 promptId/version/激活环境\nquery_prompt_content(\nid\n)\n# 用 promptId 拿到完整 Mustache 模板内容/变量/模型名\nquery_prompt_versions(sceneCode, agentCode)\n# 版本迭代历史\nquery_prompt_intermediates(insightId)\n# 每个 Agent 的实际输入/输出/耗时（调试用）\ncodeAgent 任何时候都能通过 MCP 取到“当前实际生效”的 prompt，那句“请你去平台自己改”的推理链断裂就不会再出现。\n但光有 MCP 还不够——工具“能查”，不等于 AI“知道该查”\n。所以我们额外配了一个 skill，它就是这个 MCP 的\n使用说明书\n，专门教 codeAgent 如何主动地把自己的上下文补全。它明确回答三个问题：\n何时查？\n：skill 里定义了触发条件，涉及到相关上下文会主动调 MCP，而不是等人提醒。\n怎么查？\n：固定四步调用链，锚点就是场景码 + Agent 码。\n查到后怎么用？\n：补充 mcp 数据含义，赋能 codeAgent\n这才是完整的缝补闭环\n：MCP 提供“只读可达”的通道（能力层），skill 提供“何时/如何取用”的协议（认知层）。两者合起来，codeAgent 才会\n主动地、按正确锚点地\n把外置到 DB 的上下文拉回视野，而不是被动等着能力在那里却想不起来用。\n上下文缝补的核心 —— 用 SKILL/MCP 把外置到 DB 的动态提示词/skill 按锚点拉回 AI 视野\n案例二：预发/线上环境差异在 AGENTS.md 里显式声明\n我们的预发与线上环境差异对 AI 是个“隐藏地形”——它排查预发问题时，可能遇到无法解释的现象（明明代码对的，就是不生效）。\n缝补方式：在\nAGENTS.md\n的「关键约定速查」里\n显式告知\ncodeAgent 存在环境差异、遇到不可解释的问题要优先考虑环境，并把细节沉淀成 ADR。\n案例三：Transform 脚本用声明式注释保留上下文锚点\n我们把一些运营逻辑外置到 Transform 平台（Groovy 脚本），但用一套\n//!\n声明式注释把上下文锚点保留在代码里——在 Groovy 眼里是普通注释，对平台却是元数据，\n代码即锚点\n，这样即便逻辑外置到了平台，AI 读脚本源码仍能从这些声明里知道：这个脚本叫什么、风险几何、参数是什么、能在哪个环境跑。这依然是“外置逻辑但保留可解释性”的同一种缝补哲学。\n▐\n小结 - 超级研发分队篇\n横向铺开：基于一套站点地图、四种变更模式，让多人协作从一开始就自然分开、冲突面最小\n上下文缝补机制确保工程优化不以牺牲 AI 上下文为代价。\n任何导致上下文异常的架构变动，都要缝补回来\n。\n高速迭代期：引入「技术哨兵机」\n从更高维维稳\n▐\n问题：高速迭代期如何确保研发小分队质量不劣化？\n进入第三阶段，每个人的效率都上来了，节奏变成每周一个大版本、预发同时十几个分支。新问题浮现：\n效率提升后，\n人与人之间对新输入的上下文交换效率成了瓶颈\n。这就会出现这样的情况：我上午改了后端接口签名，你下午改了前端调用 ——\n各自在本地都跑得通，合到预发业务逻辑一冲突，甚至可能要延续很久之后才炸，甚至会酿成线上问题\n。\n这种「隐形冲突」在多人高速迭代下会指数级增长，\n是\nAI 研发质量劣化的头号杀手\n。我们必须引入新的上下文交换机制。\n▐\n手段一（一次失败的尝试）：Agent Manage（编码态监控）\n我们最初的想法很直觉：既然要同步上下文，那就\n直接读取大家\n本地编码阶段\n的输入和 Agent 输出\n，希望在编码阶段就把冲突扼杀。这就是我们做的\nnekocollar-app\n（Agent Manage 方式）。\n所谓的 nekocollar-app，就是一个全局的 codeAgent 信息采集器，他可以监听 cursor、qoder、claude code 这些 agent 进程的输入输出，实现 AI Coding 信息的全量获取并管理（这个无论是开源还是我司内部都有很多实践了）。\n我们是希望所有同学都转一个本地 app，然后监听所有通过 collar 这一套模式运行的项目，从其中采集到我们需要的项目协同信息并实现冲突的提前判别。\n但实际跑下来，我们遇到了两个致命问题，\n这一块是失败的\n，如实记录如下：\n噪音太多、信噪比极低\n：大家在没有 release 自己代码前，本地编码态充满了不成熟的探索——写了又删、试了又改、跟 AI 反复对话调整。这些“过程态”绝大部分是无用噪音。\n成本过高\n：要监控每个人本地的编码态输入输出，token 消耗大得惊人，各 Agent 的行为监控也很难做（每个人用的工具、习惯都不一样）。\n失败的根因，事后复盘很清楚：\n我们把介入时机放错了\n。编码态是“意图尚未定型”的阶段，此时的信息熵最高、确定性最低，用它做冲突检测成本过高。\n失败与成功的分野 —— 介入时机从“编码态”后移到“预发集成态”。\n▐\n手段二（这次有戏）：把触发节点放在预发检测上，还原一个“谁的开发机都没有的”最终运行环境\n复盘之后，我们把触发节点从“编码态”后移到“预发集成态”。这就轮到\ncollar-daemon\n这个项目登场了。它的定位很纯粹：一个\n跑在独立机器（目标形态：一台 Mac mini）上长驻的守护进程\n，本质是“团队研发质量的哨兵”。技术栈极简——\n原生 Node.js，零第三方依赖\n，只用\nchild_process\n/\nhttps\n/\nnet\n/\nfs\n等内置模块，部署到 Mac mini 连\nnpm install\n都省了。（极简的原因有两点，一个是我需要快速实现我要的功能，二是实现了我要的功能并稳定运行后，要考虑部署到云端）\n它做三件事，是一个闭环：\n代码环境还原\n：持续把「线上」和「预发」两套工作区的所有子仓库同步到各环境的最终态。\n业务逻辑冲突检测\n：预发一拉到新提交，就把“谁改了什么”喂给云端 AI Agent 做隐形冲突分析。\n告警闭环\n：Agent 发现冲突，通过钉钉机器人 + AI 表格告警到群里。\n团队里每个开发者本地只有\n自己那一部分\n的改动，分支还各不相同。所以一直以来，互联网项目多人协同时，除了集成环境本身，\n没有任何一台开发机拥有“所有人的最新提交合在一起”的完整环境。\n但恰恰是这个“合在一起”的环境，才是冲突真正暴露的地方。\n我们的 collar-daemon 在一台独立机器上，实现了持续把两套工作区拉到最终态的上下文构建工作：\n//\nsrc\n/config\n.js\n—— 双环境，各自独立轮询间隔（预发更快）\nworkspaces: [\n{ env:\n'prod'\n, path:\n'.../workspace-mdi'\n,     interval:\n600\n},  // 线上：全部 master\n{ env:\n'pre'\n,  path:\n'.../workspace-pre-mdi'\n,  interval:\n300\n},  // 预发：各仓最新 release\n],\n关键在预发的处理——\n每个子仓各自独立发现自己最新的 release 分支\n，而不是统一切一个分支：\n// src/sync.js —— 按 committerdate 倒序自动发现最新 release 分支\nasync\nfunction\ndiscoverReleaseBranch\n(\nrepoDir\n) {\nconst\nrefs =\nawait\ngit\n(repoDir, [\n'for-each-ref'\n,\n'--sort=-committerdate'\n,\n// ★ 按提交时间倒序\n'--format=%(refname:short)'\n,\n'refs/remotes/origin/'\n,\n]);\nconst\ncombinedRegex =\nnew\nRegExp\n(\n// 前端仓 def_releases_* / 后端仓 releases/*\n`^origin/(?:\n${CONFIG.releasePatterns.map(globToRegex).join(\n'|'\n)}\n)$`\n);\nconst\nmatch = lines.\nfind\n(\n(\nl\n) =>\ncombinedRegex.\ntest\n(l));\nreturn\nmatch ? match.\nreplace\n(\n/^origin\\//\n,\n''\n) :\nCONFIG\n.\nprodBranch\n;\n// 兜底回退 master\n}\n于是：前端仓走\ndef_releases_2026xxxx\n、后端仓走\nreleases/2026xxxx\n，\n各服务当前要上预发的那版代码，被物理地聚合到同一台机器的同一个工作区里\n。这不是靠 git merge 造一个临时分支，而是在工作区层面\n模拟出了“预发合并态”\n。一个可运行、可被 AI 通读的完整快照。因为是持续轮询（预发每 300s），这份“最终态镜像”始终跟着团队提交实时更新。\n而且它不需要人工告诉它“这周的预发分支叫什么”，它会\n自动切换到最新预发态\n。\n为什么“始终维护一份 release 集成分支”如此关键？\n这一点你看以下例子就明白了：\nA 改了某个接口的签名，B 恰好在调用这个接口——两人各自的分支都编译通过、自测通过，只有当两份代码合到一起，签名不匹配的问题才暴露。\n甲改了共享 Prompt 的槽位 key，乙依赖旧 key 读取——各自分支都对，合并后线上就静默读不到、悄悄失效。\nDB 字段变更、并发时序、共享配置……这类冲突\n在任何单一开发分支上都“一定不存在”，必须等集成后才现形\n。\n...\n只有在这份“所有人最新提交合在一起”的集成代码上做查询和检测，才能命中那些藏在合并处的真实问题\n。release 集成分支是“冲突唯一会现形的地方”，哨兵机就是 24 小时盯着这个地方的人。\n这不是纸上推演。下面几条，都是哨兵机在集成态上真实播报出来、且\n在各自开发分支里根本查不出问题\n的例子\n，\n其中会有\n多种类型的\n报错：\n这是数字人一天 24 小时内发现的问题\n哨兵机不是每次都报警，只在真有合并风险时才 @ 责任到人，这正是它信噪比能维持在八成以上的原因。\ncollar-daemon 的核心价值 —— 在一台哨兵机上还原出全团队的预发合并态\n信息采集时绝不阻塞和破坏本地工作区。我们会精确提取每个新提交的作者、message、变更文件，组装给 AI 的上下文时，按仓库分组、每条突出提交人名字——因为多人协同排查冲突时，“谁改的”是第一线索。\n▐\n手段三（深挖）：从 daemon 发现，到 QoderWake 处理，再到 钉钉 留痕\ndaemon 代码不做任何规则判断、不内联任何 prompt\n。它只把结构化上下文 POST 给云端的 QoderWake Automation Agent，来判定冲突。\n易变的智能（prompt 编排）放在云端 Agent，本地进程可以做到零依赖、长期稳定不用改。\nQoderWake Agent 拿到“提交上下文 + 完整代码”后综合分析，命中冲突就\n群告警 + AI 表格写入\n。相关同学在钉钉里直接看到“谁的哪个提交与谁冲突”。日常跨研发同学的代码问题排查、trace 检查、版本 changelog 的业务逻辑冲突，都由这同一条 Agent 分析链路的不同产出维度承载，闭环起来。\n还有个工程小巧思：QoderWake 的管理界面 daemon 硬编码绑定\n127.0.0.1\n，团队无法远程访问。collar-daemon 用\nnet.Server\n+\npipe()\n做了一个\n同端口不同 IP 的 TCP 透明转发\n，把\n127.0.0.1:19820\n暴露到内网 IP，绕开了无法改绑的限制，让全团队都能远程看这台哨兵机的界面：\n// src/port-forward.js —— 同端口不同 IP 共存，双向 pipe\nconst\nserver = net.\ncreateServer\n(\n(\nclientSocket\n) =>\n{\nconst\nupstream = net.\nconnect\n(cfg.\ntargetPort\n, cfg.\ntargetHost\n);\n// → 127.0.0.1:19820\nclientSocket.\npipe\n(upstream);\nupstream.\npipe\n(clientSocket);\n// 双向转发，支持并发多连接\n});\nserver.\nlisten\n(cfg.\nlistenPort\n, lanIp);\n// 绑定内网 IP，与 127.0.0.1 不冲突\n当然，如果冲突检测只停留在「群里发条告警」，价值会大打折扣。告警会被刷走、没人跟进、无法度量。所以我们把 Agent 每轮产出的冲突\n沉淀成一张钉钉 AI 表格\n，并在其上做\n状态流转\n管理，让「发现问题」进一步变成「闭环问题 + 可度量的研发质量」。\n每条冲突都是一条可流转的记录：\n相关同学看到后，把状态从待回复流转为\n「问题存在」/「误报」/「已修复」\n中的一个。这样既闭环了问题，也反过来校准了 Agent 的准确率。\n北极星指标设定：\n我们哨兵机北极星指标是\n周冲突有效发现率\n（即 Agent 报出的冲突里有多少被人工确认为真问题）。\n冲突沉淀为 AI 表格并按周流转，有效发现率稳定 > 70%，成了团队离不开的基础设施\n跑出来的真实成\n效。 这套机制上线运营一段时间后，从趋势看已经很能打：\n业务冲突有效发现率稳定超过 70%\n——也就是 Agent 报出的冲突，七成以上都是真问题、不是噪音。相较于之前的本地检测方案，\n信噪比直接从“不可用”翻到“八成命中”\n。\n每周能发现 40+ 个实实在在的多人研发潜在问题\n，这些都是分散在各自开发机上、单人视角根本看不见的隐形业务埋雷。\n更有意思的是团队心态的变化：\n现在项目组里如果哪天这个“禾小荞机器人”没有发冲突检测，大家会普遍觉得心理不安\n——总担心是不是哪里悄悄埋了雷没被发现。团队会对一个 AI 工具产生这种“没有它就不踏实”的依赖，说明它真正嵌进了研发流程。\n▐\n小结 - 高维哨兵机器人篇\n我们用一台零依赖的哨兵机，还原出“谁的开发机都没有的”预发合并态镜像，把每轮新提交的隐形冲突交给云端 Agent 检测\n有效发现率稳定 >70%、每周揪出 40+ 个真实的多人研发潜在问题。项目组已经重度依赖起了它。\n稳定运作期：为「整个项目组的成员」\n带来效率和稳定性的平权\n▐\n问题：研发的效率和质量提升了，那项目组里的非研发同学呢？\n项目稳定运作后，我们意识到一个更大的机会：\n能不能把这份效率和稳定性，同步交付给项目组里的非研发同学？\n测试、产品、设计——他们同样需要理解代码、需要基于当前系统提出改动、需要一个“所见即所得”的编辑体验。\n互联网各角色之所以都需要围绕代码上下文协作，是因为\n代码是距离用户真实体验最近的一份“可执行事实”\n。\n产品文档描述希望发生什么，设计稿描述用户应该看到什么，测试用例描述系统应该满足什么。这些上游产物本质上都是最终系统的不同投影，在传递过程中必然受到技术约束、接口实现、历史兼容和运行环境的影响。用户最终体验的是代码与配置实际运行出来的行为\n所有互联网工种，多年来其实一直是围绕“代码”这一互联网模式的最终产物，跟着项目一起进行中心化协同的。\n如果协作始终停留在上游产物之间，信息差就会沿着交付链不断累积。只有让产品、设计、测试的判断持续回到代码与运行态上校准，才能尽早发现“产品以为已经实现、设计以为能够还原、测试以为覆盖完整”与真实系统之间的偏差。更准确地说，用户收到的是系统行为，而代码上下文是产生这一行为之前，最后一份可版本化、可追踪、可验证的共同事实。\n围绕代码协作，不是让所有人进入 Git，而是让所有角色都基于最终可执行事实工作\n。\n但直接把 git 权限、把 AI 编码能力交给非研发角色，风险极高：一个误操作就可能污染代码库。\n于是我们正在开发\nNekoCollar\n，一个\n计划将测试、产品、设计等角色融到一起、共享研发效率 + 稳定性的云端上下文协作系统\n。它是 collar SDD 体系的“平台化”兑现（还记得解法一里\ncollar.yaml\n那些“平台扩展占位”字段吗？在这里它们开始生效了）。\n这一步是我们认为非研发人员参与“代码开发”的“终局形态”。\n前三章的手段，解决的都是“研发同学之间”的协同，参与者都懂代码、懂 git、有工程素养，约束可以相对“软”（靠文档、靠规范、靠自觉）。但当参与者扩展到测试、产品、设计——他们不必懂代码，却要能安全地基于代码库表达意图——约束就必须从“软”变“硬”。因为你不能假设一个不懂 git 的产品经理会记得“不要 push 到主干”。\n参与者的工程素养越低，系统的约束就必须越硬。\n这是本章与前三章最本质的区别。\nNekoCollar 的设计哲学可以一句话概括：\n在效率上做加法，在稳定性上做物理约束\n。下面分两条线讲。\n▐\n设计思想一：效率线，让非研发角色也能“上下文编排式协同”\n云端沙箱一键开工，物化上下文\n。\n非研发同学不需要在本地配环境。系统用一套异步编排（\nWorkspaceProvisionOrchestrator\n，\n@Async\n五步流水线）在云端 Aone 沙箱里一键拉起工作环境：\nStep1\nCreateInstance（同步，前端立即拿 instanceId）\nStep2\nCREATING_SANDBOX（Aone SDK 起沙箱）\nStep2\n.\n5\nINSTALLING_CLI（装 claude-cli）\nStep3\nPrepareWorkdir（★ 先 clone 知识库作外层目录，再把代码仓 clone 进知识库内部）\nStep3\n.\n5\nINJECTING_HISTORY（reprovision 时恢复对话记忆）\nStep4\nSTARTING_BRIDGE（启动 Bridge + Claude Agent）\nStep5\nCONNECTING_AGENT（markActive → RUNNING）\n注意 Step3，\n先 clone 知识库作为外层目录，再把代码仓 clone 进知识库内部\n——这就是目前我们研发态实际用到的真实“上下文”环境。\n所见即所得的产品编辑体验（这是我们和其他全栈研发平台最不一样的一点）\n。\n市面上大多数「AI 改前端」的产品，要么让你在一个隔离的沙盒预览页里看效果，要么给你一段代码 diff 让你自己想象。\n这两种都不是“真实页面”\n——产品、设计同学看到的，始终是一个“仿真环境”，和线上真正跑的那个页面隔着一层。\n我们花了不少力气做的，是让非研发同学\n直接在预发/线上的真实页面上，看到沙箱里 AI 实时编辑的效果\n。这套机制的完整链路是这样的：\n1. 沙箱内跑真实的 dev server。\n工作空间开机时，对配置了\ndevServerPort\n的前端仓库，在 Aone 沙箱里后台拉起一个真实的开发服务器 —— 就是我们本地开发天天用的那个\nnpm run start\n：\n// WorkspaceProvisionOrchestrator.java —— 沙箱内后台启动真实 dev server\nString\ncmd =\nString\n.\nformat\n(\n\"lsof -ti:%d | xargs -r kill 2>/dev/null; \"\n// 先清端口\n+\n\"cd '%s' && nohup sh -c '\"\n+\n\"npm install --registry=\nhttps://registry.npmmirror.com\n2>&1\"\n+\n\" && npm run start -- --host 0.0.0.0 --port %d 2>&1'\"\n// 真实 npm run start，监听 0.0.0.0\n+\n\" > /tmp/dev-%s.log 2>&1 & echo 'DEV_SERVER_BG_OK'\"\n,\nport, repoDir, port, safeRepoName);\n2.\n把 dev server 端口暴露并注册到 NekoCollar\n。\n通过 Aone Sandbox SDK 把沙箱内部端口映射成一个外部可访问的 URL，再把数据写进工作空间实例的数据中，完成“注册”。平台会根据结果专门提供一个给浏览器插件消费的接口：\n// CollarWorkspaceController.java —— 供浏览器插件拉取端口映射\n@GetMapping\n(\n\"/{workspaceId}/dev-servers\"\n)\n// 返回 [{contextUri, repoName, port, endpoint, status}]\npublic\nNovaResult\n<\nList\n<\nDevServerVO\n>>\ndevServers\n(\n@PathVariable\nLong\nworkspaceId\n) { ... }\n// Service 里不是读缓存，而是实时重新 getEndpoint，保证返回最新可用端点\n3. 浏览器插件（\nnekocollar-extension\n）自动代理。\n这是最关键的一环。当你在浏览器打开预发/线上真实页面时，插件自动从 NekoCollar 后端拉取当前工作空间的 dev server 映射，然后动态注入重定向规则，\n把该页面从 CDN（\ng.alicdn.com\n/\ndev.g.alicdn.com\n）加载的前端资源，实时重定向到沙箱 dev server 的 endpoint\n。插件只在 NekoCollar 页面生效、规则严格限定到当前标签页（不污染其他页面），并带 20 秒 TTL 缓存 + 轮询刷新，保证 endpoint 变化能及时同步。\n// nekocollar-extension/background.js —— 把 CDN 资源重定向到沙箱 dev server\naddRules.\npush\n({\nid\n: ruleId++,\npriority\n:\n1\n,\naction\n: {\ntype\n:\n'redirect'\n,\nredirect\n: {\nregexSubstitution\n: `${endpoint}/\\\\\n1\n` } },\ncondition\n: {\n// 匹配\n\"这个仓库\"\n在 CDN 上的资源路径，捕获资源真实相对路径 (.+)\nregexFilter: `^https?:\n//dev\\\\.g\\\\.alicdn\\\\.com/${escaped}/[^/]+/(.+)$`,\nresourceTypes: [\n'script'\n,\n'stylesheet'\n,\n'image'\n,\n'font'\n,\n'xmlhttprequest'\n],\n},\n});\n4. 闭环：所见即所得。\n于是完整的体验就串起来了。产品/设计同学在沙箱里跟 codeAgent 对话改页面 → dev server 热更新产物 → 浏览器插件把真实页面的资源代理到沙箱 → 用户在预发/线上的真实页面上，即时看到 AI 编辑的结果。不是仿真、不是预览、不是 diff，就是那个真实页面本身，实时变化。和我们研发在本地开发全栈应用的体验是一模一样的！\n这就是我们和其他平台不同的地方之一：\n原本只有研发用本地 whistle/charles 代理才能做的“调试真实页面”，现在通过沙箱 dev server + 浏览器插件自动代理，无门槛地交给了非研发同学\n。产品经理不用装本地环境、不用懂代理配置，打开真实页面就能看到改动效果。\n那服务端的改动怎么生效\n？\n前端资源可以靠 dev server 热更新 + 插件代理即时看到，但如果这次改动还牵涉到后端接口（比如 codeAgent 顺手调整了某个接口的返回结构），就没法用同样的方式立刻生效——\n服务端改动要真正上预发/线上，受限于发布流程的时间成本和部署复杂度\n（走一遍构建、审批、部署往往是分钟级甚至更久）。对产品/设计同学的“边改边看”体验来说，这个等待是致命的\n所以这里我们规划的取舍是：服务端的改动同样交给浏览器插件用 mock 的方式就地拦截、直接返回改后的响应，而不是等它真的发布。这样产品同学改完接口逻辑，页面上立刻能看到对应的数据变化，闭环依然是“所见即所得”的。之所以敢这么做，是因为非研发场景下对业务后端逻辑的改动，影响面是可控的。（需要说明：当前插件已扎实落地的是前端静态资源代理这条链路；服务端接口 mock 属于同一思路下的规划中环\n节）\n非研发同学直接在预发/线上真实页面上对话式修改\n▐\n设计思想二：稳定性线，软硬双锁把危险操作变成“物理不可能”\n这是 NekoCollar harness 层设计的部分。\n硬约束（协议层，不可绕过）\n：clone 后立即作废 push URL。\n沙箱 clone 完代码后，第一件事就是遍历所有 git 仓库，把 push URL 改写成一个不存在的仓库名：\n// WorkspaceProvisionOrchestrator.java —— disablePushForClonedRepos()\n// 把每个仓库的 push URL 改写为 PUSH_DISABLED，任何 git push 在协议层直接失败，不可绕过\nString\ncmd\n=\n\"find '...' -name .git -type d -maxdepth 3\"\n+\n\" -exec sh -c 'cd\n\\\"\n$(dirname\n\\\"\n$1\n\\\"\n)\n\\\"\n&& git remote set-url --push origin PUSH_DISABLED' _ {}\n\\\\\n;\"\n;\n此后任何\ngit push\n都会报\nfatal: 'PUSH_DISABLED' does not appear to be a git repository\n。\n沙箱里的代码只能进、不能推出去污染主干\n。\n软约束（行为层，减少无谓尝试）\n：Claude Code 权限白名单。\n写入沙箱的\n~/.claude/settings.json\n，\npermissions.allow\n白名单\n只放行拉取类 git 命令\n（fetch/pull/merge/rebase/checkout/add/status/log/diff 等），push / remote 不在白名单，在 ACCEPT_EDITS 模式下审批直接失败被拦截。\n这两道锁都已真实落地。在此之上，我们还规划了第三道锁——提案审阅兜底（下面详述，目前开发中）。\n代码只进不出\n不改代码、只 cherry pick 验收后净改动的提案机制\n。\n前面两道锁保证了“代码推不出沙箱”，但还有一个问题：非研发同学在沙箱里改得满意后，这些改动怎么安全地落到代码库？我们为此设计了一套「提案（Proposal）」机制。\n先讲清楚我们的设计\n，它的核心理念是让非研发角色多轮对话产生的改动不直接落库，而是先沉淀为一份结构化提案（已验收净 diff + 需求 + 决策 + 验收证据），经审阅后才被智能 cherry pick 应用。此外，我们还设计了面向不同角色的约束实践，让定制化、约束化的协作成为可能。\n▐\n小结 - 超级项目组篇：\n稳定运作期，构建云端开箱即用的研发上下文 NekoCollar，效率靠云端沙箱 + 上下文物化 +\n所见即所得的真实页面编辑\n+ PM 规则治理来实现\n稳定性上，git 协议层的软硬双锁已落地，而提案机制、角色运行时鉴权仍在开发中。它是 collar SDD 从“本地 CLI 体系”走向“云端多角色平台”的自然延伸，一个我们正在持续建设的云端终局形态。\n结语：AI 时代研发协同发展的\n四条必经之路\n回望这四个阶段，如果要提炼四条直接可复用的经验，那就是如下：\n单人起步阶段：\na. 解法：构建核心全栈上下文\nb. 原因：其知识库深度将直接决定原子单位研发效率\n多人扩张阶段：\na. 解法：构建 spec 变更规则和站点地图\nb. 原因：其权责划分清晰度直接决定原子单位效率是否能横向扩散\n敏捷迭代阶段：\na. 解法：构建比传统研发模式更高维的 AI 监控机制\nb. 原因：传统维度手段无法让研发质量和研发效率同步提升\n项目稳定阶段：\na. 解法：构建更多易用的协同链路 + harness 工程\nb. 原因：新链路的设计将直接决定是否能将效率和质量辐射至非研发人员\n回到开篇那条主线：这四步走下来，其实还是那句话，我们要\n把 AI 带来的研发能力一层层往外放大：\n个体 → 团队 → 可持续 → 全员\n先让一个开发者成为超级个体，再让超级个体组成能协同的超级团队，再让这支团队可持续地高速跑下去，最后把这份能力辐射到非研发的每一个人。\nAI 能力普惠后，人心中那些不固步自封、追求和创新的特质才是最宝贵。\n团队介绍\n本文作者卡狸，来自淘天集团-天猫技术团队。该\n团队是淘天集团的核心技术引擎，支撑国家补贴、百亿补贴、天猫国际、天猫APP、新品孵化、天猫行业等淘天核心业务的全链路技术落地。我们以高并发架构、智能算法和数据驱动能力，为上亿消费者打造行业标杆级购物体验，为百万商家构建高效增长的技术底座。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0,
+        "irrelevant": 0.25,
+        "direct_local": 0,
+        "transfer_agent": 0.73,
+        "transfer_business": 0.02
+      }
+    },
+    "relevance": {
+      "score": 1.9,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.05,
+        "2": 0.91,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.4,
+      "probabilities": {
+        "0": 0.33,
+        "1": 0.06,
+        "2": 0.05,
+        "3": 0.08,
+        "4": 0.41,
+        "5": 0.07
+      }
+    },
+    "decision_action": {
+      "score": 1.54,
+      "probabilities": {
+        "0": 0.5599999999999999,
+        "1": 0.02,
+        "2": 0.03,
+        "3": 0.11,
+        "4": 0.22,
+        "5": 0.06
+      }
+    },
+    "evidence": {
+      "score": 3.62,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.34,
+        "4": 0.65,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.04,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.65,
+        "5": 0.26
+      }
+    },
+    "anti_hype": {
+      "score": 3.85,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.14,
+        "4": 0.85,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 18605,
+    "outputTokens": 172,
+    "totalTokens": 18777
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.65,
+        "relevance": 0.91,
+        "grounding": 0,
+        "decision_action": 0,
+        "evidence": 0.75,
+        "actionability": 0.68,
+        "anti_hype": 0.88
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179874272,
+                "endTime": 1791179874485,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00078141",
+      "marketCost": "0.00078141",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00078141",
+      "inferenceCost": "0.00078141",
+      "inputInferenceCost": "0.00078141",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7QYD7TW7WM0EC9H6HV74"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:54 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::gh8nl-1791179873803-23324812d2c8"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0,
+            "irrelevant": 0.25,
+            "direct_local": 0,
+            "transfer_agent": 0.73,
+            "transfer_business": 0.02
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.9,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.05,
+            "2": 0.91,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.4,
+          "probabilities": {
+            "0": 0.33,
+            "1": 0.06,
+            "2": 0.05,
+            "3": 0.08,
+            "4": 0.41,
+            "5": 0.07
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.54,
+          "probabilities": {
+            "0": 0.5599999999999999,
+            "1": 0.02,
+            "2": 0.03,
+            "3": 0.11,
+            "4": 0.22,
+            "5": 0.06
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.62,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.34,
+            "4": 0.65,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.04,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.65,
+            "5": 0.26
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.85,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.14,
+            "4": 0.85,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 18605,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.65,
+            "relevance": 0.91,
+            "grounding": 0,
+            "decision_action": 0,
+            "evidence": 0.75,
+            "actionability": 0.68,
+            "anti_hype": 0.88
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179874272,
+                    "endTime": 1791179874485,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00078141",
+          "marketCost": "0.00078141",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00078141",
+          "inferenceCost": "0.00078141",
+          "inputInferenceCost": "0.00078141",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7QYD7TW7WM0EC9H6HV74"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:53.714Z"
+  }
+}

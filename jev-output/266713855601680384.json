@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "266713855601680384",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "腾讯正式发布面向Agent设计的命令行工具：CloudBase CLI V3",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695216&idx=1&sn=5b7603357bed357d756bf908a59991d7",
+      "date": "2026-04-14T00:46:00.144Z",
+      "chars": 6119,
+      "text": "云开发团队\n2026-04-14 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n我们很荣幸地宣布 CloudBase CLI V3 正式上线，这是\n一个面向 AI Agent 重新设计的 CloudBase 命令行工具。\n这个版本新增了 15 个顶层命令模块，覆盖环境管理、数据库、用户权限、路由、域名、日志、AI 智能体等完整能力。现在，一个云项目从创建到上线的所有操作，都可以在终端内完成，不需要打开控制台。\nV3 做了以下几个重要改变：\n补齐了过去缺失的大量命令，让几乎所有 CloudBase 操作都能在终端内完成；\n所有的命令都自带\n-h\n或\n--help\n的自解释能力，可以让 AI Agent 能够自主发现并且读懂命令功能；\n新增\ntcb docs\n命令，解决了 CloudBase 文档过去对 Agent 读取不友好的问题；\n全面适配\n--json\n输出模式，让所有命令的返回值变成机器可读的结构化数据。\n01\n为什么需要 CLI V3\n我们观察到，越来越多的开发者在使用 Claude Code、Cursor、CodeBuddy 等 AI 工具来操作 CloudBase。创建环境、部署函数、配置路由，整个流程交给 Agent 来跑。\n但传统的基于 GUI 的控制台，对 Agent 并不友好：Agent 无法点击按钮、无法读取页面上的视觉反馈、无法处理弹窗确认。每次碰到 CLI 覆盖不到的操作，Agent 就必须停下来，等人介入。\nCLI 是一种更适合 Agent 的设计。命令行的输入输出都是结构化文本，Agent 可以直接解析和处理，不需要视觉理解；命令可以组合、可以脚本化，天然适合多步骤的自动化工作流。\nCloudBase CLI V3 版本要解决的就是这个问题：完全面向 AI Agent 重新设计，让 Agent 能走完全程。\n02\n15 个新命令：从环境创建到项目上线的完整覆盖\nV3 新增了 15 个顶层命令模块：\n新增模块\n功能说明\ntcb env\n环境全生命周期管理——创建、套餐变更、续费、销毁、资源用量查询\ntcb cors\n安全域名管理（Web SDK 白名单）\ntcb domains\n自定义域名绑定与 SSL 证书管理\ntcb routes\nHTTP 路由配置（替代\ntcb service\n）\ntcb user\n用户管理（创建、查询、修改、封禁、删除）\ntcb role\n角色与权限策略管理（系统预设 + 自定义策略）\ntcb permission\n资源级访问权限（数据库集合、存储、云函数）\ntcb agent\nAI 智能体管理（创建、部署、更新、删除）\ntcb ai\nAI CLI 统一入口，集成 Claude Code / CodeBuddy / Codex / aider 等\ntcb logs\n统一日志检索（云函数、云托管、数据库、大模型，支持 CLS 语法）\ntcb api\n腾讯云 API 通用透传——任何腾讯云产品的公开 API 都可以直接调用\ntcb docs\nCLI 内文档检索\ntcb app\n应用一键部署（自动检测框架、安装依赖、构建、上传、绑定路由）\ntcb cloudrun\n云托管管理（替代\ntcb fun\n），支持灰度发布和流量管理\ntcb secrets\n临时密钥管理\ntcb db\nNoSQL 原生命令、MySQL SQL 执行、备份回档、慢查询监控\n同时对存量命令做了系统性整理：命令风格从冒号分隔（\ntcb functions:deploy\n）统一迁移为空格分隔（\ntcb fn deploy\n），更符合 CLI 惯例。详细迁移指南见文末 V3 迁移文档。\n这意味着，V2 时代需要在\"CLI + 控制台\"之间来回切换的操作，现在全部可以在终端内完成。\n03\n--help：命令的自解释能力\nCLI V3 的每一个命令和子命令都内置了\n-h\n/\n--help\n参数，输出该命令的完整用法说明、参数列表和示例。\n这意味着 Agent 在面对一个不熟悉的命令时，不需要查外部文档，直接\ntcb <command> --help\n就能拿到结构化的用法说明：\ntcb fn deploy --\nhelp\n对于 Agent 来说，这是一套零成本的命令发现机制：先\ntcb --help\n看有哪些顶层命令，再\ntcb <command> --help\n看具体用法，逐层探索，不需要任何外部知识。\n04\ntcb docs：面向 Agent 的文档系统\nAgent 面向 CloudBase 进行开发时，经常容易找不到正确的文档，通过搜索引擎的结果很容易过时或者不精确。\n为了解决这个问题，我们在 CLI V3 版本新增了\ntcb docs\n命令。让 Agent 无需通过搜索引擎，可以直接在终端内查询 CloudBase 官方文档：\n# 列出所有文档模块\ntcb docs list\n# 按路径读取指定文档\ntcb docs\nread\n云函数\ntcb docs\nread\nhttps://docs.cloudbase.net/cloud-function/faq\n# 关键词全文搜索\ntcb docs search 微信支付\n对于 Agent 来说，这形成了一个自主排查闭环：遇到不知道的知识 →\ntcb docs search\n查文档 → 确认文档内容 → 执行后续操作。不需要人介入，不需要调用外部搜索。\nPS：\ntcb docs\n无需登录即可使用。\n05\n--json 输出模式：对机器可读的输出\nV3 所有子命令统一支持\n--json\n全局参数。加了这个参数，输出中没有进度条、没有颜色编码、没有任何人类可读的修饰——Agent 拿到的是纯粹的结构化数据。\n成功时：\n{\n\"currentEnvId\"\n:\n\"luke-personal-test-new-8d0d90f5f\"\n}\n失败时：\n{\n\"error\":{\n\"\ncode\n\":\n\"FUNCTION_NOT_FOUND\"\n,\n\"message\"\n:\n\"函数 ai-reply 不存在\"\n,\n\"exit_code\"\n:\n4\n}\n}\n配合 V3 定义的六个结构化退出码，Agent 可以根据退出码直接走对应的响应路径：\n退出码\n含义\nAgent 响应策略\n0\n成功\n继续下一步\n1\n通用错误\n检查命令逻辑，切换方案\n2\n认证失败\n触发\ntcb login\n重新登录\n3\n参数错误\n调用\n--help\n核查参数格式\n4\n资源不存在\n验证资源名称是否正确\n5\n云端 API 错误\n等待重试\n6\n本地配置文件错误\n检查\ncloudbaserc.json\n失败不再是一个模糊的报错文本，而是一个确定性的信号。Agent 不需要靠语义理解来猜测下一步。\n06\n实战：Claude Code + CLI V3 搭建智能客服工单系统\n我们用 Claude Code + CloudBase CLI V3 构建了一个智能客服工单系统，来验证 V3 的实际能力边界。\n项目涵盖数据库、四个云函数、HTTP 路由、用户与权限管理、自定义域名和 SSL 证书全套部署。全程通过\ntcb\n命令完成，0 次控制台操作。\n6.1\nStep 1：创建并激活环境\ntcb env create\n--alias\n\"ticket-system-prod\"\n--package\nbaas_personal\n--yes\n--json\ntcb env\nuse\nluke-personal-test-new-\n8\nd0d90f5f\n--json\n返回\n{ \"currentEnvId\": \"luke-personal-test-new-8d0d90f5f\" }\n。\n设置全局默认环境后，后续所有命令无需重复传入\n--env-id\n。V3 的环境优先级为：全局配置 <\ncloudbaserc.json\n< 命令行\n-e\n参数，Agent 在需要切换时随时可以覆盖。\n6.2\nStep 2：初始化数据库\n工单系统需要三个集合：\ntickets\n、\nticket_history\n、\nuser_roles\n。\ntcb db nosql execute \\\n--\ncommand'[{\n\"CommandType\"\n:\n\"COMMAND\"\n,\n\"TableName\"\n:\n\"tickets\"\n,\n\"Command\"\n:\n\"{\n\\\"\ncreateIndexes\n\\\"\n:\n\\\"\ntickets\n\\\"\n,\n\\\"\nindexes\n\\\"\n:[{\n\\\"\nkey\n\\\"\n:\n{\n\\\"\nassignee\n\\\"\n:1,\n\\\"\nstatus\n\\\"\n:1},\n\\\"\nname\n\\\"\n:\n\\\"\nassignee_status_1\n\\\"\n},{\n\\\"\nkey\n\\\"\n:\n{\n\\\"\ncustomerId\n\\\"\n:1,\n\\\"\ncreatedAt\n\\\"\n:-1},\n\\\"\nname\n\\\"\n:\n\\\"\ncustomerId_createdAt_1\n\\\"\n}]}\"}]' \\\n--\njson\n当命令返回退出码\n1\n时，Agent 自动切换命令格式重试——退出码体系在这里直接发挥了作用。\n6.3\nStep 3：部署云函数\n项目包含四个云函数，三个事件函数，一个 HTTP 函数：\ntcb fn deploy submit-ticket\n--json\ntcb fn deploy assign-ticket\n--json\ntcb fn deploy reply-ticket\n--json\ntcb fn deploy ai-reply\n--dir\n.\n--yes\n--json\nHTTP 函数（\nai-reply\n）在\ncloudbaserc.json\n中声明\n\"type\": \"HTTP\"\n。这里结合了 cloudbase-skills 中的 HTTP 云函数代码规范，Agent 直接对照规范生成鉴权逻辑和 HTTP 处理结构。\n6.4\nStep 4：配置安全规则与用户权限\n# 数据库安全规则\ntcb\npermission set collection:tickets\n\\\n--level custom\n\\\n--rule '{\n\"read\"\n:\n\"doc.customerId == auth.uid\"\n,\n\"write\"\n:\n\"false\"\n}'\n\\\n--yes --json\n# 创建运营账号\ntcb\nuser create ops-admin --password Secret123 --nickname\n\"运营管理员\"\n--json\ntcb\nuser list --username ops-admin --json\n# 分配管理员角色\ntcb\nrole list --type system --json\ntcb\nrole update --id <administrator-role-id> --add-users\n\"<uid>\"\n--json\n整个安全规则 + 用户创建 + 角色授权流程，Agent 通过五条命令完成闭环。\n6.5\nStep 5：配置 HTTP 路由\ntcb routes add\n-\ne luke\n-\npersonal\n-\ntest\n-\nnew\n-\n8d0d90f5f\n--\ndata '{\n\"domain\"\n:\n\"*\"\n,\n\"routes\"\n: [{\n\"path\"\n:\n\"/api/ai-reply\"\n,\n\"upstreamResourceType\"\n:\n\"WEB_SCF\"\n,\n\"upstreamResourceName\"\n:\n\"ai-reply\"\n,\n\"enable\"\n:\ntrue\n,\n\"enableAuth\"\n:\nfalse\n}]\n}'\ntcb routes list --json\n输出结构化路由表，Agent 可以直接核查配置是否符合预期。\n6.6\nStep 6：绑定自定义域名\ntcb\napi ssl DescribeCertificates --json\ntcb\ndomains add luke.xxie.site --certid WZfHqLk2 --env-id luke-personal-test-new-\n8\nd0d90f5f --yes\ntcb\napi dnspod CreateRecord\n\\\n--api-version\n2021\n-\n03\n-\n23\n\\\n--body '{\n\"Domain\"\n:\n\"xxie.site\"\n,\n\"SubDomain\"\n:\n\"luke\"\n,\n\"RecordType\"\n:\n\"CNAME\"\n,\n\"Value\"\n:\n\"...\"\n}'\n输出：\n查证书、绑域名、创建 CNAME 记录——三步操作在同一工作流上下文中完成。\ntcb\napi\n将整个腾讯云生态收归统一入口，Agent 不需要在不同工具之间切换上下文。\n6.7\nStep 7：前端部署\ncd\nfrontend && tcb app deploy --\nyes\n输出：\n然后打开链接即可看到发布的 Web 应用：\n6.8\n总结：全程 CLI，0 次控制台\n过去，AI 辅助开发停留在代码生成层面。AI 写完代码，部署和运维还是需要人打开控制台手动完成。\nV3 的设计目标是让\ntcb\n成为 Agent 可以完整操控的接口。这些能力组合在一起——\n--json\n机器可读、结构化退出码、\ntcb api\n统一入口、\ntcb docs\n自主查阅文档——Agent 可以接管从环境创建到项目上线的完整链路。\n下次让 AI Agent 做一个云上项目，试试完全不打开控制台，看它能走多远。\n07\n如何使用 V3 的 CLI 工具？\n目前 V3 的 CLI 工具已发布至 npm，你可以通过 npm 安装使用。\nnpm install -\ng\n@cloudbase\n/cli\ntcb login\n相关文档\nCloudBase CLI 文档：\nhttps://docs.cloudbase.net/cli-v1/install\nV3 迁移指南：\nhttps://docs.cloudbase.net/cli-v1/migrate-v3\nCloudBase MCP：\nhttps://docs.cloudbase.net/ai/cloudbase-ai-toolkit/\ncloudbase-skills：\nhttps://github.com/TencentCloudBase/cloudbase-skills\n-End-\n感谢你读到这里，不如关注一下？\n👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。4月21日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.43,
+        "peripheral": 0.28,
+        "transfer_agent": 0.29,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.8,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.11,
+        "2": 0.84,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.99,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.08,
+        "2": 0.28,
+        "3": 0.31,
+        "4": 0.1,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.23,
+      "probabilities": {
+        "0": 0.61,
+        "1": 0.05,
+        "2": 0.02,
+        "3": 0.14,
+        "4": 0.18,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.14,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.85,
+        "3": 0.14,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.44,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.79,
+        "5": 0.03
+      }
+    },
+    "anti_hype": {
+      "score": 1.21,
+      "probabilities": {
+        "0": 0.36,
+        "1": 0.2,
+        "2": 0.34,
+        "3": 0.1,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5868,
+    "outputTokens": 173,
+    "totalTokens": 6041
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.28,
+        "relevance": 0.86,
+        "grounding": 0.19,
+        "decision_action": 0.18,
+        "evidence": 0.9,
+        "actionability": 0.59,
+        "anti_hype": 0.19
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791180021650,
+                "endTime": 1791180021801,
+                "providerRequestId": "e6128f34-c969-4940-bbfb-57b0c1939d2f",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180021811,
+                "endTime": 1791180021997,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000246456",
+      "marketCost": "0.000246456",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000246456",
+      "inferenceCost": "0.000246456",
+      "inputInferenceCost": "0.000246456",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AC7VE4H21J45BYMNRYCJQ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:21 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::nqn8n-1791180021587-c0d4a2a39a45"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.43,
+            "peripheral": 0.28,
+            "transfer_agent": 0.29,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.8,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.11,
+            "2": 0.84,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.99,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.08,
+            "2": 0.28,
+            "3": 0.31,
+            "4": 0.1,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.23,
+          "probabilities": {
+            "0": 0.61,
+            "1": 0.05,
+            "2": 0.02,
+            "3": 0.14,
+            "4": 0.18,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.14,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.85,
+            "3": 0.14,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.44,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.79,
+            "5": 0.03
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.21,
+          "probabilities": {
+            "0": 0.36,
+            "1": 0.2,
+            "2": 0.34,
+            "3": 0.1,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5868,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.28,
+            "relevance": 0.86,
+            "grounding": 0.19,
+            "decision_action": 0.18,
+            "evidence": 0.9,
+            "actionability": 0.59,
+            "anti_hype": 0.19
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791180021650,
+                    "endTime": 1791180021801,
+                    "providerRequestId": "e6128f34-c969-4940-bbfb-57b0c1939d2f",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180021811,
+                    "endTime": 1791180021997,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000246456",
+          "marketCost": "0.000246456",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000246456",
+          "inferenceCost": "0.000246456",
+          "inputInferenceCost": "0.000246456",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AC7VE4H21J45BYMNRYCJQ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:21.224Z"
+  }
+}

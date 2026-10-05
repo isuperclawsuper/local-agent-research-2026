@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "257302610268135424",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "从架构到代码：深入理解 OpenClaw 的双源记忆系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694887&idx=1&sn=192feccb73717c5ecbd3a2c886c9a5e8",
+      "date": "2026-03-19T00:46:00.007Z",
+      "chars": 21863,
+      "text": "原创\n刘学楷\n2026-03-19 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n使用完 OpenClaw 之后我最大的疑问是：一个 Agent 同时活跃在 Telegram、Slack、企微甚至本地 CLI 里，它是怎么“记住我是谁”的？这些记忆又是如何做到统一的？难道我一晚上花掉几十刀的 token 全都是因为他的上下文工程做的太烂？\n更关键的是——它到底“记住”的是什么？是对话？是总结？还是被结构化后的知识？\n01\n背景介绍\nOpenClaw （Moltbot/clawdbot）近日大火，想必也无需过多介绍，我们姑且将它简单理解成一个\"个人 AI 助手\"，功能和 Cloude Code 类似，同样可以处理文件和编码，调用不同 Skills 和 MCP 帮用户处理日常任务。\n关于 OpenClaw 的整体系统架构，已经有很多文章进行了解读和分析，其核心思想是通过统一的 Gateway 进程管理所有外部通讯平台的链接，通过 Agent Runtime 进行各个大模型的后台调用，所有产生的数据、记忆全部存储在本地磁盘上，其系统架构如下所示：\n总结来看，OpenClaw 主要有以下三个优势：\n使用便捷性：\n接入了聊天工具，让用户可以随时随地通过自己熟悉的聊天应用与 OpenClaw 交互，让他去完成任务；\n主观能动性：\n可以帮用户完成定时任务，仅仅使用自然语言对话就可以让其创建任务，甚至会基于大模型来自主判断任务的紧急程度和执行顺序；\n长期记忆：\n可以把用户的交互过程记录在本地，并不断更新，以便在以后的日常对话中进行搜索，将相关记忆捞回上下文中。\n如何让类似的智能体真正拥有\"记忆\"，是目前 AI 领域最棘手的问题之一。在行业侧，我们也看到了很多有关 AI 陪伴类、AI 分身类、AI 个人助手类的应用出现，其核心难点也是在解决如何让大模型\"记住\"与用户有关的尽可能多的信息。当前 AI 类应用面临的核心困境在于：大多数系统只是简单的把\"上下文窗口\"当作作为的\"记忆\"。根据 Anthropic 最新的开发者调研，有 68% 的 AI 应用团队都在为\"上下文丢失\"的问题苦恼。但是，上下文的特点是临时的、有限的（Claude 200K tokens、GPT-4 128K tokens）、昂贵的——当对话超过限制，模型要么会遗忘早期信息，要么因为成本暴涨而不得不重置会话窗口。\n而 OpenClaw 的记忆管理系统与上述不同，他将记忆从上下文中剥离出来，构建了一个分层的、可搜索的、持久化的知识管理架构。使得 Agent 能够 7*24h 不间断地积累知识、记住用户偏好、延续历史上下文等，真正实现了从“无状态工具”到“有记忆伙伴”的进化。接下来，主要会针对 OpenClaw 的记忆系统进行分析，从架构设计和工程实现层面展示这个由 AI 自己创造的“大脑”。\n02\nOpenClaw 关于“记忆”的定义\n正如上文提到的，很多开发者会错误地把页面上的”上下文窗口“当作记忆的全部，但这并不准确。我们常说的上下文（Context）是指模型在单次请求中能看到的所有信息，比如系统提示词、历史对话、工具调用结果等。它的本质特征是：临时存在的（仅在当前请求有效）、容量受限的（Claude 200K tokens、GPT-4 128K tokens）、成本高昂的（每次请求都要重新传输和计算）。如果仅以此作为记忆的全部，试图将所有记录的信息都塞进上下文，这显然是不科学的，会很快遇到性能、成本瓶颈。\nOpenClaw 所代表的应用，其对“记忆（Memory）”的定义是：持久存储在磁盘上的结构化信息。因此，只要有足够的存储空间，记忆就可以无限增长，能够跨会话保留，在使用时按需检索，且存储成本几乎为零。更为关键的是，这种记忆能够支持语音搜索，也就意味着不需要把所有历史信息都塞进上下文，只需要检索当前任务相关的片段。所以，可以将上下文理解成 AI 的“工作台”，决定当下能处理什么，而记忆则是 AI 的“知识库”，决定长期能积累什么。\n这种对于记忆的架构创新，使得 OpenClaw 可以在多轮交互上始终保持上下文的轻量和聚焦，把长期的记忆信息放到可搜索的记忆层。在其 Github Issue #847 中有一份实验数据，有人测试了一个持续 72h 的自动化任务，传统的上下文方案因为 token 限制触发了 23 次会话重置，而基于记忆的方案仅仅触发了 3 次，而且每一次重置之后都能通过搜索恢复关键上下文信息。\n讲到这就不能饶过一个重要的问题，既然 OpenClaw 已经在上下文和记忆存储上做了如此大的改造，为什么我们在实际使用时消耗依旧飞起？这难道不是说明他的上下文工程做的很烂吗？这是一个非常好的问题，我们一开始的理解没错：记忆层确实是为了\"轻量化上下文\"设计的，但实际上，记忆层只解决了一部分问题，还有很多其他因素在消耗 token，比如系统提示词、调用的工具信息、会话历史等，这一部分，在附录二中进行了详细说明。\n03\n记忆系统的存储架构\nOpenClaw 的记忆系统采用了一个\n双源记忆架构\n的设计，其将记忆整体分为了两类：每日日志（动态记忆）和长期记忆（静态记忆）。\n记忆类型\n存储格式\n存储路径\n产生方式\n静态记忆\nMarkdown 文件\n~/.openclaw/workspace/MEMORY.md 和 memory/*.md\n手动创建 + 自动生成\n动态记忆\nJSONL 文件\n~/.openclaw/agents/{agentId}/sessions/*.jsonl\n自动记录\n从直觉上看，这是符合人类大脑的记忆机制的，人的记忆也是由一个个重点片段组成的，我们能记住的也只是某个特定的时刻、某件具体的事件，把这些片段串联起来才形成了人类所谓的记忆，至于每天发生的琐事，终究会随着时间而被淡忘。因此，此种记忆机制也可以说是实现了工程学和生物学上的高度统一。\n3.1\n动态记忆的产生\n每次用户与 Agent 交互时，系统会自动将对话内容追加到 JSONL 格式的会话日志文件中，这是最原始的、未经处理过的记忆，存储位置如下：\n动态记忆的 JOSNL 格式示例如下：\n{\n\"type\"\n:\n\"message\"\n,\n\"message\"\n:{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\n\"帮我写一个 Python 爬虫\"\n}}\n{\n\"type\"\n:\n\"message\"\n,\n\"message\"\n:{\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n:\n\"好的，我来帮你写...\"\n}}\n{\n\"type\"\n:\n\"tool_call\"\n,\n\"tool\"\n:\n\"bash\"\n,\n\"input\"\n:{\n\"command\"\n:\n\"python crawler.py\"\n}}\n代码实现方式如下：\nexport\nasync\nfunction\nbuildSessionEntry\n(\nabsPath\n:\nstring\n):\nPromise\n<\nSessionFileEntry\n|\nnull\n> {\n// 读取 JSONL 文件\nconst\nraw =\nawait\nfs.\nreadFile\n(absPath,\n\"utf-8\"\n);\nconst\nlines = raw.\nsplit\n(\n\"\\n\"\n);\nconst\ncollected\n:\nstring\n[] = [];\nfor\n(\nconst\nline\nof\nlines) {\nconst\nrecord =\nJSON\n.\nparse\n(line);\n// 只提取 user 和 assistant 的消息\nif\n(message.\nrole\n===\n\"user\"\n|| message.\nrole\n===\n\"assistant\"\n) {\nconst\nlabel = message.\nrole\n===\n\"user\"\n?\n\"User\"\n:\n\"Assistant\"\n;\ncollected.\npush\n(\n`\n${label}\n:\n${text}\n`\n);\n}\n}\nreturn\n{\npath\n:\nsessionPathForFile\n(absPath),\nhash\n:\nhashText\n(content),\ncontent,\n// \"User: 帮我写... \\n Assistant: 好的...\"\n};\n}\n3.2 静\n态记忆的产生\n静态记忆是整个系统的长期记忆，可以理解成是在短期的琐碎记忆中提炼出来的需要系统重点记住的内容，比如用户的性格、身份信息、回答偏好等，其文件存储结构如下：\n静态记忆的产\n生途径分为以下三种：\n途径一：用户手动创建。用户可以直接编辑 MEMORY.md 文件，写入需要 Agent 长期记住的信息，比如：“你要称呼我为老板”、“我喜欢简洁的回复”等。；\n途径二：session-memory Hook 自动转换。当用户执行 /new 命令重置会话时，系统会触发 session-memory Hook，自动将上一个会话的关键内容转换为 Markdown 文件。大致的流程为：\n读取会话日志：从 JSONL 文件中提取最近 N 条（默认 15 条）user/assistant 消息；\n生成语义化文件名：使用 LLM 根据对话内容生成描述性 slug（如 api-design、bug-fix）；\n写入 Markdown 文件：生成 memory/YYYY-MM-DD-{slug}.md 文件。\n途径三：Memory Flush 自动写入（类似于记忆刷新）。这是一个非常关键的自动化机制，当会话上下文接近 token 限制时，系统会在压缩（compaction）前触发一个特殊的 Agent 回合，在该回合中，Agent 被明确指示：将需要持久保存的重要信息写入 memory/YYYY-MM-DD.md 文件。\n特性\nMEMORY.md\nmemory/*.md\n用途\n核心长期记忆\n按时间组织的会话记忆\n内容类型\n用户偏好、重要信息、工作流程等\n具体会话的摘要和细节\n更新方式\n用户手动维护为主\n系统自动生成为主\n命名规则\n固定为 MEMORY.md\nYYYY-MM-DD(-{slug}).md\n检索优先级\n平等，由向量相似度决定\n整个静态记忆系统的设计核心在于途径三，往往“健忘”的问题就出在这一步，即如何进行历史对话信息的压缩。其实此处OpenClaw 的处理方法比较粗暴，是使用 LLM 直接对历史对话信息进行处理。\n首先，通过 Memory Flush 进行一次记忆筛选，让 Agent 自己判断什么是\"durable memories\"（持久记忆），代码如下：\nexport\nconst\nDEFAULT_MEMORY_FLUSH_PROMPT\n= [\n\"Pre-compaction memory flush.\"\n,\n\"Store durable memories now (use memory/YYYY-MM-DD.md; create memory/ if needed).\"\n,\n`If nothing to store, reply with\n${SILENT_REPLY_TOKEN}\n.`\n,\n].\njoin\n(\n\" \"\n);\n然后，最终压缩就是再使用 LLM 对历史消息进行有损摘要，这里的默认指令只要求保留 “decisions, TODOs, open questions, constraints”，不保留具体数值、时间点等细节，代码如下：\nconst\nMERGE_SUMMARIES_INSTRUCTIONS\n=\n\"Merge these partial summaries into a single cohesive summary. Preserve decisions,\"\n+\n\" TODOs, open questions, and any constraints.\"\n;\n这正是 OpenClaw 在记忆上的平衡，通过把历史会话记录（JSONL 格式）压缩成记忆（Markdown 格式），来避免上下文溢出的问题，赋予系统记忆的能力，但与此同时带来的问题也显而易见，在进行压缩时难免会有信息的流失，这在大多数场景下是合理的，但对于\"具体几点\"这类精确信息确实是弱点。但并这不是 bug，而是在\"长期记忆完整性\"和\"系统效率/成本\"之间的设计取舍。用户如果有重要的精确信息，可以主动要求 Agent 记录到长期记忆中。\n好了，现在解释了第一个问题，OpenClaw 到底记住的是什么信息，下面我们来看这些所谓的“记忆”是怎么在需要的时候被“记起来”的。\n04\n记忆信息的检索与调用\n当产生并保存一个记忆文件（.md）时，后台会自动触发如下的索引构建流程，并在需要时进行检索：\n4.1\n索引构建\n默认情况下，只有 Markdown 文件会被索引，而 JSONL 会话日志不会被索引。Markdown 文件首先被分块（默认每个块包含 400 tokens，相邻块重叠 80 tokens），而后每个块同时生成向量 Embedding（支持三种，OpenAI、Gemini、本地） 和文本 Token，分别存入 sqlite-vec 和 FTS5 索引，这两个都是 SQLite 扩展，意味着整个系统只依赖一个轻量级数据库文件，不需要部署 ES 或者 Milvus。SQLite 数据库的核心 Schema 如下所示：\n-- 文件元数据\nCREATE TABLE\nfiles (\npath TEXT\nPRIMARY KEY\n,\n-- 'memory/projects.md'\nsource TEXT\nNOT NULL\n,\n-- 'memory' | 'sessions'\nhash TEXT\nNOT NULL\n,\n-- SHA256 用于增量更新\nmtime\nINTEGER\nNOT NULL\n,\nsize\nINTEGER\nNOT NULL\n);\n-- 文本块（带 embedding）\nCREATE TABLE\nchunks (\nid TEXT\nPRIMARY KEY\n,\n-- UUID\npath TEXT\nNOT NULL\n,\n-- 来源文件\nsource TEXT\nNOT NULL\n,\n-- 'memory' | 'sessions'\nstart_line\nINTEGER\n,\nend_line\nINTEGER\n,\nhash TEXT\nNOT NULL\n,\nmodel TEXT\nNOT NULL\n,\n-- 'text-embedding-3-small'\ntext TEXT\nNOT NULL\n,\n-- 原文\nembedding TEXT\nNOT NULL\n,\n-- JSON 数组 [0.1, 0.2, ...]\nupdated_at\nINTEGER\n);\n-- 向量索引（sqlite-vec 扩展）\nCREATE\nVIRTUAL\nTABLE\nchunks_vec\nUSING\nvec0(...);\n-- 全文索引（FTS5）\nCREATE\nVIRTUAL\nTABLE\nchunks_fts\nUSING\nfts5(\npath, source, model, text,\ntokenize\n=\n'porter unicode61'\n);\n对于具体的记忆索引实现流程，在附录一中进行了详细阐述。\n4.2\n记忆搜索\nOpenClaw 采用关键词 + 向量的混合加权搜索，结合了两者的优势。当 Agent 需要搜索记忆时，系统会启动两个搜索引擎：\n向量搜索：基于语义相似度。把之前向量化之后的内容通过计算余弦相似度找到意思相近的内容，这个直接依赖 sqlite-vec 的扩展实现，无需外部向量数据库；\nBM25 关键词搜索：基于词频统计。使用 SQLite 内置的 FTS5 全文检索引擎，找到包含精确关键词的内容。\n混合检索的代码实现方式如下：\nasync\nsearch\n(\nquery\n:\nstring\n,\nopts\n?: { maxResults?:\nnumber\n; minScore?:\nnumber\n}\n) {\n// 1. 关键词搜索 (BM25)\nconst\nkeywordResults = hybrid.\nenabled\n?\nawait\nthis\n.\nsearchKeyword\n(cleaned, candidates)\n: [];\n// 2. 向量搜索\nconst\nqueryVec =\nawait\nthis\n.\nembedQueryWithTimeout\n(cleaned);\nconst\nvectorResults =\nawait\nthis\n.\nsearchVector\n(queryVec, candidates);\n// 3. 混合排序\nif\n(!hybrid.\nenabled\n) {\nreturn\nvectorResults.\nfilter\n(\nr\n=>\nr.\nscore\n>= minScore).\nslice\n(\n0\n, maxResults);\n}\nconst\nmerged =\nthis\n.\nmergeHybridResults\n({\nvector\n: vectorResults,\nkeyword\n: keywordResults,\nvectorWeight\n:\n0.7\n,\n// 向量权重\ntextWeight\n:\n0.3\n,\n// 关键词权重\n});\nreturn\nmerged.\nfilter\n(\nr\n=>\nr.\nscore\n>= minScore).\nslice\n(\n0\n, maxResults);\n}\n4.3\n加权融合\n两个引擎的搜索结果按照 70:30 的权重合并，最终得分 = 0.7 向量相似度 + 0.3 BM25 得分，且只有得分超过 0.35 的结果才会被返回。混合排序实现方式如下所示：\nconst\nmerged =\nArray\n.\nfrom\n(byId.\nvalues\n()).\nmap\n(\n(\nentry\n) =>\n{\n// 最终得分 = 向量权重 × 向量相似度 + 关键词权重 × BM25 得分\nconst\nscore = vectorWeight * entry.\nvectorScore\n+ textWeight * entry.\ntextScore\n;\nreturn\n{ path, startLine, endLine, score, snippet, source };\n});\nreturn\nmerged.\ntoSorted\n(\n(\na, b\n) =>\nb.\nscore\n- a.\nscore\n);\n系统默认的 70% 和 30% 的比例来自与内部测试的结果，在其模拟进行的 1000 次复杂查询测试中，纯向量搜索的召回率为 76%，纯 BM25 搜索的召回率为 68%，而 70/30 的混合策略召回率达到 89%。\n4.4\nAgent 交互\n基于上述介绍的记忆系统架构，在实际使用时，AI Agent 则是通过两个接口实现与整个记忆系统的交互。\n两个核心工具\nmemory_search：语义搜索\n此工具用来调用上述的记忆检索功能，工具的定义如下：\nreturn\n{\nlabel:\n\"Memory Search\"\n,\nname:\n\"memory_search\"\n,\ndescription:\n\"Mandatory recall step: semantically search MEMORY.md + memory/*.md (and optional session transcripts) before answering questions about prior work, decisions, dates, people, preferences, or todos; returns top snippets with path + lines.\"\n,\nparameters: MemorySearchSchema,\nexecute:\nasync\n(_toolCallId,\nparams\n) => {\n// 搜索查询文本（必填）\nconst\nquery = readStringParam(\nparams\n,\n\"query\"\n, {\nrequired\n:\ntrue\n});\n// 返回结果数量（默认 6）\nconst\nmaxResults = readNumberParam(\nparams\n,\n\"maxResults\"\n);\n// 最低相关度阈值（默认 0.35）\nconst\nminScore = readNumberParam(\nparams\n,\n\"minScore\"\n);\nconst\n{ manager, error } =\nawait\ngetMemorySearchManager({\ncfg,\nagentId,\n});\n// ... 执行搜索\nconst\nresults =\nawait\nmanager.search(query, {\nmaxResults,\nminScore,\nsessionKey: options.agentSessionKey,\n});\nreturn\njsonResult({\nresults,\nprovider: status.provider,\nmodel: status.model,\nfallback: status.fallback,\n});\n},\n};\n返回格式如下：\n{\n\"results\": [\n{\n\"\npath\n\":\n\"memory/2026-01-10.md\"\n,\n\"startLine\"\n:\n15\n,\n\"endLine\"\n:\n20\n,\n\"score\"\n:\n0.85\n,\n\"snippet\"\n:\n\"用户提到喜欢蓝色，特别是天空蓝...\"\n,\n\"source\"\n:\n\"memory\"\n},\n{\n\"\npath\n\":\n\"MEMORY.md\"\n,\n\"startLine\"\n:\n5\n,\n\"endLine\"\n:\n8\n,\n\"score\"\n:\n0.72\n,\n\"snippet\"\n:\n\"颜色偏好：蓝色系...\"\n,\n\"source\"\n:\n\"memory\"\n}\n],\n\"provider\":\n\"openai\"\n,\n\"model\"\n:\n\"text-embedding-3-small\"\n}\nmemory_get：精确读取\n此工具用来精准读取记忆文件，工具的定义如下：\nreturn\n{\nlabel:\n\"Memory Get\"\n,\nname:\n\"memory_get\"\n,\ndescription:\n\"Safe snippet read from MEMORY.md, memory/*.md, or configured memorySearch.extraPaths with optional from/lines; use after memory_search to pull only the needed lines and keep context small.\"\n,\nparameters: MemoryGetSchema,\nexecute:\nasync\n(_toolCallId,\nparams\n) => {\n// 文件相对路径（如 memory/2026-01-10.md）\nconst\nrelPath = readStringParam(\nparams\n,\n\"path\"\n, {\nrequired\n:\ntrue\n});\n// 起始行号\nconst\nfrom\n= readNumberParam(\nparams\n,\n\"from\"\n, { integer:\ntrue\n});\n// 读取行数\nconst\nlines = readNumberParam(\nparams\n,\n\"lines\"\n, { integer:\ntrue\n});\n// ... 读取文件\nconst\nresult =\nawait\nmanager.readFile({\nrelPath,\nfrom\n:\nfrom\n?? undefined,\nlines: lines ?? undefined,\n});\nreturn\njsonResult(result);\n},\n};\n返回的格式如下：\n{\n\"text\"\n:\n\"用户提到喜欢蓝色，特别是天空蓝。\n\\n\n在选择UI时偏好冷色调。\n\\n\n...\"\n,\n\"path\"\n:\n\"memory/2026-01-10.md\"\n}\nAgent 记忆交互的指令约束\nAgent 被明确指示必须在特定场景下使用记忆工具：\nreturn\n[\n\"## Memory Recall\"\n,\n\"Before answering anything about prior work, decisions, dates, people, preferences, or todos: run memory_search on MEMORY.md + memory/*.md; then use memory_get to pull only the needed lines. If low confidence after search, say you checked.\"\n,\n\"\"\n,\n];\nAgent 主动写入记忆\n在 OpenClaw 的交互中，Agent 也可以主动写入记忆文件，使用标准的文件操作工具。比如，当 Agent 判断需要记住某些信息时，会使用 exec 或 write 工具写入对应的 memory/YYYY-MM-DD.md 文件，例如：\nexec\n(\ncommand\n=\n\"echo '## 用户偏好\\n- 喜欢蓝色' >> memory/...\"\n)\nwrite(path=\n\"memory/2026-02-05.md\"\n, content=\n\"用户喜欢蓝色\"\n)\n而后 MemoryIndexManager 检测到文件变更 (fs.watch)，会触发增量同步和更新 SQLite 索引，这在上文提到的 Memory Flush 场景中特别重要。\n交互的安全边界\n为了保证整个系统的安全边界，对 memory_get 制定了严格的路径限制，规定其只能读取到特定位置的文件：\nasync\nreadFile\n(\nparams\n: {\nrelPath\n:\nstring\n;\nfrom\n?:\nnumber\n;\nlines\n?:\nnumber\n;\n}):\nPromise\n<{\ntext\n:\nstring\n;\npath\n:\nstring\n}> {\n// ... 路径验证\nconst\ninWorkspace =\nrelPath.\nlength\n>\n0\n&& !relPath.\nstartsWith\n(\n\"..\"\n) && !path.\nisAbsolute\n(relPath);\nconst\nallowedWorkspace = inWorkspace &&\nisMemoryPath\n(relPath);\n// 只允许读取：\n// 1. MEMORY.md / memory.md\n// 2. memory/*.md\n// 3. 配置的 extraPaths 中的 .md 文件\nif\n(!allowedWorkspace && !allowedAdditional) {\nthrow\nnew\nError\n(\n\"path required\"\n);\n// 安全限制\n}\nif\n(!absPath.\nendsWith\n(\n\".md\"\n)) {\nthrow\nnew\nError\n(\n\"path required\"\n);\n// 只允许 .md 文件\n}\n// ...\n}\n05\n一个典型的记忆系统交互流程\n场景：用户询问 \"我之前说过喜欢什么颜色？\"\n不难看出，类似 OpenClaw 类型的个人助手，使用体验大大依赖于所选用的基础大模型的性能，如果选择某些开源的轻量化模型，很容易陷入复杂工具调用的死循环，而选择更优性能的闭源模型又会带来不可避免的成本开销，那么问题来了：C 端用户到底需不需要更高性能的模型？\n06\n附录一：记忆索引的实现流程\n此部分，将结合具体的例子，详细整理记忆索引的完整流程。\n首先我们假设一个场景，用户在 1 月 10 日与 Agent 进行了一次对话，讨论了需要 Agent 设置提醒的事项，在用户执行 /new 命令后，session-memory 会自动将该对话进行提取并转化为 Markdown 文件如下：\n文件路径：\n~\n/.openclaw/m\nemory/\n2026\n-\n01\n-\n10\n-reminders.\nmd\n文件内容：\n# Session: 2026-01-10 08:00:15 UTC\n## Summary\n用户请求设置每日提醒，讨论了健身计划安排。\n## Key Points\n-\n用户想要每天下午3点收到健身提醒\n-\n健身计划包括：周一胸肌、周三背部、周五腿部\n-\n用户偏好使用 Telegram 接收提醒通知\n## Conversation Highlights\nUser: 帮我设置一个每日提醒，下午3点提醒我去健身\nAssistant: 好的，我已经为你设置了每日下午3点的健身提醒。\nUser: 对了，我的健身计划是周一练胸，周三练背，周五练腿\nAssistant: 明白了，我已记录你的健身计划安排。\n## Action Items\n-\n[x] 设置每日 15:00 健身提醒\n-\n[ ] 后续可添加具体训练动作细节\n6.1\nStep 1: 文件发现与变更检测\n当存入了新的记忆文件，会调用 sync() 方法，系统首先会扫描记忆目录，检测哪些文件需要索引，如果发现记忆文件没有变化，那么也就不需要重新构建一次索引。\n列出所有记忆文件：\n找到所有和记忆有关的文件，为下一步的判重做准备：\nconst\nfiles = await listMemoryFiles(\nthis\n.workspaceDir,\nthis\n.settings.extraPaths);\n// 结果: [\"~/.openclaw/MEMORY.md\", \"~/.openclaw/memory/2026-01-10-reminders.md\", ...]\n构建文件元信息：\n对每个文件调用 buildfileEntry()，只读取文件并计算整体 hash，不做分块等处理。\n// buildFileEntry 实现\nconst\nstat =\nawait\nfs.\nstat\n(absPath);\nconst\ncontent =\nawait\nfs.\nreadFile\n(absPath,\n\"utf-8\"\n);\n// 读取整个文件\nconst\nhash =\nhashText\n(content);\n// 计算整个文件的 hash\nreturn\n{\npath\n:\n\"memory/2026-01-10-reminders.md\"\n,\nabsPath\n:\n\"/Users/xxx/.openclaw/memory/2026-01-10-reminders.md\"\n,\nmtimeMs\n:\n1736496015000\n,\nsize\n:\n847\n,\nhash\n:\n\"e4d909c290d0fb1ca068ffaddf22cbd0\"\n// 整个文件内容的 MD5\n};\n判断是否需要重新索引：\n结合上述文件的 hash 就可以判断出新产生的记忆文件是否与原有的文件相同，如果相同就说明记忆没有变化，省去了重新索引这一步。\nconst\nrecord =\nthis\n.db\n.prepare(`SELECT hash FROM files WHERE path = ? AND source = ?`)\n.\nget\n(entry.path,\n\"memory\"\n);\n// 情况A: 数据库中无记录，或 hash 不匹配 → 需要索引\n// 情况B: hash 匹配 → 跳过，无需重新索引\nif\n(!params.needsFullReindex && record?.hash === entry.hash) {\nreturn\n;\n// 跳过\n}\nawait\nthis\n.indexFile(entry, { source:\n\"memory\"\n});\n// 需要索引\n这个情境中我们假设记忆是新的，那么此时会输出结果：\n[需要索引] memory/2026-01-10-reminders.md (\nhash\n: e4d909c290d0fb1ca068ffaddf22cbd0)\n6.2\nStep\n2: 文本分块\n经过上一步，只有确定需要索引的文件，才会使用 indexFile() 方法进行分块处理。调用的分块函数如下：\nconst\ncontent =\nawait\nfs.\nreadFile\n(entry.\nabsPath\n,\n\"utf-8\"\n);\nconst\nchunks =\nchunkMarkdown\n(content,\nthis\n.\nsettings\n.\nchunking\n);\n// 默认配置: { tokens: 400, overlap: 80 }\nexport\nfunction\nchunkMarkdown\n(\ncontent\n:\nstring\n,\nchunking\n: { tokens:\nnumber\n; overlap:\nnumber\n},\n):\nMemoryChunk\n[] {\nconst\nlines = content.\nsplit\n(\n\"\\n\"\n);\nconst\nmaxChars =\nMath\n.\nmax\n(\n32\n, chunking.\ntokens\n*\n4\n);\n// 1600 chars\nconst\noverlapChars =\nMath\n.\nmax\n(\n0\n, chunking.\noverlap\n*\n4\n);\n// 320 chars\nconst\nchunks\n:\nMemoryChunk\n[] = [];\nlet\ncurrent\n:\nArray\n<{\nline\n:\nstring\n;\nlineNo\n:\nnumber\n}> = [];\nlet\ncurrentChars =\n0\n;\nconst\nflush\n= () => {\n// 将当前累积的行打包成一个 chunk\nconst\ntext = current.\nmap\n(\n(\nentry\n) =>\nentry.\nline\n).\njoin\n(\n\"\\n\"\n);\nconst\nstartLine = firstEntry.\nlineNo\n;\nconst\nendLine = lastEntry.\nlineNo\n;\nchunks.\npush\n({\nstartLine,\nendLine,\ntext,\nhash\n:\nhashText\n(text),\n// SHA-256(chunk文本)\n});\n};\nconst\ncarryOverlap\n= () => {\n// 保留最后 overlapChars 个字符到下一个 chunk（滑动窗口）\n// ...\n};\nfor\n(\nlet\ni =\n0\n; i < lines.\nlength\n; i +=\n1\n) {\n// 逐行累积，超过 maxChars 就 flush\nif\n(currentChars + lineSize > maxChars && current.\nlength\n>\n0\n) {\nflush\n();\ncarryOverlap\n();\n// 保留重叠部分\n}\ncurrent.\npush\n({\nline\n: segment, lineNo });\ncurrentChars += lineSize;\n}\nflush\n();\n// 最后一批\nreturn\nchunks;\n}\n上述步骤中的分块算法按照以下规则切分文本：\n按行遍历，累积字符数（默认约为 tokens * 4 个字符）；\n遇到 Markdown 标题（#）时优先断开，保持语义完整；\n块之间有重叠（默认约 overlap * 4 个字符），确保跨块检索的连续性。\n按照实例文件，分块之后可能会被切分为 2 个块：\nChunk #\nstartLine\nendLine\ntext（摘要）\nhash\nChunk 0\n1\n12\n# Session: 2026-01-10...<br>## Summary<br>## Key Points<br>- 用户想要每天下午3点...\n7a8b9c...\nChunk 1\n10\n22\n- 用户偏好使用 Telegram...<br>## Conversation Highlights<br>## Action Items\n3d4e5f...\n6.3\nStep 3: 向量化（Embedding）\n上\n述每个 Chunk 的文本需要转化为向量，用于进行语义搜索。首先系统会先查询已有的 embedding_cache 表，看是否已经有相同文本的向量缓存：\nconst\ncached =\nthis\n.\nloadEmbeddingCache\n(chunks.\nmap\n(\nchunk\n=>\nchunk.\nhash\n));\n// 如果 chunk.hash 在缓存中命中，直接复用向量，跳过 API 调用\n对于缓存未命中的 Chunk，调用配置好的 embedding provider（如 OpenAI），返回向量化后的结果。\n// 批量请求 embedding\nconst batchEmbeddings\n=\nawait\nthis.provider.embedBatch([\n\"# Session: 2026-01-10 08:00:15 UTC\n\\n\\n\n## Summary\n\\n\n用户请求设置每日提醒...\"\n,\n\"- 用户偏好使用 Telegram...\n\\n\\n\n## Conversation Highlights...\"\n]);\n// 返回结果（1536维向量，text-embedding-3-small）\n// Chunk 0: [0.0234, -0.0567, 0.0891, ..., -0.0123]  (1536个浮点数)\n// Chunk 1: [0.0345, -0.0678, 0.0902, ..., -0.0234]  (1536个浮点数)\n而后更新向量缓存：\nthis.\nupsertEmbeddingCache\n([\n{\nhash\n:\n\"7a8b9c...\"\n,\nembedding\n: [\n0.0234\n, -\n0.0567\n, ...] },\n{\nhash\n:\n\"3d4e5f...\"\n,\nembedding\n: [\n0.0345\n, -\n0.0678\n, ...] }\n]);\n6.4\nStep 4: 持久化存储\n向量化完成后，系统会将上述数据写入 SQLite 数据库中的三张表。\n生成 Chunk ID：\n首先，需要先为每个 chunk 生成唯一的标识，其是由多个因素组合 hash 生成。\nconst\nid =\nhashText\n(\n`\n${source}\n:\n${path}\n:\n${startLine}\n:\n${endLine}\n:\n${chunkHash}\n:\n${model}\n`\n);\n// Chunk 0 的 id 计算:\n// hashText(\"memory:memory/2026-01-10-reminders.md:1:12:7a8b9c...:text-embedding-3-small\")\n// → \"a1b2c3d4e5f6...\"\n// Chunk 1 的 id 计算:\n// hashText(\"memory:memory/2026-01-10-reminders.md:10:22:3d4e5f...:text-embedding-3-small\")\n// → \"g7h8i9j0k1l2...\"\n写入 chunks 主表：\n主表中会存储每一个 chunk 所包含的/相关的完整元数据和向量（JSONL 字符串格式），比如在该例子中，存入主表的一条信息如下：\nthis\n.\ndb\n.\nprepare\n(\n`\nINSERT INTO chunks (id, path, source, start_line, end_line, hash, model, text, embedding, updated_at)\nVALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n`).\nrun\n(\n\"a1b2c3d4e5f6...\"\n,\n// id\n\"memory/2026-01-10-reminders.md\"\n,\n// path\n\"memory\"\n,\n// source\n1\n,\n// start_line\n12\n,\n// end_line\n\"7a8b9c...\"\n,\n// chunk hash\n\"text-embedding-3-small\"\n,\n// model\n\"# Session: 2026-01-10...\"\n,\n// 原始文本\n\"[0.0234, -0.0567, ...]\"\n,\n// 向量 (JSON 字符串)\n1736496100000\n// updated_at\n);\n写入 chunks_vec 向量表：\n此处的 sqlite_vec 为虚拟表，专门用于向量相似度（语义相似度）的搜索，表中存储的内容示例如下：\nthis\n.\ndb\n.\nprepare\n(\n`INSERT INTO chunks_vec (id, embedding) VALUES (?, ?)`\n)\n.\nrun\n(\n\"a1b2c3d4e5f6...\"\n,\n// 与 chunks 表相同的 id\nvectorToBlob\n([\n0.0234\n, ...])\n// 转换为二进制 BLOB 格式\n);\n写入 chunks_fts 全文搜索表：\n此处的 FTS5 也是虚拟表，而且 SQLite FTS5 会自动对 text 字段进行分词，不需要手动进行分词处理。\nthis\n.\ndb\n.\nprepare\n(\n`\nINSERT INTO chunks_fts (text, id, path, source, model, start_line, end_line)\nVALUES (?, ?, ?, ?, ?, ?, ?)\n`).\nrun\n(\n\"# Session: 2026-01-10...\"\n,\n// text (FTS5 自动分词)\n\"a1b2c3d4e5f6...\"\n,\n// id (UNINDEXED，不分词)\n\"memory/2026-01-10-reminders.md\"\n,\n// path (UNINDEXED)\n\"memory\"\n,\n// source (UNINDEXED)\n\"text-embedding-3-small\"\n,\n// model (UNINDEXED)\n1\n,\n// start_line (UNINDEXED)\n12\n// end_line (UNINDEXED)\n);\n上述有些字段标记为 UNINDEXED，意味着不会参与全文搜索索引，只是作为元数据进行存储，方便后续 JOIN 查询和过滤，只有 text 字段会被 FTS5 分词和建立倒排索引。\n更新 files 表：\n上述存储完成后，会再次记录文件级别的元信息，用于下次进行变更检测。\nthis.db.prepare(`\nINSERT INTO files (path,\nsource\n,\nhash\n, mtime, size) VALUES (?, ?, ?, ?, ?)\nON CONFLICT(path) DO UPDATE SET\nhash\n=excluded.hash, mtime=excluded.mtime, size=excluded.size\n`).run(\n\"memory/2026-01-10-reminders.md\"\n,\n\"memory\"\n,\n\"e4d909c290d0fb1ca068ffaddf22cbd0\"\n,  // 整个文件的\nhash\n1736496015000,\n847\n);\n6.5\nStep 5: 最终数据库状态\n1、  files 表：\npath\nsource\nhash\nmtime\nsize\nmemory/2026-01-10-reminders.md\nmemory\ne4d909c290d0fb1ca068ffaddf22cbd0\n1736496015000\n847\n2、\nchunks 表（主表）：\nid\npath\nsource\nstart_line\nend_line\nhash\nmodel\ntext\nembedding\na1b2c3d4e5f6\nmemory/2026-01-10-reminders.md\nmemory\n1\n12\n7a8b9c...\ntext-embedding-3-small\n# Session: 2026-01-10 08:00:15 UTC<br>## Summary<br>用户请求设置每日提醒...\n[0.0234,-0.0567,...]\ng7h8i9j0k1l2\nmemory/2026-01-10-reminders.md\nmemory\n10\n22\n3d4e5f...\ntext-embedding-3-small\n- 用户偏好使用 Telegram...<br>## Conversation Highlights<br>## Action Items\n[0.0345,-0.0678,...]\n3、\nchunks_vec 表（sqlite-vec 向量表）：\nid\nembedding (BLOB)\na1b2c3d4e5f6...\n<binary: 1536 × float32 = 6144 bytes>\ng7h8i9j0k1l2...\n<binary: 1536 × float32 = 6144 bytes>\n4、\nchunks_fts 表（FTS5 全文索引表）：\ntext\nid\npath\nsource\nmodel\nstart_line\nend_line\n# Session: 2026-01-10...\na1b2c3d4e5f6\nmemory/2026-01-10-reminders.md\nmemory\ntext-embedding-3-small\n1\n12\n- 用户偏好使用 Telegram...\ng7h8i9j0k1l2\nmemory/2026-01-10-reminders.md\nmemory\ntext-embedding-3-small\n10\n22\n注：在FTS5 内部会自动为 text 列建立倒排索引，如：\n>\n-\n\"健身\"\n→ [a1b2c3d4e5f6..., g7h8i9j0k1l2...]\n>\n-\n\"提醒\"\n→ [a1b2c3d4e5f6...]\n>\n-\n\"Telegram\"\n→ [g7h8i9j0k1l2...]\n07\n附录二：token 消耗的计算\n首先列出在 OpenClaw 中 token 消耗的完整构成：\n接下来我们逐项进行分析：\n1、  System Prompt（系统提示词）\n这是系统的固定开销，在每次请求前会从多处构建系统提示词，OpenClaw 规定构建系统提示词时，参考的每个文件最大 20000 字符，估算下来大概每次请求会有 5,000-25,000 字符是系统提示词。下表展示了 System Prompt 包含的内容：\n组成部分\n大小估算\n说明\n核心指令\n~3,000 字符\n安全规则、回复格式、消息路由等\n工具说明列表\n~2,000 字符\n每个工具的简要说明\nSkills 提示\n可变\n技能描述和位置\nBootstrap 文件\n最大 20,000 字符\nAGENTS.md, SOUL.md, IDENTITY.md 等\nRuntime 信息\n~500 字符\n主机、时区、模型等\nSandbox 信息\n~300 字符\n沙箱配置\n2、  工具定义（Tool Schemas）\nOpenClaw 所调用的每个工具都有自己的 JSON Schema 定义，这些定义会随着每次请求被发送，估算下来每次请求中工具定义大约占 3000-5000 tokens 且无法压缩。OpenClaw 默认启用的部分工具如下所示：\n工具\nSchema 复杂度\n估算 tokens\nbrowser\n非常复杂（16 种 action）\n~800\nexec\n中等\n~200\nread/write/edit\n简单\n~300\nmessage\n复杂（多种 action）\n~400\ncron\n中等\n~200\nmemory_search/get\n简单\n~150\nsessions_*\n中等\n~400\ncanvas\n中等\n~200\nnodes\n复杂\n~300\n...\n...\n...\n3、  会话历史\n即使有 Compaction 机制，但在触发压缩之前，会话历史依然在累积：\n请求\n1\n：\nSystem\nPrompt\n+\n用户消息\n1\n+\n回复\n1\n请求\n2\n：\nSystem\nPrompt\n+\n用户消息\n1\n+\n回复\n1\n+\n用户消息\n2\n+\n回复\n2\n请求\n3\n：\nSystem\nPrompt\n+\n历史累积...\n+\n用户消息\n3\n...\n请求 N：触发 Compaction → 摘要替换历史\n关键问题是，为了尽可能优化用户体验，这个压缩的阈值通常设定的非常高，比如默认是 20000 字符，这意味着系统会让历史累积到接近上下文窗口限制才压缩，在此之前 token 消耗持续增长。\n4、  Memory Flush\n在会话压缩前，调用的 Memory Flush 更是一个独立的 LLM 调用，这就使得每次压缩前会额外消耗一次\n完整的 LL\nM 调用成本：\nexport\nasync\nfunction\nrunMemoryFlushIfNeeded\n(\nparams: {\ncfg: OpenClawConfig;\nfollowupRun: FollowupRun;\n// ...\n}):\nPromise\n<\nSessionEntry\n|\nundefined\n> {\n// 触发一个完整的 Agent 回合\n// 包含 System Prompt + 工具 + 指令\nawait\nrunEmbeddedPiAgent\n({\n// ...\nprompt\n: memoryFlushSettings.\nprompt\n,\n// ...\n});\n}\n5、  记忆检索结果\n当 Agent 使用 memory_search 与记忆系统交互时，返回的结果也会加入上下文：\n用户:\n\"我之前说过喜欢什么颜色？\"\n↓\nAgent 调用:\nmemory_search\n(query=\n\"喜欢的颜色\"\n)\n↓\n返回结果:\n- memory/\n2026\n-\n01\n-\n10\n.md:\n15\n-\n20\n(\nscore\n:\n0.85\n)\n\"用户提到喜欢蓝色，特别是天空蓝...\"\n- MEMORY.md:\n5\n-\n8\n(\nscore\n:\n0.72\n)\n\"颜色偏好：蓝色系...\"\n↓\n这些结果被加入上下文 → 消耗 token\n6、  工具调用链\n一个简单的任务也可能触发多次工具调用，每次调用都是：请求 + 响应，token 双向计费。\n用户:\n\"帮我查一下天气并发到 Telegram\"\n调用链:\n1\n.\nweb_search\n(\n\"天气\"\n) → 返回结果 (+\n500\ntokens)\n2\n.\nmemory_search\n(\n\"用户位置\"\n) → 返回结果 (+\n200\ntokens)\n3\n.\nmessage\n(channel=\n\"telegram\"\n, ...) → 返回确认 (+\n100\ntokens)\n因此可以看出，记忆层确实实现了\"轻量化上下文\"的设计目标，但还有很多问题无法解决，比如：固定开销无法消除（System Prompt）、工具定义每次都要发送、压缩是惰性的、记忆检索是增量成本、工具调用有额外成本。记忆层的真正价值不是\"降低单次成本\"，而是：使无限长的对话成为可能（没有记忆层，上下文会爆炸），同时保持相关信息的可访问性（压缩后仍可通过搜索找回），如果想显著降低成本，需要从减少固定开销（精简 System Prompt、禁用工具）和使用更便宜的模型入手。\n（注：文中部分架构图借助 Nano Banana 2 生成，某些细节可能存在误差。）\n-End-\n原创作者｜\n刘学楷\n感谢你读到这里，不如关注一下？\n👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。3月26日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.9,
+        "peripheral": 0,
+        "irrelevant": 0.1,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.8,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.15,
+        "2": 0.8099999999999999,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.83,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.16,
+        "2": 0.29,
+        "3": 0.21,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.63,
+      "probabilities": {
+        "0": 0.68,
+        "1": 0.12,
+        "2": 0.13,
+        "3": 0.04,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.53,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.07,
+        "3": 0.32,
+        "4": 0.61,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.8,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.87,
+        "5": 0.04
+      }
+    },
+    "anti_hype": {
+      "score": 3,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.04,
+        "3": 0.86,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 14920,
+    "outputTokens": 172,
+    "totalTokens": 15092
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.81,
+        "anti_hype": 0.89,
+        "category": 0.87,
+        "relevance": 0.86,
+        "grounding": 0.29,
+        "decision_action": 0.58,
+        "evidence": 0.68
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180026617,
+                "endTime": 1791180026812,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00062664",
+      "marketCost": "0.00062664",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00062664",
+      "inferenceCost": "0.00062664",
+      "inputInferenceCost": "0.00062664",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACCPQ6RV01MQ0PCFB4RP0"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:26 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7c6ts-1791180025793-eddd5e95e20c"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.8,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.87,
+            "5": 0.04
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.04,
+            "3": 0.86,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.9,
+            "peripheral": 0,
+            "irrelevant": 0.1,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.8,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.15,
+            "2": 0.8099999999999999,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.83,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.16,
+            "2": 0.29,
+            "3": 0.21,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.63,
+          "probabilities": {
+            "0": 0.68,
+            "1": 0.12,
+            "2": 0.13,
+            "3": 0.04,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.53,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.07,
+            "3": 0.32,
+            "4": 0.61,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 14920,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.81,
+            "anti_hype": 0.89,
+            "category": 0.87,
+            "relevance": 0.86,
+            "grounding": 0.29,
+            "decision_action": 0.58,
+            "evidence": 0.68
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180026617,
+                    "endTime": 1791180026812,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00062664",
+          "marketCost": "0.00062664",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00062664",
+          "inferenceCost": "0.00062664",
+          "inputInferenceCost": "0.00062664",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACCPQ6RV01MQ0PCFB4RP0"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:26.256Z"
+  }
+}

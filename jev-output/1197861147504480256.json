@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1197861147504480256",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "淘宝直播数字人 AgenticRL 实践：从 RLVR 到 MultiAgent RL",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650544788&idx=1&sn=04119d3b590b121e87fe87142daa6529",
+      "date": "2026-07-13T08:29:00.464Z",
+      "chars": 10886,
+      "text": "原创\n直播技术\n2026-07-13 16:29\n江苏\n首创Multi-Agent RL算法，将工具调用与回复解耦协同优化，事实正确性提升4.1pt，打造高拟真、强交互的下一代数字直播范式。\n本文介绍了淘宝直播数字人互动从传统静态 Workflow 架构向动态 Agentic 架构的升级实践。通过融合 LLM 与 Agent 自主规划能力，利用 AgentTuning 蒸馏降低延迟、RLVR 减少幻觉，并针对业务挑战研发 Multi-Agent RL 算法，将工具调用与回复模型分离进行协同强化学习优化。最终实现了低延迟（1.79秒）、高拟真度的深度互动，显著提升了事实正确性、帮助性及多轮对话用户比例，打造了下一代数字直播范式。\n摘要\n针对目前数字人交互深度不足，以及传统 Workflow 互动方案灵活度差、泛化能力弱、维护成本高的问题，我们致力于融合LLM的世界知识与 Agent 的自主规划决策能力，赋予数字人“Agent 大脑”，实现极具情绪价值和专业度的深度互动。长期愿景是希望构建一个具备感知、思考、表达与执行闭环的类真人主播 Agent ，使其不仅能精准理解复杂语境，更能基于实时反馈自主生成高质内容，打造行业领先的高拟人、强交互、高增长的下一代数字直播范式。\n第二章——Workflow 架构升级到 Agentic 架构所做的工作\n：重新设计了新的Agentic\n架构\n，使用 AgentTuning 监督微调（sft）将大模型能力迁移到低延迟的小模型、使用 RLVR 降低模型基于工具调用信息回复幻觉从而达到可靠上线的标准，通过这样的优化手段，在 AB 实验中，Agent 的平均端到端延迟降低到了\n1.79\n秒（相对下降\n1.36\n秒），多轮对话用户比例提升\n2.76%\n；\n第三章——基于阿里自研 infra 在 Agentic RL 下的探索与实践\n，基于 ROLL 实现 Agentic RL 算法优化 Agent 模型在环境中进行多轮工具调用并基于调用结果进行回复的能力，该章详细介绍了我们在 AgenticRL 搭建过程中的工程细节以及在业务落地时遇到的现实挑战；\n第四章——针对在\nAgentic RL 在业务场景下落地所遇到的问题，我们研发了适配业务的 Multi-Agent RL 算法\n：\n工具调用相关奖励不适合用于优化回复能力、回复质量相关奖励同样也不适合完全拿来优化工具调用能力，为了应对该挑战，我们针对业务特点设计了 Multi-Agent RL 多智能体强化学习算法，将工具调用模型与最终回复模型区分为两个 Agent，并使用不同的奖励对这两个模型进行在线协同强化学习优化，Multi-Agent RL 良好解决了单 Agent GRPO 在复杂奖励下难收敛的问题，最终在回复指标中相较于监督微调模型事实正确性提升\n4.1pt\n，帮助性提升\n23.6pt\n，工具调用合理性提升\n1\n8.2pt\n。\n从Workflow到Agentic的升级\n▐\n业务场景介绍\n观众在数字人直播间发送弹幕时，数字人主播会基于直播间商品信息、商家预设问答对等信息对观众进行弹幕和口播的回复；\n我们的算法在这个场景下控制数字人主播对观众的互动行为，包括要回复什么、要不要调整讲品顺序到观众想听的商品等。\n▐\n框架升级背景介绍\n面对快速变化的直播业务，原有“意图识别—检索—生成”的静态 Workflow 架构*已遭遇严重瓶颈，主要体现在三大维度：\n系统灵活性差，迭代受限：依赖人工标注，新增1个意图需2个月时间进行迭代，预置 FAQ 利用率不足2%，难以适应业务的快速迭代。\n上下文感知弱，易死胡同：无法联动“宝贝口袋/讲解文案/历史弹幕”等多源信息，一旦意图误判无法反思回退，只能机械抛给人工客服。\n并发调度缺失，能力遇颈：无法处理直播间高频的多弹幕并发，扩展更高阶的动作/语气交互极其困难。\n破局点\n： 依托 Agentic 技术爆发（30B MoE 模型在\n单卡 H20\n上部署后的吞吐已达 140 tokens/s，基座模型的 Agentic 能力大幅提升），我们具备了将静态工作流升级为动态决策、具备反思与上下文感知能力的 Agentic 架构的技术时机，全面推动数字人向 Agent 化迈进，提高数字人智能化的天花板。\n▐\n架构优化\n完成了从 Workflow 架构到 Agentic 架构的升级：\n感知域：单维度匹配  →  全局上下文感知（弹幕+历史+商品信息融合）\n决策域：单次死板分类  →  多次按需工具调用与自我纠错（反思机制）\n执行域：单意图话术  →  多模态响应（调图、调顺序、融合讲解文案）\n原Workflow架构\nAgentic架构\n为了让大家更好的了解我们的agent的执行流程，这里给出一个，Agent 完整 trajectory 的示例：\n// 注：本示例为脱敏版本。系统提示词与样例输入保留；真实检索结果（商家名/价格/库存/条形码）及后续完整 trajectory 已替换/省略\n[\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n:\n\"\n\\n\n## 指令\n\\n\n你是一名淘宝数字人主播，你现在正在运营这个直播间，并且你有很多工具可以调用，请选择调用一些工具获取更多信息用于更好的回复观众的问题。\n\\n\n## 要求\n\\n\n1. 你需要理解观众的问题，明确观众想问什么，你需要显示的补全观众想问的真实问题\n\\n\n2. 如果观众问的问题能够调用工具搜集资料来回答那么就调用工具搜集资料\n\\n\n3. 如果信息已经搜集完毕或者信息不足需要向观众进行多轮澄清，就调用回复规则查询工具来查询不同意图类型问题的回复规则，根据查询到的规则回答问题\n\\n\n4. 同一个工具不要使用两次以上，如果在历史中已经调用了两次相同的工具那么不应该继续调用了，你需要保持使用工具的高效性，因为需要实时对观众进行回复\n\\n\n5. 在进行最终回复前**必须**先查询回复规则\n\\n\n\"\n},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\n\"\n\\n\n## 真实输入\n\\n\n{\n\\n\n\\\"\n当前商品名\n\\\"\n:超市定制伊利金典纯牛奶250ml*24盒整箱儿童学生高端营养礼盒,\n\\n\n\\\"\n对话历史\n\\\"\n:[],\n\\n\n\\\"\n观众问题\n\\\"\n:索尼xm4和5哪个降噪好呢,\n\\n\n\\\"\n相关预置FAQ\n\\\"\n:[]\n\\n\n}\n\\n\\n\n## 现在开始\n\\n\n请先按照要求进行一步一步思考，通过调用工具收集更多信息用于回答观众问题\n\\n\n\"\n,\n},\n{\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n:\n\"\n\\n\n<tool_call>\n\\n\n{\n\\\"\nname\n\\\"\n:\n\\\"\nsearch_product_by_keyword\n\\\"\n,\n\\\"\narguments\n\\\"\n: {\n\\\"\nkeyword\n\\\"\n:\n\\\"\n索尼xm4\n\\\"\n}}\n\\n\n</tool_call>\n\\n\\n\n<tool_call>\n\\n\n{\n\\\"\nname\n\\\"\n:\n\\\"\nsearch_product_by_keyword\n\\\"\n,\n\\\"\narguments\n\\\"\n: {\n\\\"\nkeyword\n\\\"\n:\n\\\"\n索尼xm5\n\\\"\n}}\n\\n\n</tool_call>\n\\n\n\"\n},\n{\n\"role\"\n:\n\"tool\"\n,\n\"content\"\n:\n\"已找到相关商品：[{\n\\\"\n商品名\n\\\"\n:\n\\\"\n<示例商品名>\n\\\"\n,\n\\\"\n商家名\n\\\"\n:\n\\\"\n某商家\n\\\"\n,\n\\\"\n券后价\n\\\"\n: ***,\n\\\"\n库存\n\\\"\n:\n\\\"\n***\n\\\"\n,\n\\\"\n商品条形码\n\\\"\n:\n\\\"\n***\n\\\"\n,\n\\\"\n链接号\n\\\"\n: <编号>}]（注：真实检索返回的多条商家/价格/库存/条形码数据，以及后续查询回复规则、最终回复等 trajectory 内容，为对外脱敏已省略）\"\n}\n]\n架构的升级带来的优势是明显的，我们以实际用户 query 为例，从以下几个方面进行对比：\n通用优势\n直播特色优势\n支持多弹幕回复\n：\n得益于 Agentic 架构的升级，数字人互动能够支持高并发自适应工具调用与多维信息逻辑聚合，从而将碎片化的用户提问转化为结构化、高质量的统一回复。因此面对刷屏提问，Agent 能一脑多用，一次性汇总回复多个不同用户的商品问题（补贴政策+赠品详情+物流时效等）。\n融合文案信息回复\n：\n直播间用户问题往往与\n直播正在讲解的内容高度相关。\n得益于 Agentic 架构的灵活性和全局上下文感知能力，我们能够实时感知当前数字人口播文案，结合文案上下文更深刻地理解用户真实意图并给出更准确的回复。\n▐\n模型优化：AgentTuning与RLVR\n我们自研了一套 Agent 模型优化方案，来满足直播互动极低的延迟要求，并提升互动回复的正确性与帮助性：\n攻克延迟（AgentTuning 蒸馏）：引入大的教师生产思维链路（Trajectory），蒸馏至 30B-A3B 小模型。单次工具调用耗时压缩至 0.3s，\n单卡 H20\n部署下解码吞吐达 140 tokens/s，满足直播互动时效性要求。\n攻克幻觉（互动回复模型 RLVR）：构建直播互动域的测评 Metric，通过设计正确的逻辑奖励模型，引导回复模型学习生成更具“正确性”与“帮助性”的回复，杜绝直播带货中的“乱回复、乱承诺”幻觉问题。\nAgentTuning蒸馏\nAgent 具备多轮反思机制，会带来额外的反思时间开销，这在数字人互动中带来极大的延迟挑战。我们通过 AgentTuning 蒸馏的方式使得小模型具备接近千亿参数大模型的互动 Agent 的自\n主规划、工具调用、反思决策能力。\n教师模型在 Agent 推理过程中与环境进行多轮交互，采样出完整的 agent 执行 trajectory，\n其中，我们将大模型的工具调用及回复能力分别蒸馏至两个 Qwen3-30B-A3B 的小模型中；\n为了追求低延迟，学生模型均采用 Instruct 模型，在蒸馏时剔除掉了教师模型的思考部分序列：\n工具调用模型仅蒸馏教师 Agent 的工具调用生成部分，截取最后一轮工具调用前的 trajectory，并 mask 掉工具调用结果；\n回复生成模型仅蒸馏教师 Agent 最终回复生成部分，mask 掉回复前的所有序列。\n回复模型RLVR\nAgentTuning 训练后的模型已具备较优秀的自\n主规划、工具调用和反思决策能力，但由于训练为监督学习范式，模型回复的事实正确性和帮助性仍有不少优化空间。我们以 AgentTuning 后的模型作为基模型对其中的回复模型进行强化学习训练，对\n最终回复使用正确性、帮助性以及长度奖励进行 GRPO 强化学习。目的是直接在回复阶段优化正确性、帮助性，降低幻觉风险并拟合我们希望引导的偏好，最终产出满足上线条件的 Agent 链路模型。\n输入数据为教师模型预先打标好的工具调用链，对于一条前缀工具调用链模型 rollout 出多条回复组成一组；\n对于每个回复进行事实正确性和帮助性的打分（可以参考 section 2.3.3），并在组内计算均值与标准差算出组内优势，根据优势计算出 loss 对模型进行优化；\n整体目标：\n回复模型尽可能减少幻觉，按照工具调用结果进行回复；\n为避免模型为了降低幻觉变得过于保守，增加帮助性鼓励模型更多的满足观众实际需求；\nTAKEAWAY\n：我们基于 ROLL 实现上述算法流程，取教师模型采样出的 trajectory 截去最后回复保留前缀\nmessages[:-1]\n作为训练数据，\ntokenizer.apply_chat_template\n会将 message 格式的数据进行 format，rollout 时仅需生成最后一步回复，而 RLVR 也仅针对最后回复进行优化。\n评测指标\n测评数据集\n测评数据集来自于对线上流量的脱敏、筛选和清洗，测评指标采用事实正确性以及回复帮助性。\n模型优化效果\n可以看到 Agent 模型在互动回复的正确性和帮助性上对比 Workflow 方案有显著提升，同时也超过了顶尖开闭源模型在我们互动回复场景下的效果（Gemini-2.5-pro 和 Qwen3-235B-A22B），进一步也表明了我们自研 Agent 优化方案的有效性。\n▐\n业务效果\n人工对比\n：使用 Agent 线上流量在 workflow 服务上进行流量回放产出相同输入下的回复结果进行对比:\n延迟对比：\n耗时统计（单位：秒）\nAgentic 架构采用全 Instruct 模型，原 Workflow 最终生成回复模型为 Thinking 模型，Agentic 架构由于前置已经执行了多次大模型推理决策，具有规划和工具选择能力，不再是一股脑的检索信息进行回复，最终生成模型不需要像 Workflow 那样为前置未知情况兜底；\n同时得益于之前延迟优化上所做的工作，不管是平均延迟还是 P99 长尾延迟都相较于 Workflow 大幅降低。\nAgentic RL实践\n▐\n背景\n第2章中所上线的 Agent，工具调用模型采用 AgentTuning 的方式进行监督微调蒸馏训练，这种方式尽管直接有效，但是也会带来一个根植于其机制的缺点，学生模型的工具调用乃至于意图理解能力始终将受制于教师模型，因此，我们希望对于 Agentic RL 算法进行探索，使得工具调用能力能够在仿真环境中得到训练，达到超越教师模型的新上限。\n▐\n端到端Agentic RL方法\nRollout 阶段\n：\nPolicy 模型在模拟环境中进行多轮工具调用交互，最终以获取回复规则并产生非工具调用回复为结束标志；\n针对每个 rollout 计算工具调用与最终回复奖励，并计算组内优势；\n训练阶段\n：\n仅针对包含工具调用和最终回复的模型生成部分序列计算 loss，其余包含输入数据、工具返回序列均 mask 掉；\n采用初始化 reference model 计算 KL 散度，重要性采样部分与基础 GRPO/PPO 设置无异；\n参数由训练模型更新至推理模型继续下一轮 AgenticRL 训练，Agent 模型在训练过程中同时优化工具调用与回复能力。\n▐\n仿真环境搭建与工程实现\n在 ROLL 框架下，Agentic RL 仿真环境的构建逻辑可被解耦为两大块，训练侧与远程沙盒环境侧：\n训练集群\n训练侧\n： 负责模型训练的核心闭环。主要职能包括：驱动 Rollout 线程生成用于训练的完整轨迹（Trajectory）、利用奖励模型进行评分（Reward Scoring）、对非训练 Token 进行掩码处理（Token Masking），并将处理后的序列与分数传输至训练阶段。\n远程沙盒环境侧\n： 负责承载复杂的外部环境交互。主要职能是处理\n训练集群\n线程无法直接模拟的任务，包括访问受限接口（如\n内部 RPC 服务\n）、维护有状态的容器（如 Computer Use 环境）、或运行即时模拟器（如游戏环境）。\n整体训练与交互流程包含以下四个关键步骤：\nStep 1：环境初始化与连接建立\n：训练进程部署于\n训练集群\n，每个 Rollout  线程在初始化阶段会独立映射一个仿真环境实例，通过向\n仿真环境平台\n服务发送请求以建立直播间环境，并拉取基础信息完成语义向量库构建等远程工具链的初始化。\nStep 2：多轮交互与轨迹生成 (Rollout)\n：进入 Rollout 阶段，训练线程调用部署于进程内的 vLLM 或 Sglang 引擎进行推理生成，并在解析出工具调用请求后，跨网络访问沙盒服务获取执行结果。这一过程构成了训练线程与远程环境之间的多轮闭环交互，模型根据环境反馈不断调整策略，直至达到最大交互轮次或触发特定规则工具（如“获取最终回复”）从而结束当前Rollout。\nStep 3：奖励评估与数据处理\n：Rollout 结束后，系统通过\n云访问协议\n调用\n内部大模型\n作为 LLM Judge，对 Agent 在模拟环境中的全流程表现进行评估并给出标量 Reward。与此同时，算法侧需要对生成的 Trajectory 进行精细化的 Mask 处理，将非模型生成的工具调用结果、系统提示词及输入 Token 等部分进行掩码屏蔽，确保后续的训练梯度仅作用于模型策略生成的有效 Token。\nStep 4：优势计算与模型更新\n：\n最终，自定义代码将处理好的 Token 序列、Mask 序列以及该 Trajectory 的整体 Episode Score 返回给 ROLL 框架。框架底层会自动基于这些数据计算优势函数（Advantage）与损失（Loss），并调用 Megatron 后端进行分布式的模型参数优化更新，并在更新完成后同步参数到推理引擎（vLLM/Sglang），完成一次完整的训练迭代。\nTAKEAWAY：\n得益于 ROLL 良好的封装性与灵活的可拓展性，算法仅需自行实现 rollout 部分并给出 mask 好的序列（决定哪些 token 会被训练）与 reward 打分部分既可跑通 Agentic RL 的基本训练。（tokenizer.apply_chat_temlate 的 mask 不一定能满足需求，最好是自己写 mask 去 mask 掉不希望被训练的 token）\nTAKEAWAY：\n早期阻碍训练收敛的最大因素并非算法的设计，而是环境的稳定性与 reward 的设计，模拟环境不稳定时几乎无法拿到任何正向结论，reward 则需要足够有区分度且确实能有效区分好的 rollout 与不好的 rollout，这在业务落地中反而是最为 dirty 且困难的部分。\n▐\n业务落地的局限与挑战\n我们初期使用 Agentic RL 进行端到端训练并没有能够训练出具备良好效果的模型，主要是因为以下原因：\n最终的正确性、帮助性奖励更多的是偏向回复模型而设计的，而模型的 Agentic 能力并没有在其中得到清晰反馈而良好的训练，反而因为不恰当的奖励而变得更差；\n直接在最终奖励中加上基于 llm judge 的工具调用奖励后，虽然能带来对于工具调用的反馈，但由于 llm judge 不稳定的特点，奖励也变得更加模糊，强化学习训练变得更加难以收敛；\n同时，工具调用与回复所需要的能力截然不同——工具调用更多要求模型对于观众弹幕以及上下文的意图理解能力、工具调用准确度以及观察工具返回结果后的反思能力，而回复模型更多关注的是低幻觉、对于观众真实意图的满足以及回复自然度。\nMulti-Agent RL多智能体协同强化学习\n基于如上挑战与发现，我们采用了多智能体强化学习算法 Multi-Agent RL ，针对业务特点，将工具调用模型与最终回复模型区分为两个 Agent ，并使用不同的奖励对这两个模型进行在线协同强化学习优化，由单模型效果优化改进为整系统协同优化。\n▐\n多智能体协同强化学习优化方法\n目前我们的互动 Multi-Agent RL 实现如下，人为的分为了工具调用模型以及回复（总结）模型，在训练中，工具调用模型仅优化工具调用部分，回复模型仅优化回复部分：\n工具调用模型在模拟的直播互动环境中进行多轮交互，得到 K 条 Agent 工具调用路径，工具调用阶段以获取回复规则作为结束标识，如果工具调用阶段未获取回复规则则不会产生回复；\nRollout阶段\n：\n工具调用模型和环境服务（\n内部仿真环境平台\n）进行多轮交互，在环境判断是否工具调用结束进行回复（以超过调用轮次限制以及调用\n获取回复规则\n工具作为终止符号）；\n工具调用模型调用结束后，回复模型以工具调用链作为前缀，按照回复规则生成回复；\n基于完整 trajectory 分别为工具调用阶段与回复阶段计算 reward；\n并基于计算好的 reward 分别为工具调用模型与回复模型赋值组合加权 reward 并计算组内优势。\n训练阶段\n：\n对于工具调用模型：截取最终回复前最后一轮工具调用的 trajectoy，mask 掉其中工具调用返回结果部分，采用对应计算出的工具优势计算 loss；\n对于回复模型：取完整 trajectory，mask 掉非最终回复前置部分，采用对应计算出的回复优势计算 loss；\n对于这两个模型都采用各自的初始化 reference model 计算 KL 散度，重要性采样部分与基础 GRPO/PPO 设置无异。\n针对两个模型分别将参数由训练模型（megatron）更新至推理模型（vllm），并继续下一轮训练。\nTAKEAWAY：\nMulti-Agent RL 如果没有 bug 的话，会比 Agentic RL 更容易训练收敛，相当于把一个端到端的 Agentic RL 任务划分为了多个近似于 RLVR 的子任务。\nTAKEAWAY：\nMulti-Agent RL 的算法实现与 Step-Reward 的实现高度类似，如果不考虑不同 Agent 模型参数不同，可以直接使用 Step-Reward 来实现 Multi-Agent RL。如 GiGPO 算法已在 ROLL 中有现成实现。\nTAKEAWAY：\n多模型 checkpoint 自动上传 OPENLM MOS 是一个难点，我们使用\ncluster_name\n以\nckpt_id\n维度区分了不同模型的 checkpoint，并复用了 ROLL 中的自动上传 MOS 机制来实现的多模型自动 checkpointing。\n▐\n奖励函数设计\n▐\n模型训练效果\n图中使用相同的奖励对于单 Agent Agentic RL 和多 Agent Agentic RL 进行了训练实验，均使用 GRPO 作为模型优化算法：\n单 Agent 对4个奖励进行加权求和的方式计算组合 reward；\n多 Agent 的回复模型采用正确性和帮助性的加权求和，工具调用模型采用规则遵守和工具调用的加权求和；\n受限于多奖励混杂问题，单 Agent Agentic-RL 很难有效提升并训练收敛，而 Multi-Agent RL 在机制上解决了这个问题从而达到了良好的训练效果：\n事实正确性和回复帮助性的奖励更多的是针对回复模型测评的奖励，而根据最终回复是否出现幻觉去给工具调用能力打分是极不合理的；\n工具调用合理性仅衡量工具调用模型的能力，用该奖励来给最终回复打分同样也是极不合理的。\n▐\n实验结果*\n*本实验与第2章中的实验为分别设计的独立实验\n，主要改动来自于对事实正确性、回复帮助性 LLM Judge 的迭代升级以及蒸馏教师模型采用了更加强大的 glm 4.7 模型；\n为了解决此前系统仅关注最终回复效果而导致工具调用能力在优化后下降的缺陷，我们单独将工具调用合理性这一LLM Judge 指标作为测试集指标以监控模型的工具调用能力。\nMulti-Agent RL 方法最终训练了两个模型，回复模型相较于 sft 模型正确性提升\n4.1pt，\n帮助性提升\n23.6pt\n，工具调用模型的工具调用合理性提升\n18.2pt，\n有效提升多智能体系统整体性能。\n▐\n消融实验\n使用固定住工具调用模型，仅对最终回复模型进行 RLVR 的方法作为对照组进行消融实验，以验证提升不仅仅来自于回复模型风格对奖励函数的拟合，同样受益于前置工具调用模型的提升；\n在实验中，Multi-Agent RL 方法相较于固定工具调用模型仅 rlvr 训练回复模型的方法在事实正确性上提升\n5.6pt，\n在帮助性上提升\n6.6pt，\n而工具调用合理性保持了对 sft 模型的优势\n（+18.2pt）。\n总结与未来展望\n总结：\n为了解决此前所搭建的 Workflow 互动架构的不灵活、感知弱以及前两个劣势带来的能力瓶颈的问题，我们将数字人互动架构由 Workflow 升级为了 Agentic，为了解决 Agent 多次调用大模型延迟高的问题，我们将千亿参数级大模型的能力蒸馏至了更小规模的 MoE 模型，实现了亚秒级的回复延迟，为了解决 Agent 回复过度承诺等幻觉问题，我们使用 RLVR 对模型回复能力进行优化，有效提升了模型的事实正确性与帮助性，并在 AB 实验中带来了有效的业务提升最终成功推全上线。\n上线后我们进行了 Agentic RL 端到端优化 Agentic 系统的探索，完成了仿真环境的搭建并基于我们的场景完成了 Agentic RL 算法实现，针对最终回复奖励难以衡量模型 Agentic 能力的问题，我们设计了基于 llm judge 的工具调用合理性奖励，为了利用这些更模糊的奖励来优化 Agent 系统中不同模块的能力，我们将原有的单 Agent 系统改造为了工具调用+回复的 MultiAgent 系统，设计并实现了 Multi-Agent RL 算法，使得整个 Agent 系统能在模拟环境中对各模块协同优化最后得到了稳定且显著的提升。\n当前互动算法局限与未来展望：\n整体架构由 Workflow 升级为 Agent，基础能力已完成闭环，后续需重点扩充直播数字人专属工具，设计高阶交互功能，以充分释放 Agentic 架构及 LLM 的强大潜能；\n当前 MultiAgent 基本是来自于单 Agent ReAct 架构的阶段性解耦策略，更接近于 Dr.MAS 这样的串行 MultiAgent，类似于 sub-agent、agent-swarm 等并行化 MultiAgent 优势仍未体现出来；\n目前的训练方式（包括监督微调或是强化学习）都是 task-specific 的，没办法新增工具或者新增信息后直接使用原模型，后续一方面需要想办法优化出更通用的模型，另外一方面将考虑 skill 的方式接入工具，使得新工具可以通过渐进式披露的方式被自然接入。\n团队介绍\n本文作者语瀚，来自淘天集团-直播AIGC团队。作为直播电商智能化领域的先行者，始终致力于通过AI原生技术创新重构电商直播场景中的人货场交互范式。团队基于对大语言模型研发、多模态语义理解、语音合成、数字人形象建模、AI工程化部署及音视频处理技术的深厚沉淀和积累，已搭建起覆盖直播全链路的AI技术矩阵。自主研发的数字人直播解决方案通过商业化验证，成功实现从技术研发到商业变现的完整闭环，累计服务上千家商家。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.55,
+        "irrelevant": 0.35,
+        "transfer_business": 0.1,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 2,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.07,
+        "2": 0.83,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.66,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.09,
+        "2": 0.12,
+        "3": 0.27,
+        "4": 0.38,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.38,
+      "probabilities": {
+        "0": 0.43,
+        "1": 0.18,
+        "2": 0.06,
+        "3": 0.24,
+        "4": 0.08,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 4,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.92,
+        "5": 0.04
+      }
+    },
+    "actionability": {
+      "score": 3.72,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.03,
+        "2": 0.01,
+        "3": 0.05,
+        "4": 0.75,
+        "5": 0.1
+      }
+    },
+    "anti_hype": {
+      "score": 3.07,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.04,
+        "3": 0.81,
+        "4": 0.14,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 10808,
+    "outputTokens": 172,
+    "totalTokens": 10980
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.43,
+        "relevance": 0.88,
+        "grounding": 0.1,
+        "decision_action": 0.08,
+        "evidence": 0.94,
+        "actionability": 0.68,
+        "anti_hype": 0.86
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179883144,
+                "endTime": 1791179883327,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000453936",
+      "marketCost": "0.000453936",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000453936",
+      "inferenceCost": "0.000453936",
+      "inputInferenceCost": "0.000453936",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A80KSWT628SD5NQP07CNH"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:03 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::f6d97-1791179882719-5ef5b55cdbb8"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.55,
+            "irrelevant": 0.35,
+            "transfer_business": 0.1,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.07,
+            "2": 0.83,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.66,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.09,
+            "2": 0.12,
+            "3": 0.27,
+            "4": 0.38,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.38,
+          "probabilities": {
+            "0": 0.43,
+            "1": 0.18,
+            "2": 0.06,
+            "3": 0.24,
+            "4": 0.08,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 4,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.92,
+            "5": 0.04
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.72,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.03,
+            "2": 0.01,
+            "3": 0.05,
+            "4": 0.75,
+            "5": 0.1
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.07,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.04,
+            "3": 0.81,
+            "4": 0.14,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 10808,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.43,
+            "relevance": 0.88,
+            "grounding": 0.1,
+            "decision_action": 0.08,
+            "evidence": 0.94,
+            "actionability": 0.68,
+            "anti_hype": 0.86
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179883144,
+                    "endTime": 1791179883327,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000453936",
+          "marketCost": "0.000453936",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000453936",
+          "inferenceCost": "0.000453936",
+          "inputInferenceCost": "0.000453936",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A80KSWT628SD5NQP07CNH"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:02.548Z"
+  }
+}

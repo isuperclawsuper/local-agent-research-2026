@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "236258608375573504",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qoder @database功能上线！自动关联数据库 Schema，后端 AI Coding 效率拉满",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557678&idx=1&sn=a295dee2a4bd58af957843591f763185",
+      "date": "2026-01-20T00:31:00.201Z",
+      "chars": 5101,
+      "text": "原创\n雷卷\n2026-01-20 08:31\n浙江\n数据库是后端开发的灵魂。在 AI Coding 极度流行的今天，虽然生成 SQL 语句已不再是难事，但 AI 工具往往因拿不到准确的表结构而“乱写代码”。尤其在数据库Schema未保存在本地（如使用 Flyway 进行迁移）的情况下，AI 无法获取最全的上下文，其实战能力会大打折扣。\nQoder JetBrains 插件为此填补了最后一环：我们将数据库能力内置为核心上下文。通过 @database 能力，你可以一键将 IDE 中的数据库连接转化为 AI 的知识库。不再需要手动复制 DDL，直接引用 @database 即可让 AI 结合真实业务表结构进行 SQL 编写、数据模拟或架构评审，真正实现开发流程的闭环。\n目前，除 JetBrains 官方推出的 Junie 外（受地域限制，中国区暂无法使用），Qoder 是JetBrains上唯一深度支持“数据库原生感知”的 AI Coding 插件。\nQoder JetBrains 插件在数据库场景下的核心能力\n1、在 Qoder 的Ask/Agent模式下引用数据库\n首先我们需要在JetBrains IDE中添加数据库连接。打开数据库工具窗口，创建对应的数据库连接。数据库创建完毕后，你可以点击Query Console按钮，然后输入SQL，执行数据库查询操作。\n更多使用信息，请参考\n：\nhttps://www.jetbrains.com/help/idea/database-tool-window.html\n数据库连接创建完毕后，接下来我们就可以在Ask/Agent模式下引用数据库的schema。在Qoder会话窗口的输入框中，点击\nAdd Context\n按钮，然后选择\n@database\n，然后选择对应的数据库Schema，就可以将数据库Schema添加到上下文中。\n注意事项：添加到上下文中的SQL文件，是基于数据库的schema的，如果一个数据库有多个schema，就会有多个schema sql文件。\n数据库schema添加到上下文后，你就可以以提示词的方式询问相关的数据库相关的问题，如对数据库schema进行 review，基于schema生成代码，自然语言生成SQL等等。\n在Ask模式下，如果返回了SQL代码块的话，Qoder会为SQL代码块添加一个执行按钮，你可以直接执行对应的SQL语句，如下：\n注意事项：\n当下Qoder会查询活跃的数据库Query Console执行对应的SQL，所以你需要提前打开对应数据库的Query Console，才能执行聊天窗口中的SQL。\n2、Query Console的SQL生成支持\n如果你在数据库的Query Console中，你可以调用inline chat方式来生成对应的SQL。按下Ctrl + Shift + I，然后输入生成SQL的自然语言，然后按下回车生成SQL。在该过程中，Qoder会依据当前数据库的schema，自动将数据库的schema添加到上下文中，这样就可以更准确地生成SQL语句。\n3、斜杠指令（Slash Command）支持\n如果你对数据库相关的一些常见操作，如数据库review，生成SQL等，你可以创建对应的斜杠指令，然后再基于这些指令来完成对应的任务。 打开Qoder窗口，点击个人头像图标，选择`个人设置`，然后在`指令`去创建和维护相关的指令。 指令调用如下图：\n这里列举一下数据库常用的prompt场景，如下：\n如果只生成SQL的场景，你可以在Query Console中进行，这样更方便些。当然你也可以在ask模式下通过/sql 指令生成SQL，在ask模式下，你可以获得更多SQL语言选项。\n提示\n：Qoder默认会扫描项目中的文件并和用户问题进行关联，如果是NL2SQL或者只针对数据库schema场景，你可以在指令开头添加\nDon't scan project files!\n，这样就不会进行文件扫描，但是AGENTS.md和Rules还是会被包含的。这种方式可以节约你不少Token，而且可以规避歧义。\nDataGrip 和 Qoder\nDataGrip是JetBrains针对数据库推出的产品，Qoder对其也有很好的支持，这里做一个简单的说明。\n点击顶部导航栏的\n...\n更多图标，在弹出的菜单中选择Qoder，并点击大头针按钮，将Qoder以常驻的方式添加到顶部导航栏。\n在DataGrip中，核心的交互都是基于Query Console，你可以通过查询工具栏的Qoder按钮或者\nCtrl + Shif +I\n快捷键，调查Inline Chat输入框，然后输入自然语言，就完成对应的SQL生成。在此过程中，Qoder会自动选择对应的数据库schema。\n考虑到DataGrip主要是针对数据库场景，这里还是建议考虑在项目目录下添加\nAGENTS.md\n文件，用于项目的指导，如表名规范、SQL GuideLine或者特定的数据标注等。\n使用 Qoder 提升数据库开发效率\n了解了Qoder JetBrains 插件在数据库方面的核心能力后，下面，我们将通过具体的业务场景，带大家探索如何用 Qoder 加速数据库开发。\n1、数据库设计\n在项目初期，我们需要进行数据库设计，在Qoder中，你可以通过两种方式来创建对应的数据库Schema。\nAgent模式： 在Agent模式下，你可以更好地设置上下文，如添加关联的markdown文件，然后以自然语言输入具体的要求，就可以生成对应的数据库表结构。接下来打开对应的SQL文件，然后执行即可。\n如果只是涉及到数据库的表结构调整，可以打开数据库Schema的Query Console，输入具体的要求，然后接受对应的SQL语句，当然你也可以进行微调，最后执行SQL语句即可。\n如果数据库的schema并不复杂，也不需要关联相关的文件，你可以选择在Query Console中直接输入需求，然后创建对应的数据库表结构。\n总结一下数据库设计在Qoder下使用实践：\n1. Agent模式：复杂的数据库结构设计场景下使用，如要关联设计文档，同时生成的SQL文件要遵循相关的rules，同时生成特定的SQL文件，如Flyway迁移脚本等。\n2. Query Console：简单数据库结构、结构调整或者微小改动，请使用Query Console。\n如果你有标准的创建表结构样例，可以考虑提供一个样例，方便Qoder更好地生成表结构，如以下样例：\n-- 表级别注释示例\nCREATE TABLE\nuser_info(\nid\nINT\nCOMMENT\n'用户ID (标准字段名: user_id, 主键)'\n,\nname\nVARCHAR\n(\n50\n) COMMENT\n'用户姓名 (标准字段名: name, 用户真实姓名)'\n,\ncreated_at DATETIME COMMENT\n'注册时间 (标准字段名: created_at, 账号创建时间)'\n,\nstatus TINYINT COMMENT\n'状态 (标准字段名: status, 枚举值: 0-禁用 1-正常 2-冻结)'\n,\nPRIMARY KEY\n(uid)\n) COMMENT\n=\n'用户基本信息表 | 标准表名: user_information | 业务域: 用户域 | 更新方式: 实时'\n;\n考虑到后续基于Schema生成代码和生成sql的场景，这里建议数据库设计要遵循好的规约，方便后续的工作，以下是一些指导规则。\n命名规范\n使用清晰描述性的名称\n：\n表名和字段名要能直接表达含义（如\nuser\n、\norder_item\n），建议采用单数形式；\n保持命名一致性\n：\n统一使用下划线命名法（\nsnake_case\n）或驼峰命名法；\n避免缩写\n：\n用\ncustomer_address\n而非\ncust_addr\n；\n布尔字段加前缀\n：\n如\nis_active\n、\nhas_paid\n；\n结构设计\n主键明确\n：\n每个表都有清晰的主键，命名为\nid\n或\ntable_name_id\n；\n外键关系清晰\n：\n外键命名如\nuser_id\n、\norder_id\n，明确指向关联表；\n添加时间戳\n：\n包含\ncreated_at\n、\nupdated_at\n字段；\n文档和注释\n添加表注释\n：\n说明表的用途；\n添加字段注释\n：\n解释字段含义、取值范围、单位等；\n枚举值说明\n：\n如状态字段，注释说明每个值的含义；\n类型选择\n使用合适的数据类型\n：\n避免全用 VARCHAR；\n设置合理的长度限制；\nNULL值策略明确\n：\n哪些字段允许NULL，哪些必填；\n默认值明确\n：\n如果有明确的默认值，需要指出；\n2、数据库标注：让遗留数据库也能被AI更好理解\n如果你已有的数据库表结构，对AI并不友好，如命名规范，你可以对数据库表结构进行标注，让AI更好地理解。假设数据库中某一表结构：\nCREATE TABLE\ntbl_yonghu\n(\nid\nBIGINT\nAUTO_INCREMENT\nPRIMARY KEY\n,\nxin_bie\nCHAR\n(\n2\n)\nNOT NULL\n,\nnian_ling\nint\nNOT NULL\n,\ngonghao\nvarchar\n(\n32\n)\nnot null\nUNIQUE\n,\njiru_date\nvarchar\n(\n32\n)\n);\n如果你没法对既有的数据结构进行调整，你可以使用额外的json数据对现有的数据库结构进行标注，如\ndb-metadata.json\n然后在上下文添加数据库schema时，同时添加该JSON标注文件。样例如下：\n{\n\"type\":\n\"database\"\n,\n\"description\"\n:\n\"数据库表结构标注，以这里的定义为准\"\n,\n\"tables\"\n: {\n\"tbl_yonghu\": {\n\"\nlabel\n\":\n\"用户表\"\n,\n\"description\"\n:\n\"存储系统用户信息\"\n,\n\"required\"\n: [\n\"id\"\n,\n\"xin_bie\"\n,\n\"nian_ling\"\n,\n\"gonghao\"\n],\n\"columns\"\n: {\n\"id\": {\n\"\nlabel\n\":\n\"用户ID\"\n,\n\"type\"\n:\n\"int\"\n,\n\"description\"\n:\n\"唯一标识\"\n},\n\"xin_bie\": {\n\"\nlabel\n\":\n\"性别\"\n,\n\"type\"\n:\n\"char(2)\"\n,\n\"description\"\n:\n\"用户性别\"\n,\n\"enum\"\n: [\n\"男\"\n,\n\"女\"\n]\n},\n\"nian_ling\": {\n\"\nlabel\n\":\n\"年龄\"\n,\n\"type\"\n:\n\"int\"\n,\n\"description\"\n:\n\"用户年龄\"\n},\n\"gonghao\": {\n\"\nlabel\n\":\n\"工号\"\n,\n\"type\"\n:\n\"varchar(16)\"\n,\n\"description\"\n:\n\"用户的工号\"\n,\n\"unique\"\n: true\n},\n\"jiru_date\": {\n\"\nlabel\n\":\n\"加入时间\"\n,\n\"type\"\n:\n\"varchar(16)\"\n,\n\"description\"\n:\n\"用户加入的时间\"\n,\n\"format\"\n:\n\"date\"\n,\n\"nullable\"\n: true\n}\n}\n}\n}\n}\n这样Qoder会在理解遗留 数据库结构时，也会参考该JSON结构，这样就可以更好地理解数据库结构，如生成代码，SQL时，都会非常准确。\n3、Qoder + 数据库注意事项\n数据库表非常多：如果数据库schema非常大，也就是表非常多，如ERP，CRM等场景，这可能导致超出Agent的上下文。建议将数据库的schema导出为多个SQL文件，然后通过添加文件的方式添加到上下文中。\n数据库方言(dialect)：Qoder会自动将数据库dialect以注释的方式添加到数据库schema中，你不需要再声明数据库类型。如果你要向上下文添加SQL文件，可以考虑在SQL文件中添加如\n-- dialect: mysql\n这样的注释，用于标明数据库类型。当然也可以在全局AGENTS.md中进行数据库类型声明。\n欢迎前往 Jetbrains 插件市场，\n搜索 Qoder\n，\n免费体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

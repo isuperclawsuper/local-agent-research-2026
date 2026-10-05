@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1151539169789476864",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "鹅厂程序员初试Claude Fable 5：被吓到眩晕瘫坐的最强模型？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695909&idx=1&sn=0a13452c881570effac36e9d26a098a7",
+      "date": "2026-06-11T00:45:00.905Z",
+      "chars": 4429,
+      "text": "原创\n李洛勤\n2026-06-11 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\nClaude模型王者归来了，就今天凌晨左右，Anthropic发布了新一代模型Fable 5。初看感觉怎么又发了一个新的模型。但其实这个Fable 5其实是把原本被认为“不适合公开释放”的 Mythos 级能力，第一次通过护栏机制下放给了普通用户。\n那么Fable 5 到底是什么呢？简单理解，Fable 5 不是传统意义上的 Claude 4.8 Plus，也不是单纯的 Claude 5 升级版。它更像是 Anthropic 把 Mythos 级别模型套上一层安全阀之后，做成了一个公众可用版本。\n在官方文档中提到：如果没有安全措施，Fable 5 在网络安全等领域的强大功能可能会被滥用，造成严重损害。因此，Anthropic 在发布该模型时加入了安全措施，这意味着对某些主题的查询将由我们功能次强的模型 Claude Opus 4.8 进行响应。\n这种降级的操作会导致会有误报的情况存在，但平均触发率不到 5%。\n本质上它的控制路由操作应该是如下图所示一下，供大家参考一下。Fable 5 是公共入口，Mythos 5 是受限能力；普通请求由 Fable 5 完成，高风险请求会经过安全分类并可能 fallback 到 Opus 4.8。\n该机制的核心逻辑如下：当用户通过 Claude 网页端或 API 选定 Fable 5 模型时，用户输入内容将首先经前置分类器（Classifier）进行判别。\n若输入内容属于常规安全范畴（例如：古典诗词创作咨询、基础前端代码编写等），分类器将予以放行，调用 Fable 5 模型的核心能力进行响应，以保障优质的交互体验。\n若输入内容涉及敏感或高危领域（例如：网络渗透技术、生化合成路径、模型蒸馏相关敏感提示词等），分类器将立即触发安全响应机制，于后台实施模型无缝切换，转由次一级的 Opus 4.8 模型生成答复；或通过 API 接口层面直接返回结构化拒绝（Refusal）响应。\n01\n模型能力\n首先先来看看模型的整体来看。从\nhttps://artificialanalysis.ai\n上的评测来看，它的分数来到了恐怖的64.9。现在top3的排名中，Claude模型占据了两个，已经比GPT-5.5模型高了4.9分。GPT-5.5要加油了呀，毕竟现在到了两家公司IPO关键的阶段，那么谁家模型更强肯定更受青睐。\n在token价格上，Anthropic 官方定价页显示 Claude Fable 5 为 $10/M 输入、$50/M 输出。对比Opus4.8、GPT-5.5和DeepSeek-V4-Pro版本来看，它的调用价格还是偏贵的。\nFable 5 约等于 Opus 4.8 的 2 倍\nFable 5 比 GPT-5.5 短上下文贵约 67%\nFable 5 比 DeepSeek-V4-Pro 贵约 57 倍\nOpus 4.8 比 DeepSeek-V4-Pro 贵约 29 倍\nGPT-5.5 短上下文比 DeepSeek-V4-Pro 贵约 34 倍\n我这里举一个例子，如果一次任务消耗\n100 万输入 + 100 万输出\n，那么Claude Fable 5大概需要$60左右，而GPT-5.5则在$35，DeepSeek-V4-Pro则仅需要$1.3，这里真的不得不说一句，国产DeepSeek真的把大模型的价格给打下来了。让很多普通人也可以用上好用的大模型去实现自己的想法。\n如果是写代码、长文档、多轮 Agent 任务，真正成本差距会更夸张，因为这类任务输出 token 很多，而 Fable 5/GPT-5.5/Opus 的输出单价都很高。DeepSeek-V4-Pro 的优势是批量跑任务、低成本试错、做 Agent 初筛；Fable 5 更适合少量高价值复杂任务，不适合无脑大规模调用。\n再来看看整体的效果，基本上Fable 5在大多数基准榜单上明显达到了一个新的高度，尤其是在长任务、Agentic Coding、网络安全、生物、专业知识工作这些场景里优势更明显。\n比如，Fable 5 在代码 Agent 类任务上非常强。比如SWE-Bench Pro达到了80.3%。这个差距很明显。Fable 5 比 Opus 4.8 高\n11.1 个百分点\n，比 GPT-5.5 高\n21.7 个百分点\n。这说明它更适合长链路工程任务，比如读仓库、改 bug、跑测试、修复失败、迭代提交这类 Agentic Coding 场景。\n另一个代码任务\nTerminal-Bench 2.1\n上也很夸张，拿到了高达88.0%的分数。\n总结起来，Fable 5有几个大的有点：\n第一，代码 Agent 能力是核心卖点。\nSWE-Bench Pro、Terminal-Bench、FrontierCode 这类任务都很强，说明它更适合复杂工程任务，而不是简单代码补全。\n第二，长任务和知识工作能力明显提升。\nGDPval、PDF 视觉知识工作、Humanity’s Last Exam 都体现了它在复杂信息处理上的优势。\n第三，安全与专业高风险领域能力很强，但公共版会被限制。\n网络安全、生物、健康这些 benchmark 很亮眼，但带\n*\n的地方有一些要限制，因为 Fable 5 公共版会 fallback，Mythos 5 才更接近完整能力释放。\n第四，相比 Opus 4.8 是一次比较全面的升级。\n尤其是代码、空间推理、网络安全、健康、生物等领域，提升幅度明显。\n在早期测试阶段，Fable 5 展现出卓越的工程效能，将原本耗时数月的工程量缩减至数日内。经实测，针对包含 5000 万行代码的 Ruby 代码库，该模型仅耗时一日便完成了全量迁移工作，而同等规模任务若由人工团队操作，通常需耗时两个多月。此外，Fable 5 在令牌利用效率方面亦优于前代 Claude 系列模型。在 Cognition 机构发布的 FrontierCode 基准评估中——该评估旨在测试模型在满足高质量生产代码库标准前提下完成高难度编程任务的能力——Fable 5 即便处于中等算力负载下，其综合评分依然在所有前沿模型中高居榜首。\nCognition 的 FrontierCode 测试也显示，Fable 5 在复杂生产级代码任务中表现领先。这个评测关注的不是普通代码题，而是模型能否完成困难编程任务，并达到高质量生产代码库的要求。\n最后再来看看官方展示的测试\nFable 5能独立规划并运营《Factorio》中的自动化工厂，在资源密集型环境下自主优化资源流向，从零构建有序生产线。它直接在浏览器中通过代码生成完整的3D CAD编辑器，随后自主使用该工具进行建模（旋转、拉伸、倒角等），将抽象概念转化为可3D打印的实体模型。\n它还推演了太阳系行星运动，从物理第一性原理出发自己推导轨道方程，然后用推导结果预测日食。\n在独自玩宝可梦游戏中，Fable 5没有使用纯视觉技术路线，而是仅依据屏幕截图进行自主决策与逻辑推演，且在未接收任何外部辅助信息的前提下，成功实现了从初始阶段至最终通关的全流程自主运行。\n02\n网友真实体验\n目前模型已经可以在官网上体验了。\nQ1：\n建了一个Windows操作系统，并且在浏览器中构建了一个功能齐全的基于网页的Windows操作系统克隆——登录、通知、Edge、纸牌接龙，功能齐全。\nQ2：设计一个100英亩健身场地规划图\nFable 版本考虑了流向模式，而 Opus 4.8 则是将盒子放入图块中。\nQ3：根据比赛结果模拟世界杯球衣销售的供应链\nFable 5采取了全球视角。Opus 4.8 将范围缩小到仅限美国，并带来了明显的视觉漏洞（闪烁）。\nQ4：1比1真实复刻《我的世界》\n网友WorldofAI 花了55分钟/52.4k代币。它完美地还原了整个沙盒游戏：\n多个生物群系\n昼夜循环\n矿石、洞穴等\nQ5：基于真实交通数据的交互式地图\n要求 Fable 5 构建一个基于真实交通数据的交互式地图，展示不同城市在一定时间内的可达范围。模型随后调用多个 Agent 收集航班、铁路和道路数据，同时完成代码编写和测试，并不断根据反馈修正结果。\n03\n新模型不给蒸馏了\nAnthropic 不只是给 Fable 5 加了普通的安全拒答机制，而是针对“模型蒸馏/能力提取”这类请求，做了更隐蔽、更强的能力限制。\n简单说，就是有人想通过大量调用 Fable 5，让它输出高质量答案、推理过程、代码样本、解题轨迹，然后拿这些数据去训练另一个模型，等于“偷学”Fable 5 的能力。表面上你还在用 Fable 5，但后台可能已经把部分请求路由给 Claude Opus 4.8，或者让 Fable 5 以更受限的方式回答。\n如果你在蒸馏模型的时候，它不会明确说。\n而是静默处理。比如它可能会：降低回答质量；减少关键细节不给完整推理链；不给高质量训练样本；避免稳定输出某种可学习模式；对批量请求保持更强的随机性或保守性。\n所以用户看到是模型“突然没那么强了”。\n总结起来看，Fable 5 的发布并不是简单地把一个更强模型开放给所有人，而是 Anthropic 在“能力释放”和“安全边界”之间做了一次更精细的产品设计。普通用户看到的是 Claude Fable 5 这个统一入口，但后台会通过安全分类器判断请求风险：大多数普通任务由 Fable 5 直接完成，网络安全、生物化学等高风险主题可能会 fallback 到 Opus 4.8；\n而面对模型蒸馏、能力提取这类更隐蔽的风险，系统甚至不会显式提醒用户，而是通过提示词修改、控制向量等方式静默限制模型能力。\n04\n写在最后\n所以我觉得，Fable 5 最值得关注的地方，是它代表了一种新的模型发布方式。\n你看到的是 Claude Fable 5，但背后其实是一整套安全路由系统：普通任务直接放行，高风险任务可能降级，蒸馏类请求甚至会被静默限制。\n这也意味着，未来模型体验会变得更复杂。它有时强得离谱，有时又突然保守，不一定是模型能力不行，而是厂商没有把完整能力释放出来。\nFable 5 很强，但它也说明了一件事：大模型竞争已经不只是拼跑分和价格，而是拼谁能在能力、安全、成本和商业化之间找到平衡。\n-End-\n原创作者｜\n李洛勤\n感谢你读到这里，不如关注一下？👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。6月18日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.27,
+        "peripheral": 0.65,
+        "transfer_agent": 0.08,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.42,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.46,
+        "2": 0.48,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.4,
+      "probabilities": {
+        "0": 0.74,
+        "1": 0.13,
+        "2": 0.13,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.29,
+      "probabilities": {
+        "0": 0.81,
+        "1": 0.12,
+        "2": 0.06,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.25,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.27,
+        "2": 0.43,
+        "3": 0.04,
+        "4": 0.25,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.09,
+      "probabilities": {
+        "0": 0.25,
+        "1": 0.48,
+        "2": 0.21,
+        "3": 0.04,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.21,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.08,
+        "2": 0.35,
+        "3": 0.45999999999999996,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5703,
+    "outputTokens": 174,
+    "totalTokens": 5877
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.56,
+        "relevance": 0.61,
+        "grounding": 0.73,
+        "decision_action": 0.81,
+        "evidence": 0.45,
+        "actionability": 0.61,
+        "anti_hype": 0.46
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180008908,
+                "endTime": 1791180009053,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000239526",
+      "marketCost": "0.000239526",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000239526",
+      "inferenceCost": "0.000239526",
+      "inputInferenceCost": "0.000239526",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABVDS952QVASMC3C0NX4G"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:09 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7cpgq-1791180008881-42edf67bb0aa"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.27,
+            "peripheral": 0.65,
+            "transfer_agent": 0.08,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.42,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.46,
+            "2": 0.48,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.4,
+          "probabilities": {
+            "0": 0.74,
+            "1": 0.13,
+            "2": 0.13,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.29,
+          "probabilities": {
+            "0": 0.81,
+            "1": 0.12,
+            "2": 0.06,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.25,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.27,
+            "2": 0.43,
+            "3": 0.04,
+            "4": 0.25,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.09,
+          "probabilities": {
+            "0": 0.25,
+            "1": 0.48,
+            "2": 0.21,
+            "3": 0.04,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.21,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.08,
+            "2": 0.35,
+            "3": 0.45999999999999996,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5703,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.56,
+            "relevance": 0.61,
+            "grounding": 0.73,
+            "decision_action": 0.81,
+            "evidence": 0.45,
+            "actionability": 0.61,
+            "anti_hype": 0.46
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180008908,
+                    "endTime": 1791180009053,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000239526",
+          "marketCost": "0.000239526",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000239526",
+          "inferenceCost": "0.000239526",
+          "inputInferenceCost": "0.000239526",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABVDS952QVASMC3C0NX4G"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:08.284Z"
+  }
+}

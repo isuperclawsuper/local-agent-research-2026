@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1132571790866845696",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "从定制Workflow到AI自主决策的架构演进——以TMIC AI小新为例",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543765&idx=1&sn=4961784aef454d7fc2bf45e57a901431",
+      "date": "2026-05-29T09:09:00.071Z",
+      "chars": 6500,
+      "text": "epAgent，其区别在于不能再调用SubAgent和Human\n主要作用\n：隔离上下文，实现任务分解和并行执行\n使用场景\n：适用于需要上下文隔离、任务分解或并行执行的场景\n优势\n：具备主DeepAgent的所有能力（除调用SubAgent和Human外），可以灵活处理各种子任务\n定制SubAgent\n（未引入）：\n核心内容\n：定制Agent，具有特定的分析目的（例如归因分析Agent等）\n主要作用\n：解决特定场景下的问题\n未引入原因\n：定制SubAgent本质上是通过枚举的方式专门去解某一类问题，目前还没有这种场景需求。通用SubAgent已经足够灵活，可以通过Prompt和上下文信息引导AI完成各种任务，无需为特定场景定制专门的SubAgent\n遇到的问题及解决方案\n问题1：SubAgent执行效率优化\n问题描述\n：SubAgent处理的任务多半为子任务，不会过于复杂，如果使用完整的DeepAgent能力（包括完整的TodoList规划和详细的分析过程），会导致执行效率低，增加不必要的开销。\n解决方案\n：针对业务场景，对SubAgent进行了优化，简化其职责以提升执行速度：\n简化Planning职责\n：删除TodoList，减少Planning节点的输出内容。SubAgent处理的任务多半为子任务，不会过于复杂，不需要完整的TodoList规划\n简化Analysis职责\n：只输出结论，不需要过程和建议。SubAgent专注于执行子任务并返回结果，分析工作由主Agent完成\n优化效果\n：通过简化SubAgent的职责，SubAgent的平均执行时间从103秒优化到20秒，显著提升了执行效率。\n问题2：SubAgent上下文设计\n问题描述\n：SubAgent需要哪些上下文信息，如何设计SubAgent的上下文，确保SubAgent能够正确执行任务。如果上下文信息不足，SubAgent可能无法正确理解任务或获取必要信息；如果上下文信息过多，可能导致上下文混乱和成本过高。\n解决方案\n：SubAgent的上下文完全由主Agent决定，主Agent会准备好SubAgent需要的上下文。SubAgent不需要进行上下文加载（业务模块识别、工具加载、Skills加载、RAG加载、上下文参数获取等），这些工作由主Agent完成。主Agent通过subAgentDescription明确传递给SubAgent所需的上下文信息，包括已识别的参数、业务模块信息、工具信息等，SubAgent可以直接使用这些信息，无需重新识别。\n示例说明\n：以主Agent给SubAgent的任务描述为例：\n主Agent通过subAgentDescription传递给SubAgent的上下文信息包括：\n任务描述\n：分析'质价比/平替'类需求的趋势特征。从已获取的趋势词列表中，筛选与'性价比/平替/高保湿/基础护理'相关的趋势词（如'绵羊油凡士林锁水修护护手霜'、'冬季高保湿修护面霜'、'轻量环保便携面霜'等），获取这些趋势词的价格带分布数据和人群画像数据。\n工具信息\n：需要调用getTrendMarketPriceSeg和getTrendMarketCrowdDetail工具\n已识别的参数\n：类目ID为1801\n任务要求\n：请选取3-5个代表性趋势词进行分析，返回各趋势词的价格带销售额占比分布和人群画像特征（购买力等级、城市等级、年龄段等维度的占比）\nSubAgent接收到这些上下文信息后，可以直接使用类目ID、工具列表等信息，无需重新识别类目或加载工具，专注于执行分析任务。主Agent已经完成了所有的上下文准备工作，SubAgent只需要按照任务描述执行即可。\n通过这种上下文设计，SubAgent可以快速启动并执行任务，无需重复进行上下文加载，提升了执行效率。\n问题3：并行设计\n问题描述\n：在实际执行过程中，有很多任务是分别下钻然后获取到某个东西，这些任务之间相互独立，可以并行执行。如果串行执行这些任务，会导致执行效率低，时间成本高。例如，需要分别获取多个类目的数据、分别分析多个趋势词的特征等。\n解决方案\n：通过SubAgent并行处理机制来解决这个问题。对于相互独立的子任务，主Agent可以创建多个SubAgent实例并行执行，每个SubAgent负责一个子任务的下钻和获取。主Agent只关心最终结果，不需要感知中间过程，可以同时启动多个SubAgent实例并行工作，最大化执行效率。\n示例说明\n：以\"获取每个类目最有潜力价格带下的典型商品\"为例：\n任务特点\n：需要分别获取类目A、类目B、类目C的最有潜力价格带下的典型商品，每个类目都需要多步下钻：\n第一步：获取类目的价格带数据\n第二步：识别最有潜力的价格带\n第三步：获取该价格带下的典型商品\n这三个类目的任务相互独立，可以并行执行\n并行执行\n：主Agent创建3个SubAgent实例，每个实例负责一个类目的完整下钻链路：\nSubAgent1：获取类目A的价格带数据 → 识别最有潜力价格带 → 获取典型商品\nSubAgent2：获取类目B的价格带数据 → 识别最有潜力价格带 → 获取典型商品\nSubAgent3：获取类目C的价格带数据 → 识别最有潜力价格带 → 获取典型商品\n只关心结果\n：\n主Agent只关心每个SubAgent返回的最终结果（典型商品列表），不需要感知每个SubAgent的中间执行过程（如获取价格带数据、识别最有潜力价格带等中间步骤），可以并行启动多个SubAgent实例，每个SubAgent独立完成自己的下钻链路，大幅缩短整体响应时间\n通过SubAgent并行设计，系统可以充分利用并行能力，同时处理多个独立的下钻任务，显著提升执行效率。\n▐\nTodoList（任务列表）\n功能说明\nTodoList是DeepAgent的核心规划组件，为代理提供任务规划与进度跟踪能力。允许代理在执行复杂任务前创建任务列表，并在执行过程中动态更新任务状态。TodoList是Planning的核心规划能力，参考DeepAgent的设计，用于将复杂任务分解为清晰的执行步骤，并实时跟踪任务进度。\n核心价值\n主动规划能力\n：让代理具备主动规划能力，而不是被动响应。代理可以在执行复杂任务前创建任务列表，提前规划执行步骤\n进度可视化\n：提供清晰的进度可视化和状态跟踪，实时反映每个步骤的执行状态，确保任务方向清晰\n保持方向感\n：帮助代理在面对复杂多步骤任务时保持方向感，不会在执行过程中迷失方向\n任务依赖分析\n：支持任务依赖分析和智能执行顺序决策，通过status的顺序来体现任务之间的依赖关系\n执行计划的结构\n执行计划是一个数组，每个元素包含两个字段：\nstatus（状态）\n：表示任务的执行状态，有三种状态：\npending（待执行）：任务已创建但尚未开始执行，初始状态\nin_progress（执行中）：任务正在执行过程中，代理正在处理该任务\ncompleted（已完成）：任务已完成，最终状态\n状态转换流程：pending → in_progress → completed\ncontent（内容）\n：任务的描述，应该清晰、具体、可执行\n每个任务项应该是相对原子的步骤\n可以被工具直接执行，或委托给子代理执行，或直接回答\n执行计划的生成与更新\n首次执行\n：如果当前没有计划（todoList为空），表明是第一次执行，需要生成初始执行计划\n计划更新\n：如果已有计划，需要根据当前执行情况：\n更新已完成任务的status为completed\n更新正在执行任务的status为in_progress\n将即将执行的任务status更新为in_progress（如果开始执行）\n全量输出\n：每次输出都需要包含完整的执行计划（全量更新），不能只输出增量\n动态修改\n：可以根据执行情况动态修改计划：\n添加新的任务项（如果发现需要额外步骤）\n删除不必要的任务项（如果发现任务不可行）\n修改任务内容（如果发现任务描述不准确）\n遇到的问题及解决方案\n问题1：标准ReAct模式缺乏规划能力\n问题描述\n：在标准ReAct模式下，代理是被动响应的，每次只决定下一步做什么，缺乏整体规划能力。在面对复杂多步骤任务时，代理可能会在执行过程中迷失方向，无法清晰地了解任务的整体规划和进度，导致执行效率低，甚至偏离原始目标。\n解决方案\n：通过TodoList机制来解决这个问题。TodoList允许代理在执行复杂任务前创建任务列表，提前规划执行步骤，并在执行过程中动态更新任务状态。TodoList作为Planning的中心和主线，在每一轮Planning中都会被传递给Planning，作为当前任务的整体规划参考，确保每一轮的决策都围绕TodoList这个中心展开，不会偏离主线。通过TodoList，代理可以清晰地了解任务分解情况、任务进度、已完成和待完成的任务，保持方向感，提升执行效率。\n示例说明\n：以用户问题\"分析我的新品在类目市场中的表现\"为例：\n第一轮Planning\n：生成TodoList，包含任务1（获取新品列表）、任务2（获取类目市场数据）、任务3（分析新品在类目市场中的表现）。TodoList明确了任务分解和依赖关系，为后续执行提供方向。\n第二轮Planning\n：执行完任务1和任务2后，Planning会看到TodoList中任务1和任务2已完成（status为completed），任务3待执行（status为pending）。此时Planning会围绕任务3展开，继续分析新品在类目市场中的表现，而不会偏离到其他无关任务（如分析竞品、分析价格带等）。\n第三轮Planning\n：如果需要进一步获取数据来完成分析，Planning会基于TodoList中的任务3，继续执行相关操作，始终围绕\"分析新品在类目市场中的表现\"这个主线，不会偏离。\n通过TodoList这个中心，每一轮Planning都能清楚地知道当前任务的整体规划和进度，确保决策始终围绕主线展开，避免了标准ReAct模式下可能出现的迷失方向的问题。\nSummary（总结器）\n功能说明\nSummary是DeepAgent的上下文管理组件，负责监控上下文窗口使用情况，当接近上限时自动总结历史消息，保留关键信息并释放token空间。Summary的核心目标是大幅压缩数据量（通常压缩到原始数据的10%-30%），同时确保压缩后的摘要包含规划器决策所需的所有关键业务数据，不丢失重要信息。\n核心优势\n自动触发\n：自动监控上下文窗口使用情况，当接近上限时自动触发总结，无需手动管理\n智能保留\n：智能保留最近的交互和关键信息，确保上下文连贯，让规划器能够快速理解任务的整体进展和工具执行的结果\n避免溢出\n：避免因上下文溢出导致的任务失败，确保系统能够持续稳定运行\n需求驱动\n：压缩策略根据规划器的实际需求来决定，而不是机械地应用规则，根据用户原始问题、工具列表、执行计划等信息判断需要保留哪些数据\n核心功能设计\n智能压缩与需求分析\n：根据用户原始问题、工具列表、执行计划等信息，判断规划器需要哪些数据，决定压缩策略\n执行计划分析\n：根据todoList中的任务状态（pending/in_progress/completed）判断哪些数据对下一步决策是关键的\n历史数据总结策略\n：\n根据任务需求决定保留哪些历史轮次，而不是简单地只保留最近几轮\n贯穿性信息（在整个任务过程中都需要的信息）必须保留，即使是很早的历史轮次\n阶段性信息（只用于特定阶段的任务）可以大幅压缩或删除\n当前结果总结策略\n：对执行结果进行大幅压缩，只保留核心结论或关键数据点\n标识符字段保留原则\n：根据工具列表判断哪些标识符字段（如cateId、itemId等）是规划器后续决策必需的，必须保留这些字段\nPrompt设计要点\n：确保压缩后的摘要清晰、简洁，便于规划器理解\n遇到的问题及解决方案\n问题1：Summary执行速度慢，阻塞主流程\n问题描述\n：当上下文过多时，Summary需要处理大量的历史消息进行压缩，执行时间较长。在串行执行模式下，Summary和Planning是串行执行的，Summary执行完成后才能继续Planning。单个节点的Summary耗时可能就在60秒，大大拖延了整体时间，影响用户体验。\n解决方案\n：通过异步Summary优化来解决这个问题。将串行总结优化为异步总结，Summary与Planning并行执行，缩短整体时间。\n并行执行机制\n：Summary和Planning可以并行执行，Summary在后台异步处理历史消息的压缩，Planning可以继续执行下一步操作，不阻塞主流程\n性能提升\n：通过异步执行，避免了Summary阻塞主流程的问题，即使Summary需要60秒执行，也不会影响Planning的继续执行，整体响应时间大幅缩短\n设计思路\n：Summary在后台异步执行，不阻塞Planning的继续执行，两者可以同时进行，最大化系统效率\n通过异步Summary优化，系统可以在Summary处理历史消息的同时继续执行Planning，避免了串行执行导致的长时间等待，显著提升了整体执行效率。\nAnalysis（分析器）\n功能说明\nAnalysis是DeepAgent的最终分析组件，负责对已获取的数据进行深度分析，并形成逻辑清晰、有数据支撑的策略报告。Analysis接收到的所有数据和信息都是通过前面多轮执行（包括工具调用、子代理执行等）收集和整理而来的，需要基于这些已收集的信息进行综合分析并产出最终报告。\n核心能力\nAnalysis具备以下核心能力：\n数据分析\n：能够深入理解数据的趋势和其代表的含义\n分析框架\n：能结合商业分析框架进行分析内容的组织\n逻辑推理\n：能够从数据中推导出有价值的结论，分析问题有条理有逻辑\n洞察提炼\n：能够发现数据中的关键洞察和核心要点\n策略生成\n：能够基于分析结果提供具体、可执行的策略建议\n精准表达\n：对于上述生成的分析结果和策略建议均能够结构化、简洁、直击要点的进行输出\n分析内容（针对综合分析类问题）\n最终结论\n：\n基于已获取的数据进行分析，得出清晰简洁的最终结论\n直接回答用户的问题，总结关键发现和结论性内容\n结论先行：先给可执行/可判断的结论，再给依据与细节\n结构化输出：必须分段、分行；避免大段连续文字\n数据不编造：只使用用户提供/工具返回的数据与口径；不确定则明确标注\"数据不足/需确认\"\n分析过程\n：\n展示完整的分析思路和推理过程，说明如何从数据中得出结论\n必须包含：数据获取、数据选择理由、数据解读、推理步骤、关键洞察、数据支撑\n核心要求：如果分析了某个数据，必须说明为什么选择这个数据和推理逻辑是什么，确保每个数据的选择和每一步推理都有明确的理由和逻辑依据\n详细建议\n：\n基于分析结果提供具体的行动建议、优化方案、注意事项等\n应该深入、具体、可操作，帮助用户做出更好的决策\n建议内容应该与结论和分析思路保持一致，提供实际可执行的指导\n输出格式\n直接问询类问题\n：直接输出简短、明确的回答内容，不需要完整的分析过程结构\n分析类问题\n：按顺序包含三个部分：最终结论、分析过程、详细建议，使用Markdown格式输出，必须换行分段，禁止把所有内容写成一个段落\n设计要点\n分析深度\n：基于完整的上下文信息进行全局分析，汇总各个子Agent的输出，生成结构化的最终报告\n逻辑严密\n：确保分析过程清晰、逻辑严密，帮助用户完整理解整个分析过程\n用户友好\n：使用用户友好的语言，保持一定的专业度，严禁出现技术术语和行业黑话\n遇到的问题及解决方案\n问题1：Planning生成报告时无法支持流式输出，影响用户体验\n问题描述\n：一开始生成报告这个职责也是交给Planning的，但是由于需",
+      "fulltext_obtained": true,
+      "chunk_index": 4,
+      "chunk_count": 6
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0.01,
+        "transfer_business": 0.38,
+        "transfer_agent": 0.55,
+        "peripheral": 0,
+        "irrelevant": 0.06
+      }
+    },
+    "relevance": {
+      "score": 2.46,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.02,
+        "2": 0.49,
+        "3": 0.48,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.2,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.07,
+        "2": 0.4,
+        "3": 0.32,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.92,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.04,
+        "2": 0.36,
+        "3": 0.34,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.99,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.16,
+        "3": 0.69,
+        "4": 0.15,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.64,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.25,
+        "4": 0.69,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.85,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.11,
+        "3": 0.76,
+        "4": 0.07,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.74,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7447,
+    "outputTokens": 172,
+    "totalTokens": 7619
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.44,
+        "relevance": 0.65,
+        "grounding": 0.45,
+        "decision_action": 0.39,
+        "evidence": 0.8,
+        "actionability": 0.74,
+        "anti_hype": 0.8
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180426004,
+                "endTime": 1791180426164,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000312774",
+      "marketCost": "0.000312774",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000312774",
+      "inferenceCost": "0.000312774",
+      "inputInferenceCost": "0.000312774",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARJR3B5237C3AYKR76SQ6"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:06 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::9lpc6-1791180425764-f6cce10bd30c"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0.01,
+            "transfer_business": 0.38,
+            "transfer_agent": 0.55,
+            "peripheral": 0,
+            "irrelevant": 0.06
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.46,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.02,
+            "2": 0.49,
+            "3": 0.48,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.2,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.07,
+            "2": 0.4,
+            "3": 0.32,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.92,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.04,
+            "2": 0.36,
+            "3": 0.34,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.99,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.16,
+            "3": 0.69,
+            "4": 0.15,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.64,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.25,
+            "4": 0.69,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.85,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.11,
+            "3": 0.76,
+            "4": 0.07,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.74
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7447,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.44,
+            "relevance": 0.65,
+            "grounding": 0.45,
+            "decision_action": 0.39,
+            "evidence": 0.8,
+            "actionability": 0.74,
+            "anti_hype": 0.8
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180426004,
+                    "endTime": 1791180426164,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000312774",
+          "marketCost": "0.000312774",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000312774",
+          "inferenceCost": "0.000312774",
+          "inputInferenceCost": "0.000312774",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARJR3B5237C3AYKR76SQ6"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:05.398Z"
+  }
+}

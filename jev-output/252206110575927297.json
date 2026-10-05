@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "252206110575927297",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "FlagOS 镜像登陆腾讯云 HAI社区，快速部署OpenClaw 实现“养虾”自由",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694687&idx=2&sn=c8885f24b1f1a95e018da38b34cc24b0",
+      "date": "2026-03-05T00:45:00.977Z",
+      "chars": 3762,
+      "text": "2026-03-05 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n以往大家习惯将 AI 能力依赖于公有云服务，而随着 OpenClaw 等智能体工具的快速普及，不管是个人开发者还是企业更需要一个 7×24 小时运行在本地、可直接响应指令的 “数字员工”。但云端方案存在的数据隐私风险与持续高昂的 API、Token 成本，让工业级智能体在规模化落地时面临瓶颈，本地化、私有化独立部署大模型服务已成为企业构建自主可控 AI 能力的必然选择。\n众智FlagOS 是一款完全开源的 AI 系统软件栈，支持多款异构 AI 芯片，可让 AI 模型与智能体轻松实现快速部署。本次 FlagOS 联合腾讯云 HAI（面向AI和科学计算的容器镜像中心），将 Qwen3-4B-hygon-flagos 模型镜像正式上线腾讯云 HAI 社区，开发者可直接拉取使用。基于该镜像，可快速在加速卡上运行FlagOS + OpenClaw，实现小模型驱动智能体执行，为企业和开发者从公有云 API 转向自建本地 AI 服务提供了可落地的实践方案。\n01\n安装及测试过程\n基于 FlagOS 系统软件栈的跨芯能力，众智 FlagOS 社区把 Qwen3-4B 适配至多款GPU硬件。以下内容重点介绍如何部署与配置 FlagOS 版 Qwen3-4B的过程，仅用于复现实验结果，不影响对 Agent 能力的判断。\n1.1\n安装Qwen3-4B-hygon-flagos\na.首先，从 HAI 社区平台找到 Qwen3-4B-hygon-FlagOS，根据README.md拉取模型并启动服务。\n以 ModelScope为例，下载模型权重\npip\ninstall modelscope\nmodelscope\ndownload --model Qwen/Qwen3-\n4\nB --local_dir /share/Qwen3-\n4\nB\nb.点击【部署当前镜像】获取镜像拉取命令，从 HAI 社区拉取镜像\ndocker\npull haihub.cn/baai/flagrelease_hygon_qwen3:v1.\n0\n.\n0\nc.通过下面的代码，启动容器。\n这段代码可直接复制使用，也可以根据需要修改容器名，即在第4行--name=flagos对 name 进行修改。\n#Container Startup\ndocker\nrun -it\n\\\n--name=flagos\n\\\n--network=host\n\\\n--privileged\n\\\n--ipc=host\n\\\n--shm-size=\n16\nG\n\\\n--memory=\n\"512g\"\n\\\n--ulimit stack=-\n1\n:-\n1\n\\\n--ulimit memlock=-\n1\n:-\n1\n\\\n--cap-add=SYS_PTRACE\n\\\n--security-opt seccomp=unconfined\n\\\n--device=/dev/kfd\n\\\n--device=/dev/dri\n\\\n--group-add video\n\\\n-u root\n\\\n-v /opt/hyhal:/opt/hyhal\n\\\n-v /share:/share\n\\\nhaihub.cn/baai/flagrelease_hygon_qwen3:v1.\n0\n.\n0\n\\\n/bin/bash\nd.入容器（如果上一步修改了容器名，这里要将flagos对 name 进行修改。\ndocker\nexec\n-it flagos bash\ne.启动服务\nflagscale\nserve qwen3\n1.2 安装配置OpenClaw\n安装过程: 参见:\nhttps://github.com/openclaw/openclaw?spm=5176.28103460.0.0.696675514ZMILC\n, 通过源码方式，安装 OpenClaw。\ngit\nclone\nhttps://github.com/openclaw/openclaw.git\ncd\nopenclaw\npnpm install\npnpm ui:build\n# auto-installs UI deps on first run\npnpm build\npnpm openclaw onboard --install-daemon\n# Dev loop (auto-reload on TS changes)\npnpm gateway:watch\n配置过程:\na.访问链接以下链接：\nhttps://cloud.tencent.com/developer/article/2625144，文中有给出通用的\n\"模型配置\"文件格式，可以直接套用，套用后命令如下。\n需要注意的是\n，配置本地模型时，厂商一定是加速推理工具如vllm。\npnpm openclaw config set 'models.providers.vllm_local' --json '{\n\"baseUrl\"\n:\n\"\nhttp://1.15.51.106:9033/v1\n\"\n,\n\"apiKey\"\n:\n\"anykey\"\n,\n#key不可为空，如果原来模型没有配置key，任意填写即可\n\"api\"\n:\n\"openai-completions\"\n,\n\"models\"\n: [\n{\n\"id\"\n:\n\"Qwen3-4B-hygon-flagos\"\n,\n\"name\"\n:\n\"远程模型\"\n}\n]\n}'\n执行之后出现如下信息提示：\n合并配置模型\npnpm openclaw config\nset\nmodels.mode\nmerge\n切换为当前模式\npnpm openclaw models\nset\nvllm_local/Qwen3-4B-hygon-flagos\n可以看到当前默认模型已经切换为 Qwen3-4B-hygon-flagos。\nb.执行下面代码，可以看到模型已经切换完成。\npnpm\nopenclaw configure\n1.3\n配置 channel 为QQ\n参考文档：\nhttps://cloud.tencent.com/developer/article/2626045，这部分需要替换为自己的ID和secret。配置完成后，进行以下操作：\na.启动openclaw网关，命令如下：\npnpm\nopenclaw gateway\nb.启动成功后，您可以在QQ软件中尝试和已经打通OpenClaw的QQ机器人进行单独聊天，或者在群里与QQ机器人进行对话。如果QQ机器人能够以AI的方式对话，则说明您已经成功完成OpenClaw应用接入QQ机器人。\n接下来您就可以开始进一步探索OpenClaw接入QQ机器人之后的更多使用场景。\n02\n趋势展望\n这次在 OpenClaw 连接QQ的场景中对 Qwen3-4B-hygon-flagos 进行了测试，\n发现Agent 的能力边界正在发生转移\n关键信号：\n‣\n小模型开始进入 Agent 执行层\nQwen3-4B-hygon-flagos 已经可以在 OpenClaw 中稳定承担指令理解、工具调用、本地文件操作和协作入口控制等任务。这意味着，小模型第一次从“对话组件”走进了\nAgent 的执行中枢\n。\n‣\n真正的瓶颈不在模型，而在系统\n无论 4B 还是更大的模型，在文档写入等能力上同样受限，说明 Agent 的上限越来越多地由平台权限、接口设计和工程抽象决定，而不是模型本身。\n如果你要的是一个能在本地跑、能调工具、能接企业系统的 Agent 内核，\n4B 级模型，已经开始成为一个现实且合理的默认选项。\nLess is More, FlagOS is the Key！\n关于众智 FlagOS 社区\n众智FlagOS是一款专为异构AI芯片打造的开源、统一系统软件栈，支持 AI 模型一次开发即可无缝移植至各类硬件平台，大幅降低迁移与适配成本。它包括大型算子库、统一AI编译器、并行训推框架、统一通信库等核心开源项目，致力于构建「模型-系统-芯片」三层贯通的开放技术生态，通过“一次开发跨芯迁移”释放硬件计算潜力，打破不同芯片软件栈之间生态隔离。\n社区官网：\nhttps://flagos.io\nGitHub地址：\nhttps://github.com/flagos-ai\nGitCode地址：\nhttps://gitcode.com/flagos-ai\n关于HAI\n高性能应用服务（Hyper Application Inventor，HAI）是一款面向 AI 、科学计算的 GPU 应用服务产品，提供即插即用的澎湃算力与常见环境，助力中小企业及开发者快速部署 LLM。\n而HAI社区是一款面向AI和科学计算等GPU环境的容器镜像中心，提供丰富的官方与社区维护的开发资源。助力企业和开发者快速部署AIGC大模型、计算机视觉、自然语言处理、数据科学等容器，原生集成开发工具与组件。\n社区官网：\nhttps://haihub.cloud.tencent.com/index\n-End-\n感谢你读到这里，不如关注一下？\n👇\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.22,
+        "direct_local": 0,
+        "irrelevant": 0.41,
+        "peripheral": 0.37
+      }
+    },
+    "relevance": {
+      "score": 1.58,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.32,
+        "2": 0.63,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.7,
+      "probabilities": {
+        "0": 0.44,
+        "1": 0.43,
+        "2": 0.12,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.44,
+      "probabilities": {
+        "0": 0.73,
+        "1": 0.18,
+        "2": 0.05,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.97,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.97,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.83,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.94,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.73,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.12,
+        "2": 0.71,
+        "3": 0.06,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.83,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4382,
+    "outputTokens": 173,
+    "totalTokens": 4555
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.26,
+        "relevance": 0.72,
+        "grounding": 0.54,
+        "decision_action": 0.71,
+        "evidence": 0.98,
+        "actionability": 0.88,
+        "anti_hype": 0.73
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180029650,
+                "endTime": 1791180029825,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000184044",
+      "marketCost": "0.000184044",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000184044",
+      "inferenceCost": "0.000184044",
+      "inputInferenceCost": "0.000184044",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACFNCMZP6ZKHP5CEKKMX8"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:29 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::xhg7f-1791180029564-d8a0baf46ae6"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.22,
+            "direct_local": 0,
+            "irrelevant": 0.41,
+            "peripheral": 0.37
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.58,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.32,
+            "2": 0.63,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.7,
+          "probabilities": {
+            "0": 0.44,
+            "1": 0.43,
+            "2": 0.12,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.44,
+          "probabilities": {
+            "0": 0.73,
+            "1": 0.18,
+            "2": 0.05,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.97,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.97,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.83,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.94,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.73,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.12,
+            "2": 0.71,
+            "3": 0.06,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.83
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4382,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.26,
+            "relevance": 0.72,
+            "grounding": 0.54,
+            "decision_action": 0.71,
+            "evidence": 0.98,
+            "actionability": 0.88,
+            "anti_hype": 0.73
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180029650,
+                    "endTime": 1791180029825,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000184044",
+          "marketCost": "0.000184044",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000184044",
+          "inferenceCost": "0.000184044",
+          "inputInferenceCost": "0.000184044",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACFNCMZP6ZKHP5CEKKMX8"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:29.075Z"
+  }
+}

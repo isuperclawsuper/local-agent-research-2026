@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "272157405034315776",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "深入浅出Harness Engineerring之核心模式与理念",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695469&idx=1&sn=9ba77be5cdb4a9031a708c7361d7a026",
+      "date": "2026-04-29T00:46:00.136Z",
+      "chars": 3280,
+      "text": "原创\n张碧泉\n2026-04-29 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n01\nClaude Code\n1.1\n持久化指令文件\n没有这个文件时，每次对话都像从头开始，相同的规则和错误可能反复出现。\n代价：\n文件需要随项目更新维护，否则可能误导智能体。\n1.2\n作用域上下文组装\n将指令按不同范围（如组织、项目）拆分，让智能体能动态加载最相关的规则。\n代价：\n规则分散在多个文件，可读性变差，且不同范围规则可能冲突。\n1.3\n分层记忆\n将记忆分为三层：常驻的精华摘要、按需加载的细节、仅支持搜索的完整历史，以节省Token。\n代价：\n实现更复杂。需设计信息如何分层、流动，并确保索引与实际数据同步。\n1.4\n做梦整理\n定期在后台对记忆进行去重、清理和重组，类似“垃圾回收”，以保持记忆整洁有效。\n代价：\n整理本身消耗资源，且可能误删有用信息。\n1.5\n渐进式上下文压缩\n新的对话保留细节，稍旧的做轻量总结，更早的则压缩成简短摘要，适合长对话任务。\n代价：\n压缩必有信息损失。后续需要细节时，智能体可能会“编造”。\n1.6\n工作流与编排\n这类模式核心是“分离”，通过拆解任务流程来提升复杂任务的处理质量和可控性。\n探索-规划-行动循环\n严格分为三步：只读探索、与用户对齐的规划、拥有写权限的执行，避免盲目操作。适用于不熟悉的代码库或复杂修改。\n代价：\n流程更慢，小任务会显得“笨重”。\n上下文隔离子智能体\n为不同阶段（如调研、执行）创建拥有独立上下文和权限的子智能体，防止信息相互污染。适合长会话、多阶段任务。\n代价\n：\n需要额外协调信息传递，传多或传少都有问题。\n分支-合并并行\n将可并行的子任务分发给多个在独立环境中工作的子智能体，最后合并结果，以提升效率。\n代价：\n合并更复杂，处理代码冲突的难度增加。\n1.7\n工具与权限\n这类模式关注如何安全、高效地管理智能体的能力。\n渐进式工具扩展\n开始时只提供最必要的工具，复杂工具按需动态加载，降低智能体的选择成本和出错概率。\n命令风险分类\n根据命令类型、参数和影响，自动评估其风险等级（安全、有风险、危险），并采取自动执行、请求确认或直接拦截等不同策略。\n单用途工具设计\n将常用操作（如读文件、搜索）封装为专用工具，而非依赖通用Shell命令，以提高可理解性、可审查性和权限控制粒度。\n1.8 自动化\n确定性生命周\n期\n钩子\n在智能体生命周期的关键节点（如会话开始、工具调用后）自动触发预设动作（如代码格式化），由系统确保关键流程被执行，不依赖可能被模型遗忘的指令。\n02\nClaude Managed Agents\n2.1\n宠物与牲畜基础设施哲学\nSession（会话）是宠物：\n精心培育、持久保存、不可丢失。\nHarness（控制器）和 Sandbox（沙盒）是牲畜：\n可以随时创建、销毁、替换。\n2.2\n智能体三件套解耦\n一个智能体由三个核心组件构成：\nClaude（大脑）：\n负责推理和决策。\nHarness（双手）：\n驱动运行循环，调用Claude API并将工具调用路由到执行环境。\nSandbox（工作台）：\nClaude在其中编写代码、编辑文件、运行命令的隔离环境。\nSession：不可变的事件流\nSession核心接口只有两个：记录事件（\nemitEvent()\n）和读取事件(\ngetEvents()\n)。它是只追加的日志，天然支持重放和状态恢复，赋予智能体容错能力。\nHarness：驱动循环\nHarness是控制中心，它执行一个循环：从Session取上下文 → 调用Claude → 记录响应 → 如有工具调用则路由到Sandbox执行 → 记录结果 → 循环。Harness本身无状态，所有状态都在Session中，因此可随时替换或重启。\nSandbox：隔离的执行环境\n每个Sandbox完全隔离，有自己的文件系统、进程和网络。关键特性是可隔离、可重建、可扩展。\n核心安全设计：凭证永不进沙盒\n采用保险库(\nvault\n) + 代理(\nproxy\n)架构：\n所有第三方凭证存储在独立的保险库中，Harness和Sandbox都无法直接访问。\n当需要调用外部工具时，通过代理从保险库按需获取凭证并执行请求。凭证始终不会暴露给Sand盒中的代码。\n优势：\n遵循最小权限原则，所有外部调用可审计，凭证可统一轮换。\n2.3\n多智能体协作模式\n得益于三组件解耦，自然支持多种协作模式：\n多脑一手：\n多个Claude实例共享一个Sandbox。适用于多角度分析同一份代码（如安全审查+性能优化）。\n一脑多手：\n一个Claude实例控制多个Sandbox。适用于需在不同环境（如Python和Node.js）中同时执行任务。\n多脑多手：\n多个Claude实例各有自己的Sandbox，通过共享Session协调。适用于最复杂的多步骤任务。\n2.4\n上下文工程：保持大脑专注\n为管理长任务中的上下文窗口，引入多种技术：\n上下文压缩：\n当上下文窗口将满时，将早期对话压缩成总结，腾出空间。原始数据仍完整保留在Session中。\n记忆工具：\n让Claude能主动将重要信息写入持久存储，后续可主动检索，类似人类记笔记。\n上下文裁剪：\n在发送给Claude前，智能地裁剪不相关的上下文，只保留当前任务需要的部分。\n三者协同，确保Claude始终获得最相关的上下文。\n2.5\n性能优化：显著降低响应延迟\n关键在于将\n大脑（推理）从容器（Sandbox）中解耦。\n解耦前，每次推理都需等待Sandbox容器完全启动。解耦后，编排层从Session日志拉取事件后，推理可立即开始，使得首Token延迟降低60-90%。\n03\nHermes：会进化的智能体\n3.1\n五段式循环\n规划 → 执行 → 观察 → 学习 → 适应\n3.2 五层记忆架构\nL1 短期记忆（便利贴）：\n当前对话的临时信息。\nL2 技能手册（肌肉记忆）：\n完成复杂任务（如涉及5次以上工具调用）后，自动生成\nSKILL.md\n文件，记录完整的解决步骤，形成可复用的流程。\nL3 知识库（语义记忆）\n如何理解语义记忆？\n简单讲就是利用向量存储这个技术，来实现模糊检索，原理是：即使字面不同，但语义相近的文本，其向量在数学空间中的位置也很接近。\n举例查询进度报告技能：\n“进度报告” vs “项目周报” → 相似度 0.92（很高！）\n“进度报告” vs “预订机票” → 相似度 0.15（很低）\n返回结果：返回最相关的技能：\n生成项目周报.md\nL4 对你的了解（用户建模）\n首先什么是黑格尔“辩证式”：\n黑格尔“辩证式”就是AI内部在讨论：“我对用户的理解对吗？新证据说明了什么？怎么更新我的理解？”\n越来越懂你的朋友：\n不是一次判断就定终身，允许你改变、允许情况复杂，通过不断观察、思考、调整，越来越懂真实的你。\n这就像最好的朋友：\n知道你“通常”怎样，但也理解你“有时”会例外\n比喻：\n旧版本：“林总喜欢喝美式”\n新发现：今天林总点了拿铁\n冲突：旧版本 和 新证据矛盾\n解决方案：不直接覆盖成“喜欢拿铁”，而是升级：\n“林总平时喝美式，但周三下午会换拿铁”\nL5 工作日志（长期档案）\nFTS5全文检索+LLM摘要：跨会话搜索历史对话，永久存储\nLLM 摘要（写读书笔记）：\n每次长谈后，AI 会自动用一两句话总结核心结论，写在笔记本的“摘要区”。\nFTS5 全文检索（给笔记本加智能目录）：\nAI 会给笔记本的\n每一页\n（包括详细对话和摘要）的所有关键词，自动生成一个超快的\n电子索\n-End-\n原创作者｜张碧泉\n感谢你读到这里，不如关注一下？\n👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。5月6日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0,
+        "irrelevant": 0.05,
+        "direct_local": 0,
+        "transfer_agent": 0.95,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.09,
+        "2": 0.89,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.51,
+      "probabilities": {
+        "0": 0.65,
+        "1": 0.23,
+        "2": 0.11,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.67,
+      "probabilities": {
+        "0": 0.46,
+        "1": 0.04,
+        "2": 0.1,
+        "3": 0.17,
+        "4": 0.23,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.32,
+      "probabilities": {
+        "0": 0,
+        "1": 0.1,
+        "2": 0.5,
+        "3": 0.38,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.16,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.04,
+        "2": 0.07,
+        "3": 0.55,
+        "4": 0.33,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.78,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.12,
+        "3": 0.79,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4857,
+    "outputTokens": 172,
+    "totalTokens": 5029
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "relevance": 0.93,
+        "grounding": 0.66,
+        "decision_action": 0,
+        "evidence": 0.65,
+        "actionability": 0.67,
+        "anti_hype": 0.81,
+        "category": 0.93
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180017638,
+                "endTime": 1791180017829,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000203994",
+      "marketCost": "0.000203994",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000203994",
+      "inferenceCost": "0.000203994",
+      "inputInferenceCost": "0.000203994",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AC3YMHC3NMQ63MJZP944G"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:17 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::98np2-1791180017594-9ddb3efe9814"
+    },
+    "body": {
+      "answers": {
+        "relevance": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.09,
+            "2": 0.89,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.51,
+          "probabilities": {
+            "0": 0.65,
+            "1": 0.23,
+            "2": 0.11,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.67,
+          "probabilities": {
+            "0": 0.46,
+            "1": 0.04,
+            "2": 0.1,
+            "3": 0.17,
+            "4": 0.23,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.32,
+          "probabilities": {
+            "0": 0,
+            "1": 0.1,
+            "2": 0.5,
+            "3": 0.38,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.16,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.04,
+            "2": 0.07,
+            "3": 0.55,
+            "4": 0.33,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.78,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.12,
+            "3": 0.79,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0,
+            "irrelevant": 0.05,
+            "direct_local": 0,
+            "transfer_agent": 0.95,
+            "transfer_business": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4857,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "relevance": 0.93,
+            "grounding": 0.66,
+            "decision_action": 0,
+            "evidence": 0.65,
+            "actionability": 0.67,
+            "anti_hype": 0.81,
+            "category": 0.93
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180017638,
+                    "endTime": 1791180017829,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000203994",
+          "marketCost": "0.000203994",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000203994",
+          "inferenceCost": "0.000203994",
+          "inputInferenceCost": "0.000203994",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AC3YMHC3NMQ63MJZP944G"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:17.074Z"
+  }
+}

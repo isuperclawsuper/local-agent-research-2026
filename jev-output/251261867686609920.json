@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "251261867686609920",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI编程的下半场来了？学会用Agent Skill解决编程的痛点问题",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800483&idx=1&sn=080b2791ddb9b01088722831fc04acdc",
+      "date": "2026-03-02T09:37:00.918Z",
+      "chars": 10357,
+      "text": "2026-03-02 17:37\n广东\n云开发 8 年的知识沉淀\n作者：bookerzhao\n如何把 8 年云端经验装进你的 AI 开发工具，让AI从\"实习生\"变成\"持证上岗的专家\"。分享如何用 Agent Skill 解决 AI Coding 领域的痛点问题，也分享如何解决 AI 不调用 Skill 等实践技巧。\n【推荐语】\n最近我们在折腾 Agent Skills，想把云开发（CloudBase）这些年攒下的经验打包给 AI。实战下来发现，最折磨人的不是 AI 不会写代码，而是它写的代码\n“只能活在本地”\n，以及它\n“总是不听规矩”\n。\n这篇文章主要分享两点实操复盘，希望能帮大家少走点弯路：\n让 AI 生成的代码能直接上线\n：大家可能都遇到过，AI 写的代码 Demo 感十足，但一上线就全是安全隐患。我们尝试给 AI 注入底座感知，让它学会用底座原生认证代替脆弱的传参，用安全规则代替接口“裸奔”，解决代码“死在本地”的尴尬。\n解决“AI 有 Skill 却不爱用”的毛病\n：最让人头疼的是，明明配好了 Skills，AI 却视而不见，非要凭直觉盲干。我们会分享如何通过“总纲+插件”的结构，配合简单的工程拦截，把 AI 的技能激活率从 20% 硬拉到 84%。\n希望能给同样在研究 Skills 和 AI 开发的朋友一点参考，让 AI 交付的代码不再只是“看着挺美”，而是真正稳健。\n现状：Vibe Coding 的 \"本地舒适区\"\n最近，开发者都在享受\nVibe Coding\n的快感。在用户本地的\nlocalhost\n一顿操作，UI 漂亮得像成品，但魔法往往在“上线”瞬间戛然而止。\nAI 的代码逻辑还不错，但它无法感知真实的后端底座，导致生成的“局部最优解”难以落地，无法简单的生成生产级可用的应用。\n世界上最遥远的距离，是从\nlocalhost\n到真实访问的距离。\nAI 填补了代码量的空白，却填补不了工程底座的断层。\n有什么办法可以解决这个问题吗？这里就需要提到 Skills。\n什么是 Skills\nSkills 最早是 Anthropic 在 2025 年 10 月给 Claude Code 加的一个功能，它是一套包含指令、脚本和资源的能力包。\n把专业知识、步骤、代码打包成“技能包”\n。\nAgent Skills 是一种轻量级、开放式的格式，用于通过专业知识和工作流扩展 AI Agent 的能力。\n从本质上讲，一个 Skill 就是一个包含\nSKILL.md\n文件的文件夹。该文件包含元数据（至少包括\nname\n和\ndescription\n）以及告诉 Agent 如何执行特定任务的指令。Skills 还可以捆绑脚本、模板和参考材料。\nmy-skill/\n├── SKILL.md          # 核心：指令 + 元数据\n├── scripts/          # 可选：可执行代码\n├── references/       # 可选：参考文档\n└── assets/           # 可选：模板、资源\n如果把 AI 比作高材生，Skills 就是他的\n“岗位操作手册”。它不改变 AI 的智商，但它通过注入程序性知识\n（Procedural Knowledge），让 AI 知道在你的特定环境下，“正确且高效”的操作标准是什么。\nAgent Skill\n[1]\n在 2025 年 12 月正式成为开放规范，目前已有包括 Claude、Cursor、VS Code、GitHub Copilot、OpenCode等主流AI开发工具宣布兼容支持。\nSkills 的工作原理：渐进式加载（Progressive Disclosure）\nSkills 通过\n渐进式加载\n来高效管理上下文（Context），确保 Agent 在拥有强大能力的同时不会因信息过载而变得迟钝：\nDiscovery（发现）\n：启动时，Agent 仅加载每个 Skill 的\n名称和描述\n。这足以让它在处理请求时，判断哪些 Skill 可能与当前任务相关，而不会耗尽上下文窗口。\nActivation（激活）\n：当任务与某个 Skill 的描述匹配时，Agent 才会按需将该 Skill 的完整\nSKILL.md\n指令读入当前上下文。\nExecution（执行）\n：Agent 遵循指令执行任务，并根据需要动态加载引用文件或运行捆绑的脚本代码。\n这种方法让 Agent 保持极高的响应速度，同时能够像“随身携带百科全书”一样，在需要时立即获取深度专业知识。\n行业大佬们已经在行动：\nVercel\n发布了\n`react-best-practices`\n[2]\n，解决 AI 乱写 React 导致的性能问题，将 React 专家十余年经验你浓缩为最佳实践。\nRemotion\n推出\n视频制作 Skill\n[3]\n，让 AI 学会用代码\"剪辑\"视频\nVercel 推出了 skills 命令\n[4]\n来快速安装 Skills 到各个工具中，这是当前热门的 skills 列表。\n这些 Skills 解决的核心问题是：\n让 AI 拥有特定领域的\"工程直觉\"。\n那么，当你的应用需要落地到云端时，谁来给 AI 注入\"后端直觉\"？\nCloudBase Skills：把 8 年云端经验打包给 AI\n云开发 CloudBase\n[5]\n作为自 2018 年起就推出 Serverless 服务的团队，也推出\nCloudBase Skills\n[6]\n。\nSkills 是软件层面的“岗位手册”，而 CloudBase 则是承载代码落地的“全栈底座”。\n许多 AI 生成的代码之所以“死在本地”，是因为 AI 往往只负责写逻辑，却不知道如何对接复杂的生产环境。CloudBase 为 AI 提供了一套高度抽象的基础设施，让 AI 写出的逻辑能无缝运行在公网：\n全栈托管与部署能力\n：支持前端静态网页与后端逻辑的快速部署，让项目从\nlocalhost\n真正变成可访问的在线 URL。\n多端原生身份认证\n：打通了 Web、小程序等多种身份源。AI 无需手写复杂的登录逻辑，通过 Skills 直接调用底座的认证能力，实现秒级接入。\n数据库底座\n：同时提供文档型（NoSQL）与 SQL 型数据库能力。更重要的是，底座原生集成了面向 C 端的权限控制机制，确保 AI 生成的每一行查询都运行在物理隔离的安全沙箱中，从根源规避越权风险。\n它将 CloudBase 支撑\n日均 10 亿次 API 调用\n、服务\n超过 330 万开发者\n的真实经验，翻译成了 AI 听得懂的指令。\n举一些 CloudBase Skills 如何为 AI 注入生产级标准的场景：\n场景一：身份认证——拒绝“相信前端输入”\n错误做法\n习惯于让前端通过\nuserId\n传参给后端。\n风险\n：这是典型的“防君子不防小人”。攻击者只需拦截请求并修改参数，即可实现\n横向越权\n，访问任何人的私密数据。\n正确做法\n加载\nauth-wechat\nSkill 后，AI 会被强制要求放弃前端传参，转而利用云底座的\n原生链路\n。\nBefore (脆弱逻辑)\n:\n// 实习生 AI：相信用户传来的 ID\nconst\n{ openid } = event.params;\nconst\nuser =\nawait\ndb.collection(\n'users'\n).doc(openid).get();\nAfter (生产级标准)\n:\n// 专家 AI：利用底座原生上下文，不可伪造\nconst\n{ OPENID } = cloud.getWXContext();\nconst\nuser =\nawait\ndb.collection(\n'users'\n).doc(OPENID).get();\n工程准则\n：安全性应由底座的\n原生互信\n保证，而非依赖前端输入的自觉。\n场景二：数据安全——从“接口裸奔”到“行权限”\n错误做法\n倾向于直接暴露数据库接口。如果你的 API 逻辑稍有疏忽，数据库对攻击者几乎是“裸奔”状态。\n正确做法\nSkill 会引导 AI 将权限校验\n下沉到数据库入口\n，直接驱动底座的\n安全规则（Security Rules）\n。\n实现改变\n：不再单纯写查询逻辑，而是为集合定义\nauth.uid == doc._openid\n规则。\n价值\n：\n防御性编程的闭环。\n即使业务逻辑代码出现 Bug，底座依然能从物理层面拦截任何非本人数据的越权修改。\n场景三：AI 集成——消灭 Hardcoded，三行代码闭环\n接入大模型是当前最热的需求，但 AI 往往给出的是“Demo 级”的代码，完全忽略了生产环境的安全与高可用要求。\n错误做法\n将 API Key 硬编码在前端，写出一坨混乱的逻辑来处理流式输出（Streaming），既不安全也不稳定。\n正确做法\nSkill 注入了生产级 AI 接入规范，将复杂的封装逻辑简化为底层 SDK 的原生调用。\n安全加固\n：Key 自动托管在云端环境变量，前端实现\n“零泄露”\n。\n几行代码调用 AI 大模型\n，自动处理流式响应。\n// CloudBase Skills 实现的生产级 AI 调用\nconst\nmodel = wx.cloud.extend.AI.createModel(\n\"hunyuan-exp\"\n);\nconst\nres =\nawait\nmodel.streamText({\ndata\n: {\nmodel\n:\n\"hunyuan-turbos-latest\"\n,\nmessages\n: [{\nrole\n:\n\"user\"\n,\ncontent\n:\n\"介绍一下李白\"\n}],\n}\n});\n// 使用 textStream 获取增量文本\nfor\nawait\n(\nconst\ntext\nof\nres.textStream) {\nconsole\n.log(\n\"文本片段:\"\n, text);\n}\n核心价值\n“AI 提供了逻辑的上限，而 CloudBase Skills 守住了工程的下限。”\n安装 CloudBase Skills\n在你的终端输入以下命令，为你的 AI 助手注入“生产级直觉”：\nnpx skills add tencentcloudbase/skills\n即可安装我们提供的多个 Skills 到你的开发工具中。\nCloudBase Skills 完整列表\n我们将 Skills 按照实际开发中的职能进行了归类，确保 AI 在不同环境下调用正确的 SDK 和工具。\n这种分类不仅是为了方便开发者查阅，更是为了在 Discovery（发现阶段）降低 AI 的认知负荷，实现精准的按需挂载。\n核心理念：环境即边界（Environment as Boundary）\n在展开列表前，我们需要阐述这套架构的底层设计：总纲路由，三端隔离。\n物理隔离\n：Web、小程序、Node.js 的同名方法逻辑各异。我们将它们拆分为独立插件，从物理层面杜绝 AI 在小程序里写出 Web SDK 语法的语义污染。\n总纲引导\n：cloudbase-guidelines 是所有任务的默认入口。它像一个语义路由器，先判定项目环境，再指引 AI 激活对应的子 Skill。\n完整技能矩阵\nMCP vs Skills\n在构建 AI 原生开发生态的道路上，我们始终坚持“先打通，再优化”的逻辑。\nCloudBase MCP：早已就绪的“工程双手”\n事实上，云开发 CloudBase 在 2025 年上半年的时候就推出了\nCloudBase MCP\n[7]\n。作为 Anthropic 推出的行业标准协议，MCP 解决的是“连接”问题。\n通过 MCP，我们让 AI 助手真正拥有了操作腾讯云底座的\n结构化权限\n。它不再只是在对话框里写代码，而是能直接查询云端状态、创建资源、拉取日志。目前，CloudBase MCP 已经支持了包括 Cursor、Claude Desktop、VS Code 在内的多种主流工具，帮助大量开发者实现了 AI 与云端的物理连接，\n查看具体使用指引\n[8]\n。\nCloudBase Skills：后发制人的“岗位手册”\n既然有了 MCP 这双强有力的“手”，为什么我们还要推出 Skills？\n如果说 MCP 是让 AI “有权限”干活，那么 Skills 就是让 AI “懂规矩”干活。\n在我们的规划中，Skills 是更上层的能力封装：\n不仅仅是脚本\n：虽然 Skills 规范支持包含脚本（Scripts），但我们现阶段更侧重于\n“程序性知识（Procedural Knowledge）”的注入\n。\n更安全、更通用的专家直觉\n：正如前文提到的，AI 有了 MCP 虽然能执行脚本，但在云端生产环境，盲目执行脚本不仅不安全，也不符合工程规范。Skills 则是把我们 8 年的云端填坑经验（如行权限隔离、原生上下文认证）变成 AI 的\n直觉\n。\n为什么它们是黄金组合？\n你可以单独使用其中之一，但组合使用才是 AI 编程的“终极形态”：\n“MCP 提供了标准化的安全连接，而 Skills 提供了生产级的工程直觉。”\n两者搭配，让 AI 从一个\n“力气大但鲁莽的实习生”\n，真正进化为一个\n“懂规矩、有权限”\n的资深云开发专家。\n实战案例\nCodeBuddy IDE 中已经内置了 CloudBase MCP 和 Skills，在连接 CloudBase 之后会自动下载 Skills 到你项目中。\n这里有一篇教程教你用免费云开发资源与混元Token，手把手教你用 AI 来开发一个 AI 小程序。\n查看完整教程\n还可以\n查看更多入门视频教程和文章\n[9]\n终章：Skills 落地踩坑与实战复盘\n在做这套 Skills 的过程中，我们最大的感触是：\n现在的 AI 编程，其实处于一个“高智商、低纪律”的阶段。\n别看各大工具都号称支持 Skills，真用起来全是坑。\n以下是几个我们里跟 AI “斗智斗勇”换来的经验教训：\n1. 现状：AI 为什么会“装死”？\n明明配了 Skill，AI 还是视而不见。这背后的原因其实涉及大模型的两个底层逻辑：\n注意力权重（Attention Bias）\n：在大模型的 Transformer 架构中，它会根据你的 Prompt 实时计算每个词的权重。当你聊得越深，你提的业务需求权重就会越高，而作为背景板的外部 Skills 权重就会被“稀释”。\n决策惰性（Inference Laziness）\n：调用 Skill 本质上是一次\nTool Use（工具调用）\n。模型在推理时会进行“路径评估”：如果它觉得自己脑子里的预训练数据（通常是 Localhost 模式）就能生成一段“看起来正确”的代码，它就会为了节省推理资源而跳过外部工具调用。\n激活率落差\n：在我们的回归测试中，如果不加干预，AI 的主动调用率只有\n20%\n左右。它宁愿“盲目裸奔”，也不愿意翻书。\n2. “驯服” AI 的三套硬核解法\n既然 AI 会产生决策惰性，我们就得用工程手段拉高它的“警觉性”。\n方案 A：最土但最稳的“首行注入”\n如果你的项目不容许犯错，就在提问的最开头带上这句“咒语”：\nYou MUST read the cloudbase-guidelines skill FIRST when working with CloudBase projects.\n原理\n：利用\n首因效应（Primacy Effect）\n。模型对输入序列最前端的信息具有天然的高关注度。通过这种强行注入，能把 Skill 的激活率拉升。\n强烈建议大家在试用过程中也带上这句 Prompt，或者按照方案 B 来执行。\n方案 B：项目级的“家法” (System Rules)\n在项目根目录创建\nCLAUDE.md\n或\nAGENT.md\n，增加项目级别的约束规则。这样就不用每次都在 prompt 中 携带上面的咒语，不过这个方法也存在一定的缺陷，相比每次都首行注入，随着对话的上下文越来越长，也会存在 AI 不遵循的情况，接下来就可以看看方案 3 的解法。\n# CloudBase Workflow\n0.\nYou MUST read the cloudbase-guidelines skill FIRST when working with CloudBase projects.\n1.\n评估：写代码前，必须显式评估可用 Skills 列表。\n2.\n承诺：必须在输出中陈述“我需要调用某个 Skill”的理由。\n3.\n执行：禁止跳过规矩直接写代码。\n方案 3：自动化“强制拦截” (Forced Eval Hook)\n如果说前两个方案是靠“嘴”叮嘱 AI，那方案 3 就是靠\n“物理拦截”\n技术专家 Scott Spence 在他的实测中发现，最有效的方式是利用编辑器的\nHook（钩子）机制\n。\n它的本质是“中间件”\n：这不再是你手动输入的 Prompt。通过配置（如\n.claude/settings.json\n），脚本会在你按下回车的那一刻，自动拦截并“魔改”你的问题。\n强制“表态”才能“干活”\n：这个钩子会强制 AI 在输出任何代码前，必须先生成一段\n评估报告\n。AI 必须逐一陈述：\n“当前有哪些 Skill 可用？针对这个需求，我需不需要调用它们？理由是什么？”\n消除“决策惰性”\n：AI 有个毛病，只要它觉得脑子里的旧数据能糊弄过去，它就不会翻书。但这种 Hook 强迫 AI 必须白纸黑字写下“我要用这个工具”，一旦它在开头表了态，后面的代码生成就会严格遵守这个承诺。\n激活率的质变\n：根据 Scott 的数据，这种“拦截+评估”的手段能将激活率从\n20% 暴力拉升到 84%\n延伸阅读：\nHow to Make Claude Code Skills Activate Reliably\n[10]\n3. 架构复盘：为什么必须是“总纲 + 独立插件”？\n在开发过程中，我们发现 AI 最大的毛病是\n“端不分”\n。它分不清小程序、Web 和 Node.js 的环境边界。我们没有搞一个“全家桶” Skill，而是采用了\n“1 个总纲 (Guidelines) Skill + 21 个独立 Skill”\n的分布式架构。这背后有三个核心逻辑：\nA. 解决“语义污染”与环境误判\nWeb、小程序、Node.js 的 SDK 方法名极其相似（如都有\ninit\n,\ncallFunction\n）。\n痛点\n：如果全塞进一个 Skill，AI 经常在写小程序逻辑时，顺手掏出 Web 端的语法。这种\n语义污染\n是造成代码无法上线的元凶。\n解法\n：我们将 Skill 按端进行物理拆分。配合\ncloudbase-guidelines\n这种\n“入口点” (Entry Point)\n，先指挥 AI 判定项目环境（如：识别到\napp.json\n即为小程序）。\n收益\n：环境判定后，AI 只会加载相关的子 Skill。这把干扰项直接屏蔽掉，\n搜索空间缩小了 90%，推理精度自然大幅提升。\nB. 开发者可以“精准点菜”\n痛点\n：全能包（单体架构）太重。当你想让 AI 专门解决“微信支付”或“安全规则”这种特定问题时，AI 的注意力会被庞大的全量手册稀释。\n解法\n：独立插件支持\n局部强化\n。你可以直接下令：\n“调用\nauth-web\n检查实现手机号登录”\n。\n收益\n：这种设计允许开发者直接干预 AI 的决策路径。在 AI 逻辑混乱时，通过唤起特定子 Skill 强行把它的思维拉回到正确的窄道上。\n未来规划\n我们将持续推出：\n小程序集成微信支付集成技能\n小程序集成虚拟支付技能\n小游戏集成云开发技能\n云函数部署全栈后端应用技能\n更多全栈应用开发模板和技能等\n欢迎访问\nCloudBase Skills GitHub 仓库\n[11]\nCloudBase MCP GitHub 仓库\n[12]\n了解更多详情！\n写在最后：从“代码生成”到“生产级交付”的跨越\n折腾了这么多 Skills 之后，我们最大的感触是：\nAI 编程的生产力，不取决于模型能写出多么精妙的逻辑，而取决于你对它生成的代码具备多少“工程约束力”。\n1. 核心本质：将“隐性经验”转化为“程序性知识”\n目前的 Agent 依然处于“高智商、零经验”的状态，它们是博学的“实习生”，却对真实的物理底座缺乏敬畏。\nCloudBase Skills 的本质，是给 AI 注入一套工程化的“肌肉记忆”。\n通过\nguidelines\n的语义导航和原子 Skill 的强约束，我们将云开发八年来沉淀的填坑经验（如行权限隔离、多端原生上下文、高并发限流）转化为了 AI 的\n前置判定条件\n。这种\n程序性知识（Procedural Knowledge）\n的注入，让 AI 真正理解了“正确且安全”的交付标准。\n2. 范式转换：Agent 必须具备“环境感知力”\nAgent 进化的下一站，不仅仅是 Reasoning（推理）的增强，更是对\nInfrastructure（基础设施）感知力\n的补齐。\nSkills 守住工程下限\n：它是一套“防呆协议”。通过场景化工作流和报错锚点，强制 AI 在编写阶段就化解鉴权漏洞和多端环境差异，彻底终结“代码只活在\nlocalhost\n”的幻觉。\nCloudBase 承载逻辑上限\n：作为全栈底座，它让 AI 的逻辑输出不再是网页里的文本，而是能直接部署、调通、并产生真实业务价值的生产级资源。\n3. 确定性是 AI 开发的唯一度量衡\n我们不应该期待 AI 自动变得“完美”，而应该通过工程手段让它变得“稳定”。\nAI 提供逻辑的上限，Skills 守住工程的下限，而 CloudBase 则是承载这一切的物理底座。\n我们正处于从“氛围感编程 (Vibe Coding)”向“生产级交付”跨越的节点。如果你也厌倦了在对话框里修 Bug，欢迎安装 CloudBase Skills。给你的 AI 立个规矩，让它真正从一个“聊天搭子”进化为能帮你上线产品的“资深合伙人”。\n如有问题或建议，欢迎在评论区交流。\n名词解释\nVibe Coding\n：一种依赖 AI 直觉、快速生成原型但缺乏工程严谨性的编程方式。\nProcedural Knowledge\n：程序性知识。指关于“如何操作”的知识，让 AI 掌握特定场景下的标准作业流程（SOP）。\nMCP\n：模型上下文协议。AI 的\n“连接器”\n，让其能直接操作数据库、文件系统或云资源。\nAgent Skills\n：能力插件包。AI 的\n“专家手册”\n，注入特定领域的最佳实践和工程规范。\n横向越权\n：安全漏洞。指攻击者通过篡改 ID 等参数，非法访问到同级别其他用户的数据。\n安全规则\n：底座级权限控制。在数据库入口处强制执行访问校验，是防御越权的核心手段。\n立即开始\n在你的终端输入以下命令，为你的 AI 助手注入“生产级直觉”：\nnpx skills add tencentcloudbase/skills\n参考资料\n[1]\nAgent Skill :\nhttps://agentskills.io/\n[2]\nreact-best-practices\n:\nhttps://vercel.com/blog/introducing-react-best-practices\n[3]\n视频制作 Skill:\nhttps://x.com/Remotion/status/2013626968386765291\n[4]\nVercel 推出了 skills 命令:\nhttps://skills.sh/\n[5]\n云开发 CloudBase:\nhttps://tcb.cloud.tencent.com/\n[6]\nCloudBase Skills:\nhttps://github.com/TencentCloudBase/Skills\n[7]\nCloudBase MCP:\nhttps://github.com/TencentCloudBase/CloudBase-MCP\n[8]\n查看具体使用指引:\nhttps://docs.cloudbase.net/ai/cloudbase-ai-toolkit/\n[9]\n查看更多入门视频教程和文章:\nhttps://docs.cloudbase.net/ai/cloudbase-ai-toolkit/tutorials\n[10]\nHow to Make Claude Code Skills Activate Reliably:\nhttps://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably\n[11]\nCloudBase Skills GitHub 仓库:\nhttps://github.com/TencentCloudBase/Skills\n[12]\nCloudBase MCP GitHub 仓库:\nhttps://github.com/TencentCloudBase/CloudBase-MCP\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.25,
+        "peripheral": 0.03,
+        "transfer_business": 0,
+        "transfer_agent": 0.72,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.73,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.19,
+        "2": 0.77,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.45,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.11,
+        "2": 0.17,
+        "3": 0.32,
+        "4": 0.26,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1,
+      "probabilities": {
+        "0": 0.6,
+        "1": 0.11,
+        "2": 0.1,
+        "3": 0.11,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.9,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.31,
+        "3": 0.48,
+        "4": 0.21,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.76,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.07,
+        "4": 0.83,
+        "5": 0.04
+      }
+    },
+    "anti_hype": {
+      "score": 2.5,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.09,
+        "2": 0.23,
+        "3": 0.61,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 9532,
+    "outputTokens": 172,
+    "totalTokens": 9704
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.65,
+        "relevance": 0.82,
+        "grounding": 0.28,
+        "decision_action": 0.33,
+        "evidence": 0.65,
+        "actionability": 0.79,
+        "anti_hype": 0.63
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179981258,
+                "endTime": 1791179981448,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000400344",
+      "marketCost": "0.000400344",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000400344",
+      "inferenceCost": "0.000400344",
+      "inputInferenceCost": "0.000400344",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB0DG0KY7A2XDXVP6ZH04"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:41 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::dvgw8-1791179980904-678364603513"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.25,
+            "peripheral": 0.03,
+            "transfer_business": 0,
+            "transfer_agent": 0.72,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.73,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.19,
+            "2": 0.77,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.45,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.11,
+            "2": 0.17,
+            "3": 0.32,
+            "4": 0.26,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1,
+          "probabilities": {
+            "0": 0.6,
+            "1": 0.11,
+            "2": 0.1,
+            "3": 0.11,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.9,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.31,
+            "3": 0.48,
+            "4": 0.21,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.76,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.07,
+            "4": 0.83,
+            "5": 0.04
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.5,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.09,
+            "2": 0.23,
+            "3": 0.61,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 9532,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.65,
+            "relevance": 0.82,
+            "grounding": 0.28,
+            "decision_action": 0.33,
+            "evidence": 0.65,
+            "actionability": 0.79,
+            "anti_hype": 0.63
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179981258,
+                    "endTime": 1791179981448,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000400344",
+          "marketCost": "0.000400344",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000400344",
+          "inferenceCost": "0.000400344",
+          "inputInferenceCost": "0.000400344",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB0DG0KY7A2XDXVP6ZH04"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:40.688Z"
+  }
+}

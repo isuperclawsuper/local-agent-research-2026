@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "240969124528904192",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "生产级Prompt自动化推理评估A/B实验结果的工程实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558131&idx=1&sn=73317842c9c513c3bde07efac9cee952",
+      "date": "2026-02-02T00:31:00.661Z",
+      "chars": 31428,
+      "text": "原创\n张超（码影）\n2026-02-02 08:31\n浙江\n一、前言\n在互联网流量竞争白热化的时代，A/B实验已成为产品迭代的标准决策工具。当实验数量从数十增长到数百甚至数千数万时，传统的人工巡检模式遭遇瓶颈：需要专业的同学每日投入4-6小时逐个检视实验数据，判断其上线或下线；即使如此，由于时间压力和注意力限制，误判率依然居高不下。\n上述问题在我的大模型策略调优项目中变得尤为突出。\n在策略调优试运行场景中，每日新增实验数量远超下线实验，导致在线策略数量持续膨胀——这直接影响了打包留白实验的整体效果评估，降低了快速迭代的能力。\n传统解决方案存在三大局限：\n1.人工巡检的低效性\n：依赖个人经验，容易疲劳决策，无法扩展到数百个实验；\n2.规则引擎的僵化性\n：基于正则表达式的阈值判断，无法理解复杂的数据趋势和业务上下文；\n3.统计方法的片面性\n：仅依赖p-value或绝对收益，忽视了小样本数据（1-7天）的波动特征；\n针对这些痛点，我设计并部署了一套\n生产级Prompt自动化推理系统\n，基于大语言模型的推理能力，结合AB实验领域的专业知识，实现了高效、准确、可解释的实验评估流程。\n卡片生命状态\n图片展示\n自动同步\n实验数据\n（开始状态）\n自动同步\n实验数据\n（完成状态）\n自动实验结果推理\n（开始状态）\n自动实验结果推理\n（进行状态）\n自动实验结果推理\n（结束状态）\n试运行成果\n（运行1周）：\n1.策略下线数从300+降至100+（下线准确率68%）\n2.打包留白实验关键指标从每日负向，扭转为稳定正向趋势\n3.人工巡检耗时从6小时/天降至30分钟/天\n从留白实验的整体观测来看\n端视角\n行业视角\n本文将详细介绍：\n生产级Prompt的设计与优化\n，包括决策逻辑、真实bad cases分析，以及从68%迈向更高准确率的改进思路。\n二、系统背景与业务痛点\n2.1 竞价策略的实验困境\n行业策略调优项目处于0-1建设阶段。与传统的灰度实验不同，这里的核心模式是：\n大模型日均生产N人群策略 → 快速上线（无灰度） → T+2产出数据 → 人工巡检负向策略 → 快速下线\n2.2 打包留白实验的困境\n单个策略的效果可能很小（如DAU变化0.1%-0.5%），但当多个策略合并时，其累积效应会更加明显。\n这就是\"打包留白实验\"的价值：\n将若干相同类型的策略合并成一个大实验；\n用统一的对照组来评估这些策略的整体增益；\n如果打包效果不好，则逐个下线策略进行诊断；\n但现状是：\n打包留白实验的关键指标（比如整体DAU相对变化率）每日都在负向或负向置信来回波动\n这意味着整个打包的策略组合可能真的在伤害用户增长。\n但单个策略看起来都还不错，矛盾之处在哪？\n根本原因\n：\n包裹中混入了大量\"负向策略\"\n策略可能的类型一般来说就这几个：\n第1-2天看起来正向，但从第3天开始持续衰减；\n早期有幸运的正向波动，但整体累积收益为负；\n看起来有反弹，但反弹不足以抵消之前的损失；\n这些\"灰色地带\"策略，人工判断时最容易出现分歧。\n如果能准确识别并快速下线这些策略，打包留白的整体效果就会好转。\n2.3 现有方案的局限性\n大语言模型的优势\n：\n相比以上方案，基于LLM的Prompt推理具有独特的能力：\n理解上下文\n：可以同时考虑流量波动、绝对收益、趋势变化等多个维度；\n灵活的决策路径\n：不是简单的AND/OR逻辑，而是能理解\"虽然有一天下跌，但随后反弹了，所以不是趋势恶化\"这样的复杂推理；\n可解释的输出\n：每个决策都附带易懂的原因说明，便于产研同学二次确认和持续优化；\n快速迭代\n：通过Prompt调整可以快速改进，无需重新训练模型。\n三、主Prompt展示<适当脱敏版>\n完整prompt\n## Profile：\n-\nLanguage\n: 中文\n-\nDescription\n: 资深用户增长数据分析师，专注\nAB\n实验效果评估，精通流量归一化处理、多维度趋势建模及统计显著性解读，能基于\n1\n-\n7\n天实验数据输出客观、可落地的业务决策建议，严格遵循工程化输出规范\n## Skills:\n1\n. 精通\nAB\n实验核心指标分析（\nDAU\n相对变化率、绝对变化量、流量比例），熟练处理实验组/留白组数据差异\n2\n. 掌握科学流量归一化技术，当实验组与留白组流量比例差异>\n5\n%时，自动计算千人\nDAU\n变化量（dauAbsoluteChange/(experimentTrafficRatio/\n1000\n)）进行标准化\n3\n. 擅长多维度趋势诊断：识别持续负向、负向转正、正向衰减、高波动等模式，结合移动平均和标准差量化趋势稳定性\n4\n. 具备小样本决策能力（\n1\n-\n7\n天数据），综合绝对收益与相对变化进行业务价值评估，严格区分统计显著性与实际业务价值\n5\n. 严格生成无杂质\nJSON\n输出，确保字段类型精确（boolean/string），符合\nRFC8259\n标准及\nJava\n反序列化要求\n## Goals:\n1\n. 基于\n1\n-\n7\n天实验数据精准输出isRecommendOffline(boolean)，判断实验是否应下线\n2\n. 生成recommendation字段（≤\n200\n字符），用通俗易懂的日常语言描述决策原因，包含具体数据支撑（如损失用户数、天数等），避免专业术语\n3\n. 确保输出为纯净\nJSON\n对象，无任何额外字符、换行或解释性内容\n4\n. 综合流量归一化、趋势稳定性、绝对收益阈值三维度，避免片面结论\n5\n. 识别数据风险信号（如波动异常、趋势逆转失败），提供可操作建议\n6\n. 历史实验天数小于\n3\n天时，表达\n\"数据量不足，建议延长实验\"\n## Constrains:\n1\n. 输出必须为有效\nJSON\n对象，仅包含isRecommendOffline(boolean)和recommendation(string)两个字段\n2\n. isRecommendOffline字段值限定为\ntrue\n/\nfalse\n，禁止字符串表示布尔值\n3\n. 流量归一化强制规则：当|\nexperimentTrafficRatio - controlTrafficRatio\n|/controlTrafficRatio >\n5\n%时，必须使用千人\nDAU\n变化量进行决策\n4\n. 决策逻辑优先级（必须依序判断，触发即执行）：\n**优先级\n0\n-数据不足**：\n- 若天数 <\n3\n→ isRecommendOffline=\nfalse\n，recommendation=\n\"数据量不足，建议延长实验\"\n**优先级\n1\n-连续负向（最严格）**：\n- 条件：连续≥\n3\n天全部负向（dauRelativeChangePct ≤\n0\n%）且最后一天仍≤\n0\n%且最后\n2\n天无正向\n- 触发 → isRecommendOffline=\ntrue\n**优先级\n2\n-趋势恶化**：\n- 条件：最后\n2\n天连续负向且最后一天绝对变化量<倒数第二天（如-\n20\n,-\n35\n）且不存在\n\"倒数第二天负→最后一天正\"\n反弹\n- 触发 → isRecommendOffline=\ntrue\n**优先级\n3\n-负向转正失败**：\n- 条件：出现过负向后，最后\n2\n天中≥\n1\n天仍≤\n0\n%且无连续\n2\n天相对增长>\n0.3\n%\n- 触发 → isRecommendOffline=\ntrue\n**优先级\n4\n-正向衰减（禁止误触）**：\n- 前置：连续≥\n3\n天正向\n- 衰减检查：末日千人\nDAU\n< 历史峰值\n50\n%\n- 排除场景：\n* ✗ 累积绝对收益 >\n0\n（\nCase3\n：连续正向但绝对值递减，总体+\n149\n人）\n* ✗ 连续正向天数≥\n2\n且累积绝对值 > 单日最大负向绝对值的\n3\n倍\n- 触发 → isRecommendOffline=\ntrue\n仅在\n\"持续衰减且无总体收益\"\n**优先级\n5\n-高波动（需排除正向波动）**：\n- 前置：\n3\n天内相对变化标准差 >\n15\n%\n- 波动检查：最后\n2\n天趋势矛盾（一正一负）\n- 收益检查：累积绝对变化量 ≤\n0\n- 排除场景：\n* ✗ 存在\n\"负向→正向\"\n单日反弹（\nCase2\n：-\n65\n→+\n48\n，视为正常调整）\n* ✗ 最后\n2\n天都正向且绝对值递增\n* ✗ 累积绝对收益 >\n0\n（\nCase5\n：累计+\n316\n人）\n- 触发 → isRecommendOffline=\ntrue\n**优先级\n6\n-其他情况**：\n- 除以上规则外 → isRecommendOffline=\nfalse\n5\n. isSignificant字段仅作辅助参考，禁止作为主要决策依据\n6\n. recommendation字段生成规范：\n- 下线情况：明确说出触发原因+具体数据（如\n\"最后2天连续减少，分别-20人和-35人，损失扩大\"\n）\n- 不下线情况：说出为什么不符合下线条件（如\n\"虽然第3天-65人，但第4天+48人反弹，无法确认趋势恶化\"\n或\n\"4天累计+133人，波动不是下线理由\"\n）\n- 禁用词：千人\nDAU\n、标准差、相对变化率、效果不稳、可能失败等专业/主观术语\n- 时间表述：用\n\"最早/中间/最近\"\n或日期，禁止\n\"第n天\"\n7\n. 输出必须可直接被\nJava\nJSON\n库解析，无转义字符或格式错误\n## Workflow:\n1\n. **数据验证**：确认输入为\n1\n-\n7\n个元素的\nJSON\n数组，每个元素包含dt/dauRelativeChangePct/dauAbsoluteChange/experimentTrafficRatio/controlTrafficRatio/isSignificant六个必填字段\n2\n. **数据预处理**：\n- 解析dauRelativeChangePct（去除%转浮点）、dauAbsoluteChange（转整数）\n- 计算流量差异率 = |\nexperimentTrafficRatio - controlTrafficRatio\n| / controlTrafficRatio\n- 需要归一化时：千人\nDAU\n= dauAbsoluteChange / (experimentTrafficRatio /\n1000\n)\n3\n. **关键指标计算**：\n- 累积绝对收益 = Σ dauAbsoluteChange\n- 负向天数 =\nCOUNT\n(dauRelativeChangePct ≤\n0\n%)\n- 正向天数 =\nCOUNT\n(dauRelativeChangePct >\n0\n%)\n- 最长连续负向段长度、最长连续正向段长度\n- 最后\n2\n天趋势（是否存在反弹：负→正或下跌：正→负）\n-\n3\n天窗口相对变化标准差\n- 绝对变化\nMAX\n/\nMIN\n及峰值\n4\n. **规则判断执行**（顺序如下）：\n----------\nIF\n天数 <\n3\n:\nRETURN\nfalse\n+\n\"数据量不足，建议延长实验\"\nIF\n最长连续负向天数 ≥\n3\nAND\n最后一天 ≤\n0\n%\nAND\n最后\n2\n天无正向:\nRETURN\ntrue\n+\n\"连续X天用户减少，最后仍未好转，建议停止实验\"\nIF\n最后\n2\n天都≤\n0\n%\nAND\n|\n最后一天\n| > |\n倒数第二天\n|\nAND\nNOT\n(倒数第二天负→最后一天正):\nRETURN\ntrue\n+\n\"最近两天用户持续减少，最后一天损失更大（具体数值），趋势恶化，建议停止\"\nIF\n出现过≤\n0\n%\nAND\n最后\n2\n天≥\n1\n天≤\n0\n%\nAND\nNOT\n(连续\n2\n天>\n0.3\n%):\nRETURN\ntrue\n+\n\"虽然出现过增长，但最近未能持续，最后X天中Y天用户减少，建议停止\"\nIF\n最长连续正向段≥\n3\nAND\n末日千人\nDAU\n< 历史峰值\n50\n%:\nIF\n累积绝对收益 >\n0\nOR\n(连续正向≥\n2\nAND\n累积绝对值 > 单日最大负向×\n3\n):\nRETURN\nfalse\n+\n\"连续X天增长，虽有衰减但累计增加Y人，总体向好，继续观察\"\nELSE\n:\nRETURN\ntrue\n+\n\"连续增长但增幅持续下降，末日增长量不足历史峰值50%，效果衰减，建议停止\"\nIF\n标准差>\n15\n%\nAND\n最后\n2\n天矛盾\nAND\n累积绝对收益≤\n0\nAND\nNOT\n(单日反弹)\nAND\nNOT\n(最后\n2\n天都正向递增):\nRETURN\ntrue\n+\n\"实验数据波动剧烈（最多增X人，最多减Y人），无稳定正向趋势，建议停止\"\nDEFAULT\n:\nRETURN\nfalse\n+ [根据情况生成observation]\n----------\n5\n. **\nRecommendation\n生成逻辑**（不下线\ncase\n）：\n- 单日反弹\ncase\n（如\nCase2\n）：\n\"{前日期}下跌X人，但{最近日期}反弹Y人，无法确认趋势恶化，建议继续观察\"\n- 正向累积\ncase\n（如\nCase5\n）：\n\"{总天数}天累计增加X人，虽有波动但整体正向，继续观察\"\n- 存在波动但无理由\ncase\n（如\nCase1\n,\n4\n）：\n\"{总天数}天内存在波动，无持续负向或衰减趋势，继续观察\"\n## InputFormat:\n```${input}```\n-\ndt:\n日期字符串 (e.g.,\n\"2025-12-08\"\n)\n-\ndauRelativeChangePct:\n相对变化百分比字符串 (e.g.,\n\"-0.54%\"\n)\n-\ndauAbsoluteChange:\n绝对变化整数值\n-\nexperimentTrafficRatio:\n实验组流量人数整数值\n-\ncontrolTrafficRatio:\n留白组流量人数整数值\n-\nisSignificant:\n置信判断字符串 (\n\"Y\"\n/\n\"N\"\n)\n## OutputFormat:\n{\n\"isRecommendOffline\"\n: boolean,\n\"recommendation\"\n: string}\n## Examples:\n例\n1\n（连续负向-下线）：\n输入：[{\n\"dt\"\n:\n\"2025-12-01\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.21%\"\n,\n\"dauAbsoluteChange\"\n:-\n5\n,...},{\n\"dt\"\n:\n\"2025-12-02\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.33%\"\n,\n\"dauAbsoluteChange\"\n:-\n8\n,...},{\n\"dt\"\n:\n\"2025-12-03\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.15%\"\n,\n\"dauAbsoluteChange\"\n:-\n4\n,...},{\n\"dt\"\n:\n\"2025-12-04\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.08%\"\n,\n\"dauAbsoluteChange\"\n:-\n2\n,...},{\n\"dt\"\n:\n\"2025-12-05\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.11%\"\n,\n\"dauAbsoluteChange\"\n:-\n3\n,...}]\n输出：{\n\"isRecommendOffline\"\n:true\n,\n\"recommendation\"\n:\n\"5天中有4天用户减少，最后仍未好转，共损失22人，建议停止实验\"\n}\n例\n2\n（单日反弹-继续观察）：\n输入：[{\n\"dt\"\n:\n\"2025-12-01\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.11%\"\n,\n\"dauAbsoluteChange\"\n:\n11\n,...},{\n\"dt\"\n:\n\"2025-12-02\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.02%\"\n,\n\"dauAbsoluteChange\"\n:\n2\n,...},{\n\"dt\"\n:\n\"2025-12-03\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.65%\"\n,\n\"dauAbsoluteChange\"\n:-\n65\n,...},{\n\"dt\"\n:\n\"2025-12-04\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.48%\"\n,\n\"dauAbsoluteChange\"\n:\n48\n,...}]\n输出：{\n\"isRecommendOffline\"\n:false\n,\n\"recommendation\"\n:\n\"虽然第3天下跌65人，但第4天反弹48人，无法确认趋势恶化，建议继续观察\"\n}\n例\n3\n（正向累积-继续观察）：\n输入：[{\n\"dt\"\n:\n\"2025-12-01\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.13%\"\n,\n\"dauAbsoluteChange\"\n:-\n13\n,...},{\n\"dt\"\n:\n\"2025-12-02\"\n,\n\"dauRelativeChangePct\"\n:\n\"1.02%\"\n,\n\"dauAbsoluteChange\"\n:\n102\n,...},{\n\"dt\"\n:\n\"2025-12-03\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.35%\"\n,\n\"dauAbsoluteChange\"\n:\n35\n,...},{\n\"dt\"\n:\n\"2025-12-04\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.12%\"\n,\n\"dauAbsoluteChange\"\n:\n12\n,...}]\n输出：{\n\"isRecommendOffline\"\n:false\n,\n\"recommendation\"\n:\n\"4天中最后3天连续增长，累计增加136人（第2天102人贡献最大），整体向好，建议继续观察\"\n}\n例\n4\n（波动无理由-继续观察）：\n输入：[{\n\"dt\"\n:\n\"2025-12-01\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.33%\"\n,\n\"dauAbsoluteChange\"\n:\n33\n,...},{\n\"dt\"\n:\n\"2025-12-02\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.67%\"\n,\n\"dauAbsoluteChange\"\n:-\n67\n,...},{\n\"dt\"\n:\n\"2025-12-03\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.35%\"\n,\n\"dauAbsoluteChange\"\n:\n35\n,...},{\n\"dt\"\n:\n\"2025-12-04\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.34%\"\n,\n\"dauAbsoluteChange\"\n:\n34\n,...}]\n输出：{\n\"isRecommendOffline\"\n:false\n,\n\"recommendation\"\n:\n\"4天内存在波动（最多增33人，最多减67人），但无持续下跌趋势，整体变化不大，建议继续观察\"\n}\n例\n5\n（大幅正向波动-继续观察）：\n输入：[{\n\"dt\"\n:\n\"2025-12-01\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.77%\"\n,\n\"dauAbsoluteChange\"\n:\n77\n,...},{\n\"dt\"\n:\n\"2025-12-02\"\n,\n\"dauRelativeChangePct\"\n:\n\"0.81%\"\n,\n\"dauAbsoluteChange\"\n:\n81\n,...},{\n\"dt\"\n:\n\"2025-12-03\"\n,\n\"dauRelativeChangePct\"\n:\n\"-0.47%\"\n,\n\"dauAbsoluteChange\"\n:-\n47\n,...}]\n输出：{\n\"isRecommendOffline\"\n:false\n,\n\"recommendation\"\n:\n\"xxxx,大幅正向波动, 建议继续观察\"\n}\n四、六层优先级决策树\n在设计Prompt 早期，犯了个错误：把所有决策规则一股脑堆上去。\n结果很快就崩了——当一个实验同时满足“连续负向”和“正向衰减”两个特征时，系统根本不知道该听谁的，输出前后打架，甚至自相矛盾。比较麻烦的是，有些规则本身就有逻辑冲突。比如这条：“高波动且无正向趋势 → 下线”。如果不加任何限制条件，它会把“先负向、后反弹”这种正常的策略调整过程，也当成高风险波动直接干掉。\n痛定思痛，引入了优先级分层机制。思路来自医学诊断里的“三角验证”和安全领域的“纵深防御”：不是所有规则平权，而是按风险严重程度分层决策。最终我把整个判断逻辑拆成 6 个优先级（0–6），每一层对应一类典型风险场景。优先级越高，触发条件越严，下线决策的置信度也越高。\n4.1 关键设计\n决策分层6个层级，大的\n设计原则如下：\nP0–P3：高危信号，一旦命中，直接下线，不等验证；\nP4–P5：中等风险，触发前必须通过若干排除规则（exclusion rules）过滤干扰；\nP6：兜底逻辑，前面都不匹配时才走这条路。\n这套分层之后，规则不再打架，大模型的输出行为相对稳定，基本满足自动化决策的准确率需求。\n提示词节选\nprompt规则节选\n4.\n决策逻辑优先级（必须依序判断，触发即执行）：\n**优先级0-数据不足**\n：\n-\n若天数 < 3 → isRecommendOffline=false，recommendation=\"数据量不足，建议延长实验\"\n**优先级1-连续负向（最严格）**\n：\n-\n条件：连续≥3天全部负向（dauRelativeChangePct ≤ 0%）且最后一天仍≤0%且最后2天无正向\n-\n触发 → isRecommendOffline=true\n**优先级2-趋势恶化**\n：\n-\n条件：最后2天连续负向且最后一天绝对变化量<倒数第二天（如-20,-35）且不存在\"倒数第二天负→最后一天正\"反弹\n-\n触发 → isRecommendOffline=true\n**优先级3-负向转正失败**\n：\n-\n条件：出现过负向后，最后2天中≥1天仍≤0%且无连续2天相对增长>0.3%\n-\n触发 → isRecommendOffline=true\n**优先级4-正向衰减（禁止误触）**\n：\n-\n前置：连续≥3天正向\n-\n衰减检查：末日千人DAU < 历史峰值50%\n-\n排除场景：\n* ✗ 累积绝对收益 > 0（Case3：连续正向但绝对值递减，总体+149人）\n* ✗ 连续正向天数≥2且累积绝对值 > 单日最大负向绝对值的3倍\n-\n触发 → isRecommendOffline=true仅在\"持续衰减且无总体收益\"\n**优先级5-高波动（需排除正向波动）**\n：\n-\n前置：3天内相对变化标准差 > 15%\n-\n波动检查：最后2天趋势矛盾（一正一负）\n-\n收益检查：累积绝对变化量 ≤ 0\n-\n排除场景：\n* ✗ 存在\"负向→正向\"单日反弹（Case2：-65→+48，视为正常调整）\n* ✗ 最后2天都正向且绝对值递增\n* ✗ 累积绝对收益 > 0（Case5：累计+316人）\n-\n触发 → isRecommendOffline=true\n**优先级6-其他情况**\n：\n-\n除以上规则外 → isRecommendOffline=false\n决策树图例说明\n输入：\n7\n日内的实验数据\n│\n↓\n┌────────────────────────────┐\n│ 优先级\n0\n：数据验证           │\n│ 天数 <\n3\n?                  │\n└────┬───────────────────────┘\n│\nYES\n│\nNO\n↓    │    ↓\n[HOLD] │    ┌────────────────────────────┐\n│    │ 优先级\n1\n：连续负向（严格）  │\n│    │ 连续≥\n3\n天都≤\n0\n%?            │\n│    │ 最后一天≤\n0\n%?              │\n│    │ 最后\n2\n天无正向?            │\n│    └────┬──────────────────────┘\n│         │\n│\nYES\n│\nNO\n│    ↓    │    ↓\n│  [DOWN] │    ┌──────────────────────────┐\n│         │    │ 优先级\n2\n：趋势恶化        │\n│         │    │ 最后\n2\n天都≤\n0\n%?           │\n│         │    │ |末日| > |倒数第二天|?  │\n│         │    │ 无反弹信号?             │\n│         │    └────┬─────────────────────┘\n│         │         │\n│         │\nYES\n│\nNO\n│         │    ↓    │    ↓\n│         │  [DOWN] │    ┌────────────────────────┐\n│         │         │    │ 优先级\n3\n：负向转正失败  │\n│         │         │    │ 历史有≤\n0\n%?            │\n│         │         │    │ 最后\n2\n天≥\n1\n天≤\n0\n%?       │\n│         │         │    │ 反弹太弱(<\n0.3\n%)?      │\n│         │         │    └────┬─────────────────────┘\n│         │         │         │\n│         │         │\nYES\n│\nNO\n│         │         │    ↓    │    ↓\n│         │         │  [DOWN] │    ┌───────────────────────────┐\n│         │         │         │    │ 全局收益检查              │\n│         │         │         │    │ 累积收益 >\n0\n?            │\n│         │         │         │    └────┬──────────────────────┘\n│         │         │         │         │\n│         │         │         │\nYES\n│\nNO\n│         │         │         │    ↓    │    ↓\n│         │         │         │  [HOLD] │    ┌──────────────────────────┐\n│         │         │         │         │    │ 优先级\n4\n：正向衰减        │\n│         │         │         │         │    │ 连续≥\n3\n天正向?           │\n│         │         │         │         │    │ 末日 < 峰值\n50\n%?         │\n│         │         │         │         │    └────┬─────────────────────┘\n│         │         │         │         │         │\n│         │         │         │         │\nYES\n│\nNO\n│         │         │         │         │    ↓    │    ↓\n│         │         │         │         │  [DOWN] │    ┌──────────────────────┐\n│         │         │         │         │         │    │ 优先级\n5\n：高波动      │\n│         │         │         │         │         │    │ 标准差 >\n15\n%?       │\n│         │         │         │         │         │    │ 最后\n2\n天矛盾?        │\n│         │         │         │         │         │    │ 累积≤\n0\n& 无反弹?    │\n│         │         │         │         │         │    └────┬────────────────┘\n│         │         │         │         │         │         │\n│         │         │         │         │         │\nYES\n│\nNO\n│         │         │         │         │         │    ↓    │    ↓\n│         │         │         │         │         │  [DOWN] │  [HOLD]\n│         │         │         │         │         │\n└─────────┴─────────┴─────────┴─────────┴─────────┴─────────┘\n↓\n┌────────────────────┐\n│ 输出JSON结果       │\n│ isRecommendOffline │\n│ recommendation     │\n└────────────────────┘\n上面决策树展如下关系：\n纵向的优先级关系：优先级0最高，往下递减；\n横向的分支逻辑：每一级都有YES/NO的分支；\n短路评估：一旦某个优先级的条件满足，就输出[DOWN]，不再继续向下评估；\n全局检查的插入点：在优先级3之后，进行一次全局收益检查，可以\"救\"某些case；\n这么复杂的提示词用什么模型？\ndeepseek-r1-0528、qwen3-max\n为什么deepseek-r1？\n1.\n推理能力强\n：\n能够处理多步骤的逻辑判断，不容易在中间步骤出错；\n2.\n指令遵循性好\n：\n对Prompt中的细节要求（如伪代码定义、排除条件）执行得很到位；\n3.\n输出格式稳定\n：\n生成的JSON格式错误率极低，便于下游系统解析；\n4.公司环境部署友好。\ndeepseek-r1的推理流程：\n用户输入\nPrompt\n+\nJSON\n数据\n│\n↓\n┌─────────────────────────────────┐\n│ 模型的\n\"思考\"\n阶段（内部推理）    │\n│ （这部分用户看不到）           │\n│                                 │\n│\n1.\n理解\nProfile\n和\nConstraints\n│\n│    → 识别为\n\"AB实验评估任务\"\n│\n│                                 │\n│\n2.\n执行\nWorkflow\n第\n2\n步            │\n│    → 解析\nJSON\n，排序，验证      │\n│    → 生成\n\"数据预处理报告\"\n│\n│    （中间状态，不输出）         │\n│                                 │\n│\n3.\n执行\nWorkflow\n第\n3\n步            │\n│    → 逐个计算关键指标           │\n│    → 最长连续负向段 = ?         │\n│    → 累积绝对收益 = ?           │\n│    → 标准差 = ?                 │\n│                                 │\n│\n4.\n执行\nWorkflow\n第\n4\n步            │\n│    → 按优先级顺序判断           │\n│    → 优先级\n0\n: 数据足吗? → 否   │\n│    → 优先级\n1\n: 连续负向? → 否   │\n│    → 优先级\n2\n: 趋势恶化? → 是!  │\n│    → 触发下线规则               │\n│                                 │\n│\n5.\n执行\nWorkflow\n第\n5\n步            │\n│    → 根据下线原因，生成文本说明 │\n│    →\n\"最近两天...\"\n（具体数据） │\n│                                 │\n└─────────────────────────────────┘\n│\n↓\n┌─────────────────────────────────┐\n│ 模型输出阶段                    │\n│ （用户可以看到）               │\n│                                 │\n│ 生成最终\nJSON\n：                 │\n│ {                               │\n│\n\"isRecommendOffline\"\n:\ntrue\n,  │\n│\n\"recommendation\"\n:\n\"...\"\n│\n│ }                               │\n│                                 │\n└─────────────────────────────────┘\n4.2 每层详细说明\nL0：数据不足的保守决策\nIF 实验天数 <\n3\n:\nRETURN\nisRecommendOffline\n=\nfalse\nrecommendation\n=\n\"数据量不足，建议延长实验\"\n为什么这是优先级最高的检查？\n在AB实验领域，有个经验法则叫做\"最少检测样本量\"（Minimum Detectable Effect）。\n即使你的实验设计再科学，如果运行时间太短，样本量就不足以达到统计显著性。更重要的是，少于3天的数据极容易被单日噪声污染：比如某地网络抖动、服务端瞬时故障、或是某个 Push 消息撞上了突发公共事件。\n我有时候急着下线表现差的策略，但在实际 Push 场景里，过早下线的代价，远高于多等一天的成本。宁可保守一点，也要看到完整的3天数据周期。\n举个真实例子：\n有个民生服务推送策略，第1天 DAU 变化是 -2.5%，看起来尚可；第2天突然跌到 -8%，如果当时自动化系统只看前两天数据，很可能直接触发下线。但实际上，第3到第7天数据逐步回升至 -1.5%，后来几天该策略最终稳定在 +2% 的正向收益。\n要是第2天就干掉了它，我们就错杀了一个优质策略。\nL1：连续负向—最严格的下线信号\nIF\n最长连续负向天数 ≥\n3\nAND\n最后一天 ≤\n0\n%\nAND\n最后\n2\n天中无正向日:\nRETURN\nisRecommendOffline = true\nrecommendation\n=\n\"连续X天用户减少，最后仍未好转，共损失Y人，建议停止实验\"\n逻辑解释：\n捕捉的是\n最坏的情况\n：实验组的DAU相对于对照组持续下滑，没有任何反弹迹象：\n1.不是随机波动\n：\n如果只是一两天的波动，我们可以归咎于噪声。但连续3天都是负向，统计上几乎不可能是巧合（在均匀分布假设下，这个概率是12.5%）\n2.趋势没有逆转\n：\n最后两天仍然没有正向，说明问题在持续恶化，而不是即将反弹\n3.业务价值明确\n：\n我们累积了实际的用户损失（绝对值），持续运行这个策略只会继续亏损\n为什么要求\"最后2天无正向\"而不是\"最后一天无正向\"？\n关键细节：原始规则只要求\"最后一天≤0%\"，但在实际运行中我发现，即使连续3天都负向，只要最后一天有轻微反弹（比如-0.1%→-0.05%）就倾向于继续观察，因为我认为\"趋势正在改善\"。所以条件需要设置为：\n不仅最后一天要≤0%，而且最后2天都不能有正向\n。\n这样就排除了\"虽然还是负向但在快速好转\"的case。\nL2：趋势恶化—加速度负向\nIF 最后\n2\n天都 ≤\n0\n%\nAND |最后一天的绝对变化量| > |倒数第二天的绝对变化量|\nAND\nNOT\n(倒数第二天负 → 最后一天正的反弹)\n:\nRETURN isRecommendOffline =\ntrue\nrecommendation =\n\"最近两天用户持续减少，最后一天损失更大（-Xperson → -Yperson），趋势恶化，建议停止\"\n这条规则的真正价值，不在于抓“一直亏”，而在于抓“越亏越快”。优先级1原本设计用来识别“平缓负向”—比如每天稳定掉几十个 DAU。\n但实践中我发现，更危险的是亏损在加速。举个例子：第6天：-20 人\n、\n第7天：-35 人\n看起来都是负向，但趋势明显在恶化。这种情况下，每多跑一天，损失不是线性增加，而是加速扩大。但光看加速还不够，必须排除“假恶化”。所以我加了一个关键排除条件：NOT（倒数第二天负 → 最后一天正）。\n为什么？因为在复盘 bad case 时反复看到一种模式：策略前六天表现疲软甚至微负，但第七天突然反弹。\n这往往是因为 Push 触达延迟、用户行为滞后，或是外部事件扰动后的自然修复。如果这时候把它当成“加速恶化”干掉，就又错杀了。\n最后说个细节：这里我用的是绝对变化量（损失多少人），而不是相对变化率（百分比）。原因很简单：在民生 Push 这类低频、高波动场景下，实验组某天流量可能因为调度或城市覆盖问题突然变少。这时哪怕只少了几百曝光，相对变化率也可能飙到 -30%、-50%，但实际用户损失可能就十几二十人。\n我看重的是真实用户的流失数量，不是被流量噪音放大的百分比。\nL3：负向转正失败—虚假反弹的陷阱\nIF\n历史上出现过 ≤\n0\n% 的日期\nAND\n最后\n2\n天中 ≥\n1\n天 ≤\n0\n%\nAND\nNOT(存在连续\n2\n天相对增长都 >\n0\n.\n3\n%):\nRETURN\nisRecommendOffline = true\nrecommendation\n=\n\"虽然出现过增长，但最近未能持续，最后X天中Y天用户减少，建议停止\"\n这条规则源于一个反复踩坑的业务现象：有些策略上线头一天表现很差（比如 DAU -0.5%），但第2-3天数据看起来“好转”了（+0.2%、+0.3%），我个人会觉得策略有种黑盒的“自我修复”情况= =。但再往后看，第4-5天又掉回负向，甚至比最初还差。\n结果说明了\n这不是反弹，只是短期波动被误读成了趋势反转。\n所以我在规则里卡死了一个条件：必须连续两天相对增长 > 0.3%。这不是拍脑袋定的。在我回溯之前的实验数据后发现：只要满足这个阈值，80% 的案例后续都能稳住正向；而那些“微弱反弹”（比如 -0.5% → +0.1% → -0.2%）几乎全部打回原形。\n这也和优先级1形成明确区分：\nP1（连续负向）：从第一天起就一路向下，毫无起色 → 策略方向可能根本错了；\nP3（负向转正失败）：中间有过反弹尝试，但没撑住 → 调整方向对了，但力度不够，或者问题比预想复杂。\n两者的处置逻辑也不同：\n‒P1 直接下线，别浪费资源；\n‒P3 值得复盘—有空需要研究的case\n说到底，不是所有好转都值得相信，要看它能不能站稳。\nL4：正向衰减—增益消失的信号\nIF\n最长连续正向天数 ≥\n3\nAND\n末日千人DAU < 历史峰值的\n50\n%\nAND\n(累积绝对收益 ≤\n0\nOR (连续正向 ≥\n2\nAND 累积绝对值 ≤ 单日最大负向×\n3\n)):\nRETURN\nisRecommendOffline = true\nrecommendation\n=\n\"连续增长但增幅持续下降，末日增长量不足历史峰值50%，效果衰减，建议停止\"\n这是最容易触发false positive的规则，也是我在bad case中碰到最多的。\n规则的核心逻辑：\n一个策略早期表现很好（连续3天+2%, +1.8%, +1.5%），但到了后期，增长在快速衰减（+0.3%, +0.1%, -0.2%）。虽然技术上还有正向日期，但增长势能在丧失，这种\"衰减\"趋势本身就是一个下线信号。\n\"末日千人DAU < 历史峰值50%\"是什么意思？\n这需要结合流量归一化来理解。假设某策略的历史峰值是：\n第2天：+102人（千人DAU：102 ÷ (实验流量比/1000) = 102 ÷ 0.1 = 1020人）\n第7天：+8人（千人DAU：8 ÷ 0.1 = 80人）\n那么末日千人DAU只有80，远低于峰值1020的50%（510人）。这说明策略的效能在快速衰退。\n三个排除条件（Exclusion Rules）—非常重要：\n这个规则之所以复杂，是因为在实际测试中发现了太多的false positive案例。\n一个初看像\"衰减\"的策略，可能其实是：\n1.\n累积收益为正\n：\n虽然最后几天增长微弱，但前几天赚的足够多，整体还是赚\n例：[+102, +35, +12, +5, -3] = 累计+151人\n即使末日衰减，这个策略整体价值是正的，不应该下线\n2.\n持续多日正向且单日收益不小\n：\n虽然有衰减，但持续时间长，总收益足够大\n例：[+50, +45, +40, +30, +20] 虽然衰减明显，但5天累计+185人，远超单日最大负向的3倍\n这样的策略值得继续观察\n3.\n短期波动而非趋势衰减\n：\n最后两天中如果有一天突然反弹，可能不是衰减而是波动\n需要加额外检查：最后2天都正向且递增\n这个规则后面我需要重新看待\n因为\"衰减\"本质上是一个\n趋势判断\n而非\n绝对判断\n。两次看同样的数据可能得出不同的结论。\n在一周的人工检查bad case库中，有30%的分歧都来自于这个规则。这也是为什么后续要设计\"二次判断提示词\"来专门处理这类边界case。\nL\n5：高波动无趋势—噪声策略的识别\nIF\n3\n天滑窗内相对变化标准差 >\n15\n%\nAND\n最后\n2\n天趋势矛盾（一正一负）\nAND\n累积绝对变化量 ≤\n0\nAND\nNOT(存在\n\"负向→正向\"\n单日反弹)\nAND\nNOT(最后\n2\n天都正向且绝对值递增)\nAND\nNOT(累积绝对收益 >\n0\n):\nRETURN\nisRecommendOffline = true\nrecommendation\n=\n\"实验数据波动剧烈（最多增X人，最多减Y人），无稳定正向趋势，建议停止\"\n一点点的创新：引入波动率（标准差）这个指标\n前面的规则都是基于趋势（是否连续、是否衰减）或绝对收益。\n但有一类策略最难判断：\n数据非常嘈杂，忽正忽负，没有明确的方向\n。\n例如：\n第1天：+0.5%（+50人）\n第2天：-1.2%（-120人）\n第3天：+0.8%（+80人）\n第4天：-0.3%（-30人）\n这类策略的问题不在于\"一定在亏\"，而在于\n无法预测\n。\n如果上线这样的策略，永远不知道明天会是+还是-。对于平台的稳定性，这种不可控的波动比一个稳定的-0.1%还要危险。\n标准差 > 15% 的含义：\n这是一个经验阈值。在我们的数据集中，如果相对变化率的标准差超过15%，就说明这个策略的表现不稳定。\n四个排除条件：\n1.存在\"负向→正向\"单日反弹\n例：第1天-65%, 第2天+48%\n这不是\"无趋势\"，而是正常的数据调整，我们应该继续观察\n2.最后2天都正向且递增\n例：第6天+0.5%, 第7天+0.8%\n这说明趋势正在稳定为正向，是好信号\n3.累积绝对收益 > 0\n例如虽然波动，但总体赚了100人\n波动不是下线理由\n4.最后2天趋势一致\n例：最后2天都正向或都负向\n这说明有明确的趋势，不算\"无趋势波动\"\n为什么这个规则最容易跟优先级1、2冲突？\n因为所有的\"连续负向\"策略，从另一个角度看，也都是\"有波动\"的。\n所以优先级顺序很关键——先判断是否触发优先级1-3，如果都没触发，才进入优先级5来判断波动。\n这保证了\"清晰的负向趋势\"优先级高于\"无趋势的波动\"。\nL6：兜底规则—继续观察\nDEFAULT\n:\nRETURN\nisRecommendOffline\n=\nfalse\nrecommendation\n=\n[根据实际情况的observation]\n这包括：\n存在正向日期且无明确负向趋势\n单日波动但整体正向\n数据不足但趋势向好\n其他不确定的情况\n在这种情况下，recommendation应该明确说出\n为什么不符合下线条件\n，而不仅仅说\"继续观察\"。\n五、典型Bad Cases与Prompt优化\n5.1 从Bad Case到Prompt改进的闭环\n分析完3个代表性bad case后，我建立了一套\n系统的优化闭环\n，用来指导后续的30+个case的处理。\n这个方法论本身也可能对其他做Prompt工程的团队有借鉴意义。\n闭环的四个环节：\nBad\nCase\n采集\n↓\n根本原因分析 → 识别是\"模型能力\"问题还是\"Prompt设计\"问题\n↓\n针对性改进 → 修订Prompt逻辑、添加排除条件、或优化伪代码定义\n↓\n回归测试 → 在全量bad\ncase\n集上验证修改不引入新的误判\n↓\n准确率提升验证 → 用历史全量数据集（已标注）重新运行，确保整体准确率有提升\n5.2 Bad Case的意义：从68%到80%的关键\n在实验结果自动巡检的第一周，收集了30+个bad cases。\n这些都是系统判断与人工判断不一致的案例。初看起来，这些case似乎都是\"模型理解错误\"～\n但深入分析后发现：\n大部分bad case实际上反映的是Prompt的逻辑漏洞，而非模型能力不足\n。\n这次的发现改变了我对\"准确率68%\"的理解：这不是模型的问题，而是\n我对业务场景的建模还不够全面\n。\n接下来分析的三个bad cases，都比较典型，都可以引出一个Prompt优化的方向。\n5.3 Bad Cases分析\nCase 1：日期未排序导致的逻辑混乱\n原始输入数据（简化后）\n1207\n: -\n67\n人（-\n0\n.\n67\n%）\n1208\n: -\n35\n人（-\n0\n.\n35\n%）\n1209\n: +\n34\n人（+\n0\n.\n34\n%）\n1210\n: +\n45\n人（+\n0\n.\n45\n%）\n系统错误输出：\n\"最近两天用户持续减少（最后一天比前一天多损失15人），趋势恶化，建议停止\"\nisRecommendOffline\n:\ntrue\n人工正确判断：\n数据明显是稳步上升的趋势。前两天是损失，但后两天已经反弹，\n且反弹幅度（+34, +45）已经弥补了早期的损失。不应该下线。\n问题根源分析：\n这是一个\n灾难性的错误\n——系统把最后两天的+34和+45理解成了负向。追溯根源，有两个可能：\n1.\n输入解析错误\n：\n系统在处理JSON时，可能没有严格按照日期顺序（dt字段）来排序数据，而是按照数组顺序处理\n2.\n符号理解错误\n：\n系统混淆了正负号，把\"-35\"理解成了绝对值35，而在某个计算环节弄反了符号\n从Prompt的角度看，我们在第一版本中\n缺少了\"数据预处理与验证\"的显式步骤\n。\nPrompt优化方向：\n在Workflow中加入了明确的数据预处理步骤：\n## 优化后的Workflow第2步（数据预处理）：\n2. **数据预处理与验证**：\n- 步骤2.1：按dt字段升序排序所有记录\n- 步骤2.2：逐条解析dauRelativeChangePct（移除%符号转为浮点数）\n- 步骤2.3：验证dauAbsoluteChange的符号与dauRelativeChangePct一致\n* 若不一致，输出警告：\n\"数据校验异常，请检查输入\"\n- 步骤2.4：确认experimentTrafficRatio/controlTrafficRatio均为正整数\n- 步骤2.5：计算流量差异率，如>5%则标记需要流量归一化\n对LLM的具体要求：\n在Prompt的Constraints部分加入了：\n## 额外的验证Constraint：\n8. **强制数据校验**：\n- 在任何计算前，必须先按日期排序并验证符号一致性\n- 生成一个\n\"数据验证报告\"\n作为中间步骤（不输出给用户），包含：\n* 排序后的日期序列\n* 每日的相对变化和绝对变化（明确标出+/- 符号）\n* 是否需要流量归一化的判断结果\n- 仅在验证通过后，再进入规则判断阶段\n这个优化为什么有效？\n因为显式地要求模型在每个关键步骤输出\"中间验证结果\"。\n虽然最终输出仍然只是JSON（不包含中间步骤），但在推理过程中，这个验证步骤会让deepseek-r1的推理引擎多次检查数据的正确性。在实际测试中，这个优化将这类\"日期混乱\"导致的错误明显降低，具体频率需要后面加上归因逻辑再给出。\nCase 2：符号误判与连续性判断的混淆\n原始输入数据（简化后）\n1207\n: +\n19\n人（+\n0\n.\n19\n%）\n1208\n: -\n26\n人（-\n0\n.\n26\n%）\n1209\n: -\n19\n人（-\n0\n.\n19\n%）\n1210\n: +\n19\n人（+\n0\n.\n19\n%）\n系统错误输出：\n\"连续3天用户减少（最后三天分别损失19人、7人、19人），\n且最后一天仍在减少，建议停止实验\"\nisRecommendOffline:\ntrue\n人工正确判断：\n数据序列是：+ - - +\n没有连续3天都是负向的。第2-3天虽然是负向，但只有2天。\n第4天已经反弹到正向。不应该下线。\n问题根源分析：\n这是一个\n符号识别错误\n。大模型说的\"最后三天分别损失19人、7人、19人\"中：\n\"19人\"对应1209的-19（理解对了）\n\"7人\"对应什么？1208是-26，不是-7。可能系统计算了|-26| - |-19| = 7？\n\"19人\"对应1210的+19？系统把正号理解成了负号？\n这个错误非常离谱，但它反映了一个Prompt设计的漏洞：\n在规则判断中引用\"最长连续负向天数\"这个指标，但没有显式定义\"连续\"的含义\n。\n具体来说：\n什么叫\"连续\"？是数组中相邻的多个日期都满足条件？还是逻辑上相邻？\n在计算\"连续负向段\"时，如果碰到了正向日期，是否应该重置计数器？\n\"连续3天\"是指恰好3天，还是至少3天？\nPrompt优化方向：\n在关键指标计算部分加入了\n伪代码定义\n：\n## 优化后的关键指标计算（第3步）：\n3. **关键指标计算**（新增详细伪代码）：\n3.1 **连续负向段识别**：\nmax_consecutive_negative = 0\ncurrent_consecutive = 0\nfor each day in sorted_days:\nif day.dauRelativeChangePct <= 0%:\ncurrent_consecutive += 1\nmax_consecutive_negative = max(max_consecutive_negative, current_consecutive)\nelse: # 遇到正向日期，重置计数器\ncurrent_consecutive = 0\n3.2 **最后2天的趋势判断**（新增明确定义）：\nlast_day_value = sorted_days[-1].dauRelativeChangePct\nsecond_last_value = sorted_days[-2].dauRelativeChangePct\nlast_2_days_both_negative = (last_day_value <= 0%) AND (second_last_value <= 0%)\nlast_2_days_no_positive = NOT(last_day_value > 0% OR second_last_value > 0%)\n注意：>= 0% 的定义是相对变化率 <= 0%，不包括恰好0%的边界情况\n3.3 **累积绝对收益**：\ncumulative_absolute_change = SUM(all days' dauAbsoluteChange)\n严格的数值加法，保留符号\n3.4 **标准差计算**（用于优先级5）：\nif total_days >= 3:\nrelative_changes = [day.dauRelativeChangePct for each day]\nstd_dev = STDEV(relative_changes)\n# 使用样本标准差\nis_high_volatility = (std_dev > 15%)\nelse:\nis_high_volatility = false\n# 数据不足，无法判断波动\n为什么这个优化这么重要？\ndeepseek-r1是推理模型，它在处理不明确的指标定义时，会倾向于做自己的\"推理\"而不是严格遵循Prompt。\n通过用伪代码显式定义每个指标，可以消除了模型的\"创意空间\"，让它按照我的逻辑步骤走。\n在优化后的测试中，这类\"连续性误判\"问题的case也变少了。\nCase 3：累积收益与短期波动的权衡\n原始输入数据（简化后）\n1207\n: +\n4\n人（+\n0\n.\n04\n%）\n1208\n: +\n20\n人（+\n0\n.\n20\n%）\n1209\n: -\n45\n人（-\n0\n.\n45\n%）\n1210\n: +\n28\n人（+\n0\n.\n28\n%）\n系统错误输出：\n\"虽然出现过增长，但最近两天中有1天用户减少45人，建议停止实验\"\nisRecommendOffline\n:\ntrue\n人工正确判断：\n虽然第3天-45是个大坑，但第4天反弹到+28。\n而且看整体：4天累计 4+20-45+28 = +7人。\n虽然波动大，但整体还是赚的。而且最近的趋势（第4天）是正向的。\n不应该下线。\n问题根源分析：\n这个错误很有意思。大模型的输出逻辑似乎是在执行\n优先级3的规则\n（\"负向转正失败\"），但判断条件设定得太宽松了。\n系统的推理过程大概是：\n1.发现历史上有正向日期（第1、2天）✓\n2.发现最后2天中有负向（第3天的-45）✓\n3.判断\"反弹失败\"→下线 ✗\n但系统\n遗漏\n了\n优先级3中的一个关键排除条件：\nAND\nNOT(存在连续\n2\n天相对增长都 >\n0\n.\n3\n%)\n在这个case中，第2天是+0.20%，第3-4天是-0.45%和+0.28%。\n最后两天并没有\"连续2天都 > 0.3%\"的反弹。但这不意味着应该下线！\n更重要的是，系统应该综合考虑\n：\n第3天虽然-45，但这可能是一个\"极端事件\"（比如某个小时的bug）\n第4天立刻反弹了+28，说明系统在自我纠正\n累积来看，4天总共赚了7人，即使波动大，也是正的\n这个case引出了一个\n本质的业务设计问题\n：\n优先级规则是独立的吗？还是应该有一个全局的\"综合权衡\"步骤？\nPrompt优化方向：\n在规则判断前面加入了一个\"全局收益快速检查\"的环节：\n## 优化后的规则判断执行（第4步前的新增步骤）：\n3\n.\n9\n**全局收益检查**（优先级\n0\n.\n5\n）：\nIF\n累积绝对收益 >\n0\n:\n# 即使后续触发某些规则，也要加额外的排除条件\nset_flag\n: GLOBAL_POSITIVE = true\nELSE\nIF 累积绝对收益 <\n0\nAND |累积绝对收益| > 单日最大正向的\n2\n倍:\n# 说明亏损非常明显，即使有小幅正向反弹也不足以救\nset_flag\n: GLOBAL_NEGATIVE_SEVERE = true\nELSE\n:\nset_flag\n: GLOBAL_NEUTRAL = true\n然后在优先级3的判断中，加入这个全局标志：\n优先级\n3\n规则修订：\nIF 出现过≤\n0\n%\nAND\n最后\n2\n天≥\n1\n天≤\n0\n%\nAND\nNOT\n(连续\n2\n天\n>\n0.3\n%\n)\nAND\nGLOBAL_POSITIVE\n=\nfalse\n#\n<\n-- 新增排除条件\nAND\nNOT\n(末日为正向且环比前日增长):  #\n<\n-- 新增排除条件\nRETURN\ntrue\n最后一个排除条件\"末日为正向且环比前日增长\"捕捉的就是case 3这样的场景：虽然中间有大幅下跌，但最后一天反弹且是正向，说明趋势在好转。\n这个优化的效果：\n在包含case 3类似场景的测试集中，这类case的确出现的少了很多。这说明全局收益的综合考虑非常关键。\n六、Prompt工程核心经验与启示\n6.1 生产级Prompt的五大原则\n在这个项目中，我总结了设计生产级Prompt的五大核心原则。\n这些原则不仅适用于AB实验评估，也适用于其他需要高准确率和可解释性的决策场景。\n（不是标准原则哈hh，我个人总结的，大家按需）\n显式优于隐式—消除模型的\"创意空间\"\n问题场景：\n在最初的Prompt中，我们这样描述规则：\n\"如果实验数据连续负向，建议下线\"\n看起来很简洁，但问题是：什么叫\"连续\"？模型可能有多种理解：\n理解A：相邻的多个日期都是负向\n理解B：数组中连续出现的负向数据\n理解C：在某个时间窗口内都是负向\n不同的理解会导致不同的判断。\n解决方案：用伪代码显式定义\n优化后的描述：\n## 关键指标定义 - 最长连续负向天数\nmax_consecutive_negative = 0\ncurrent_consecutive = 0\nfor each day in sorted_days_by_date:\n# 必须按日期排序\nif day.dauRelativeChangePct <= 0%:\ncurrent_consecutive += 1\nmax_consecutive_negative = max(max_consecutive_negative, current_consecutive)\nelse: # 遇到正向，重置计数\ncurrent_consecutive = 0\neturn max_consecutive_negative\n这样就消除了模型的理解歧义。\ndeepseek-r1在看到明确的伪代码后，会严格按照步骤执行，而不是\"自由发挥\"。\n为什么这对deepseek-r1特别有效？\ndeepseek-r1的设计理念是\"忠实执行推理逻辑\"。\n当你给它伪代码时，它会：\n1.理解伪代码的逻辑\n2.按步骤执行\n3.输出结果\n4.不会试图\"优化\"或\"改进\"你的算法\n这恰好是我想要的—在生产环境中，我需要的是\n稳定的、可预测的行为\n，而不是\"聪明的\"行为。\n分层而非平铺—优先级保证秩序\n问题场景：\n假设有10条规则，都放在同一个列表中：\nRule\n1\n: IF 连续\n3\n天负向 → 下线\nRule\n2\n: IF 趋势恶化 → 下线\nRule\n3\n: IF 高波动 → 下线\nRule\n4\n: IF 衰减 → 下线\n...\nRule\n10\n: ...\n问题：当多条规则同时触发时怎么办？\n规则之间有冲突怎么办？\n哪个优先执行？\n解决方案：引入优先级分层\n我们将10条规则重新组织为6个优先级，形成一个决策树。关键特性：\n1.\n优先级递减\n：\n优先级越高，规则越严格，下线的置信度越高\n2.\n短路评估\n：\n一旦某个优先级触发，直接输出结果，不再继续向下\n3.\n明确的\"通过条件\"\n：\n每一级都明确说出\"什么时候可以继续到下一级\"\nIF\n优先级\n0\n触发（数据不足）\n→ 直接返回\nfalse\n，退出\nELIF 优先级\n1\n触发（连续负向）\n→ 直接返回\ntrue\n，退出\nELIF 优先级\n2\n触发（趋势恶化）\n→ 直接返回\ntrue\n，退出\n...\nELSE\n→ 返回\nfalse\n，继续观察\n这个设计的优势：\n避免了规则之间的冲突（因为一旦匹配就退出）\n清晰的决策路径（便于调试和优化）\n易于新增规则（直接加入新的优先级）\n利用排除条件保障精准率\n问题场景：\n在Bad Case分析中，发现一个现象：\"连续3天负向\"这个规则虽然逻辑清晰，但容易误判的情况：\n数据：\nDay\n1\n:-\n0.1\n%,\nDay\n2\n:-\n0.05\n%,\nDay\n3\n:-\n0.02\n%,\nDay\n4\n:+\n2.0\n%\n系统判断：前\n3\n天都是负向 ✓ → 下线\n人工判断：虽然前\n3\n天负，但最后一天反弹\n2\n%，说明策略在恢复，不应下线\n解决方案：在规则触发前加入排除条件\n优化后的优先级\n1\n规则：\nIF 最长连续负向天数 ≥\n3\nAND\n最后一天 ≤\n0\n%\nAND\n最后\n2\n天中无正向  #\n<\n-- 这是排除条件\nRETURN\ntrue\nELSE\n继续到下一优先级\n通过排除条件\"最后2天无正向\"，我们防止了上面这个case的误判。\n排除条件的设计原则：\n1.基于业务常识\n：\n选择那些\"虽然满足主规则，但业务上不应该下线\"的场景\n2.可量化\n：\n排除条件应该是能精确计算的，不能模糊\n3.不要过度\n：\n太多排除条件会让规则变得复杂，难以维护\n经验是：\n每个规则最多3-4个排除条件\n，超过这个数字就说明规则设计有问题。\n全局检查比局部更重要\n问题场景：\n一个策略的数据看起来符合\"衰减\"的特征，但整体上赚了1000人。按照单纯的\"衰减规则\"应该下线，但这样做就损失了一个好策略。\n解决方案：在关键的规则判断前，加入\"全局收益检查\"\n在优先级3之后、优先级4之前，插入：\nIF 累积绝对收益 > 0:\n#\n即使后续的规则可能触发，也先救这个\ncase\n#\n标记为GLOBAL_POSITIVE =\ntrue\n#\n在优先级4-5的判断中，将其作为一个排除条件\n这样保证了：有明确正收益的策略，不会因为短期衰减或波动就被下线\n为什么叫\"全局检查\"？\n因为它的视角不是\"这一个规则是否适用\"，而是\"综合所有维度看，这个策略是否真的应该下线\"。\n这个检查的重要性在Bad Case分析中被充分验证了—它解决了30%的误判问题。\n可解释性是长期迭代的基石\n问题场景：\n{\n\"isRecommendOffline\"\n:\ntrue\n,\n\"recommendation\"\n:\n\"建议停止实验\"\n}\n问题：产研同学看到这个输出，能知道原因吗？不能\n他们会：\n1.找数据自己看一遍\n2.对比自己的判断\n3.如果不一致就驳回\n这样系统就没有起到决策支持的作用。\n解决方案：recommendation中包含具体的数据支撑和理由\n{\n\"isRecommendOffline\"\n:\ntrue\n,\n\"recommendation\"\n:\n\"最近两天用户持续减少，第6天损失35人，第7天损失42人，趋势恶化幅度加大，建议停止实验\"\n}\n现在产研同学可以：\n1.快速验证：35人和42人确实对应第6、7天的数据吗？✓\n2.理解逻辑：系统用的是\"趋势恶化\"这个信号\n3.二次确认：这个信号在我们的业务场景中是否有效？\n好的recommendation应该满足：\n1.具体性\n：\n包含具体的日期、数字、指标\n2.可验证性\n：\n产研可以快速验证recommendation中提到的数据\n3.易理解\n：\n用\"最近两天\"代替\"倒数第二天和最后一天\"\n4.有理由\n：\n说出\"为什么\"而不仅仅说\"结论\"\n5.无专业术语\n：\n禁用\"千人DAU、相对变化率、标准差\"等\n在我的Prompt中，recommendation的写法有一个\n专门的章节\n来规范：\n## recommendation字段生成规范：\n下线情况（isRecommendOffline=\ntrue\n）：\n格式：\n\"{触发的规则简述} + {具体数据} + {建议}\"\n例：\n\"最近2天连续减少，分别损失20人和35人，损失扩大，建议停止实验\"\n✓ 包含规则（连续减少）\n✓ 包含数据（20人、35人）\n✓ 包含趋势判断（损失扩大）\n✓ 清晰的建议（停止实验）\n不下线情况（isRecommendOffline=\nfalse\n）：\n格式：\n\"{为什么不符合下线条件} + {正向信号}\"\n例：\n\"虽然第3天下跌65人，但第4天反弹48人，无法确认趋势恶化，建议继续观察\"\n✓ 承认有负向信号（65人下跌）\n✓ 指出反弹证据（48人反弹）\n✓ 解释判断逻辑（无法确认趋势恶化）\n✓ 建议行动（继续观察）\n禁用词清单：\n✗ 千人DAU、相对变化率、标准差 → 太专业\n✗ 效果不稳、可能失败 → 太模糊\n✗ 第n天 → 改用具体日期如\n\"12月7日\"\n✗ 感觉、似乎、可能 → 太主观\n6.2 Prompt迭代的系统方法论\n科学地收集Bad Cases\n不是所有的\"系统判断与人工判断不一致\"都值得分析。\n我建立了一个Bad Case的\n收集标准\n：\n什么算\nBad\nCase？\n必需条件：\n1\n. 系统的判断（isRecommendOffline）与人工判断不同\n2\n. 已经有人工的\n\"黄金标签\"\n（\nGold\nLabel）来验证谁是对的\n-\n对于下线的策略：\n1\n周后是否真的有正向效果？\n-\n对于继续的策略：最后是否确实有好的结果？\n3\n. 这个\ncase\n涉及的数据质量是正常的（排除数据异常导致的\ncase\n）\n收集频率和方式：\n-\n每日自动对比系统输出和人工确认的结果\n-\n生成差异报告，筛选出真正的bad\ncase\n-\n分类打标签（\nCategory\nA\n/B/\nC）\n-\n汇总成\nBad\nCase库，定期分析\n案例标准化：\n{\n\"badcase_id\"\n:\n\"BC-001\"\n,\n\"input\"\n: [\n...\n],\n\"system_output\"\n: {\n...\n},\n\"human_judgment\"\n:\n\"false\"\n,\n\"category\"\n:\n\"A1\"\n,\n\"root_cause\"\n:\n\"日期排序混乱\"\n,\n\"fix_applied\"\n:\n\"v1.1\"\n,\n\"resolved\"\n:\n\"yes\"\n}\n根本原因分析（RCA）\n收集到bad case后，不能直接就改Prompt。首先要理解\"为什么会错\"。\n我用一个简单的RCA框架：\n什么是RCA：\n根本原因分析（Root Cause Analysis，简称 RCA） 是一种系统化的问题排查与解决方法，旨在识别导致问题发生的最底层、最本质的原因，而非仅仅处理表面现象或直接诱因。\nLevel\n1\n: 表面原因 → 系统判断的具体错误\nLevel\n2\n: 直接原因 →\nPrompt\n中的哪个规则或计算出了问题\nLevel\n3\n: 根本原因 → 为什么\nPrompt\n的设计在这里有漏洞\n例如\nBC\n-\n001\n（日期排序混乱）：\nLevel\n1\n: 系统把[\n1207\n:-\n67\n,\n1208\n:-\n35\n,\n1209\n:+\n34\n,\n1210\n:+\n45\n]理解成了负向趋势\nLevel\n2\n: 在计算\n\"最长连续负向段\"\n时，没有明确按日期排序\nLevel\n3\n:\nPrompt\n的\nWorkflow\n第\n2\n步（数据预处理）缺少\n\"排序\"\n这个环节\nFix\n: 在\nWorkflow\n第\n2\n步中明确添加\n\"按dt字段升序排序\"\n为什么要分三个层级？\n因为如果只在Level 1上解决，你可能修修补补，但根本问题没解决。\n而如果直接在Level 3上解决，就能一劳永逸。\n针对性修复&事后集成测试\n修复Prompt时，不能直接改原版本。\n一般采用\n分支-修复-测试-合并\n的流程：\n当前版本：v1.1（准确率72%）\n发现bad case BC-009-012（连续性判断）\n流程：\n1.\n创建分支版本：v1.1-fix-continuity\n└─ 修改：优先级1的连续性定义\n└─ 修改：添加排除条件\n2.\n在bad case集上测试：\n├─ BC-009: 原来错，现在？ → 改对了 ✓\n├─ BC-010: 原来错，现在？ → 改对了 ✓\n├─ BC-011: 原来对，现在？ → 仍然对 ✓\n└─ BC-012: 原来错，现在？ → 仍然错 ✗（需要进一步调查）\n3.\n在全量测试集上验证：\n├─ 新版本准确率：73% （比v1.1的72%提升1%）\n├─ 精准率：72% （与v1.1相同）\n├─ 召回率：89% （从v1.1的85%提升4%）\n└─ 结论：这个修改是正向的，可以merge\n4.\n合并回主线：\n└─ v1.2-continuity 成为新的baseline\n能看到这这里的小伙伴，辛苦你了。\n帮你抛出内心的困惑，为什么要在三个层面上进行测试呢？\nTest Level\n1\n: Bad\nCase\n集\n├─ 快速反馈：\n5\n分钟能跑完\n├─ 精准定向：只验证与这个修改相关的\ncase\n└─ 目标：修改应该修复目标\ncase\n，不引入新错误\nTest Level\n2\n: 全量训练集（\n500\n个历史\ncase\n）\n├─ 综合评估：确保修改不伤害其他\ncase\n├─ 关键指标：精准率、召回率、F1\n-\nScore\n└─ 目标：整体准确率应该不下降\nTest Level\n3\n: 新增\ncase\n（第\n4\n周\nHold\n-\nout\n集）\n├─ 真实验证：用从未见过的数据测试\n├─ 防止过拟合：确保改进不是\"死记硬背\"\n└─ 目标：在新数据上也有显著改进\n定量跟踪改进效果\n建立\n改进追踪表\n，清晰地记录每个修改的效果：\n（不过不适合敏捷开发的同学，例如我，我也是简单的按照自己的需求进行记录，有QA的同学可以规范来）\nPrompt版本演进与准确率变化：\n版本    修改内容                影响的Rule  Bad Case修复数  准确率  F1-Score  备注\n─────────────────────────────────────────────────────────────────────────\nv1.\n0\n初版                     -\n0\n/\n30\n68%\n72%\nbaseline\nv1.\n1\n+数据预处理强化          全局\n8\n/\n30\n(\n27%\n)\n72%\n75%\nCategory\nA\nfix\nv1.\n1\n-\na\n+符号校验逻辑           Rule1-\n3\n2\n/\n30\n(\n7%\n)\n73%\n76%\n增量修改\nv1.\n2\n+全局收益检查            Rule3-\n5\n9\n/\n30\n(\n30%\n)\n77%\n80%\nCategory\nB\nfix\nv1.\n2\n-\nb\n+衰减幅度量化            Rule4\n5\n/\n30\n(\n17%\n)\n78%\n81%\n增量修改\nv1.\n2\n-c  +业务场景补充            全局\n3\n/\n30\n(\n10%\n)\n79%\n82%\nCategory C fix\nTarget  目标版本                 -          -\n80%\n+\n85%\n+     预期\n2\n周内达成\n这个表的作用：\n1.追踪性\n：\n每个修改的影响都能量化跟踪\n2.决策支持\n：\n优先修复影响范围大的case（BC修复数多的优先做）\n3.动力保持\n：\n能清晰看到准确率在持续上升\n4.知识沉淀\n：\n后续新人能快速理解演进历史\n记录所有应对策略\n在迭代过程中记录不同类型的修改。每种类型的复杂度和风险不同，方便沉淀经验与复盘：\n修改类型          风险等级  实现难度  影响范围  推荐做法\n────────────────────────────────────────────────\n类型A：排除条件增加    低      简单    局部    直接修改，快速测试\n类型B：规则阈值调整    中      简单    中等    需要在BC集和训练集上同时测试\n类型C：新增优先级      高      复杂    全局    需要完整的三级测试，可能引入回归\n类型D：指标重新定义    高      复杂    全局    需要充分的理论论证，谨慎实施\n例如v1\n.2\n中的\"全局收益检查\"是类型D：\n├─ 首先在\n1\n个bad\ncase\n（BC\n-017\n）上验证有效\n├─ 然后在Bad\nCase\n集（\n30\n个）上扩大验证\n├─ 再在全量集上验证不伤害其他\ncase\n├─ 最后才在新数据上验证真实效果\n└─ 整个过程耗时\n3\n天，但风险被很好地控制了\n6.3 <关键>从Prompt工程学到的通用启示\n除了AB实验评估这个具体场景，这个项目还带来了一些\n可迁移到其他领域的启示\n。\n大模型适合\"有明确规则但规则复杂\"的任务\nAB实验评估之所以适合，是因为：\n输入输出都是结构化的JSON\n规则虽然多（6层优先级），但每一层都很清晰\n68-80%的准确率对于\"建议\"这个use case完全够用\n规则需要频繁调整（每周都有新的bad case insights）\nPrompt本质上是\"知识的显式编码\"\n维度\n传统编程（写代码）\nPrompt 编程\n表达形式\nif (consecutive_negative_days >= 3 && last_day <= 0%) { return true; }\nIF 最长连续负向天数 ≥ 3<br> AND 最后一天 ≤ 0%<br> AND 最后2天无正向:<br> RETURN true\n可读性\n仅程序员能准确理解逻辑\n接近自然语言，产品经理、数据分析师等非技术人员也能理解与评审\n协作效率\n逻辑隐藏在代码中，跨角色沟通成本高\n规则透明、语义清晰，便于多方对齐和迭代\nPrompt工程实际上是在做\"知识编码\"：把人脑中的隐性规则，转化为模型能理解的显式规则。\n在这个过程中：\n产品 + 数据分析师的domain knowledge变成了Prompt的内容\n工程师的工作是确保Prompt的逻辑清晰、可执行\n反复的Bad Case分析，实际上是在\"完善知识库\"\n这个思路也可以应用到：\n内容审核规则\n风险识别模型\n推荐系统的候选池过滤\nBad Case的价值被严重低估\n在很多 AI 项目里，Bad Case 被当作“失败”来掩盖。但在本次实践项目中，Bad Case 是最高效的反馈信号。\n为什么 Bad Case 还挺好的？\n暴露 Prompt 的认知盲区\n：\n本次项目的 Bad Case，最终归为三类根本问题：\n1.对数据波动的理解偏差\n2.规则边界定义模糊\n3.缺乏业务上下文（比如民生 Push 的触达延迟特性）\n每一个 Bad Case 都在告诉我：“好像又漏掉了什么 = =”\n驱动高 ROI 的迭代\n：\n基于 Bad Case 的定向优化，平均每次修改能带来 1–2% 的准确率提升；相比无目标地调参或重写 Prompt，效率高出 n 倍以上。\n可被标准化处理\n：\n建立了一套闭环流程：分类 → RCA → 修复 → 验证 → 合入主干\n和写代码时候的修 bug 感觉类似，但更有意义的是把经验沉淀为可复用的工作范式。\n构建领域知识库\n：\n每次修复 Bad Case，本质上是在给 Prompt “补课”\n对自己来说\n补的是对业务、数据和决策逻辑的理解。长期积累下来，这套 Prompt 不再只是规则集合，而是一个有上下文、有判断力的业务知识库。\n七、展望\n1.新增渠道，扩大自动化作业范围。毕竟量大才能看到效果。\n2.持续优化prompt，更优秀的拆分逻辑，各司其职，按需动态拼接，分别保障最低粒度的结果。\n3.继续沉淀大模型工程领域的学习，虽然咱区分开底层大模型算法，但是相信工程层面也能做出不一样的东西。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0,
+        "transfer_business": 0.09,
+        "transfer_agent": 0.7,
+        "irrelevant": 0.21
+      }
+    },
+    "relevance": {
+      "score": 2.37,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.03,
+        "2": 0.53,
+        "3": 0.43,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.19,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.04,
+        "2": 0.03,
+        "3": 0.08,
+        "4": 0.68,
+        "5": 0.02
+      }
+    },
+    "decision_action": {
+      "score": 2.6,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.01,
+        "2": 0.11,
+        "3": 0.53,
+        "4": 0.14,
+        "5": 0.04
+      }
+    },
+    "evidence": {
+      "score": 3.9,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.09,
+        "4": 0.89,
+        "5": 0.01
+      }
+    },
+    "actionability": {
+      "score": 4.53,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.39,
+        "5": 0.59
+      }
+    },
+    "anti_hype": {
+      "score": 3.83,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.14,
+        "4": 0.8,
+        "5": 0.03
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 26175,
+    "outputTokens": 172,
+    "totalTokens": 26347
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "relevance": 0.67,
+        "grounding": 0.43,
+        "decision_action": 0.43,
+        "evidence": 0.91,
+        "actionability": 0.68,
+        "anti_hype": 0.84,
+        "category": 0.62
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179865626,
+                "endTime": 1791179865719,
+                "providerRequestId": "a82da2e1-2b64-44cd-8755-89090997e82c",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179865721,
+                "endTime": 1791179865975,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.00109935",
+      "marketCost": "0.00109935",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00109935",
+      "inferenceCost": "0.00109935",
+      "inputInferenceCost": "0.00109935",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7FG9WMMBMDYYY0S0WRE6"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:45 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::zrpxd-1791179863666-c7f1be1ecf2d"
+    },
+    "body": {
+      "answers": {
+        "relevance": {
+          "type": "score",
+          "score": 2.37,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.03,
+            "2": 0.53,
+            "3": 0.43,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.19,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.04,
+            "2": 0.03,
+            "3": 0.08,
+            "4": 0.68,
+            "5": 0.02
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.6,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.01,
+            "2": 0.11,
+            "3": 0.53,
+            "4": 0.14,
+            "5": 0.04
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.9,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.09,
+            "4": 0.89,
+            "5": 0.01
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.53,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.39,
+            "5": 0.59
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.83,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.14,
+            "4": 0.8,
+            "5": 0.03
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0,
+            "transfer_business": 0.09,
+            "transfer_agent": 0.7,
+            "irrelevant": 0.21
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 26175,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "relevance": 0.67,
+            "grounding": 0.43,
+            "decision_action": 0.43,
+            "evidence": 0.91,
+            "actionability": 0.68,
+            "anti_hype": 0.84,
+            "category": 0.62
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179865626,
+                    "endTime": 1791179865719,
+                    "providerRequestId": "a82da2e1-2b64-44cd-8755-89090997e82c",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179865721,
+                    "endTime": 1791179865975,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.00109935",
+          "marketCost": "0.00109935",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00109935",
+          "inferenceCost": "0.00109935",
+          "inputInferenceCost": "0.00109935",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7FG9WMMBMDYYY0S0WRE6"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:45.204Z"
+  }
+}

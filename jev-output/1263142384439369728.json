@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1263142384439369728",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "ADrive 跨产品协作实践：文件通了，Agent 就通了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247521712&idx=1&sn=584ee46d8b9021b56004a8a7e318e2d0",
+      "date": "2026-08-27T10:00:00.906Z",
+      "chars": 3463,
+      "text": "原创\n火山引擎存储\n2026-08-27 18:00\n北京\n本文基于\nve-adrive-cli v1.0.2\n。文中的品牌、项目和文件名均为演示示例。\nAgent 已经进入内容策划、素材制作和发布检查的工作流程，但文件仍主要靠人工搬运：资料散落在本地目录、聊天附件在临时链接中，一个 Agent 生成的成果，常常无法直接作为下一个 Agent 的输入。\nADrive 面向人与 Agent 提供统一的文件协作空间；ADrive CLI 则把查找、读取、传输、同步和权限控制带进 Agent 的工作环境。不同 Agent 可以围绕同一批文件接力，关键写入和高风险操作仍由人确认。\n下面通过一场 48 小时的新品视频发布实战，看看 Codex、豆包工作和 DeepSeek Harness 如何围绕同一套文件接力。文末再用 3 分钟完成 ADrive CLI 的安装与连接。\n48 小时倒计时：一个目标，三个角色，一套文件空间\n一家消费品牌准备在 48 小时后发布新品，需制作一条新品宣传视频。团队已有产品 Brief、用户调研、采访录音、产品图片和原始视频，但资料由不同成员制作，格式和体积各不相同。\n团队在 ADrive 中建立“新品发布项目”，并约定五类目录：Brief 保存产品资料，Research 保存用户洞察，Raw Assets 保存原始素材，Production 保存制作产物，Publish 只放最终发布包。\nAgent 正在成为日常办公工具，但不同角色往往选择不同的 Agent：内容策划使用 Codex，内容制作使用豆包工作，发布运营使用 DeepSeek Harness。三者分别负责理解、制作和交付；ADrive 文件协作空间统一存放项目资料和产物，ADrive CLI 负责让文件在三个 Agent 之间流动。\n第一幕\n：内容策划\n× Codex\n把资料变成创作方案\n发布前 48 小时，内容策划小林把任务交给 Codex：\n“我们要制作一条 15 秒新品视频，目标人群是年轻职场人。请查看 Brief 和 Research，找出最近更新的产品说明、用户访谈和品牌规范。先列出准备读取的文件，不要查看原始视频，也不要写入内容。”\nCodex 根据自然语言描述 ADrive 空间中的目录、文件名和修改时间，生成读取计划。\n计划确认后，小林继续说：\n“基于这些资料给出三个创意方向，推荐其中一个，并生成视频脚本、分镜和素材需求清单。写入 Production 前先告诉我文件名。”\nCodex 推荐“把通勤时间还给自己”作为主线，准备写入创意说明、15 秒脚本、分镜和素材需求清单。\n小林确认后，四个文件才进入 Production。\n这一步把策划成果从一次性对话变成了可交接的正式文件。制作人无需重新询问背景，也不用接收一堆聊天附件，直接从 Production 接手即可。\n第二幕\n：内容制作\n× 豆包工作\n让大素材和中间产物流动\n发布前，首先明确 ADrive 项目空间。\n发布前 24 小时，内容制作小周对豆包工作说：\n“读取 Production 中的最终脚本、分镜和素材需求清单，再检查 Raw Assets。告诉我已有素材、缺失素材和传输计划，不要一次下载全部内容，也不要修改原始文件。”\n豆包工作根据需求与现有素材，发现主要画面和采访录音已经齐全，但缺少一些特写素材。\n左右滑动查看更多\n小周补齐素材后确认传输。在大体积视频素材的传输过程中，Agent 会使用可恢复的传输检查点，网络中断后无需从头开始。\n豆包工作将选定素材同步到本地制作目录，再调用已经配置好的字幕、封面和视频制作工具。第一轮完成后，它向小周汇报：\n“粗剪视频、第一版字幕、两张封面和制作说明已经生成。我准备把这些文件写回 Production；临时缓存不会上传，原始素材不会修改。是否写入？”\n小周确认后，豆包工作只同步新增和修改过的正式产物。经过两轮调整，Production 中留下脚本、粗剪、字幕、封面和制作说明。下一位接手者既能看到当前版本，也能知道还有哪些问题需要处理。\n第三幕\n：发布运营\n× DeepSeek Harness\n自主检查，但不擅自执行\n发布前 2 小时，运营小陈在 DeepSeek Harness 中使用 ADrive CLI 连接到同一个 Space，开始确认发布细节：\n“检查 Production，确认最终视频、封面、字幕和发布文案是否齐全。”\n检查通过后，DeepSeek Harness 给出执行计划：把已批准的成片、封面、字幕和三份渠道文案复制到 Publish，同时保留 Production 中的全部历史版本。\n“以上操作只会向 Publish 新增和更新已确认文件，不会删除 Production 中的内容。是否执行？”\n小陈确认后，DeepSeek Harness 才执行文件操作。ADrive CLI 会先生成操作计划，收到明确执行指令后再运行；删除、移动或同步删除等高风险操作，还会触发更严格的确认。\n最终，Publish 中形成一套可以直接交付的发布包：成片、封面、字幕、渠道文案和发布检查清单。\n交付结果：Publish 中的最终发布包\n接力的关键：共享文件，而不是共享对话\n这条工作流中，上一个 Agent 写回的文件就是下一个 Agent 的输入：Codex 把资料变成脚本和分镜，豆包工作把脚本与素材变成视频、字幕和封面，DeepSeek Harness 检查成果，并在人工确认后组装发布包。\n三个角色可以使用不同的 Agent，却不需要建设三套文件集成，也不用反复上传同一批附件。ADrive CLI 提供统一的查找、读取、传输和写回能力，大文件检查点与增量同步则保证素材稳定流动。\n模型决定内容生成得有多快，文件基础设施决定这些内容能否成为可交付、可复用、可管理的工作成果。\n落地时，不必先设计复杂的多 Agent 工作流。选择一个正在进行的内容项目，先跑通\n读取资料—生成产物—写回 ADrive\n的最小闭环，再让第二个 Agent 直接接手。一次可靠的文件交接，就是 Agent 协作真正开始的地方。\n看完案例，用 3 分钟把 ADrive CLI 交给 Agent\n无需先学习命令。把\nADrive CLI 的 GitHub Release\n（\nhttps://github.com/volcengine/ve-storage-uni-cli/releases/tag/v1.0.2\n）发给 Agent，让它完成安装和连接；你只负责确认来源、选择空间，并在浏览器中授权。\n第一步：安装\n对 Agent 说：\n“请从这个官方 Release 安装 ADrive CLI。识别我的操作系统和芯片架构，只安装\nve-adrive-cli\n，校验官方 SHA-256，并告诉我最终版本。”\nAgent 会选择对应的安装包并完成校验。本文验证时得到的版本是\nve-adrive-cli 1.0.2\n。\n第二步：授权\n告诉 Agent 要连接的 ADrive Instance，并优先使用 OAuth：\n“请用 OAuth 连接这个 ADrive Instance，发起设备授权。不要在对话中输出任何访问令牌。”\n示例：OAuth Auth Endpoint\nhttps://614fc48****.idsapi.volces.com\n其中\n614fc48****\n为网盘 ID。\nAgent 会提供浏览器验证地址。你登录 ADrive、检查权限范围并确认授权，凭证随后保存在本地。\n第三步：只读验证\n授权后继续说：\n“检查当前登录状态，只列出我有权限访问的空间，不要上传、移动或删除文件。”\n选择本次协作使用的 Space 后，再告诉 Agent：\n“把这个 Space 作为工作空间。写入前先给我计划，涉及移动、覆盖或删除时必须再次确认。”\n至此，Agent 获得的是一个边界明确的文件工具，而不是无限权限的网盘账号。接下来的任务都可以用自然语言完成。\n立即开始：\n下载 ADrive CLI\n（\nhttps://github.com/volcengine/ve-storage-uni-cli\n）\n，\n选择一个正在进行的内容项目，跑通第一个文件协作闭环。\n申请试用：\n如需开通 ADrive，请联系 ADrive 团队\n。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.17,
+        "transfer_agent": 0.82,
+        "peripheral": 0.01,
+        "transfer_business": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.9,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.08,
+        "2": 0.89,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.32,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.03,
+        "3": 0.53,
+        "4": 0.41,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.74,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.19,
+        "4": 0.54,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.07,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.89,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.79,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.05,
+        "4": 0.87,
+        "5": 0.03
+      }
+    },
+    "anti_hype": {
+      "score": 2.19,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.11,
+        "2": 0.53,
+        "3": 0.13,
+        "4": 0.16,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4626,
+    "outputTokens": 172,
+    "totalTokens": 4798
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.78,
+        "relevance": 0.91,
+        "grounding": 0.66,
+        "decision_action": 0.16,
+        "evidence": 0.92,
+        "actionability": 0.82,
+        "anti_hype": 0.53
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179910748,
+                "endTime": 1791179910908,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000194292",
+      "marketCost": "0.000194292",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000194292",
+      "inferenceCost": "0.000194292",
+      "inputInferenceCost": "0.000194292",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8VJADK6HXBR94X8SSTDB"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:30 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::lplml-1791179910726-8ddf41563142"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.17,
+            "transfer_agent": 0.82,
+            "peripheral": 0.01,
+            "transfer_business": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.9,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.08,
+            "2": 0.89,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.32,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.03,
+            "3": 0.53,
+            "4": 0.41,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.74,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.19,
+            "4": 0.54,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.07,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.89,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.79,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.05,
+            "4": 0.87,
+            "5": 0.03
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.19,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.11,
+            "2": 0.53,
+            "3": 0.13,
+            "4": 0.16,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4626,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.78,
+            "relevance": 0.91,
+            "grounding": 0.66,
+            "decision_action": 0.16,
+            "evidence": 0.92,
+            "actionability": 0.82,
+            "anti_hype": 0.53
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179910748,
+                    "endTime": 1791179910908,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000194292",
+          "marketCost": "0.000194292",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000194292",
+          "inferenceCost": "0.000194292",
+          "inputInferenceCost": "0.000194292",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8VJADK6HXBR94X8SSTDB"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:30.140Z"
+  }
+}

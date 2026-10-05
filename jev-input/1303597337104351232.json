@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1303597337104351232",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "JEV：一个不会写代码的模型，为什么拿下4000万美元？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697634&idx=1&sn=022fbaed7d8c0612ad874c717c92419e",
+      "date": "2026-09-24T00:45:00.215Z",
+      "chars": 12963,
+      "text": "原创\n李卓凡\n2026-09-24 08:45\n广东\n关注腾讯云开发者，一手技术干货提前解锁👇\n开发者公众号专属群聊\n扫码加入获取更多一手教程、科技前沿报告\nTL;DR\nLLM 这几年的演化可以压缩成一句话：\n先把\"一个模型包揽一切\"推到极限，再按职能拆开。\nJEV（TypeSafe AI，2026 年 9 月 15 日发布）是这个\"拆\"字的第一步落地：它不生成文本，只返回判断，单次调用多数在 100ms 左右，输入 $0.042 / 百万 token，输出免费。\n它真正的价值不是快，而是\n概率经过了校准\n——模型说 0.9，你就能真的当 90% 用。\n它不是 LLM 的替代品，是 LLM 的前置分流器。\n引子：一个不会写代码的模型，凭什么刷屏\n2026 年 9 月 15 日，旧金山的 TypeSafe AI 结束两年隐身，带着 4000 万美元种子轮（DCVC 领投）和第一个公开模型 JEV 出场，当天在 Hacker News 上拿了 1500+ 点。\nJEV 的能力清单短得反常：\n它不能写文章，不能写代码，不能解释自己的推理，也不支持图片输入。\n你给它一段文本（官方叫\nstate\n），再给它一组预先定义好类型的问题，它返回每个问题的答案——一个是否概率、一个从你给的选项里挑出的枚举值、或者一个量表上的分值——外加完整的概率分布。\n用 TypeSafe 自己的话说，这是一个\nSystem One 模型\n，名字借自卡尼曼的《思考，快与慢》。社区给它起了个更直白的外号——\n\"一个智能 if 语句\"（a smart if statement）\n。\n普通代码的分支条件得是机器自己能算出来的东西，比如\nif (order.total > 100)\n。可一旦条件变成\"这封邮件是不是在问退款\"\"这条命令危不危险\"，if 就写不动了。过去几年的标准做法是把这个判断丢给一个大模型，让它吐一段 JSON 回来。能用，但重、慢、贵，而且概率不可信。\nJEV 把这条路走反了：\n判断单独做成一个模型，生成继续留给 LLM。\n这不只是一次产品创新。把它放回 LLM 架构演化的整条线上看，你会发现它其实是被前面几步工程进展一步步逼出来的必然动作。\n01\n先看大势：LLM 架构这几年的五步走\n把 2017 年到现在摊开，大概是这么五段：\n2017，Transformer 统一序列建模。\n《Attention Is All You Need》这篇论文的出发点是机器翻译，不是聊天。翻译这件事天生就是\"先读完整句原文，再一句一句写出译文\"，所以作者很自然地做成了编码器加解码器的双塔结构：编码器负责双向读懂源语言，解码器负责逐词生成目标语言，中间靠交叉注意力对接。\nTransformer 从出生那天起，就是 Encoder-Decoder。\n真正改变历史的反而是一个副产品：自注意力取代了 RNN 的时序依赖，整个序列可以并行训练。RNN 必须等前一个时间步算完才能算下一个，自注意力没有这个约束。这一步解决的是训练吞吐，后面所有故事的前提都是它。\n有意思的是，论文里那套 Encoder-Decoder 结构，在后来聊天模型这条线上几乎被完全放弃了。\n2018–2019，路线分野。\n同一个 Transformer 骨架，被拆成了两种玩法：BERT 把注意力做成双向，只做理解，走 Encoder-Only；GPT 把注意力做成单向因果，只做生成，走 Decoder-Only。那时候没有人知道哪边会赢。\n2020–2022，Decoder-Only 一统。\nGPT-3 证明了规模定律，同时顺手带出了 In-Context Learning——不改一个参数，往 prompt 里塞几个例子模型就学会了。到这一年底，全行业基本收敛到 Decoder-Only。\n2023–2025，工程与能力双轮驱动。\n一边是 MoE、长上下文、量化、各种注意力算子优化，把单位算力能买到的能力翻了好几倍；另一边是指令微调、RLHF、可验证奖励的强化学习，把\"会补全\"变成\"会听话\"再变成\"会推理\"。推理模型（DeepSeek-R1、o1 这类）就是这条线的产物，它们是标准的\"慢思考\"。\n2026 起，快慢思考解耦。\n当慢思考这一侧被卷到边际收益递减，大家开始回头看：一个 AI 系统里，真正需要\"慢思考\"的调用其实只占一部分。剩下大量高频、简单、时延敏感的判断，一直被用一个千亿参数的自回归模型在硬扛。\nJEV 就是最后这一步的代表。\n有一条暗线值得记住：\n每当底层工程把\"单个模型的上限\"抬高一个台阶，系统形态就会跟着变一次。\n一个能力只要还是稀缺的，它就会占据系统的瓶颈位，整个架构都得围着它转；一旦工程把它做到又便宜又可靠，它就从瓶颈位退下来变成随手可用的零件，系统就按暴露出来的\n新瓶颈\n重新组装一次。 所以\"抬高单个模型的上限\"和\"把系统拆开\"看起来矛盾，其实是同一件事的两面：先合（一个模型包揽一切），合到该能力不再稀缺，才能按职能拆。\n第一轮，算力让自回归统一了生成。\nGPT-3 之前，\"生成\"这件事是稀缺的，所以系统只能靠拼装：翻译用 Encoder-Decoder、摘要用 T5、分类用 BERT、问答用检索加模板，一堆专用模块各管一段。等规模定律把自回归推到千亿级，一个模型靠 prompt 就能干完所有这些活。\n系统形态从\"多模块流水线\"变成\"一个模型加 prompt\"\n——这是第一次重组。\n第二轮，工程把长上下文和推理做薄。\n\"做薄\"就是压成本和延迟。FlashAttention、GQA、KV Cache 压缩、MoE、量化、投机解码，这些没有一项让模型变聪明，它们只是让\"塞很长上下文\"和\"多步推理\"从贵得没法用变成日常件。代价一降下来，之前做不动的事就成立了：RAG 能整段塞文档了，Agent 能循环调十次工具了——\n因为一次调用从几秒几块钱变成可以接受\n。这是第二次重组。\n第三轮，轮到判断被拆出来。\n等慢思考那侧被卷到边际收益递减，有人回头算账：系统里大量调用根本不需要生成，只想要一个是非、一个类别、一个分值。可这批活一直由千亿参数自回归模型在硬扛——每次都要先\"想一遍怎么说\"，再从中解析出答案。于是\n判断被单独拆成一层，生成降级为\"必要时才调用\"\n。 JEV 就是这一步。\n02\n为什么最后是 Decoder-Only 赢了\n这是个老问题，但是值得一提，因为后面 JEV 的\"反攻\"恰恰是从这里开始的。\n三种架构的本质区别只有一个：\n注意力掩码决定了谁看得见谁。\nEncoder-Only（BERT 系）\n：双向注意力，每个 token 都能看到前后全部 token。输出的是整句的语义表示，天然适合分类、检索、匹配。代表：BERT、RoBERTa、ModernBERT，以及各种 Embedding 和重排序模型（BGE 这类）。\nDecoder-Only（GPT 系）\n：因果掩码，每个 token 只能看见自己和它左边的。输出的是下一个 token 的概率，天然适合生成。今天你能叫得上名字的对话模型基本全在这一列：GPT、Claude、DeepSeek、GLM、Kimi、Llama、Qwen。\nEncoder-Decoder（T5 系）\n：编码器双向看全句，解码器逐个因果生成，中间靠交叉注意力对接。适合输入和输出是两段不同序列的场景。代表：原始 Transformer 自己、T5、BART，如今主要还剩翻译和摘要这类活儿。\nDecoder-Only 赢，不是因为它\"更聪明\"，而是三件很实际的事：\n第一，训练信号密度差了一个量级。\nBERT 的掩码语言模型每次只让 15% 的 token 产生梯度，剩下 85% 是陪跑；GPT 的因果语言模型让 100% 的 token 都在预测下一个词，同样的算力能榨出多得多的信息。\n第二，工程生态全压在它这边。\n自回归生成靠 KV Cache 把前文算过的 Key/Value 存下来，避免每生成一个字就重算整段。FlashAttention、PagedAttention、TensorRT-LLM 这一大票优化，全是围绕这条路修的护城河。（包括推训的硬件生态）\n第三，理解和生成被统一进了同一套参数。\n处理 prompt 的时候在做语义编码，生成的时候用的是同一套权重，这种统一表征直接催生了 In-Context Learning。BERT 那种\"预训练 + 微调\"的两段式流程，被一个 prompt 干掉了。\n但注意一个细节：\nDecoder-Only 赢的是\"生成\"这个赛道。\n它在\"理解并给出一个低维结论\"这件事上，从来没证明过自己是最优解。这个伏笔，第五节会接上。\n03\n撑起这条演化线的技术创新\n把这些年真正起作用的东西摊开，其实可以分成五层，越往下越工程，越往上越接近产品形态。\nL1 算子与硬件层\n——决定这些想法能不能真的跑起来\nKV Cache\n：把前文算过的 Key/Value 存显存里，自回归解码才不至于每生成一个字就重算整段上下文。\nFlashAttention\n：不改数学，只改访存顺序，让注意力少在显存里来回搬数据，速度快几倍。\nPagedAttention\n：借操作系统的分页思想管理 KV Cache，把显存利用率从三成左右拉到九成。\n量化（INT8 / FP8）\n：显存和带宽都省一半以上，是推理降本最粗暴有效的一招。\n投机解码\n：让小模型先猜几个 token，大模型一次性验证，把串行解码部分并行化。\nL2 上下文与记忆层\n——决定模型一次能装下多少东西\nRoPE\nALiBi\nNTK 缩放\n：各种位置编码与外推方案，决定模型能不能从 4k 上下文一路推到 128k 甚至更长。\nGQA / MQA\n：多个 query 共享一组 KV，把 KV Cache 的体积压掉一个数量级。\nKV Cache 压缩与淘汰\n：长对话能不能续下去，靠的是这些。\nL3 模型结构层\n——决定单位算力能买多少能力\nMoE（专家混合）\n：把前馈层拆成多个专家，每个 token 只激活其中一两个，参数可以做得很大但算力不变。\nSSM / 线性注意力\n：Mamba 这类，把注意力的平方复杂度压成线性。\n非自回归并行采样\n：输出不再一个依赖一个，而是一次性并行给出。这条就是 JEV 走的路。\nL4 训练对齐层\n——决定模型听不听话、可不可信\nSFT 指令微调\n：教会模型\"听懂指令\"。\nRLHF / DPO\n：教会模型\"讨人喜欢\"。\nRLVR（可验证奖励）\n：教会模型\"做对题\"，推理模型的标配。\nRLCD（校准决策强化学习）\n：教会模型\"知道自己不知道\"。JEV 用的就是它。\nL5 系统编排层\n——决定一个 AI 产品长什么样\n工具调用、RAG、Agent 框架、模型路由、护栏、级联与回退。\n这张分层图有个很容易被忽略的读法：\n很多看起来像\"架构创新\"的东西，其实是工程创新倒逼出来的。\n没有 L1 的 FlashAttention 和量化，长上下文根本用不起；没有 L2 的上下文扩展，MoE 的价值也发挥不出来。而 JEV 这一类的出现，主要踩在 L3（非自回归并行采样）和 L4（RLCD 概率校准）这两层上。\n换句话说，它不是某个人灵光一现的产物，是前面四层铺完路之后水到渠成的结果。\n04\n被忽视的一块拼图：控制流\n现在可以回答那个核心问题了：为什么用一个能写诗的模型去判断\"这封邮件属于哪个部门\"，是一种浪费。\n自回归模型本质上是一个\n高维序列到高维序列\n的映射。而分类、路由、安全拦截这类控制流任务，是\n高维输入到低维结论\n的映射——四个选项选一个，输出一位信息。用前者做后者，等于每次都要先\"说出\"一整段话，再从这段话里解析出一个 bit。\n代价不只是算力。逐 token 生成还有三个副产品：\n延迟线性累积\n。输出 N 个 token 就要 N 步，每一步都依赖前一步，没有并行空间。在 TypeSafe 自己的对比里，前沿 LLM 回答同类结构化问题要 3 到 329 秒，而 JEV 是 70 到 500 毫秒（当然，这组数字是厂商自测，当参考量级看就好）。\n格式可能跑偏\n。LLM 的结构化输出本质是\"先生成自由文本，再靠约束和校验把它掰成 JSON\"，掰不回来的时候就是线上事故。\n概率不可信\n。你问一个模型\"有多大把握\"，它给的数字和真实正确率之间没有稳定关系，没法写进业务阈值里。\n这里有个值得较真的区别。\nLLM 的结构化输出\n和\n原生类型化输出\n听起来差不多，其实完全是两回事：前者是生成完再套格式，后者是从一开始就只在\"你定义好的类型空间\"里采样。前者保证的是\"大概率格式对\"，后者保证的是\"结构上不可能格式错\"——但它不保证选出来的答案是对的，这是两个必须分开看的问题。\n05\n解构 JEV：它到底做了哪三件事\nTypeSafe 没有公开 JEV 的底层架构细节（原文那句\"Encoder-Only 双向注意力\"是社区的合理推测，不是官方说法）。但从它公开的行为和训练方式看，它做对了三件事，每一件都对应前面那张分层图上的某一格。\n第一件，输出侧彻底放弃了自回归。\n一个请求里的所有问题共享同一份\nstate\n，彼此独立、并行评估，一个答案不会变成另一个答案的上下文。这意味着你可以把一个决策树需要的所有判断一次性问出去——官方叫\"推测式扇出\"。13 个问题打包成一次调用，比顺序调 13 次便宜 12.2 倍、快 10 倍，因为长\nstate\n只需要发一遍。\n第二件，把判断收敛成三种类型原语。\nnoul\n：是不是。返回 0 到 1 的概率，回答\"这句话在不在催\"。\nchoice\n：选哪个。最多 255 个选项，每个选项可以配一句判断标准。\nscore\n：几分。2 到 10 级的有序量表，分值是各级概率的加权平均。\nAPI 形态长这样：\ncurl -X POST https:\n//api.typesafe.ai/v1/systemone \\\n-H \"Authorization: Bearer $TYPESAFE_API_KEY\" \\\n-d '{\n\"state\"\n:\n\"Help! My payouts have been failing for 3 days.\"\n,\n\"model\"\n:\n\"jev-latest\"\n,\n\"questions\"\n: {\n\"is_urgent\"\n: {\n\"type\"\n:\n\"noul\"\n,\n\"instructions\"\n:\n\"Does this convey urgency?\"\n},\n\"department\"\n: {\n\"type\"\n:\n\"choice\"\n,\n\"instructions\"\n:\n\"Which team should handle this?\"\n,\n\"criteria\"\n: {\n\"billing\"\n:\n\"Payments, invoicing, refunds\"\n,\n\"technical\"\n:\n\"Bugs, outages, integrations\"\n,\n\"sales\"\n:\n\"Pricing, upgrades, new accounts\"\n}\n}\n}\n}'\n# => is_urgent.noul =\n0.95\n# => department.choice =\n\"billing\"\n, confidence =\n0.8\n第三件，也是最值钱的一件：把训练目标从\"选对\"换成了\"概率说真话\"。\n这个放到下一节单独讲。\n当然，短板得说清楚，不然就是软文。\nTypeSafe 自己列的已知弱项包括：数学和计数、日期排序、数值接近度判断、双重否定、塞满无关细节的长上下文（官方管这个叫上下文腐烂，过滤得在调用方代码里做）、对抗性内容。中文等 CJK 输入可用，但官方明确说\"准确率目前偏低\"。\n模型还在早期访问阶段，参数量、训练数据都没公开，那两个\"193.6 倍更快、444.6 倍更便宜\"是厂商自测的天花板值，不是你能实测到的典型值。\n06\n概率校准：为什么这件事比 70ms 更重要\n延迟和价格是肉眼可见的优势，但真正让 JEV 能写进生产代码的，是\n校准（calibration）\n这个偏学术的词。\n神经网络分类头有个通病：过度自信。模型选了一个错误答案，旁边还挂着一个 0.99 的置信度。这种概率拿去做风控阈值，等于闭着眼睛踩油门。\nRLCD（Reinforcement Learning for Calibrated Decisions）把训练目标改成了\"概率与结果的一致性\"：\n在一批相似的判断里，模型给出 0.9 概率的那些，实际正确率也应该落在 90% 附近。\n概率不再是一个装样子的数字，而是一个有统计意义的量。\n这件事对程序员的意义非常具体：\n没校准的概率，没法写进 if 里。\n你分不清 0.7 到底是\"很确定\"还是\"在瞎猜\"。\n校准后的概率，可以直接当门限用。\nconfidence 低于 0.5 转人工，高于 0.9 才执行破坏性操作——风险偏好变成了代码里一个可读、可调的数字。\n它给了系统一个\"我不知道\"的出口。\n上下文模糊时，输出会接近均匀分布（0.49 vs 0.51），而不是硬选一个。这比\"选错了但很自信\"有价值得多。\n需要提醒的是，校准是\n统计意义上\n的保证。说 90% 只代表一批类似判断里约九成正确，不代表某一次判断一定对。别把这两个概念混了。\n顺带说说马尔可夫：此概率非彼概率\n聊概率校准的时候，很容易被一个熟悉的名字带偏——马尔可夫。它也输出概率，但和这里的校准不是一回事。两者的差别其实可以压成一句话：\n都在把历史压进当前状态，一个压成了可计算的东西，一个压成了不可计算的东西。\n先说马尔可夫这边。所谓\n马尔可夫性\n，意思是当前状态已经蕴含了之前所有状态的信息，所以历史可以整个扔掉，只看现在就够了。棋盘摆在那儿，你不需要知道这盘棋是怎么下到这一步的。MDP（马尔可夫决策过程）就是在这个前提上加动作和奖励，策略 π(a|s) 表示在状态 s 下选动作 a 的概率。因为状态是有限的、边界清晰的，转移概率 P(s'|s,a) 写得出来，所以能规划、能求解最优策略。\n模型做的是同一件事，但做不彻底。LLM 也把之前所有状态压进了当前状态，那个 context。区别是它压出来的是一堆高维向量，不是一个可枚举的状态：你写不出它的转移矩阵，也算不出\"我执行退款之后世界会变成什么样\"。从形式上看，P(next | context) 和 π(a|s) 长得一模一样，都是条件概率；但一个能算，一个只能跑一遍才知道。上下文越长越容易记不住中间那段，就是这个压缩在漏——而 MDP 不会漏，因为它的状态是精确给定的。\n这恰好解释了为什么校准在 Agent 场景里格外重要。真实业务里状态永远看不全，\"用户真正想要什么\"这个隐藏状态你永远看不到，只能拿着一段文本当观测去估计它——术语叫 POMDP（部分可观测马尔可夫决策过程），那个估计出来的概率分布叫 belief。\n模型吐出来的置信度，实际就是这个 belief。\n未经校准的置信度和真实正确率之间没有对应关系。拿它当 belief 用，等于在一个本来就不可计算的系统里，又添了一个随手编的数字。RLCD 干的事，说白了就是把这个 belief 校准到能用的程度——这也是为什么同样都输出概率，JEV 的 0.9 才敢写进业务阈值，而普通分类头的 0.9 不敢。\n07\n架\n构收敛：一个系统里的两种模型\n把这些拼起来，现代 AI 系统的形态就清晰了。而它收敛到的形状，卡尼曼在《思考，快与慢》里早就画过一遍。\n这本书的核心观点是：人的认知跑着两套系统。\nSystem 1 是自动、快速、几乎不费力的直觉判断\n——看到一张生气的脸立刻知道对方在生气，不用想；\nSystem 2 是需要集中注意力、缓慢、讲逻辑的审慎思考\n——心算 17 乘 24，或者核对一份合同条款，得停下手头的事专门做。人一天里做的绝大多数决定走的是 System 1，只有 System 1 搞不定的问题才升级给 System 2，因为后者又慢又耗能。这套分工不是人脑的缺陷，而是性价比最优解——如果一个系统所有事都用 System 2 处理，它早就被淘汰了。\nAI 系统这两年的演化，正在往同一个形状收敛：\nSystem 1（快思考）\n：JEV 这类模型。高频、时延敏感、确定性要求高的路由、分类、安全防护、风险评级。一次前向，返回类型化结果和校准概率。\nSystem 2（慢思考）\n：DeepSeek-R1、Claude、GPT 这类推理和生成模型。长链条逻辑推理、写代码、写文案、开放式问答。\n中间靠一道\n置信度闸门\n衔接，这是整套架构里最关键的软件设计：\nconst\n{ answers } = await client.\nsystemOne\n({\nstate\n: { message },\nquestions\n: {\nintent\n:\nchoice\n(\n\"What does the author want?\"\n, {\norder_status\n:\n\"Where is my order, has it shipped\"\n,\nproduct_question\n:\n\"How a product works, specs\"\n,\ncomplaint\n:\n\"Unhappy, wants a resolution\"\n,\n}),\nneeds_reasoning\n:\nscore\n(\n\"How much thought does a good answer need?\"\n, [\n\"A lookup or a one-line fact\"\n,\n\"A short explanation using product knowledge\"\n,\n\"A judgment call with trade-offs\"\n,\n]),\n},\n})\nif\n(answers.intent.confidence <\n0.5\n)\nreturn\nrouteToHuman\n(message)\nswitch\n(answers.intent.choice) {\ncase\n\"order_status\"\n:\nreturn\nlookupOrder\n(message)\n// 不碰 LLM\ncase\n\"product_question\"\n:\nreturn\nanswerWithLLM\n(message, PRODUCT_CONTEXT)\n// 带上下文给 LLM\ncase\n\"complaint\"\n:\nreturn\nanswers.needs_reasoning.score >\n1\n?\nrouteToHuman\n(message)\n:\nanswerWithLLM\n(message, COMPLAINT_CONTEXT)\n}\n一个订单查询从头到尾不过 LLM；两个意图带着不同的上下文交给 LLM；投诉再用第二个分值决定是转人工还是继续。贵的资源只在需要的时候运行。\n落到选型上，可以记一个简单的判断清单：\n输出是\n一个固定选项集里的一个值\n，而且调用频率高、时延敏感 → System 1。\n输出是\n一段人类要读的文本\n，或者需要多步推理、需要解释过程 → System 2。\n两个都不确定的时候，先用 System 1 判断置信度，置信度不够再升级到 System 2。这套模式同样适用于用 JEV 去给 LLM 的输出做护栏和越狱检测。\n08\n想自己造一个的话\nJEV 目前是闭源的商业 API（Python/TS SDK、Cloudflare Workers AI 上都有），官方没有公开其具体模型结构、训练数据和损失函数，因此我们不去猜它内部到底用了什么。但它验证的这条路线完全可以自己复现。有意思的是，这件事在两年前做不出来——\nEncoder 这两年又变得好用了\n。\nModernBERT 这类新一代 Encoder 把 FlashAttention-2 带了进来，把上下文从 512 推到 8k，同时用更好的预训练数据配方和去掉绝对位置偏置的做法，把老 BERT 那一身历史包袱卸掉了，同时，已有公开的 OpenJev 类复现项目采用 ModernBERT，并探索了候选项评分、Brier Loss、Temperature Scaling 等方案。\n换句话说，当年让 Decoder-Only 一统天下的那批工程优化，现在也轮到 Encoder 了。\n一个最小可用的私有决策器，核心就三段：\nimport\ntorch\nimport\ntorch.nn\nas\nnn\nfrom\ntransformers\nimport\nAutoModel\nclass\nPrivateDecisionModel\n(nn.Module):\n\"\"\"ModernBERT + 多选项决策头 + 标量评分头\"\"\"\ndef\n__init__\n(\nself,\nmodel_name=\n\"answerdotai/ModernBERT-base\"\n,\nnum_choices=\n4\n,\n):\nsuper\n().__init__()\n# 加载预训练 Encoder\nself\n.encoder = AutoModel.from_pretrained(model_name)\nh =\nself\n.encoder.config.hidden_size\n# 多选项决策：输出每个候选项的 logits\nself\n.choice_head = nn.Sequential(\nnn.Dropout(\n0.1\n),\nnn.Linear(h, h //\n2\n),\nnn.GELU(),\nnn.Linear(h //\n2\n, num_choices),\n)\n# 整体评分：输出 0~1\nself\n.score_head = nn.Sequential(\nnn.Dropout(\n0.1\n),\nnn.Linear(h,\n1\n),\nnn.Sigmoid(),\n)\ndef\nforward\n(\nself, input_ids, attention_mask\n):\n# [batch, seq_len, hidden]\nout =\nself\n.encoder(\ninput_ids=input_ids,\nattention_mask=attention_mask,\n)\n# 暂时使用第一个 token 作为文本表示\ncls = out.last_hidden_state[:,\n0\n, :]\n# 注意：训练时使用 logits，推理时再 softmax\nchoice_logits =\nself\n.choice_head(cls)\nchoice_probs = torch.softmax(choice_logits, dim=-\n1\n)\nscore =\nself\n.score_head(cls)\nreturn\n{\n\"choice_logits\"\n: choice_logits,\n\"choice_probs\"\n: choice_probs,\n\"score\"\n: score,\n}\n开始训练。第一版使用 Cross Entropy 即可；如果进一步追求概率校准，可以加入 Brier Loss，训练完成后再通过 Temperature Scaling 做后处理，并使用 ECE、Brier Score 等指标评估校准效果。\n这里是我们采用的 Jev-like 方案（应该可以期待下tJEV, 狗头），不代表 Jev 官方就是这样训练的。\n它当然不会像 JEV 那样\"零样本换个任务就能用\"——你得自己准备标注数据。但换来的是完全可控的私有部署和接近于零的边际成本。\n拿现成 API 换灵活性，还是自己微调换控制权，是这条路上你要做的第一个产品决策。\n所以这里真正要复现的不是 Jev 的内部实现，而是它的核心思路：\nContext + Candidates → Encoder → Decision Scores → Calibrated Probability → Decision。\n09\n结语：架构的合久必分\n从早期 Encoder 和 Decoder 的细致分工，到大模型时代 Decoder 一统天下，再到今天 JEV 带来的快慢思考分化，AI 系统的演进走了一个清晰的螺旋。\n大模型没有失败，它只是退回到了最适合它的慢思考高地。\n而那些毫秒级、概率可校准的判断工作，正在被交还给专精于这件事的小模型。Decoder 赢下了\"生成\"，Encoder 拿回了\"判断\"，中间由代码和置信度阈值把它们粘起来。\n对每天在写 if-else 的我们来说，这个变化其实很实在：\n那些过去怎么写都写不动的分支条件——\"这句话语气急不急\"\"这条日志是不是异常\"\"这个请求该走哪条业务线\"——从今天起，都可以是一行正常的业务代码了。\n而下一个被拆出来的职能会是什么，才是更值得押注的问题\n（大胆预测Encoder+Decoder结构再次统一天下，狗头）\n10\n最后的思考：校准不等于聪明\n校准只保证一件事：模型说的概率和它自己的真实正确率对得上。它保证的是诚实，不是能力。\n决策的标准是谁定的？\n问什么、有哪些选项\n——人定的。JEV 的 API 就是这么设计的，你给它 state 加一组预先定义好类型的 questions。\n在这个问题下选哪个\n——模型的。\n多少置信度才敢自动执行\n——人定的，写在你的业务代码里。\n那么问题就来了\n通常我们知道，生成式模型规模越大越\"聪明\"=\"推理能力\" + \"内置知识\"， 设想一个客服场景\n我们需要判断用户是否需要进人工。\n\"JEV 能不能替掉 LLM 做转人工判断\"这个问题，只能在你的业务数据上回答。\n也就是说jev 的使用至少要和LLM 的现有并行一段时间的并行来验证。\n我觉得jev有个天然的不利位置。判断\"这条要不要转人工\"，靠的是两样本事：推理（听懂弦外之音、看出前后矛盾、推断对方真正的诉求），和世界知识（知道\"Stripe 连不上\"是支付集成故障，知道\"我要投诉到消协\"意味着什么）。\n这两样在生成式模型里都跟规模强相关，而 JEV 为了把延迟压到百毫秒级，模型不可能大到哪去。等于说，它最想替代的那个决策，恰好是最吃判断力的那一个。\n参考\nTypeSafe AI 官方文档与 Jev 发布说明（2026-09-15）\nFlavio Copes,\nA deep dive into Jev, TypeSafe's System One model\n（2026-09-17）\nOflight,\nTypeSafe Jev: Typed AI Decisions at $0.042/MTok\n（2026-09-16）\nDaniel Kahneman，《思考，快与慢》（Thinking, Fast and Slow, 2011）\nVaswani et al.,\nAttention Is All You Need\n（2017）\nDevlin et al.,\nBERT\n（2018）；Warner et al.,\nSmarter, Better, Faster, Longer: ModernBERT\n（2024）\nKaelbling et al.,\nPartially Observable Markov Decision Processes\n（1998）\n-End-\n原创作者｜\n李卓凡\n感谢你读到这里，不如关注一下？👇\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

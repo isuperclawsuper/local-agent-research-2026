@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1253404183629897728",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "豆包视频通话升级，火山引擎多模态传输系统提供技术支撑",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247521377&idx=1&sn=3d2f9e30616aa074c8d574c568903ba8",
+      "date": "2026-08-20T10:00:00.726Z",
+      "chars": 2118,
+      "text": "视频与边缘\n2026-08-20 18:00\n北京\n走到一个陌生景点，举着手机让豆包带你逛，它看到路牌标识主动提醒方向，看到建筑开口介绍典故；旁边路人聊天、街边叫卖，豆包不会被带偏，依然只跟你对话。豆包视频通话功能升级后，AI 可以在连续变化的真实场景中实现更自然的连续交互，这为用户带来了三个最直观的感受：\n能边看边听边说\n。 用户不用等 AI 说完才能开口，AI 能同时接收和处理音频、视频、文本三路输入。指着航班牌问“这个怎么走”，它看懂你指的是行李转盘；多人聊天时，它结合口型和画面判断是谁在对话，不被旁边闲聊带偏。\nAI 会主动开口\n。 持续感知环境变化，看到关键标识会主动提醒，处理任务时主动调用工具查信息、整理结果。交互模式从“一问一答” 升级成了“双向协作”，用户不用每次都先开口。\n对话节奏自然\n。 不打断也不冷场，该说时说，该听时听。自然接话、合理停顿，精准分辨旁人闲聊和背景噪声。官方评测显示，对比传统级联方案，对话节奏违和问题减少了约 50%—— 用户几乎不会遇到“AI 说完话突然停住”或“我还没说完 AI 就抢答”的尴尬。\n这背后是一次双线升级：模型层接入\n原生音视频全双工大模型 SeedRealtime\n，在业界率先实现音视频全双工技术的规模化落地。而支撑这一切的底层传输架构，也已悄然完成\n从实时通信技术 （RTC）到火山引擎多模态传输系统（MMT）的代际跃迁\n。\nSeedRealtime 定义了“AI 能做什么”，而火山引擎 MMT 决定了“用户能不能真正感受到这些能力”。MMT 在三个核心环节完成了提升。\n一、秒接通，秒应答\n传统 RTC 架构下，音视频通道与信令通道分离，用户发起视频通话时需要经历多轮协商 —— 媒体通道建联、模型会话建立、状态同步各自为政，叠加下来往往需要数秒才能真正进入可用状态。用户看到的是“连接中…”的转圈等待，体验大打折扣。\nMMT 通过统一的多模态会话架构，将媒体传输与模型会话深度整合：\n客户端底层基于 QUIC 库\n，复用连接、多路复用，一次建联即可承载音视频、信令、模型状态等多路数据；\n传输层基于 MoQ 协议\n实现统一会话控制，媒体流与控制信令在同一会话中协同调度，省去了多通道分别建联的开销。\n最终，\n建联耗时从秒级压缩到数百毫秒\n，用户点开视频通话几乎“秒接通”，对话感的连贯性大幅提升。\n二、零丢字，从源头杜绝答非所问\n此前，音频传输通道和模型推理通道是异步建联的 —— 音频可能已经在传了，但模型会话还没建立好；或者模型已经就绪，但首帧音频还没同步到位。用户刚开口说 “帮我看看这道题”，模型只收到了“这道题”，回答自然跑偏。\nMMT 的核心突破，就是用\n统一的多模态会话控制\n从根本上解决了状态异步问题：\n音视频流与模型会话状态在同一传输链路中统一调度，不再是“两条各跑各的管道”；\n网关层引入 MediaKit 同源处理算法，实时判断首帧是否完整、音画是否对齐、模型是否就绪——\n只有所有模态状态同步后，才会触发模型推理\n，从源头上杜绝了“丢字”和“答非所问”；\n延迟抖动超过 1 秒就会导致模型接收信息变形的老问题，在 MMT 的精细会话控制下得到系统性改善。\n三、精准意图理解，智能推理应答\n人与人通话，传输层忠实搬运就够了。但 AI 交互不一样：用户指着屏幕上一行小字提问，如果传输层继续传低码率视频，模型可能根本看不清那行字，回答自然跑偏，更合理的方式是触发高清图、抽帧或局部增强。传统 RTC 不具备按需调整传输策略的能力。\nMMT 通过 C/S 架构设计，让传输从“哑管道”变成了“智能调度层”：\n服务侧网关承担关键决策角色\n。用户传来一句话，网关可以选择是否直接送往模型；用户打开摄像头，网关判断是否需要抽帧、是否需要高清图、是否要结合模型反馈改变处理策略；\n分层会话控制\n。哪一路音频优先、哪一帧视频更值得送给模型、哪些内容需要可靠传输、哪些可以为低延迟做取舍，都由 MoQ 信令上的分层逻辑单元精细控制；\n多模态同步保障\n。语音、画面、时序信息在传输层就完成对齐，模型拿到的是“打包好的、同步的”多模态输入，而不是自己再去拼拼凑凑。\n传输系统第一次“理解”了模型需要什么，而不是机械地搬运所有数据。MMT 不是被动地等 SeedRealtime 来 “取”数据，而是主动地根据模型的推理状态，把 “对的数据、以对的形态、在对的时机”递送到模型面前。\n四、模型决定智能上限，传输决定体验下限\nAI 实时交互的竞争，不只发生在模型层。\n当行业焦点都在讨论“谁的模型更聪明”时，火山引擎在做一件更长期的事：\n把传输基础设施从“哑管道”升级为“智能调度层”，让大模型的能力近乎无损耗地传递给每一个终端用户\n。\n豆包视频通话接入 SeedRealtime，是这套能力的一次完整展示。\n随着同传、外语陪练、博物馆讲解等场景加速落地，“边看边听边说”的实时多模态交互将成为越来越多产品的标配体验。而支撑这一切的底座，是一个经过亿级用户验证、能承载百倍复杂度的传输系统。\n模型让 AI 更聪明，火山引擎让 AI 更“真实”。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "peripheral": 0.41,
+        "direct_local": 0,
+        "transfer_agent": 0.07,
+        "irrelevant": 0.52
+      }
+    },
+    "relevance": {
+      "score": 1.36,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.28,
+        "2": 0.54,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.25,
+      "probabilities": {
+        "0": 0.29,
+        "1": 0.3,
+        "2": 0.3,
+        "3": 0.09,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.18,
+      "probabilities": {
+        "0": 0.88,
+        "1": 0.09,
+        "2": 0.01,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.35,
+      "probabilities": {
+        "0": 0,
+        "1": 0.05,
+        "2": 0.7,
+        "3": 0.1,
+        "4": 0.15,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.95,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.19,
+        "2": 0.25,
+        "3": 0.28,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.25,
+      "probabilities": {
+        "0": 0.79,
+        "1": 0.16,
+        "2": 0.04,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3902,
+    "outputTokens": 173,
+    "totalTokens": 4075
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.39,
+        "relevance": 0.57,
+        "grounding": 0.44,
+        "decision_action": 0.88,
+        "evidence": 0.7,
+        "actionability": 0.15,
+        "anti_hype": 0.83
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179912060,
+                "endTime": 1791179912211,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000163884",
+      "marketCost": "0.000163884",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000163884",
+      "inferenceCost": "0.000163884",
+      "inputInferenceCost": "0.000163884",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8WVBX3Z7BABJCFQDA3FN"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:32 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::kmnzg-1791179912036-b81558d66d10"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "peripheral": 0.41,
+            "direct_local": 0,
+            "transfer_agent": 0.07,
+            "irrelevant": 0.52
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.36,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.28,
+            "2": 0.54,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.25,
+          "probabilities": {
+            "0": 0.29,
+            "1": 0.3,
+            "2": 0.3,
+            "3": 0.09,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.18,
+          "probabilities": {
+            "0": 0.88,
+            "1": 0.09,
+            "2": 0.01,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.35,
+          "probabilities": {
+            "0": 0,
+            "1": 0.05,
+            "2": 0.7,
+            "3": 0.1,
+            "4": 0.15,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.95,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.19,
+            "2": 0.25,
+            "3": 0.28,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.25,
+          "probabilities": {
+            "0": 0.79,
+            "1": 0.16,
+            "2": 0.04,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3902,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.39,
+            "relevance": 0.57,
+            "grounding": 0.44,
+            "decision_action": 0.88,
+            "evidence": 0.7,
+            "actionability": 0.15,
+            "anti_hype": 0.83
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179912060,
+                    "endTime": 1791179912211,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000163884",
+          "marketCost": "0.000163884",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000163884",
+          "inferenceCost": "0.000163884",
+          "inputInferenceCost": "0.000163884",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8WVBX3Z7BABJCFQDA3FN"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:31.465Z"
+  }
+}

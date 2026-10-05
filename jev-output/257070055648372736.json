@@ -1,0 +1,34 @@
+{
+  "answers": {
+    "category": {
+      "choice": "transfer_agent"
+    },
+    "relevance": {
+      "score": 1.8813
+    },
+    "grounding": {
+      "score": 1.3113
+    },
+    "decision_action": {
+      "score": 0.8868
+    },
+    "evidence": {
+      "score": 2.15
+    },
+    "actionability": {
+      "score": 3.393
+    },
+    "anti_hype": {
+      "score": 2.535
+    },
+    "fulltext_usable": {
+      "value": true
+    }
+  },
+  "assessment_method": "full_text_chunked_length_weighted_mean",
+  "parts": 8,
+  "aggregation_note": "连续6500字符无遗漏分段；评分按段长加权均值，分类按多数段。局部证据可能被稀释，不能等同整体判断。",
+  "usage": {
+    "totalTokens": 48604
+  }
+}

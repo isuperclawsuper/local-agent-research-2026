@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "240029248891718656",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "打造Jarvis，OpenClaw很野，但Agent Studio简直变态",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798677&idx=1&sn=39706f3291fe46f93da13e5f84893fdf",
+      "date": "2026-01-30T09:08:00.189Z",
+      "chars": 7363,
+      "text": "原创\n腾讯程序员\n2026-01-30 17:08\n广东\n在这个 AI 时代，每个人都需要、并且有机会打造自己趁手的 Agent 工作台\n丨 导语\nOpenClaw（原名clawdbot）\n突然就火了，了解后发现多终端协同的人机协同方式的jarvis正是自己的日常工作方式！在此之前，为了方便自己用 AI ，我基于 claude agent sdk 手搓了一整套工具链，打造自己的 Jarvis，IM接入功能算是基操了。 本文带大家快速体验一下 Agent Studio 在企业微信快速接入过程。\n作者：\nkong\n前言：每个人都想要一个 Jarvis\n还记得《钢铁侠》里的 Jarvis 吗？一个随时在线、无所不能的 AI 助手——它能帮你处理工作、管理项目、分析数据、甚至还能和你闲聊几句。这不就是我们一直梦想的终极 AI 助手吗？\n在 AI Agent 领域，有不少项目都在朝着这个方向努力。比如\nOpenClaw（原名clawdbot）\n，它确实很\"野\"——把 AI Agent 和 WhatsApp、Telegram、Discord 等消息应用打通，让你能在手机上随时随地和 AI 对话。听起来很酷对吧？\n但今天我要给你介绍一个更加\"丧心病狂\"的方案：\nAgent Studio\n。\n实际上，在企业微信上招呼 AI 干活，已经是我的日常，在通勤路上，吃饭时间等几乎全天候在与 AI 协同，全拜Agent Studio支撑。\n场景对比：从手机访问你的 AI Agent\nOpenClaw（原名clawdbot） 的方案\nOpenClaw（原名clawdbot）的核心思路是：通过\n消息应用网关\n来访问 AI Agent。\n它支持多个平台：\n📱 WhatsApp (通过 Baileys 协议)\n✈️ Telegram (Bot API)\n🎮 Discord (Bot API)\n💬 iMessage (通过 imsg CLI)\n🧩 Mattermost (插件方式)\n还有 Slack、Signal、MS Teams、Line、Matrix 等\n作为一个成熟的开源项目（102k stars），\nOpenClaw（原名clawdbot）\n提供了强大的能力：\n✅\n功能完整\n：100+ CLI 命令、Cron 定时任务、多 Agent 路由、WebSocket Gateway\n✅\n架构成熟\n：完整的协议设计、沙盒执行、工具系统\n✅\n平台广泛\n：支持 9+ 个主流消息平台\n✅\n社区活跃\n：文档完善，问题能得到快速响应\n但它的定位是\n：为开发者提供一个强大、灵活的工具箱，适合技术团队搭建自己的 Agent 基础设施。\n这意味着：如果你有技术背景，愿意学习 CLI 配置，需要支持多个 IM 平台，\nOpenClaw（原名clawdbot）\n是非常好的选择。\nAgent Studio 的方案：企业微信一键接入\nAgent Studio 的核心定位是：打造一套完整的个人 Agent 工作台\n。在众多功能中，\nIM 接入\n是一个重要特性——目前已接入企业微信机器人，钉钉、飞书、discord、slack等更多 IM 渠道已在路上。\n下面以企业微信机器人（腾讯内部版）为例，展示 Agent Studio 的 IM 接入体验，\n说明 Agent 如何快速接入现有沟通工具并完成实际对话交互，帮助快速理解 Agent 从接入到使用的整体流程（这里更多是基于实践总结的接入思路示例，重点在于方法和路径的启发，具体实现可根据各自环境灵活调整）\nAgent Studio接入企微的完整流程（只需 5 分钟）\nStep 1: 安装 Agent Studio\nnpm install -g agentstudio\nagentstudio start\n访问\nhttp://localhost:4936/\n如果你是 claude code 的用户，你会 0 门槛继续，跳过下面模型供应商设置这一步。\n如果还不是 claude code 用户，需要你到：\nhttps://localhost:4936/settings/suppliers\n这里配置一个模型的供应商并把它设置为默认供应商，才可以继续\n。除 claude 模型外，还支持 GLM、Minimax, Kimi, Deepseek 等国产模型。\n在进入下一步之前，最好先在 web 页面上（首页或项目管理点击一个项目进去），发个消息 agent 工作正常了：\nStep 2: 启用隧道（让企微机器人可以调用你本地的 Agent）\n注：如果你部署在 devCloud 上，或者有固定的 IP，是不需要隧道的。\n访问\nhttp://localhost:4936/settings/tunnel\n，使用\nTunely (WebSocket)\n隧道，该服务部署在司内用于连接企微和本地 Agent，数据不出外网，不担心：\n点击\n\"Tunely (WebSocket)\"\n标签\n配置隧道名称和服务器地址\n点击\n\"连接\"\n按钮\n连接成功后会显示隧道地址（如\nhttps://kongjie.tunnel\n）\n想要部署自己的隧道服务的可以联系我要方法。\nStep 3: 进入项目管理，配置 IM 接入\n访问\nhttp://localhost:4936/projects\n进入\n\"项目管理\"\n选择要接入的项目，点击\n\"A2A Protocol 管理\"\n, 倒数第三个图标\n切换到\n\"IM 接入\"\n标签\n点击\n\"生成接入命令\"\n，系统会自动：\n✅ 创建安全的 API 密钥\n✅ 检测网络状态（隧道或本地网络）\n✅ 生成完整的企微机器人接入命令，形如\n/ap my-project\nhttp://kongjie.tunnel/a2a/xxxx-agent-id/messages\n--api-key your-key\n复制生成的命令\n如果没有配置隧道，这里的 kongjie.tunnel 会使用所在机器的 IP 要址，同样的也可以工作的。但如果下次地址换了，就得重新绑定了。\nStep 4: 加入群聊，开始使用\n1.把 agent studio 加入你的企微群里\n2.在群里的推送通知中找到\n\"agent studio\"\n机器人，私聊它！\n3.发送刚才复制的命令，将项目添加到企微中\n4.机器人会回复确认信息，项目添加成功\n5.现在你可以直接和机器人对话，使用你的本地 Agent 了！\n使用/use 项目名 开始和Agent 聊，/use 也可以用来切换不同的项目。\n从此\n：\n📱 在手机上随时向本地 Agent 发送任务\n💻 Agent 在你的电脑上执行，结果通过企微返回\n📊 支持文件、代码、数据分析等各种工作场景\n🔒 数据完全本地，不上传云端\n对于\"快速接入企微\"这个场景\n：\n配置体验\n：Agent Studio 图形化配置，5 分钟完成；\nOpenClaw（原名clawdbot）\n需要通过 CLI 配置\n企微集成深度\n：Agent Studio 专门优化了企微接入流程；\nOpenClaw（原名clawdbot）\n需要手动配置 Channel\n适合场景\n：Agent Studio 适合个人快速搭建；\nOpenClaw（原名clawdbot）\n适合团队自定义部署\n而且\n，对于腾讯内部或使用企业微信的团队，这个深度集成的体验是 Agent Studio 的一大亮点——你不需要切换到 WhatsApp 或 Telegram，就在日常工作的企微里，随时呼叫你的 AI 助手。\nAgent Studio：不止是 IM 接入\n如果你以为 Agent Studio 只是 IM 接入那就太小看它了。这是一个\n完整的本地 Agent 工作台\n。\n一行命令，立即启动\nnpm install -g agentstudio && agentstudio start\n访问\nhttp://localhost:4936\n，你会看到一个完整的 Web 工作台：\n🎨\n现代化界面\n：精心设计的专业 UI\n📁\n文件浏览器\n：对话的同时可以直接查看项目文件\n🔍\n可视化工具执行\n：AI 调用了什么工具、传了什么参数、返回了什么结果，一目了然\n📊\n项目管理\n：多项目支持，每个项目独立配置、独立记忆\n四大核心功能：让 Agent Studio 成为真正的 Jarvis\n1. 定时任务：让 AI 按计划自动工作\n这是 Agent Studio 最\"丧心病狂\"的功能之一——\n让 AI Agent 按计划自动执行任务\n。\n你可以配置：\n📊\n每天早上 9 点\n，自动生成项目进度日报\n🔍\n每 2 小时\n，检查代码仓库并提交审查意见\n📝\n每周五\n，自动整理本周会议纪要并归档\n📈\n每月 1 号\n，自动生成业务数据分析报告\n支持的调度规则\n：\nCron 表达式 (\n0 22 * * *\n)\n简单表达式 (\n每 30 分钟\n)\n一次性任务 (\n2026/1/8 02:00:00\n)\n执行历史和监控\n：\n查看每次执行的成功/失败状态\n查看执行日志和结果\n手动触发立即执行\n启用/暂停任务\n这不就是 Jarvis 该做的事吗？你只需要设定好规则，它就会在后台默默工作，完全不需要你操心。\n2. 自定义 Agent：打造专属的 AI 助手\nAgent Studio 基于\nClaude Agent SDK\n构建，这意味着你不仅可以使用平台内置的\nClaude Code\n作为默认 Agent，还可以根据实际需求场景，全新定义属于自己的专属 Agent。\n自定义能力包括\n：\n🎯\n定制系统提示词\n：为不同场景编写专门的 Agent 人格和能力描述\n🔧\n配置专属工具\n：为 Agent 添加特定领域的工具和 MCP 服务\n🎨\n定制 UI 组件\n：为特定任务设计专属的交互界面\n📦\n预设配置模板\n：快速创建常见类型的 Agent（如代码审查、文档写作、数据分析等）\n基于 Claude Agent SDK 的优势\n：\n✅\n开箱即用\n：继承 Claude Code 的所有能力\n✅\n标准化接口\n：使用 Anthropic 官方 SDK，升级无忧\n✅\n流式响应\n：原生支持流式输出，体验流畅\n✅\n工具调用\n：完整的 Tool Use 支持，扩展性强\n这就是 Agent Studio 的核心理念：\n不是给你一个固定的 AI 助手，而是给你一个可以打造任意 AI 助手的平台\n。\n3. A2A 协议：多 Agent 协作网络\nAgent Studio 支持\nAgent-to-Agent (A2A) 协议\n，这不仅是一个通信协议，更是 Agent Studio 的核心价值之一。\n核心价值：统一的协同调度层\nA2A 协议提供了一个\n统一的网关层\n，让不同来源、不同位置的 Agent 可以互相协作：\n🔗\n对内\n：平台内不同项目的 Agent 可以互相调用\n🌐\n对外\n：可以接入外部 Agent 服务（如远程开发机、云端服务）\n📱\n对 IM\n：作为 IM 渠道接入的统一网关（企业微信、钉钉等）\n这个统一的协同层带来了强大的灵活性：\n场景 1：秘书 Agent 模式\n设置一个统一的秘书 Agent 接收所有任务\n秘书根据任务类型，自动调度到对应的专属 Agent\n你只需要和一个入口对话，背后是多个专业 Agent 协同工作\n场景 2：分布式 Agent 网络\n本地 Mac 上的 Agent ↔ 远程 Linux 开发机上的 Agent\n开发环境 Agent ↔ 生产环境 Agent\n形成跨设备、跨环境的 Agent 协作网络\n场景 3：IM 统一接入\n企业微信、钉钉等 IM 工具通过 A2A 网关访问本地 Agent\n你在手机上发消息 → A2A 路由到本地 Agent → 执行任务 → 结果返回手机\n数据完全本地，不上传云端\n4. MCP Admin：Agent Studio 的元操作能力\n这是最\"黑科技\"的功能——\n让 AI Agent 管理 Agent Studio 本身。\nAgent Studio 提供了一个特殊的 MCP 服务：\nagentstudio-admin\n，包含 22 个管理工具：\nlist_projects\nget_project\nregister_project\n/\nupdate_project\nlist_agents\nget_agent\ncreate_agent\n/\nupdate_agent\nlist_mcp_servers\nget_mcp_server\nadd_mcp_server\nlist_scheduled_tasks\n/\ncreate_scheduled_task\n... 等等\n当你把这个 MCP 工具挂载到 Jarvis Agent 上时，会发生什么？\n你的 AI Agent 可以自己管理 Agent Studio！\n举几个例子：\n场景 1：动态创建项目\n你：\"Jarvis，帮我创建一个新项目叫 my-blog，路径是 ~/projects/my-blog\" Jarvis：调用\nregister_project\n工具，自动创建项目并配置 Agent\n场景 2：自动配置定时任务\n你：\"Jarvis，每天晚上 10 点帮我总结今天的 Git 提交记录\" Jarvis：调用\ncreate_scheduled_task\n工具，自动创建定时任务\n场景 3：智能 Agent 管理\n你：\"Jarvis，创建一个专门处理 Python 代码的 Agent\" Jarvis：调用\ncreate_agent\n工具，配置合适的系统提示词和工具\n这意味着\n：\n🤖\nAgent 可以自我管理\n：根据需要动态创建项目、Agent、任务\n🧠\n智能化配置\n：不需要你手动点界面，AI 自己完成配置\n🚀\n工作流自动化\n：一句话描述需求，AI 自动完成所有配置\n这就是真正的元操作能力\n——不仅是 AI 帮你做事，而是 AI 帮你管理 AI 工作台本身。\nAgent Studio vs OpenClaw（原名clawdbot）：客观对\n比\n先说在前面：\nOpenClaw（原名clawdbot）\n是一个成熟、强大的项目\n（GitHub 102k stars），它提供了完整的工具箱，支持 9+ 个消息平台（WhatsApp、Telegram、Discord、Slack、Signal、MS Teams、iMessage 等），拥有强大的 CLI 系统（100+ 命令）和成熟的 WebSocket Gateway 架构。\nAgent Studio 不是\nOpenClaw\n（原名clawdbot）\n的替代品，而是差异化的选择\n——它更聚焦于本地工作台和个人 Jarvis 场景。\n维度\nAgent Studio\nOpenClaw\n核心定位\n本地 Agent 工作台\n全能消息平台网关\n技术基础\nClaude Agent SDK\n自建 Agent 运行时\n安装配置\n一行命令，图形化配置\nCLI 配置，灵活但需学习\n界面\nWeb UI 为主\nCLI 为主，可选 Web UI\n目标用户\n个人、小团队\n开发者、技术团队\nIM 平台\n企业微信（已接入），更多渠道开发中\n9+ 平台（WhatsApp、Telegram、Discord 等）\n定时任务\n图形化配置，可视化管理\nCron + CLI 配置\n自定义 Agent\n✅ 图形化创建，基于 SDK\n⚠️ 配置文件 + 模板\nA2A 协议\n✅ 统一网关 + IM 接入\n⚠️ 多 Agent 路由\nMCP Admin\n✅ 元操作能力\n❌\n数据隐私\n✅ 完全本地\n✅ 完全本地\n选择建议\n：\n选\nOpenClaw（原名clawdbot）\n：需要支持多个 IM 平台、团队协作、成熟度优先、愿意学习 CLI\n选 Agent Studio\n：快速搭建个人 Jarvis、图形化配置、基于 Claude SDK 的扩展性、企业微信深度集成（更多 IM 渠道开发中）\n立即开始\n安装\nnpm install -g agentstudioagentstudio start\n访问\n打开浏览器，访问：\nhttp://localhost:4936\n安装为系统服务\n使用 install 命令安装为系统服务，无需手动维护终端窗口，让 Agent 随系统启动。\nagentstudio install\n摊牌了：这是我的 Jarvis\n说实话，\nAgent Studio 就是我在打造自己的 Jarvis 时顺便产品化的小玩具\n。\n作为一个工程师，我深刻体会到：在这个 AI 时代，每个人都需要、并且有机会打造自己趁手的 Agent 工作台。而在 AI Coding 的加持下，这个成本已经低到令人难以置信。\n我的建议是：\n拿起 AI，和 AI 一起合作，尝试打磨更适合自己的 Agent 工作台\n。\n不要等待完美的产品出现，因为只有你最了解自己的需求：\n也许你需要一个专门处理财务报表的 Agent\n也许你需要一个能自动整理会议纪要的助手\n也许你需要一个能帮你写代码、审代码、部署代码的工程师\n好消息是\n：Agent Studio 所有代码开源（GPL v3） :\nhttps://github.com/okguitar/agentstudio\n如果你有兴趣自己部署企微服务、其他 IM 的渠道和自己的隧道服务，可以进一步了解技术细节。\nhttps://github.com/jeffkit/as-dispatch/tree/feature/im-integration\n你可以基于它改造出更适合自己的版本，也可以从零开始，用 AI 帮你写代码，快速搭建起自己的 Jarvis。\n这不是科幻，这是现实。而且比你想象的要简单得多。\nAgent studio 本是个人自搓自用的工具，难免有不完美，有问题/bug可以欢迎评论区讨论，也欢迎一起完善它。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0.13,
+        "transfer_agent": 0.59,
+        "irrelevant": 0.28,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.56,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.32,
+        "2": 0.62,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.5,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.34,
+        "2": 0.46,
+        "3": 0.08,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.81,
+      "probabilities": {
+        "0": 0.64,
+        "1": 0.13,
+        "2": 0.03,
+        "3": 0.17,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0,
+        "1": 0.09,
+        "2": 0.9,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.72,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.9,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.53,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.21,
+        "2": 0.56,
+        "3": 0.07,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7251,
+    "outputTokens": 172,
+    "totalTokens": 7423
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.48,
+        "relevance": 0.7,
+        "grounding": 0.55,
+        "decision_action": 0.46,
+        "evidence": 0.93,
+        "actionability": 0.81,
+        "anti_hype": 0.59
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179984890,
+                "endTime": 1791179985076,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000304542",
+      "marketCost": "0.000304542",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000304542",
+      "inferenceCost": "0.000304542",
+      "inputInferenceCost": "0.000304542",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB3ZBYNZJ2DD0GE2ESC1R"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:45 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::q7x7x-1791179984779-ac34cbbd01f8"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0.13,
+            "transfer_agent": 0.59,
+            "irrelevant": 0.28,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.56,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.32,
+            "2": 0.62,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.5,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.34,
+            "2": 0.46,
+            "3": 0.08,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.81,
+          "probabilities": {
+            "0": 0.64,
+            "1": 0.13,
+            "2": 0.03,
+            "3": 0.17,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0,
+            "1": 0.09,
+            "2": 0.9,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.72,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.9,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.53,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.21,
+            "2": 0.56,
+            "3": 0.07,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7251,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.48,
+            "relevance": 0.7,
+            "grounding": 0.55,
+            "decision_action": 0.46,
+            "evidence": 0.93,
+            "actionability": 0.81,
+            "anti_hype": 0.59
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179984890,
+                    "endTime": 1791179985076,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000304542",
+          "marketCost": "0.000304542",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000304542",
+          "inferenceCost": "0.000304542",
+          "inputInferenceCost": "0.000304542",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB3ZBYNZJ2DD0GE2ESC1R"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:44.311Z"
+  }
+}

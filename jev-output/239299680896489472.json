@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "239299680896489472",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "Agentic Coding场景下基于职责分离的上下文管理思路分享",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650542665&idx=1&sn=12eac8f20e2b910af221672e2f02b01c",
+      "date": "2026-01-28T08:38:00.465Z",
+      "chars": 13789,
+      "text": "原创\n物流解决方案&amp;电\n2026-01-28 16:38\n浙江\n本文提出了一种在 Agentic Coding场景下基于“职责分离”思想的上下文管理新思路。\n本文\n提出了一种在\nAgentic Coding 场景下基于“职责分离”思想的上下文管理新思路\n：将工具调用解耦为\n“行为”（如\nopen_file\n）和“影响”（如 IDE 中实时更新的文件内容）\n，通过结构化、模块化（如\n<ide>\n块）、动态组装的上下文设计，替代传统将大量原始数据（如完整文件内容）直接塞入上下文的做法；同时引入“行为-影响分离”“记忆/遗忘机制”“事实与行为记忆区分”“延迟卸载”等策略，系统性缓解长上下文导致的注意力稀释、信息过载、内容过期与性能退化等问题，提升 Agent 在复杂编码任务中的稳定性、可维护性与上下文利用效率。该思路虽源于 coding 场景，但具备跨任务复用潜力。\n引\n⾔\n本\n⽂主要\n是\nS1\n尝试\n进\n⾏模\n型\n为主的⾃动化编码\n过\n程中\n，\n遇\n到了⻓任务\n下上下\n⽂的\n爆\n炸\n以及短\n任务中\n注\n意⼒的分散问题\n，\n尝试了模\n型\n压缩\n、\nFIFO\n、\n多\nagent\n上下\n⽂隔离等各种策略后\n，\n在\n摸索\n过\n程中\n逐渐演\n变出的的\n⼀个\n设计思路\n，\n核\n⼼思想\n是\n⼯具的职责分离\n。\n下\n⽂会基于语⾔模\n型\n的原理\n、\n特点\n以及\n在\n实践\n过\n程中\n遇\n到的问题\n，\n从⼯程中职责分离的⻆度出发\n，\n尝试\n⼀\n种新的\n上下\n⽂管理的思路\n，\n通过\n将⼯具分为\n⾏\n为\n和\n影\n响\n，\n通过\n结\n构\n化\n上下\n⽂的动态管理\n来\n尝试解决\n上下\n⽂中的各类问题\n，\n虽然是在\ncoding\n场\n景\n下\n的尝试\n，\n但思路也许也可\n以被复⽤到其他类\n型\n的\n场景\n中。\n什\n么\n是\n上下\n⽂\n⼤\n型\n语\n⾔\n模\n型\n（\nLLM\n）\n本\n质\n上\n是\n⼀\n个\n基\n于\n已\n有\ntoken\n序\n列\n预\n测\n下\n⼀\n个\ntoken\n的\n概\n率\n系\n统\n。\n当\n接\n收\n到\n⼀\n段\n⽂\n本\n时\n，\n模\n型\n将\n其\n转\n换\n为\ntoken\n序\n列\n，\n通\n过\n神\n经\n⽹\n络\n计\n算\n后\n输\n出\n下\n⼀\n个\ntoken\n的\n概\n率\n分\n布\n，\n并\n将\n该\ntoken\n追\n加\n到\n序\n列\n末\n尾\n，\n循\n环\n往\n复\n，\n直\n⾄\n⽣\n成\n结\n束\n符\n。\n在\n⼀\n次请求中\n，\n“\n我们\n”\n输\n⼊给模\n型\n的完整内容即为\n上下\n⽂\n（\nContext\n）\n。\n简单\n来\n说\n，上下\n⽂就\n是\n模\n型\n“\n看到\n”\n的\n、\n⽤于理解当前语义或预\n测\n下⼀个\n词的所\n有\n前置信息\n。\n在\n⼀\n个\n典\n型\n的\nAgent\n应\n⽤\n中\n，\n上\n下\n⽂\n通\n常\n包\n含\n以\n下\n四\n类\n内\n容\n：\n⽤\n户\n输\n⼊\n（\nUser\nInput\n）\n⼯\n具\n调\n⽤\n与\n返\n回\n（\nTool\nCalls\n&\nResponses\n）\n历\n史\n对\n话\n（\nConversation\nHistory\n）\n⼯\n具\n定\n义\n（\n包\n括\nMCP\n等\n元\n信\n息\n）\n对\n⽤\n户\n⽽\n⾔\n，\n可\n控\n部\n分\n仅\n限\n于\n“\n⽤\n户\n输\n⼊\n”\n；\n⽽\n对\nAgent\n开\n发\n者\n来\n说\n，\n其\n余\n三\n部\n分\n才\n是\n可\n设计\n、\n可\n优\n化\n的\n核\n⼼\n——\n这\n正\n是\n上\n下\n⽂\n⼯\n程\n（\nContext\nEngineering\n）\n的\n核\n⼼\n任\n务\n：\n在\n正\n确\n的\n时\n间\n，\n以\n正\n确\n的\n结\n构\n，\n向\n模\n型\n传\n递\n正\n确\n的\n信\n息\n，\n使\n其\n做\n出\n最\n恰\n当\n的\n响\n应\n或\n决\n策\n。\ntoken\n的\n多\n次\n⽣\n成\n循\n环\n是\n发\n⽣\n在\n模\n型\n内\n部\n的\n，\n在\n这\n次\n请\n求\n中\n“\n我\n们\n”\n输\n⼊\n的\n完\n整\n内\n容\n就\n是\n上\n下文。简\n单\n来\n说\n，\n上\n下\n⽂\n就\n是\n模\n型\n“\n看\n到\n”\n的\n、\n⽤\n于\n帮\n助\n它\n预\n测\n下\n⼀\n个\n词\n或\n理\n解\n当\n前\n语\n义\n的\n前\n⾯\n的\n⼀\n段\n⽂\n字\n。\n在\n⼀\n个\n典\n型\n的\nagent\n应\n⽤\n中\n，\n上\n下\n⽂\n由\n下\n⾯\n的\n部\n分\n组\n成：\n⽤\n户\n输\n⼊\n⼯\n具\n调\n⽤\n历\n史\n对\n话\n⼯\n具\n的\n定\n义\n（\n包\n括\nmcp\n）\n对⽤户\n来\n说能够掌握的\n部\n分只\n有\n“\n⽤户\n输\n⼊\n”\n，\n对于\nagent\n的开发者\n来\n说则\n是\n除了\n“\n⽤户\n输\n⼊\n”\n以外的所\n有\n内容\n，上下\n⽂⼯程指的就\n是\nagent\n开发者\n在软\n件开发\n过\n程中对\n上下\n⽂中包含的内容的\n组装。\n上\n下\n⽂\n⼯\n程\n关\n注\n的\n是\n：\n如\n何\n把\n正\n确\n的\n信\n息\n，\n在\n正\n确\n的\n时\n间\n，\n以\n正\n确\n的\n结\n构\n，\n传\n递\n给\n模\n型\n，\n使其\n能\n做\n出\n最\n恰\n当\n的\n响\n应\n或\n决\n策\n。\n▐\n上\n下\n⽂\n⼯\n程\n的\n核\n⼼\n⼯\n作\n活\n动\n说\n明\n上\n下\n⽂\n设\n计\n（\nContext\nDesign\n）\n规\n划\n上\n下\n⽂\n应\n包\n含\n哪\n些\n元\n素\n（\n如\n系\n统\n提\n示\n、\n对话\n历史\n⼯\n具\n输\n出\n记\n忆\n⽚\n段\n等\n）\n。\n上\n下\n⽂\n组\n装\n（\nContext\nAssembly\n）\n在\n运\n⾏\n时\n动\n态\n拼\n接\n过\n滤\n排\n序\n相\n关\n信\n息\n，\n形\n成最\n终\n输\n⼊。\n上\n下\n⽂\n压\n缩\n（\nContext\nCompression\n）\n在\n有\n限\ntoken\n窗\n⼝\n内\n，\n通\n过\n摘\n要\n、\n选\n择\n性\n保\n留\n、\n向\n量\n检\n索\n等\n⽅\n式\n精\n简\n冗\n余\n信\n息。\n上\n下\n⽂\n缓\n存\n与\n管\n理\n（\nContext\nManagement\n）\n维\n护\n短\n期\n对\n话\n状\n态\n和\n⻓\n期\n记\n忆\n，\n⽀\n持跨\n轮\n次\n⼀\n致性。\n上\n下\n⽂\n评\n估\n与\n优\n化\n（\nContext\nOptimization\n）\n通过\nA/B\n测\n试\n、\n⼈\n⼯\n评\n估\n或\n⾃\n动\n指\n标\n，\n迭\n代\n改\n进\n上\n下\n⽂\n结\n构\n。\n上下⽂的影响\n：\n为\n何\n“\n⻓\n了\n反\n⽽\n变\n笨\n”\n？\n模\n型本\n质\n上\n是\n⼀个\n么得感情的计算\n机器\n，\n⽤户\n输\n⼊\n是\n模\n型\n被动感知环境的⽅式\n，\n⽽⼯具则\n是\n模\n型\n主动感知和影响环境的⼿段\n。基于语⾔模\n型\n的原理\n，\n我们知\n道\n模\n型\n的\n输\n出取决于\n输\n⼊和模\n型\n的\n固有\n参数\n，\n对应⽤层开发\n来\n说模\n型\n的\n固有\n参数⽆\n法\n调整\n，\n能控制的只\n有输\n⼊内容\n。\n同\n时\n我们知\n道\n模\n型\n的参数维度\n是固\n定\n的\n，\n因\n此模\n型\n能感知到的\n特\n征\n是有\n限的\n，\n当⽤户的\n输\n⼊\n过\n多\n时\n能\n明显\n感觉到模\n型\n似乎\n在\n“\n变笨\n”。\n这\n种现象\n通\n常被称为\n“\n上下\n⽂⻓度增加导致性能\n下\n降\n”\n或\n“\n⻓\n上下\n⽂\n退\n化\n”\n（\nlong-context degradation\n），\n是\n当前⼤语⾔模\n型\n（\nLLM\n）\n在\n处理超⻓\n输\n⼊\n时\n常⻅的\n⼀\n种局限性\n。\n具体表现\n为\n：\n注\n意\n⼒\n稀\n释\n随\n着\n输\n⼊\n⽂\n本\n变\n⻓\n，\n模\n型\n的\n注\n意\n⼒\n机\n制\n需\n要\n在\n更\n多\ntoken\n之\n间\n分\n配\n注\n意\n⼒\n权\n重\n。\n关\n键\n信\n息\n可\n能\n被\n⼤\n量\n⽆\n关\n或\n冗\n余\n内\n容\n“\n稀\n释\n”\n，\n导\n致\n模\n型\n难\n以\n聚\n焦\n于\n真\n正\n重\n要\n的\n部\n分\n，\n从\n⽽\n影\n响\n推\n理\n、\n问\n答\n或\n摘\n要\n等\n任\n务\n的\n准\n确\n性\n。\n位\n置\n编\n码\n失\n效\n或\n失\n真\n⼤\n多\n数\n模\n型\n使\n⽤\n位\n置\n编\n码\n（\n如\nRoPE\n、\nALiBi\n或\n绝\n对\n位\n置\n嵌\n⼊\n）\n来\n感\n知\ntoken\n的\n顺\n序\n。\n当\n输\n⼊\n远\n超\n训\n练\n时\n的\n最\n⼤\n上\n下\n⽂\n⻓\n度\n（\n例\n如\n训\n练\n时\n最\n⼤\n为\n4K\n，\n但\n推\n理\n时\n输\n⼊\n32K\ntokens\n），\n位\n置\n编\n码\n可\n能\n⽆\n法\n准\n确\n表\n示\n远\n距\n离\ntoken\n的\n相\n对\n关\n系\n，\n造\n成\n时\n序\n混\n乱\n，\n进\n⽽\n影\n响\n理\n解\n。\n信\n息\n过\n载\n与\n噪\n声\n⼲\n扰\n输\n⼊\n内\n容\n越\n多\n，\n越\n可\n能\n包\n含\n重\n复\n、\n⽭\n盾\n或\n⽆\n关\n的\n信\n息\n。\n模\n型\n缺\n乏\n有\n效\n的\n信\n息\n筛\n选\n机\n制\n，\n容\n易\n被\n噪\n声\n⼲\n扰\n，\n甚\n⾄\n“\n迷\n失\n”\n在\n冗\n⻓\n⽂\n本\n中\n，\n导\n致\n输\n出\n变\n得\n模\n糊\n、\n不\n相\n关\n或\n逻\n辑\n混\n乱\n——\n看\n起\n来像\n是\n“\n变\n笨\n了\n”\n。\n训\n练\n-\n推\n理\n不\n匹\n配\n模\n型\n在\n训\n练\n阶\n段\n很\n少\n⻅\n到\n极\n⻓\n的\n上\n下\n⽂\n样\n本\n，\n因\n此\n对\n⻓\n⽂\n本\n的\n泛\n化\n能\n⼒\n有\n限\n。\n即\n使\n通\n过\n外\n推\n技\n术\n（\n如\nYaRN\n、\nNTK-aware scaling\n）\n扩\n展\n上\n下\n⽂\n窗\n⼝\n，\n其\n在\n⻓\n上\n下\n⽂\n下\n的\n表\n现\n仍\n可\n能\n显著\n弱\n于\n短\n上\n下\n⽂\n。\n计\n算\n资\n源\n限\n制\n带\n来\n的\n近\n似\n处\n理\n为\n应\n对\n⻓\n上\n下\n⽂\n带\n来\n的\n计\n算\n开\n销\n（\n如\n注\n意\n⼒\n复\n杂\n度\n为\nO(n²)\n），\n⼀\n些\n系\n统\n会\n采\n⽤\n滑\n动\n窗\n⼝\n、\n稀疏\n注\n意\n⼒\n或\n缓\n存\n截\n断\n等\n策\n略\n，\n这\n些\n近\n似\n⽅\n法\n可\n能\n⽆\n意\n中\n丢\n弃\n关\n键\n信\n息\n，\n进\n⼀\n步\n降\n低\n模\n型\n表。\n⼯具的\n上下\n⽂\nLLM\n本\n质\n是\ntoken\n预\n测\n器\n，\n仅\n能\n输\n出\n⽂\n本\n。\n要\n使\n其\n成\n为\n⽣\n产\n⼒\n⼯\n具\n，\n需\n通\n过\n⼯\n具\n调\n⽤\n机\n制扩\n展\n其\n能\n⼒\n：\n模\n型\n输\n出\n结\n构\n化\n指\n令\n→\n程\n序\n解\n析\n并\n执\n⾏\nAPI\n→\n将\n结\n果\n作\n为\n新\n上\n下\n⽂\n返\n回。\n若\n将\nLLM\n⽐\n作\n⼤\n脑\n，\n⼯\n具\n就\n是\n眼\n睛\n、\n⼿\n、\n脚\n；\n若\n⽐\n作\n⼈\n类\n，\n⼯\n具\n就\n是\n电\n脑\n、\n书\n本\n。所\n有\n输\n⼊\n——\n⽤\n户\n指\n令\n、\n⼯\n具\n定\n义\n、\n调\n⽤\n记\n录\n、\n系\n统\n提\n示\n——\n本\n质\n上\n都\n是\n上\n下\n⽂\n的\n⼀\n部\n分\n。\n在\n单\n轮\nAgent\n场\n景\n中\n，\n上\n下\n⽂\n膨\n胀\n主\n要\n来\n⾃\n：\n⼯\n具\n调\n⽤\n返\n回\n⼤\n量\n数\n据\n（\n如\n读\n取\n整\n个\n⽂\n件\n）\n⽤\n户\n上\n传\n⻓\n⽂\n档\n开\n发\n者\n虽\n⽆\n法\n控\n制\n⽤\n户\n输\n⼊\n，\n但\n可\n优\n化\n⼯\n具\n的\n上\n下\n⽂\n表\n达\n⽅\n式\n。\n⼯\n具\n上\n下\n⽂\n分\n为\n两\n类\n：\n静\n态\n定\n义\n：\n⼯\n具\n功\n能\n描\n述\n（\n编码时确\n定\n）\n动\n态\n交\n互\n：\n调\n⽤\n参\n数\n与\n返\n回\n结\n果\n（\n运\n⾏\n时\n⽣\n成\n）\n本\n⽂\n并\n不\n讨\n论\n⼯\n具\n定\n义\n的\n⽅\n式\n，\n⽽\n是直\n接\n讨\n论\n会\n导\n致\n上\n下\n⽂\n快\n速\n增\n⻓\n的\n动\n态\n交\n互\n部\n分\n。\n▐\n⼯\n具\n实\n现\n的\n思\n路\n和\n问\n题\n在\ncoding\n场\n景\n中\n，\n最\n经\n典\n的\n⼯\n具\n就\n是\nread_ﬁle\n和\nwrite_ﬁle\n，\n即\n⽂\n件\n读\n写\n⼯\n具\n。\n在\n提供\nr\nead_ﬁle\n⼯具\n时\n，\n最\n简单的⽅式就\n是\n直接读取并\n返回\n完整的⽂件内容\n，\n为⽅便起⻅我\n们叫\n这\n个\n⼯具\nr\nead_full_ﬁle\n。\n需要注意的是部分⽼项⽬或不规范项⽬中可能会存在编码不⼀致的问题，例如utf8和gbk混⽤的情况，如果未使⽤准确的编码读取⽂件内容可能导致注释、⾮英⽂常量⽆法被模型识别导致⽆法正确理解“业务含义”（代码逻辑之外的信息）。在java项⽬中推荐这两个库 juniversalchardet 和 cpdetector 来通过部分字节推测⽂件编码以避免此类问题。\n当然最佳实践是通过改造来完成项⽬编码的统⼀，最佳实践是统⼀使⽤utf-8编码。\nString\nreadFullFile\n(\nString\npath\n){\n//这里去读取文件内容，然后return出去\n}\n⚠注意：⼯具的返回值也是上下⽂或者说提示词的⼀部分\nread_full_ﬁle\n有\n⼀\n个\n显\n⽽\n易\n⻅\n的\n问\n题：\n“\n完\n整\n的\n⽂\n件\n可\n能\n很\n⼤\n”\n导\n致\n上\n下\n⽂\n快\n速\n膨\n胀。\n此\n外\n还\n有\n⼀\n些\n和\n模\n型\n的\n特\n点\n相\n关\n的\n问\n题：\n在\n找\n不\n到\n路\n径\n时\n需\n要\n明\n确\n告\n知\n模\n型\n\"xx\n路\n径\n不\n存\n在\n\"\n，\n⽽\n不\n能\n告\n知\n模\n型\n“”\n，\n否\n则\n模\n型\n可\n能\n会\n陷\n⼊\n⼯\n具\n调\n⽤\n的\n⽆\n限\n循\n环\n（\nqwen\n系\n列\n⽐\n较\n明\n显\n）。\n模\n型\n输\n⼊\n的\npath\n不\n⼀\n定\n准\n确\n，\n可\n能\n输\n⼊\n的\n是\n类\n的\n限\n定\n名\n、\n⽂\n件\n名\n；\n或\n是\n缺\n失\n部\n分\n路\n径\n、\n缺\n失\n⽂\n件\n后\n缀\n等。\n对于\npath\n不\n准确的问题\n，\n可以基于\n⼀个\n简单的思路\n来进\n⾏处理\n，\n即先搜索在读，\n通过\n关键\n词\n匹\n配\n对\npath\n进\n⾏搜索\n，\n如\n果\n能定位到\n唯\n⼀\n的⽂件则读取此⽂件\n，\n否则\n明\n确告知模\n型\n现\n在有\n多\n个\n相似的⽂件\n，\n需要模\n型\n重新再⽣成\n⼀\n次⼯具调⽤\n。\n在\nread\n⼯\n具\n和\nwrite\n⼯\n具\n混\n⽤\n的\n情\n况\n下\n，\nread_full_ﬁle\n还\n会\n出\n现\n⼀\n个\n新\n的\n问\n题：\n我们先不关注write⼯具的具体实现，只需要知道write后⽂件内容肯定发⽣了变化\n同\n⼀\n份\n⽂\n件\n内\n容\n在\n编\n辑\n后\n已\n经\n失\n效\n了\n，\n需\n要\n重\n新\n读\n取\n⽂\n件\n内\n容\n，\n⽽\n历\n史\n⼯\n具\n调\n⽤\n的respone\n和\n新\n的\nresponse\n存\n在\n⼤\n量\n重\n复\n，\n如\n果\n是\n多\n次\n编\n辑\n则\n会\n导\n致\n上\n下\n⽂\n快\n速\n膨\n胀。\n这\n是\n因\n为\n我\n们\n将\n⽂\n件\n内\n容\n放\n在\n⼯\n具\n调\n⽤\n的\n返\n回\n值\n中\n，\n发\n送\n给\n模\n型\n的\n消\n息\n类\n似\n于\n下\n⾯\n的\n格\n式：\ntool_call:read_full_file filePath\ntool_response:filePath.content //第一次读取\ntool_call:write_file filePath xxxx\ntool_response: 更新成功\ntool_call: read_full_file filePath\ntool_response:filePath.content //第二次读取\n为\n什\n么\n模\n型\n需\n要\n读\n取\n多\n次\n或\n者\n说\n为\n什\n么\n我\n们\n希\n望\n模\n型\n读\n取\n多\n次\n？\n在\n使\n⽤\nai\ncoding\n⼯\n具\n时\n，\n我\n们\n有\n时\n会\n看\n到\n模\n型\n输\n出\n“\n让\n我\n看\n看\n是\n否\n已\n经\n完\n成\n了\n所\n有\n变\n更\n”\n，\n因\n为\n模\n型\n在\n进\n⾏\nwrite\n时\n能\n够\n感\n知\n到\n的\n只\n是\n进\n⾏\n了\n这\n个\n⾏\n为\n，\n⽽\n并\n没\n有\n看\n到\n这\n个\n⾏\n为\n的\n“\n影\n响\n”\n。\n在coding场景中，“影响”指的是修改后代码的内容。\n为\n了\n解\n决\nread_full_ﬁle\n⼯\n具\n的\n⻓\n上\n下\n⽂\n问\n题\n，\n可\n以\n引\n⼊\n按\n块\n读\n取\n⼯\n具\nread_block_ﬁle\n，\n即\n模\n型\n在\n调\n⽤\n⼯\n具\n时\n可\n以\n选\n择\n读\n取\n的\n⾏\n的\n数\n量\n，\n在\n理\n想\n情\n况\n下\n，\n模\n型\n可\n以\n只\n读\n取\n部\n分\n内\n容：\nString\nreadBlockFile\n(\nString\npath,int startLine,int lineCount\n){\n//这里去读取文件内容，然后return出去\n}\n但\n这\n个\n⼯\n具\n同\n样\n也\n存\n在\n其\n他\n问\n题\n模\n型\n并\n不\n知\n道\n需要的内容\n在哪\n，\n可能\n还是\n会多次调⽤\n块\n读取⼯具\n最\n后把整\n个\n⽂件\n都\n读取\n，\n这\n反⽽导致了和模\n型\n的\n更\n多次交互\n（\n增加了成\n本\n）。\n模\n型\n读\n取\n块\n的\n时\n候\n可\n能\n忽\n略\n了\n后\n续\n代\n码\n的\n影\n响\n，\n导\n致\n思\n路\n错\n误。\n输⼊的token也是会计费的，⽤块⼯具读取完整的⽂件内容⽐直接读取完整的⽂件内容会增加多次重复上下⽂的调⽤，导致成本的上升。\n在最坏\n情况\n下（\n需要的\n逻辑在\n⽂件\n末\n尾\n）\n⽐\nr\nead_full_ﬁle\n花\n费\n更\n多的成\n本\n，且上下\n⽂\n更\n多\n（\n因\n为\n还有\n⼯具调⽤\n），\n并\n且\n和\nwrite\n⼯具联合使⽤\n时\n的问题仍\n然\n存\n在\n。\n为了解决\nwrite\n⼯具联合使⽤\n时\n的问题\n，\n我试\n图\n引⼊\n“\n按需卸\n载\n”\n的策略\n，\n即\n在\n发现\nwrite\n⼯具后\n判断⽂件内容已经变\n更时\n就去掉历史调⽤中的\nr\nead\n⼯具的\n返回值\n，\n于\n是\n我将⼯具划分为\n两个\n类\n型\n，\n即读和写\n，\n当读写\n在\n操作同\n⼀个\n实体\n（\n这\n⾥指⽂件\n）\n时\n，\n如\n果有\n写操作则卸\n载\n掉\n上\n次的读操作\n，\n但\n这\n导致模\n型\n的幻觉现象变得\n更\n加\n严\n重\n，\n深\n⼊分\n析\n了模\n型\n的\n输\n出后\n，\n我发现并\n不\n能实\n时\n卸\n载\n，\n应该延\n迟\n⼀\n段\n“\n时\n间\n”\n（⼀\n些读写操作\n）\n后再卸\n载\n，\n否则模\n型\n很难感知到\n上\n次的⾏\n为\n，\n容\n易\n出\n现\n重\n复\n操\n作\n。\n简\n单\n来\n说\n就\n是\n保\n持\n最\n近\n的\n⼏\n次\n操\n作\n，\n例\n如\n50\n次\n。\n在aone copilot中使⽤了类似的思路，⼤约只会保留最近250次的操作内容，可以右键打开 devtools来查看交互的对话内容。\n但\n是这\n个\n思路只能解决\nr\nead\n、\nwrite\n⽂件的⻓\n上下\n⽂问题\n，\n难以推⼴到\ng\nr\nep\n、\ngetDependency\n等⼯具\n上，\n并\n且\n在\n⼯程\n上\n实现\n不\n够优雅\n。\n暂\n且\n记\n下\n这\n些\n问\n题\n，\n回\n过\n头\n来\n先\n看\nwrite\n⼯\n具\n，\nwrite\n⼯\n具\n⾄\n少\n需\n要\n2\n种\n块\n替\n换\n完\n整\n覆\n写\nString\nreplace\n(\nString\npath,\nString\nsearch,\nString\nreplace\n){\n//找到search块并替换为replace\n}\nString\nwrite\n(\nString\npath,\nString\ncontent\n){\n//直接覆盖path的内容，如果不存在则创建一个文件\n}\nwrite\n⼯具的主要问题\n是\n⼯具调⽤内容\n较\n多\n，\n相⽐\nr\nead\n⼯具\n，\nwrite\n只需要确保内\n部替\n换\n逻辑是\n准确的\n，且\n在\n出现问题\n时\n能够准确反馈问题可以让模\n型\n重新推理即可\n，\n但\n在\n实际\n测\n试中和模\n型\n及\n框架有\n关的\n两个\n点\n需要\n注\n意：\n模\n型\n⼏\n乎\n不\n会\n产\n出\n\\r\n符\n号\n，\n因\n此\n如\n果\n项\n⽬\n是\n在\nwindows\n下\n操\n作\n的\n需\n要\n注\n意\n\\r\n符\n号。\n模\n型在输\n出\n\\t\n时\n容\n易\n多\n⼀\n次\n转\n义\n，\n例如参数需要为\n\\t\n，\n但模\n型输\n出\n\\\\t\n（\n这\n应该\n是通过\njson\n格\n式约\n束\n模\n型输\n出⼯具调⽤导致的问题\n）。\nwrite\n⼯\n具\n中\n也\n有\npath\n参\n数\n，\n因\n此\n也\n需\n要\n类\n似\nread\n⼯\n具\n的\n路\n径\n推\n测\n能\n⼒\n来\n降\n低\n模\n型\n进\n⾏\n⼯\n具\n调\n⽤\n失\n败\n的\n概\n率。\n其\n他\n的\n读\n⼯\n具\n都\n可\n以\n参\n考\nread_ﬁle\n的\n问\n题\n，\n即\n信\n息\n过\n期\n、\n冗\n余\n等\n问\n题\n。\n完\n整\n读\n的\n缺\n陷：\n上\n下\n⽂\n爆\n炸\n：\n⼤\n⽂\n件\n直\n接\n塞\n⼊\n上\n下\n⽂\n。\n路\n径\n模\n糊\n：\n模\n型\n可\n能\n传\n⼊\n类\n名\n、\n缺\n后\n缀\n等\n，\n需\n⽀\n持\n模\n糊\n匹\n配\n。\n内\n容\n过\n期\n：\nwrite\n后\n未\n刷\n新\nread\n内\n容\n，\n导\n致\n历\n史\n响\n应\n冗\n余\n。\n部\n分\n读\n的\n局\n限：\n模\n型\n不\n知\n关\n键\n代\n码\n位\n置\n，\n可\n能\n多\n次\n调\n⽤\n，\n反\n⽽\n增\n加\n成\n本\n。\n与\nwrite\n联\n⽤\n时\n仍\n存\n在\n重\n复\n内\n容\n问\n题\n。\n最\n坏\n情\n况\n下\n（\n需\n读\n末\n尾\n）\n⽐\n全\n读\n更\n耗\ntoken\n。\n“\n按\n需\n卸\n载\n”\n策\n略\n的\n陷\n阱：\n早\n期\n尝\n试\n在\nwrite\n后\n⽴\n即\n移\n除\n旧\nread\n响\n应\n，\n结\n果\n加\n剧\n幻\n觉\n——\n模\n型\n因\n缺\n乏\n⾏\n为\n反\n馈\n⽽\n重\n复\n操\n作\n。\n实\n践\n表\n明\n，\n应\n延\n迟\n卸\n载\n（\n例\n如\n保\n留\n最\n近\n50–250\n次\n操\n作\n），\n让\n模\n型\n充\n分\n感\n知\n⾏\n为\n影\n响\n。\n⼯具的⾏为和影响\n回过\n头\n来\n思考⼈\n在\ncoding\n场景\n下\n的⾏为\n，\n当⼈\n在进\n⾏编码\n时\n，⼀\n直\n在\n观察\nide\n中打开的代码⽂\n件\n，\n通过\n键盘对代码⽂件\n进\n⾏编\n辑\n（\n光\n标\n位置\n），\n当需要切换编\n辑\n的位置\n时\n，\n将光\n标\n移动到新的位置\n，\n随后开始\n⼀\n段新的\n输\n⼊\n。\n通过\n拟态\n来\n优化⼯具的设计思路\n，\n当⼈\n在进\n⾏编码\n时\n⼀\n直\n在\n观察的\n是\nIDE\n的界⾯\n，\n同\n时通过\n⿏\n标\n键盘\n在\n和\n这\n个\n界⾯中的元素\n进\n⾏交互\n，\n屏幕\n是有\n限的\n，\n所以我们观察到的内容也\n是有\n限的\n，\n这\n和\n我\n们\n期\n望\n的\nagent\n的\n上\n下\n⽂\n是\n“\n固\n定\n”\n的\n⾮\n常\n类\n似\n。\n当模\n型\n试\n图进\n⾏\n⼀\n次⼯具调⽤\n时\n，\n本\n质\n上\n是\n为了\n“\n观察\n”\n或\n“\n影响\n”\n环境\n，\n也可以说\n是\n为了\n“\n读\n”\n和\n“\n写\n”\n环境\n，\n这是\n模\n型\n主导的\n“\n⾏为\n”\n，\n环境则\n是\nagent\n的具体\n业\n务需要的信息\n，\n例如\n在\ncoding\n场景\n中可以把代码⽂件\n、\n⽂\n档\n等视为\n“\n环境\n”\n。\n当⼯具调⽤结\n束时\n，\n将⼯具\n返回\n的内容组装到\n上下\n⽂中就实现了让模\n型\n观察环境或\n是\n了解\n造\n成的影响\n。\n在\n现\n有\n思\n路\n下\n⼯\n具\n包\n含\n了\n两\n个\n职\n责\n⾏\n为\n影\n响\n的\n反\n馈\n以\nr\nead_ﬁle\n为例\n，\n实际\n上\n这\n个\n⼯具的⽬的\n是\n“\n获\n取⽂件内容\n”\n并发\n送\n给模\n型\n，\n⾏为\n是获\n取指定⽂\n件的内容\n，\n影响\n是在\n上下\n⽂中增加⽂\n本\n的内容\n，\n最\n终发\n送\n给模\n型\n，\n使得模\n型\n看起\n来\n像\n是\n阅读了代码似的。\n⽽\n当\n⼈\n在\n阅\n读\n⽂\n件\n时\n，\n实\n际\n上\n是\n进\n⾏\n了\n⼀\n次\n“\n打\n开\n⽂\n件\n”\n的\n⾏\n为\n，\n然\n后\n造\n成\n了\nIDE\n现\n在\n显\n示\n我\n们“\n打\n开\n⽂\n件\n”\n的\n内\n容\n，\n所\n以\n我\n们\n（\n语\n⾔\n模\n型\n）\n可\n以\n通\n过\n“\n看\n”\n屏\n幕\n来\n阅\n读\n⽂\n件\n内\n容\n。\n基于\n这\n个\n思路\n，\n我\n在\nsystem p\nr\nompt\n中增加了\n⼀个\n固\n定存\n在\n但内容\n“\n实\n时\n”\n更\n新的\n块\n，\n这\n个\n块\n存\n储模\n型\n看到的事实\n，\n同\n时\n不\n再\n有\n读⽂件的⼯具\n，\n⽽\n是\n变成了\nopen_ﬁle\n和\nclose_ﬁle\n两个\n操作\n，\n当模\n型\n调⽤\nopen_ﬁle\n⼯具\n时\n，\n是进\n⾏了\n⼀\n次\n“\n⾏为\n”\n，\n⽽⼯具的影响\n是\n“\n⾏为的结\n果\n”\n以及\n“IDE\n中\n显\n示⽂件内容\n”\n。\n实时更新是指每次发送给模型前进⾏更新\nString\nopenFile\n(\nString\npath\n){\n//如果成功在ide中记录path被打开，返回已经成功打开文件\n//如果失败原因是什么\n}\n每\n次\n组\n装\n发\n送\n给\n模\n型\n的\n内\n容\n时\n，\n重\n新\n⽣\n成\nIDE\n的\n内\n容\n，\nIDE\n中\n包\n括\n“\n⽂\n件\n内\n容\n”\n。\n参\n考\n这\n个\n思\n路\n，\n我\n们\n可\n以\n将\n“\n⽬\n录\n”\n、\n“\n搜\n索\n”\n、\n“\n引\n⽤\n关\n系\n”\n、\n“\n变\n更\n清\n单\n”\n、\n“TODOLIST”\n等\n⼯\n具\n都\n视\n为\nIDE\n中\n的\n模\n块\n，\n并\n提\n供\n“\n⾏\n为\n⼯\n具\n”\n来\n调\n整\n这\n些\n块\n的\n内\n容\n。\n同\n时\n甚\n⾄\n可\n以\n将\n这\n些\n块\n的\n展\n示\n/\n隐\n藏\n也\n全\n权\n交\n给\n模\n型\n决\n策\n，\n即\n由\n模\n型\n⾃\n主\n管\n理\n。\n例\n如\n我们现\n在\n打开的⽂件\n较\n多\n，\n可以\n在\n上下\n⽂中增加\n“\n警告信息\n”\n，\n让模\n型\n将\n不\n重要的⽂件\n进\n⾏\n关闭\n。\n打\n开\n的\n某\n个\n⽂\n件\n较\n⼤\n，\n让\n模\n型\n聚\n焦\n到\n某\n个\n块\n打\n开\n的\n⽬\n录\n已\n经\n使\n⽤\n完\n毕\n了\n（\n搜\n索\n过\n程\n），\n模\n型\n⾃\n主\n的\n关\n闭\n⽬\n录\n打\n开\n的\n⽂\n件\n已\n经\n不\n需\n要\n再\n使\n⽤\n了\n，\n模\n型\n⾃\n主\n的\n关\n闭\n此\n⽂\n件\n等\n等\n但⼈和模\n型还是有本\n质\n上\n的区别\n，\n抛开\n逻辑\n能⼒的差异\n，\n最\n重要的\n是\n“\n记忆\n”\n，\n⼈可以\n“\n记住\n”\n刚刚打开的⽂件\n，\n即使现\n在\n关闭了\n，\n⼤概也能记得内容并基于\n“\n记忆\n”\n中的内容\n来\n对当前打开的⽂件\n进\n⾏操作\n，\n⽽\nLM\n模\n型\n我们知\n道\n它\n是没有\n记忆的\n，\n之所以\n有\n“\n记忆\n”\n的假象\n，\n只\n是因\n为\n在\n上下\n⽂中包含了完整的信息\n。\n为\n了\n解\n决\n这\n个\n问\n题\n，\n我\n们\n可\n以\n给\nide\n⼀\n个\n专\n⻔\n的\n“\n记\n忆\n”\n模\n块\n。\n记忆和遗忘\n说到记忆\n，\n我们的\n根本\n⽬的\n是\n让模\n型\n“\n记住\n”\n那\n些\n“\n需要\n”\n的信息\n，\n并\n且\n基于\n这\n些信息给出准确的\n“\n判断\n”\n，\n最\n佳⽅式\n是\n把所\n有\n的\n“\n⾏为\n”\n和\n“\n影响\n”\n都\n放\n在\n上下\n⽂中\n，\n只要模\n型\n⾜够\n“\n聪\n明\n”\n就\n⼀\n定\n能做出\n最\n准确的判断\n，\n但我们知\n道\n语⾔模\n型\n的\n上下\n⽂\n是有\n限的\n，且\n基于语⾔模\n型\n的原理我们知\n道\n上下\n⽂中的内容\n不\n能\n过\n多\n，\n否则会导致模\n型\n“\n性能\n”\n下\n降\n。\n当⼈\n在\n阅读了⽂件后\n，\n可以直接关闭或切换到其他⽂件\n进\n⾏后续⼯作\n，\n这是因\n为⼈记住了⽂\n件中的\n“\n关键\n”\n内容⽽⾮记住了完整的⽂件内容\n。\n我们则需要⼿动\n在\n上下\n⽂中增加\n“\n关键信息\n”\n以便让模\n型\n“\n记住\n”\n关键信息\n，\n在\n上下\n⽂\n充\n⾜的情况\n下，\n⾸\n选\n保留完整的⽂件内容\n，\n随着模\n型\n的\n逐\n步\n深\n⼊\n，上下\n⽂也开始捉襟⻅肘了\n，\n此\n时在\n系统提示词的引导\n下，\n模\n型\n会开始试\n图\n关闭或⼯程\n上\n主动出发关闭⽂件\n时\n，\n需要对即将关闭的⽂件\n进\n⾏\n⼀\n次关键信息提取\n，\n然\n后将关键信息记录到\n⼀个\n较\n⼩的备忘录中\n，\n以实现让模\n型\n仍\n然\n记得刚刚关闭的⽂件中的关键信息\n，\n我们仍\n然\n可以借助\n⼀个\nsubagent\n来进\n⾏关键信息提\n取\n，\n⽽如何判断⽂件的关键信息则由主\nagent\n给出\n，\n当主\nagent\n打开\n⼀个\n⽂件\n时\n，\n需要同\n时\n给出此操作的⽬的\n，\n让\nsubagent\n基于\n“\n⽬的\n”\n进\n⾏关键信息提取\n。\n随着探索的继续\n深\n⼊\n，\n备忘录的⼤⼩也到\n达\n了\n上\n限\n，\n我们需要从\n上下\n⽂中真正的删除内容\n，\n最\n佳⽅式仍\n然是\n让模\n型\n⾃主管理\n哪\n些\n部\n分需要被移除\n，\n哪\n些\n部\n分需要保留\n，\n但也可以使⽤简\n单的先\n进\n先出或者策略\n。\n同\n时\n因\n为\n⾏\n为\n和\n影\n响\n的\n分\n离\n，\n我\n们\n可\n以\n针\n对\n每\n个\n部\n分\n的\n特\n点\n来\n单\n独\n设\n计\n压\n缩\n、\n裁\n剪\n、\n合\n并\n等⾏\n为\n，\n更\n加\n⾼\n效\n的\n利\n⽤\n上\n下\n⽂\n来\n释\n放\n模\n型\n的\n能\n⼒\n。\n▐\n事\n实\n和\n⾏\n为\n在\n“\n记\n忆\n”\n中\n有\n⼀\n部\n分\n⾮\n常\n特\n殊\n的\n内\n容\n，\n即\n⼯\n具\n调\n⽤\n的\n记\n录\n，\n这\n是\n告\n知\n模\n型\n“\n已\n经\n做\n过\n”\n的\n内\n容\n。\n但\n有\n些\n模\n型\n的\n训\n练\n过\n程\n中\n会\n专\n⻔\n对\n⼯\n具\n调\n⽤\n进\n⾏\n训\n练\n（\n⽀\n持\nfunction\ncalling\n的\n模\n型\n），\n因\n⽽\n导\n致\n了\n⼀\n些\n特\n殊\n的\n规\n则\n，\n例\n如：\nfunction\ncall\n和\nfunction\nresponse\n需\n要\n成\n对\n出\n现\nunction\ncall\n和\nfunction\nresponse\n需\n要\n使\n⽤\n特\n殊\n格\n式\n传\n递\n给\n模\n型\n例\n如\n下\n⾯\n⼀\n个\n询\n问\n天\n⽓\n的\n简\n单\n示\n例\nuser\n:今天天气怎么样\nassistant\n:function_call getDate\nagent\n:function_response\n2025\n-\n12\n-\n22\nassistant\n:function_call getWether\n2025\n-\n12\n-\n22\nagent\n:function_response 晴天\nassistant\n:今天是\n2025\n-\n12\n-\n22\n，天气睛\n在\n⼀\n些\ninstruct\n模\n型\n中\n，\n如\n果\n不\n使\n⽤\n这\n种\n形\n式\n，\n模\n型\n可\n能\n会\n出\n现\n⽆\n限\n循\n环\n调\n⽤\n⽅\n法\n。\n因\n此\n在\nagent\n应\n⽤\n中\n，\n需\n要\n将\n“\n记\n忆\n”\n划\n分\n为\n两\n部\n分\n：\n事\n实\n记\n忆\n和\n⾏\n为\n记\n忆。\n⾏\n为\n记\n忆\n使\n⽤\nfunction\ncall/response\n的\n形\n式\n在\n上\n下\n⽂\n中\n体\n现\n，\n⽽\n事\n实\n记\n忆\n则\n通\n过\n诸\n如\n打\n开\n的⽂\n件\n内\n容\n、\n操\n作\n过\n的\n⽂\n件\n列\n表\n、\ndiﬀ\n内\n容\n、\n备\n忘\n录\n、\ntodo\n等\n形\n式\n。\n通过\n上\n述\n⽅式组织\n上下\n⽂可以使得\n上下\n⽂保持\n在\n⼀\n定⼤⼩内\n，\n既能够\n充\n分利⽤\n上下\n⽂窗⼝\n，\n也可以\n避\n免\n上下\n⽂快\n速\n膨胀导致的性能快\n速\n下\n降\n。\n▐\n传\n播\n和\n继\n承\n按\n照\n上\n述\n思\n路\n，\n上\n下\n⽂\n被\n划\n分\n成\n⼀\n些\n固\n定\n的\n块\n，\n例\n如\ndiﬀ\n、\n路\n径\n、\n备\n忘\n录\n、\ntodo\n等\n，\n我\n们\n可\n以\n通\n过\nxml\n将\n这\n些\n块\n进\n⾏\n区\n分\n，\n组\n织\n成\n⼀\n个\n结\n构\n化\n的\n上\n下\n⽂。\n<\nide\n>\n<\nopen_file\n>\n文件路径\n</\nopen_file\n>\n<\ntodo\n>\n待办\n</\ntodo\n>\n<\nnote_book\n>\n备忘录\n</\nnote_book\n>\n</\nide\n>\n⚠在使⽤chat和模型进⾏交互时，需要将ide内容放⼊system prompt，否则容易被模型遗忘。\n在\n上\n⽂\n的\n思\n路\n下\n模\n型\n的\n⾏\n为\n和\n影\n响\n被\n拆\n分\n，\n且\n每\n个\n部\n分\n也\n被\n⾃\n然\n的\n拆\n分\n，\n因\n此\n我\n们\n可\n以\n针\n对每\n个\n任\n务\n的\n特\n点\n来\n组\n装\n上\n下\n⽂\n信\n息\n，\n充\n分\n利\n⽤\n有\n限\n的\n上\n下\n⽂\n。\n⽽\n“\n影\n响\n”\n天\n然\n就\n是\n上\n⼀\n次\n⼯\n作\n的\n结\n果\n和\n过\n程\n的\n直\n观\n展\n现\n，\n新\n的\n⼯\n作\n可\n以\n基\n于\n上\n⼀\n轮\n的\n“\n影\n响\n”\n继\n续\n进\n⾏\n。\n在\n⾯\n向\nmulti agent\n或\n是\nsub agent\n时\n，\n“\n影\n响\n”\n被\n继\n承\n，\n并\n转\n向\n另\n⼀\n个\n维\n度\n的\n⼯\n作\n，\n例\n如\ndeep\nsearch\n收\n集\n知\n识\n的\n过\n程\n中\n可\n以\n被\n“\n评\n估\n者\n”\n直\n接\n评\n估\n知\n识\n是\n否\n收\n集\n完\n全\n、\n代\n码\n⽣\n成\n时\n则\n可\n以\n直\n接\n利\n⽤\ndeep search\n收\n集\n的\n知\n识\n进\n⾏\n⼯\n作\n。在\n多\n轮\n对\n话\n中\n“\n⾏\n为\n”\n和\n“\n影\n响\n”\n均\n可\n以\n被\n继\n承\n，\n模\n型\n可\n以\n⽆\n缝\n的\n接\n受\n⽤\n户\n新\n的\n输\n⼊\n后\n开\n始\n新\n的⼯\n作\n。\n结语\n在\n我看\n来\n上下\n⽂⼯程\n是\n⼀个\n复\n杂\n且不\n断发展的⼤模\n型\n下\n的⼯程产\n物\n，\n本\n质\n上\n是\n由于语⾔模\n型\n能⼒的\n不\n⾜⽽出现的\n⼀\n种⼯程\n上\n的妥协\n，\n随着语⾔模\n型\n能⼒的增强\n，\n或许\n在未来\n的\n某\n⼀\n天我们\n可\n以\n直\n接\n依\n赖\n模\n型\n的\n能\n⼒\n⽽\n不\n再\n需\n要\n复\n杂\n的\n上\n下\n⽂\n⼯\n程\n，\n但\n是\n以\n⼯\n程\n应\n⽤\n的\n视\n⻆\n来\n看\n，\n资源\n的\n⾼\n效\n利\n⽤\n、\n性\n能\n的\n极\n致\n优\n化\n永\n远\n是\n⼯\n程\n师\n的\n追\n求\n。\n团队介绍\n本文作者时兮，来自淘天集团-物流解决方案&电子面单团队。一支专注于商家寄件与电子面单业务研发的技术团队。依托多元业务场景，我们持续探索与迭代技术能力，长期投入稳定性建设，为数百万商家提供稳定可靠的寄件与物流体验，为数亿包裹安全高效流转保驾护航。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.94,
+        "direct_local": 0,
+        "peripheral": 0,
+        "transfer_business": 0,
+        "irrelevant": 0.06
+      }
+    },
+    "relevance": {
+      "score": 1.95,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.9299999999999999,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.71,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.17,
+        "2": 0.24,
+        "3": 0.19,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.72,
+      "probabilities": {
+        "0": 0.65,
+        "1": 0.09,
+        "2": 0.17,
+        "3": 0.07,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.86,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.14,
+        "3": 0.86,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.56,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.04,
+        "3": 0.27,
+        "4": 0.66,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 3.07,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.02,
+        "2": 0.03,
+        "3": 0.78,
+        "4": 0.16,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 15588,
+    "outputTokens": 172,
+    "totalTokens": 15760
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.93,
+        "relevance": 0.96,
+        "grounding": 0,
+        "decision_action": 0.52,
+        "evidence": 0.91,
+        "actionability": 0.7,
+        "anti_hype": 0.84
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179902980,
+                "endTime": 1791179903209,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000654696",
+      "marketCost": "0.000654696",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000654696",
+      "inferenceCost": "0.000654696",
+      "inputInferenceCost": "0.000654696",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8KZK9NTHGEBMT2XYS16Z"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:23 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::jmnk6-1791179902789-3cbdc08cd3a8"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.94,
+            "direct_local": 0,
+            "peripheral": 0,
+            "transfer_business": 0,
+            "irrelevant": 0.06
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.95,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.9299999999999999,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.71,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.17,
+            "2": 0.24,
+            "3": 0.19,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.72,
+          "probabilities": {
+            "0": 0.65,
+            "1": 0.09,
+            "2": 0.17,
+            "3": 0.07,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.86,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.14,
+            "3": 0.86,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.56,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.04,
+            "3": 0.27,
+            "4": 0.66,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.07,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.02,
+            "2": 0.03,
+            "3": 0.78,
+            "4": 0.16,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 15588,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.93,
+            "relevance": 0.96,
+            "grounding": 0,
+            "decision_action": 0.52,
+            "evidence": 0.91,
+            "actionability": 0.7,
+            "anti_hype": 0.84
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179902980,
+                    "endTime": 1791179903209,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000654696",
+          "marketCost": "0.000654696",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000654696",
+          "inferenceCost": "0.000654696",
+          "inputInferenceCost": "0.000654696",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8KZK9NTHGEBMT2XYS16Z"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:22.469Z"
+  }
+}

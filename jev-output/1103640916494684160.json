@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1103640916494684160",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工觉得好的code模型应该具备什么能力？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801505&idx=1&sn=ff1a96f9cd216cbafdafa8d4df45130b",
+      "date": "2026-05-09T11:22:00.823Z",
+      "chars": 2572,
+      "text": "原创\n爱讨论的\n2026-05-09 19:22\n广东\n你怎么看？\n话题背景\n假如让你给代码模型提需求，你会说什么？\n鹅厂程序员，在日常开发和工作提效中，越来越多的同学开始借助代码模型来辅助工作。\n我们邀请了9名鹅厂同事来聊聊：\n👉\n一个好的code模型应该具备什么能力？\n下面这些想法，或许代表了未来开发的新趋势。当然，我们也想知道你的答案，\n欢迎大家在评论区分享你的奇思妙想。（分享有奖）\n鹅厂员工们的分享\n@dan-后台开发\n▼\n“懂得不写代码\"的智慧\n现在无论是claude还是gemini，在写代码时，会把你仔细交代的任务完成的很好，但前提是要明确把一些工具库跟它说清楚，否则它可能会放飞自我，虽然实现了，但其实多做了很多冗余工作，比如为了实现某个结果，中间要用缓存或者DB，自己实现了个缓存或Dao，但实际上大仓里就有现成的实现，它们往往不知道复用。。。\n并且现在越来越感觉很多人觉得代码模型牛就是可以狂写代码，比如最近看到很多讨论说XX大模型agent狂写代码XX小时不停歇。。\n但我觉得其实Code最高级的能力是知道什么时候不该写。\n比如用户想实现一个功能，模型得能说\"诶，你这需求其实某个库已经有现成的了，直接用就行\"，或者\"你这么搞会踩坑，换个思路吧\"，或者”你是不是想达到xx目的，有一种模式更适合实现这个目的，这样改造会更好“。\n这种“懂得不写代码\"的智慧 判断力比单纯生成代码难多了。\n@he-客户端开发\n▼\n最近使用agent写代码，总结下来的经验就是，\nAI很擅长模仿（cv工程师）\n，在写代码之前，先让agent学习类似的功能实现架构和项目API调用规范，总结出一份技术方案后再开始写代码，代码质量显著提升。\n@scar-应用研究\n▼\n其实把LLM当作程序猿来评价就OK了，对于Code能力基本要求都差不多。\n但是LLM烧的是Token，可以一直高速输出，所以有些要求可以适度降低（时间换能力），大概列几条吧：\n1、\n好的开始是成功的一半：\n要求LLM能理解用户的需求，这里不是说要模型多聪明，程序猿确定需求时也是不停沟通拉会来完善对需求的理解，所以不能说“LLM可以一句话”开发才是厉害，因为一句话也没多少信息。平时真实的工作都是很细节的，需要模型和用户之间达成确定共识。比较推荐的让LLM给一个plan，然后修改到符合用户预期。\n2、\n良好的代码风格：\n有了架子就是填肉了，我是喜欢LLM输出可读性高的代码，长点和慢点都还好，不好读的话确实浪费用户的理解时间，而且一般可读性差的代码质量也堪忧。\n3、\n优秀的代码调试能力：\n与其要求模型能一次写对，不如要求模型能把有错误的代码改好。因为模型可以高速的24小时运行，所以试错成本比程序猿要低很多。但这里要求这里是真的改好，而不是那种看到一个Error去加一个 try-except分支那种”叠垃圾“的方式。\n4、这点不是对模型的要求：要有一个LLM友好的开发环境，能让模型很好串联穿上面三个过程。让LLM有足够的资源可以使用，最好还能帮助LLM做Context工程。\n@bun\n-后台开发\n▼\n1.\n能看懂现有代码\n， 了解现有代码的习惯，生成代码时别瞎改风格。\n2.  出了问题，\n能修bug\n，看报错能秒懂是哪儿错了，直接给改好。\n还能帮忙优化代码，发现哪里重复、哪里慢，给你更优雅的写法。\n3.\n不能胡编乱造\n，不知道就说不知道，别瞎编代码坑人。\n@fe\n-后台开发\n▼\n对于AI代码辅助还不够理想的领域的话，现在最头疼的就是调试和修Bug这块。\n微软最近的研究显示，连Claude、GPT这些大模型在调试任务上的成功率都不到50%，有的甚至只有20%出头——一个bug修完冒出三个新bug，简直是\"打地鼠\"现场。\n还有就是处理复杂业务逻辑的时候，AI容易\"想当然\"，它只会照着训练数据里的模式来，碰到你公司独特的业务规则，生成的代码往往差点意思。再加上它的上下文窗口有限，大项目里跨几个文件的改动，AI经常\"丢三落四\"，前面改了后面忘。\n目前Claude新出的debug模式我认为是一个很不错的尝试，感觉可以多探索不同模式进行优化，只有更多的探索才能知道更好的方式\n@gam\n-客户端开发\n▼\n1.支持 200k 以上的上下文，codex模型已经支持400k上下文了；长时的异步任务会越来越多\n2.function calling 高准确率；之前调过一些国内模型，在参数格式和要求上难以保证，这导致执行容易出错\n3.高 Cache 能力；code 模型需要执行长任务，cache 比率会大大影响任务成本\n4.低延时；这个自不必说了，在补全和NES场景下要求更高\n5.Thinking 能力，需要能够做好规划和反思\n6.多模态能力，随着编码范式的改变，语音和图片输入需求会越来越多；举例，页面程序UAT测试自动截图反馈场景\n先做到以上，再在这个基础上继续迭代。\n@fie\n-前端开发\n▼\n不懂就不懂，\n不要瞎说\n@jeff\n-产品策划\n▼\n更好的架构能力，\n更精准的纠错能力\n🐶\n@ell\n-应用研究\n▼\n现在的代码模型在写单个函数、小模块这些方面已经很强了，但一碰到工程级别的大项目，就很容易暴露短板。\n最明显的问题就是——架构层面的把控能力不足。\nAI生成代码的时候，往往是\"头痛医头\"，你问它一个功能它就给你一段代码，但它很难站在整个项目的角度去思考模块划分、分层设计、依赖关系这些东西。一开始基础架构没搭好，后面越写越乱，最后就变成一坨屎山，重构的成本比重写还高。\n所以我觉得一个真正好的 code 模型，除了基本的代码生成能力之外，还应该具备：\n架构感知能力——能理解项目整体结构，生成的代码要符合当前项目的设计规范，而不是各写各的。\n上下文一致性——在大工程里能保持命名风格、设计模式、模块职责的一致性，不要前后矛盾。\n主动提醒和建议——比如发现你的设计有耦合过重、职责不清的问题时，能给出架构层面的优化建议。\n所以，也说明架构设计能力短期内还是得靠人。AI可以当好帮手，但开发者自身的架构思维和工程素养，反而在AI时代变得更重要了\n欢迎大家在评论区分\n享【一个好的code模型应该具备什么能力？】\n随机抽三名同学送出30QB🎁\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.48,
+        "peripheral": 0.12,
+        "transfer_agent": 0.4,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.67,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.23,
+        "2": 0.72,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.26,
+        "2": 0.25,
+        "3": 0.23,
+        "4": 0.09,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.4,
+      "probabilities": {
+        "0": 0.74,
+        "1": 0.14,
+        "2": 0.11,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.81,
+      "probabilities": {
+        "0": 0.25,
+        "1": 0.69,
+        "2": 0.05,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.2,
+        "2": 0.4,
+        "3": 0.32,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.98,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.02,
+        "2": 0.12,
+        "3": 0.65,
+        "4": 0.19,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4257,
+    "outputTokens": 173,
+    "totalTokens": 4430
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.35,
+        "relevance": 0.77,
+        "grounding": 0.21,
+        "decision_action": 0.74,
+        "evidence": 0.79,
+        "actionability": 0.55,
+        "anti_hype": 0.72
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179970708,
+                "endTime": 1791179970866,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000178794",
+      "marketCost": "0.000178794",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000178794",
+      "inferenceCost": "0.000178794",
+      "inputInferenceCost": "0.000178794",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAP469F9M5B9T61M68ZFT"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:30 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::r8pgx-1791179970683-8c1f60770ccd"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.48,
+            "peripheral": 0.12,
+            "transfer_agent": 0.4,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.67,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.23,
+            "2": 0.72,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.26,
+            "2": 0.25,
+            "3": 0.23,
+            "4": 0.09,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.4,
+          "probabilities": {
+            "0": 0.74,
+            "1": 0.14,
+            "2": 0.11,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.81,
+          "probabilities": {
+            "0": 0.25,
+            "1": 0.69,
+            "2": 0.05,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.2,
+            "2": 0.4,
+            "3": 0.32,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.98,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.02,
+            "2": 0.12,
+            "3": 0.65,
+            "4": 0.19,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4257,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.35,
+            "relevance": 0.77,
+            "grounding": 0.21,
+            "decision_action": 0.74,
+            "evidence": 0.79,
+            "actionability": 0.55,
+            "anti_hype": 0.72
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179970708,
+                    "endTime": 1791179970866,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000178794",
+          "marketCost": "0.000178794",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000178794",
+          "inferenceCost": "0.000178794",
+          "inputInferenceCost": "0.000178794",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAP469F9M5B9T61M68ZFT"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:30.090Z"
+  }
+}

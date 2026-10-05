@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1271798192739950592",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "换工具、换 Agent，不换上下文：OpenViking 让研发 Context 始终在线",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247522116&idx=1&sn=12549be2892dea3b03f75bb06b9d61c8",
+      "date": "2026-09-02T11:00:00.640Z",
+      "chars": 4710,
+      "text": "原创\nViking\n2026-09-02 19:00\n北京\n研发的一天，往往要在多 Agent 之间切换，处理不同类型的任务。\n群聊适合快速 Review 和团队协作、CLI 适合深挖代码，飞书文档分享结论、整理周报。面对不同任务，往往会选择不同的工具。\nOpenViking：让上下文换窗口不掉队\n真正麻烦的不是工具多，是 Context 跟不上人。\n群聊知道大家刚刚讨论了什么，却不了解完整代码；Coding Agent 能深入仓库，却未必知道团队长期形成的 Review 规则；到了飞书文档，又要重新解释这项工作的背景和结论。\n每换一个窗口，研发都可能要重新复制资料、补充 Prompt、回忆历史决策。\nOpenViking 是面向 AI Agent 的统一上下文数据库\n。它不是另一个 Agent，而是位于不同 Agent 背后的共享 Context 层。\nOpenViking 产品介绍\n（复制链接至浏览器查看：\nhttps://docs.volcengine.com/docs/84313/2374478?lang=zh）\n代码仓库、项目文档和 Review Guidelines 可以作为 Resource 保存；个人偏好、历史判断和 Code Learnings 可以沉淀为 Memory；可复用的工作方法则可以组织为 Skill。它们不再散落在不同工具中，而是以目录和文件的方式组织在统一的\nviking://\n路径下。\n面对一个新任务，Agent 可以先读取 L0 摘要，再查看 L1 目录概览，最后按需加载 L2 完整内容。一次任务结束后，还可以通过 Session Commit 从对话和执行过程里提取新的经验，写回长期 Memory。\n因此，\nOpenViking 承接的不是某一个工具的聊天记录，而是一个研发持续积累的代码背景、项目规则、技术决策、执行经验和个人习惯\n。Agent 可以变化，工作界面可以变化，这份 Context 仍然能够继续使用。\n主流 Agent 极简接入OpenViking\n让 Context 不掉队可复用，第一步不是反复搬运数据，而是\n让不同 Agent 都能访问同一个 OpenViking\n。\nOpenViking 提供了主流 Agent 的现成接入入口。访问 OpenViking  产品控制台\n（复制链接至浏览器查看：\nhttps://signin.volcengine.com/auth/login?redirectURI=https%3A%2F%2Fconsole.volcengine.com%2Fvikingdb%2Fopenviking%2Fregion%3Aopenviking%2Bcn-beijing%2F）\n，进入“接入 Agent”页面，可通过 MCP、CLI、API 和 SDK 等通用方式完成集成，也可以\n直接选择已经适配的主流 Agent\n：\nCoding Agent\n：Codex、Claude Code、TRAE 等均可直接安装插件。\nAI 同事\n：在办公 IM 中具备任务执行能力的 Agent，目前支持 OpenClaw、Hermes 插件集成。\n办公场景 Agent\n：已上架豆包工作插件市场，搜索 OpenViking 即可一键添加。\n接入后，不同 Agent 都可以直接调用和沉淀同一份 OpenViking 。\n工作一｜PR Review：AI 同事 × OpenViking\n早上十点，研发打开飞书。群里已经有几个 PR 待 Review，一处文档修改准备合入，版本发布也需确认。\n这些任务不复杂，但如果专门打开 IDE，再向 Agent 重讲项目背景，反而太重\n。他直接在群里\n@ 接入 OpenViking  的 AI 同事\n：\n帮我看一下这个 PR，按之前的规范 Review。如果只是小问题，直接修好并提 PR。\nAI 同事读取当前讨论，同时从 OpenViking 调取相关代码、项目规范和历史 Review Guidelines。它完成 Review，处理小型修改，检查 CI，再推动合入或发版。\n在 OpenViking 中，这些信息并不是被拼成一段很长的 Prompt。这些知识和记忆的沉淀都是自动化的，无需用户手动导入。\nAI 同事在工作中调用 MCP，将相关代码、项目规范和 Review Guidelines 实时写入\nviking://resources/{project}/\n。\n群聊中的任务过程则通过自动化 Hook 持续写入用户的 Session。任务结束后，Session Commit 会自动提取其中的表达习惯、Review 偏好、经验和判断，分别沉淀至\nviking://~/memories/preferences/\n和\nviking://~/memories/experiences/\n。\n新确认的 Review 规则也会写回 OpenViking\n。下一次，无论由谁来处理，都可以继续沿用。\n任务侧\nStep 1：\n群聊中，AI 同事结合当前讨论和 OpenViking 中的项目规则，给出 Review 结论。\nStep 2：\nReview 后，AI 同事完成修改、检查，并推动代码合入。\nStep 3：\n从确认到发版，研发通过短消息确认版本状态，AI 同事推进后续发布流程。\nOpenViking 侧\n存储相关代码、项目规范和历史 Review Guidelines，记录新的Review 规则。\n工作二｜深度 Coding：Claude Code × OpenViking\n下午，研发开始处理另一项更复杂的任务。它需要阅读更多代码，理解现有实现，并反复核对方案。IM 的短消息窗口已经不够用了。\n他转到 CLI，打开\n接入 OpenViking  的 Claude Code\n。\nClaude Code 从 OpenViking 读取代码仓库、决策记录、Review Guidelines 和历史 Code Learnings。研发不必重新描述团队规则，便可以直接分析复杂 PR、查找 Agent Review 的当前实现。\n任务结束时，Claude Code 通过 Session Commit 抽取新的实现理解、技术判断和 Code Learnings。下一次即使更换 Session，也可以从长期 Memory 中继续调用，而不必重新翻找这次对话。\n在 CLI 中，他继续追问、细化问题、查看代码和 Review 结论。如果涉及开发，就在这里修改代码、检查 Diff、运行测试。\n任务结束前，\nClaude Code 还把本次形成的实现理解、技术判断和 Code Learnings 主动存回 OpenViking\n。新的经验，继续服务后续任务。\n任务侧\nStep 1：\nClaude Code\n从 OpenViking 调取已有 Review Guidelines\n，在 CLI 中展开更深入的代码检查。\nStep 2：\n研发连续追问，Claude Code 检索代码并定位定位 Agent Review 的关键实现，逐步形成可执行的结论。\nStep 3：\n任务结束前，\n把本次 Code Learnings 写回 OpenViking\n，新理解和技术判断被保存下来，后续 Agent 可以直接复用。\nOpenViking 侧\n存储代码仓库、决策记录、Review Guidelines 和历史 Code Learnings，并记录本次任务新的实现理解、技术判断。\n工作三｜研发协作：飞书 × OpenViking\nCLI 中完成了深入分析，接下来还要得让同事看明白，且能用上。\n研发回到飞书。\n群聊中的 Agent 可以从 OpenViking  取回刚刚形成的代码结论，直接参与讨论、补充背景\n。\nOpenViking 中的资源和记忆不属于 Claude Code，也不绑定某一次 CLI Session。Claude Code 刚刚沉淀的实现结论已经拥有统一的 Viking URI；回到飞书后，群聊中的 Agent 和豆包工作可以检索相同的项目 Resource 和用户 Memory，再把相关内容带回讨论和文档。\n新的讨论结论如果再次通过 Session Commit 保存，也会继续进入用户 Memory，形成“读取—协作—再沉淀”的闭环。\n这样，研发不用从 CLI 复制一段、再到群聊解释一遍、最后又在文档里重写一遍。\n任务侧\nStep 1：\n回到群聊，刚刚的代码结论仍然可用\n。飞书中的 Agent 读取 OpenViking，直接补充背景并参与讨论。\nStep 2：\n在飞书文档里继续修改\n。豆包工作调取 OpenViking  中的代码结论，在文档内完成补充和优化。\nOpenViking 侧\n提供来自另个 Agent 存入的代码结论、项目规则。\n工作四｜周报沉淀：豆包工作 × OpenViking\n周五傍晚，准备写周报。\n这一周，他在群聊里 Review 过多个 PR，也在 CLI 中完成了复杂调研和开发。再靠自己翻聊天记录、Git Commit 和 Session，周报又会变成一次重复整理。\n他\n在飞书周报文档中打开豆包工作\n：\n基于 OpenViking\n中过去一周的工作，按项目进展、关键决策、风险问题和下周计划生成周报。\n豆包工作从 OpenViking 取回本周沉淀的 PR、任务、Code Learnings、测试结果和未完成事项，直接写进文档。\n研发继续在文档中调整：“补充这个 PR 的实际影响”“技术细节再短一点”“把未完成问题放到下周计划”。\n最终周报也会成为 OpenViking 中可检索的新资料。下一周的工作，从这份最新 Context 继续。\n一天里的不同任务、不同 Agent，背后是同一份 Context\n上午，AI 同事在群聊里接手短而快的协作。下午，Claude Code 在 CLI 中处理复杂代码工作。需要分享时，Context 回到飞书；周五，豆包工作再把一周内容沉淀为文档。\n他们做的不是同一件事，也不需要强行接力。\nOpenViking 串起来的，是同一个研发长期积累的代码、规则、决策、经验和个人习惯。\n具体来看，OpenViking 在这一天里串起了五项能力：\n统一组织项目 Resource、按需加载 L0/L1/L2 分层 Context、记录任务 Session、持续提取长期 Memory，以及让同一份 Context 跨 Agent 调用\n。\n它不是一段被反复复制的公共 Prompt，也不是某个 Agent 私有的聊天历史。工具跟着任务变化，Context 始终跟着人。\n加入我们，共建 Agent 上下文的未来！\n🚀\n上手试用\n：访问\nhttps://www.volcengine.com/product/openviking-service，无需自行部署，即可将常用\nAgent 接入 OpenViking，体验上下文的持续积累与跨任务复用。\n🌟\n给个 Star\n：访问我们的 GitHub 仓库\nhttps://github.com/volcengine/OpenViking，为我们点亮一颗Star，你的\nStar 是我们前进的最大动力！\n💬\n加入社区\n：扫描下方飞书二维码，加入官方交流群，与顶尖开发者一起探讨 Agent 上下文的无限可能。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

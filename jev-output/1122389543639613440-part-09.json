@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": " │ ④ 沙箱执行   │                 │\n│                                       │ (隔离环境)   │                 │\n│                                       └──────┬───────┘                 │\n│                                              │                          │\n│  沙箱实现:                                    │                          │\n│  •\nDocker\n容器 (\nSWE\n-agent,\nOpenHands\n)        │                          │\n│  •\nWASM\n沙箱 (浏览器环境)                     │                          │\n│  • 文件系统虚拟化 (路径隔离)                  │                          │\n│  • seccomp/\nAppArmor\n(系统调用限制)            │                          │\n│                                              ▼                          │\n│                                       ┌──────────────┐                 │\n│                                       │ ⑤ 结果验证   │                 │\n│                                       │ & 后处理     │                 │\n│                                       └──────────────┘                 │\n│                                                                         │\n│  验证: 返回大小限制 / 敏感信息脱敏 / 格式标准化                            │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\navakill 的策略引擎方式\n：通过 YAML 定义工具策略，在执行前拦截判定：\n# avakill 策略示例 — 声明式安全规则\npolicies:\n- name:\n\"prevent-destructive-file-ops\"\nmatch\n:\ntool:\n\"bash\"\nargs_contains: [\n\"rm -rf\"\n,\n\"dd if=\"\n,\n\"mkfs\"\n]\naction: deny\nmessage:\n\"Destructive file operation blocked\"\n- name:\n\"limit-network-access\"\nmatch\n:\ntool:\n\"fetch_url\"\nargs_match:\nurl:\n\"^(?!\nhttps://(api\\\\.github\\\\.com|.*\\\\.internal)).*\n\"\naction: ask_user\nmessage:\n\"Agent wants to access external URL: {url}\"\nsaifctl 的规格驱动方式\n：先定义 Agent 的能力边界规格（spec），运行时 harness 确保 Agent 行为不越界，类似形式化验证的思路。\n子系统 5：安全防护 (Security)\nAgent 面临独特且严峻的安全威胁——\n间接提示注入\n(Indirect Prompt Injection)。与传统 Web 安全不同，攻击面在于\nAgent 处理的内容本身就可能是攻击载荷\n。\n┌─────────────────────────────────────────────────────────────────────────┐\n│\nAgent\n安全威胁模型                                       │\n│                                                                         │\n│  ┌──────────────────────────────────────────────────────────────────┐   │\n│  │  攻击面\n1\n: 输入侧                                                 │   │\n│  │  • 用户直接注入 (直接\nPrompt\nInjection\n)                            │   │\n│  │  • 对抗性 prompt 绕过安全限制                                      │   │\n│  └──────────────────────────────────────────────────────────────────┘   │\n│                                                                         │\n│  ┌──────────────────────────────────────────────────────────────────┐   │\n│  │  攻击面\n2\n: 工具返回侧 (最危险)                                     │   │\n│  │  • 网页内容包含\n\"Ignore previous instructions...\"\n│   │\n│  │  • 文件内容嵌入隐藏指令                                            │   │\n│  │  •\nAPI\n响应中的恶意 payload                                        │   │\n│  │  • 邮件/消息内容操纵\nAgent\n行为                                    │   │\n│  └──────────────────────────────────────────────────────────────────┘   │\n│                                                                         │\n│  ┌──────────────────────────────────────────────────────────────────┐   │\n│  │  攻击面\n3\n: 输出/持久化侧                                           │   │\n│  │  •\nAgent\n输出泄漏系统 prompt / 内部标签                            │   │\n│  │  • 凭证信息 (\nAPI\nKey\n,\nToken\n) 出现在回复中                          │   │\n│  │  • 记忆投毒 — 写入恶意信息影响后续行为                              │   │\n│  └──────────────────────────────────────────────────────────────────┘   │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\n防护策略矩阵\n：\n威胁\n检测方法\n防护位置\n代表方案\n间接提示注入\n模式匹配 + 语义分类器\n工具返回后、送入 LLM 前\nAnthropic Constitutional AI\n凭证泄漏\n正则 (API Key/Token 模式)\n输出流过滤\nOpenHarness output scrubber\n路径穿越\n路径规范化 + 白名单\n文件操作工具前\nSWE-agent chroot\n命令注入\nShell 元字符检测\nBash 工具参数清洗\nDeerFlow sandbox mode\n记忆投毒\n内容可信度评估\nMemory write 前\nClaude Code memory validation\nSystem Prompt 泄漏\n输出标签检测 + 围栏去除\n流式输出管线\nParlant response filtering\n深层防御原则\n：安全不能只靠一层。业界最佳实践是\nDefense in Depth\n——输入、处理、输出三层各设独立检测，任何一层失守，后面的层仍能拦截。\n子系统 6：可观测性 (Observability)\nAgent 的不确定性远超传统软件——同一输入可能产生不同的执行路径。没有可观测性，出了问题只能\"重现一下看看\"。\n┌─────────────────────────────────────────────────────────────────────────┐\n│                  Agent 可观测性三支柱                                      │\n│                                                                         │\n│  ┌────────────────────┐  ┌────────────────────┐  ┌─────────────────┐   │\n│  │   Logging (日志)   │  │  Tracing (追踪)    │  │ Metrics (指标)  │   │\n│  │                    │  │                    │  │                 │   │\n│  │ • 每轮决策记录     │  │ • 端到端请求链路   │  │ • Token\n/\n轮\n/\n成本  │   │\n│  │ • 工具调用入参出参 │  │ • 父子 Agent 关系  │  │ • 成功率\n/\n重试率  │   │\n│  │ • 错误上下文       │  │ • 工具调用耗时     │  │ • 延迟分布      │   │\n│  │ • 安全事件审计     │  │ • 压缩\n/\n降级事件    │  │ • 循环检测触发率 │   │\n│  └────────────────────┘  └────────────────────┘  └─────────────────┘   │\n│                                                                         │\n│  关键追踪维度:                                                           │\n│  ┌─────────────────────────────────────────────────────────────────┐    │\n│  │ Session → Turn → LLM\nCall\n→ Tool\nCall\n→ Sub\n-\nAgent              │    │\n│  │    ↕         ↕        ↕          ↕           ↕                 │    │\n│  │ 用户意图   决策轮次  模型响应   外部操作    委托任务              │    │\n│  └─────────────────────────────────────────────────────────────────┘    │\n│                                                                         │\n│  代表工具: LangSmith\n/\nLangfuse\n/\nOpenTelemetry\n/\nHelicone              │\n│                                                                         │\n└─────────────────────────────────────────────────────────────────────────┘\nDeerFlow 同时支持 LangSmith 和 Langfuse 两种追踪后端，体现了可观测性在生产 Agent 中的必要地位。\n从上述开源实践中，我们可以提炼出\n7 条Harness 的核心设计原则\n：\n原则\n含义\n反面教材\n分类先于处理\n必须先诊断错误类型，才能选正确策略\n所有错误一律重试 3 次\n渐进式降级\n从温和到激进，逐级响应\ntoken 超限直接清空历史\n静默优先\n能内部恢复的异常不暴露给用户\n每次 retry 都弹 toast\n预算有限\n任何自动恢复都必须有上限\n无限重试直到成功\n可观测\n静默≠无记录，所有操作必须可审计\n静默吞掉异常无日志\n最小权限\n工具权限按需授予，危险操作需审批\n所有工具默认全权执行\n声明式策略\n安全规则外置为配置，非硬编码\n每个安全检查写死在代码里\nHarness 的演进趋势如下所示，是一个\n从手动到慢慢自动化\n的过程。\n综上，\nHarness 是 Agent 从「能跑」到「能用」的关键分水岭。\n一个没有 Harness 的 Agent 就像没有操作系统的程序，能执行，但无法在真实环境中可靠运行。随着 Agent 应用进入生产，Harness 正从\"各家自建\"走向\"标准化框架\"，成为 Agent 技术栈中不可或缺的一层。\nClaw 出现：每个人的私人秘书\n上面讨论的 Agent 都运行在服务端，用户通过 API 或 Web 界面远程交互。2024-2025 年出现了一个根本性的转变——Agent 以\n本地客户端\n的形式运行在你的电脑上，直接操控你的工作环境。\n实现上区别没有太大，核心是agent跑在了你的本地，可以获取你本地的信息，操作你本地的文件",
+      "fulltext_obtained": true,
+      "chunk_index": 9,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.85,
+        "direct_local": 0,
+        "irrelevant": 0.12,
+        "peripheral": 0.03
+      }
+    },
+    "relevance": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0,
+        "1": 0.15,
+        "2": 0.84,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.33,
+      "probabilities": {
+        "0": 0.74,
+        "1": 0.21,
+        "2": 0.04,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.64,
+      "probabilities": {
+        "0": 0.43,
+        "1": 0.03,
+        "2": 0.2,
+        "3": 0.16,
+        "4": 0.18,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.01,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.84,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.27,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.65,
+        "4": 0.31,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.37,
+        "2": 0.39,
+        "3": 0.2,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.71,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6439,
+    "outputTokens": 172,
+    "totalTokens": 6611
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.8,
+        "relevance": 0.89,
+        "grounding": 0.78,
+        "decision_action": 0,
+        "evidence": 0.89,
+        "actionability": 0.76,
+        "anti_hype": 0.56
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180419858,
+                "endTime": 1791180420011,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000270438",
+      "marketCost": "0.000270438",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000270438",
+      "inferenceCost": "0.000270438",
+      "inputInferenceCost": "0.000270438",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARCQRTY1KXW4R2R2R5C3Z"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:00 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::thv4b-1791180419824-be938bd6a9a0"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.85,
+            "direct_local": 0,
+            "irrelevant": 0.12,
+            "peripheral": 0.03
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0,
+            "1": 0.15,
+            "2": 0.84,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.33,
+          "probabilities": {
+            "0": 0.74,
+            "1": 0.21,
+            "2": 0.04,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.64,
+          "probabilities": {
+            "0": 0.43,
+            "1": 0.03,
+            "2": 0.2,
+            "3": 0.16,
+            "4": 0.18,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.01,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.84,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.27,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.65,
+            "4": 0.31,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.37,
+            "2": 0.39,
+            "3": 0.2,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.71
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6439,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.8,
+            "relevance": 0.89,
+            "grounding": 0.78,
+            "decision_action": 0,
+            "evidence": 0.89,
+            "actionability": 0.76,
+            "anti_hype": 0.56
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180419858,
+                    "endTime": 1791180420011,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000270438",
+          "marketCost": "0.000270438",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000270438",
+          "inferenceCost": "0.000270438",
+          "inputInferenceCost": "0.000270438",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARCQRTY1KXW4R2R2R5C3Z"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:59.233Z"
+  }
+}

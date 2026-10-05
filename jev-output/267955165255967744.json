@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "267955165255967744",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从Vibe Coding到Agentic Engineering：重构后台开发全流程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801233&idx=1&sn=6e6eaf8a0e94e8349bbbef4b734dc5c0",
+      "date": "2026-04-17T09:36:00.254Z",
+      "chars": 19731,
+      "text": "原创\n腾讯程序员\n2026-04-17 17:36\n广东\n把整个流程拆开给大家看\n作者：seanguo\n引言\n做后台开发的同事应该都有这个体会：从接到需求到最终发布，我们要在 PM、GitPlatform、编辑器、DevOps 平台、Galileo 之间来回横跳。每次切换都在丢上下文——刚在 PM 看完需求描述，切到编辑器就忘了某个细节；部署完测试环境去查日志，又得回忆刚才改了哪几行代码。\n你可能听过\nVibe Coding\n这个说法——打开 AI 对话框，用自然语言描述需求，让模型直接生成代码，跑通就算完。原型验证很爽，但一旦要上生产，问题就来了：生成的代码质量不可控、没有审查流程、改完了 commit message 也是乱的。说到底，Vibe Coding 是\"提示即祈祷\"（prompt-and-pray），你把需求扔给 AI，然后祈祷它别出错。\n今年行业里逐渐形成了一个更成熟的概念：\nAgentic Engineering\n（智能体工程）。核心思路是——人负责定义目标、约束条件和质量标准，AI 作为自主智能体在\n结构化流程\n中执行规划、编码、测试和迭代，每个关键节点都有人工审核。它不是让 AI 随意发挥，而是把 AI 的能力嵌入到一套有纪律的工程体系里。\n最近一周，我用\nClaude Code + 自定义 Skill/Command/MCP 体系\n做了一次实践：把从需求到发布的所有环节串到一个终端会话里。AI 全程保持对当前任务的理解，在预设的流程框架内自主执行；我只需要在关键节点做决策——审批计划、确认部署、审查代码。回过头看，这套东西就是 Agentic Engineering 在后台开发场景的一个落地样本。\n这篇文章把整个流程拆开给大家看，从需求到发布每一步怎么跑的，踩过哪些坑，最后沉淀出了什么（\n🔥token的十大技巧\n）。\n不过，说实话，虽然过程很完美，但消耗的 token 数量也不容小觑。迫切需要更高的 token 额度了\n全流程概览\n先看效果。下面是整个流程的各阶段概览——从需求到发布，开发者的角色从\"亲自执行\"变成了\"审核确认\"：\n阶段\n核心工具\n开发者做什么\n① 需求创建 + 分支初始化\npm-dev\n口述需求\n② 需求澄清\nbrainstorming\n回答 2-3 个问题\n③ 制定实施计划\nwriting-plans\n审核计划\n④ 并行开发\nexecuting-plans\n+\n/commit\n几乎无需干预\n⑤ 代码自审\ncode-review\n审核报告\n⑥ 编译部署\ndtools\n确认部署参数\n⑦ 日志排查\ngalileo-log-query\n手动触发测试\n⑧ 创建 MR\n/create-mr\n确认 MR 信息\n⑨ AI 辅助评审\n/review-mr\n审核 AI 评审意见\n⑩ 修复评审意见\n/fix-mr\n确认修复方案\n⑪ 合入发布\nCI/CD\n点 Merge + 灰度发布\n后面各阶段会逐个展开细节。\n工具体系速览\n这套\n工具链\n分三层，理解了层次关系，后面的内容就好跟了：\n层次\n说明\n示例\nSkill\n（技能）\n核心业务逻辑，由系统根据上下文自动触发，或被 Command 调用。每个 Skill 有独立的工具权限白名单和执行流程\npm-dev\n、\ngit-workflow\n、\ncode-review\n、\ndtools\n、\ngalileo-log-query\n、\ngit-context\n、\nwiki-doc\n、\nservice-analyzer\nCommand\n（斜杠命令）\n用户通过\n/xxx\n主动调用的入口，轻量级路由，委托给对应的 Skill 执行\n/commit\n、\n/create-mr\n、\n/review-mr\n、\n/fix-mr\n、\n/analyze-codebase\nMCP Server\n（外部服务）\n通过 Model Context Protocol 连接的外部平台 API，为 Skill 提供数据和操作能力\nGitPlatform MCP、PM MCP、Galileo MCP、KnowledgeBase 知识库 MCP、InternalWiki MCP\n此外还有一类来自\nsuperpowers\n插件的\n结构化工作流 Skill\n（\nbrainstorming\n、\nwriting-plans\n、\nexecuting-plans\n、\nsubagent-driven-development\n、\nverification-before-completion\n等），它们定义了从需求澄清到代码交付的标准流程，防止 AI 跳过关键步骤自由发挥。\n下面以一个\n真实的小变更需求\n为例，走完从需求到发布的全流程——「RedeemReward 接口数据上报逻辑变更：无论领取是否成功，都要上报结果，新增 errcode/errmsg 字段」。选这个需求是因为它体量适中（涉及 go mod 依赖更新、结构体扩展、接口逻辑重构），刚好能展示每个阶段的自动化能力，又不会因为业务本身太复杂而分散注意力。\n阶段 1：需求获取与分支初始化\n[!info] 使用的工具\npm-dev\n(Skill) — PM 开发初始化工具，两种入口：\n给 PM URL → 自动解析需求 ID，拉取需求标题和正文\n不给 URL → 通过 brainstorming 澄清需求后，自动调用 PM MCP 创建需求单\n创建完成后自动：建分支（\nfeature/{username}_{short_id}\n）→ 保存需求文档到\ndocs/pm/\n→ 衔接后续开发流程\n场景\n：手头没有现成的 PM 需求单，直接在终端里口述需求就行。\n操作\n：输入\n/pm-dev\n命令并附上需求描述：\n❯ /pm-dev RedeemReward\n接口里的数据上报逻辑变更，无论领取是否成功，都要上报结果\n（上报数据新增 errcode, errmsg 字段）。新字段要更新\ngit.example.com/org/component/report_data/reportstruct go mod 获取。\nClaude Code 检测到当前在 master 分支，又没有 PM URL，就弹出选择：\n· 没有检测到 PM 需求单信息，请选择如何继续？ → 自动创建新需求单\n接下来 AI 会进入 brainstorming 模式澄清需求（详见阶段 2），澄清完自动创建 PM 需求单：\n⏺ pm - stories_create\nworkspace_id:\n\"12345678\"\nname:\n\"RedeemReward上报逻辑变更新增错误码\"\ndescription:\n\"RedeemReward 接口的数据上报逻辑变更：无论领取是否成功，都要上报结果...\"\n✅ 需求单创建成功\n- 标题: RedeemReward上报逻辑变更新增错误码\n- 链接:\nhttps://pm.example.com/pm_fe/12345678/story/detail/1012345678001958011\n口述需求，AI 交互澄清后，自动创建的需求单示例：\n随后自动创建开发分支并保存需求文档：\n⏺ git checkout -b feature/alice_131900001\n⏺ Write(docs/pm/131900001.md)  — 保存需求文档\n效果\n：一段口述 → PM 需求单 → 规范命名的开发分支 → 需求文档落盘。全程没打开过 PM 页面。\n[!tip] Skill 也可以当命令用\npm-dev\n是一个 Skill（系统根据上下文自动触发），但你也可以通过\n/pm-dev\n显式调用它。实际上，所有 Skill 都支持以\n/skill-name\n的方式手动触发——当你明确知道要用哪个 Skill 时，直接\n/xxx\n调用比等待自动触发更高效。\n[!tip] 有现成的 PM 需求单？ 直接提供链接即可：\n/pm-dev\nhttps://pm.example.com/xxx/story/detail/10xxx\n，AI 会自动拉取需求详情并创建开发分支。\n直接拉取需求单示例：\n补充一个 AI aha moment 的例子：\n我在开发 pm-dev skill 的时候，发现项目管理 MCP Server 并不支持将链接里面的长ID（1012345678001900001）转成 short_id（131900001）。但是想要自动创建特性管理值就需要用到 short_id，那该怎么做呢？\nAI 直接推测出了 short_id 和 ID 的关系！\n（我开发这么久的需求，见过的需求 url & short ID 无数，从来都没有发现两者之间的关系。这个时候我就感觉 AI 是真的能够发现我们肉眼所发现不到的规律。）\n阶段 2：交互式需求澄清\n[!info] 使用的工具\nsuperpowers:brainstorming\n(Skill) — 结构化的需求澄清流程。AI 不会直接写代码，而是先探索代码库了解现状，然后通过提问-回答逐步明确需求边界、技术方案和实现路径，最终产出一份双方达成共识的设计方案。\nwiki-doc\n(Skill) /\nknot\nMCP\n— 知识库检索。澄清过程中 AI 可以搜内部 Wiki 文档或通过 KnowledgeBase 知识库做语义检索，为设计决策补充技术背景和历史方案参考。\n场景\n：需求描述就一句话，AI 得先搞清楚代码现状和变更细节才能动手。\n[!info] 链式调用 这个阶段不需要手动触发——\npm-dev\n完成需求创建和分支初始化后，会自动链式调用\nbrainstorming\n进入需求澄清。brainstorming 完成后又会接着调用\nwriting-plans\n（阶段 3），形成\n需求 → 澄清 → 计划\n的自动流水线。\n操作\n：AI 先自动探索项目代码，了解 RedeemReward 接口和上报逻辑的现有实现：\n⏺ Explore(探索 RedeemReward 和上报逻辑)\nDone (20 tool uses · 93.8k tokens · 56s)\n然后基于代码理解，抛出关键问题：\n🤔 新增的 errcode/errmsg 字段是加到现有的 Report_table_001（数据上报表）上，\n还是用一个新的上报表？\n❯ 复用 Report_table_001 表, 更新 go mod 以后就有新增的 2 个字段了\nAI 理解后，提出两种实现方案并给出推荐：\n方案 A（推荐）：在 RedeemReward 末尾统一上报，不提前\nreturn\n将上报逻辑移到函数末尾，把第三方调用的 error 信息传入上报参数。\n- 优点：改动集中，与现有 ReportConsumeCount 风格一致\n- 缺点：需要调整 error 处理流程\n方案 B：在每个\nreturn\n前都加一次上报调用\n- 优点：不改变原有\nreturn\n逻辑\n- 缺点：多处重复调用，容易遗漏\n· 你倾向哪种实现方式？ → 方案 A：统一上报 (Recommended)\n确认方案后，AI 输出完整的设计方案：\n设计方案:\n1. 数据结构变更 — CardReportParam 新增 ErrCode/ErrMsg 字段\n2. RedeemReward 流程变更 — 用 defer 确保上报一定执行\n3. 变更文件清单:\n┌──────────────────────────┬──────────────────────────────────────┐\n│           文件           │                 变更                 │\n├──────────────────────────┼──────────────────────────────────────┤\n│ go.mod                   │ 升级 report_data 版本           │\n│ repo/report/card_report.go │ CardReportParam 新增字段，ReportCard │\n│                          │ 填充新字段                           │\n│ logic/redeem_reward.go      │ 重构 RedeemReward，无论成败都上报       │\n└──────────────────────────┴──────────────────────────────────────┘\n效果\n：AI 不是闭门造车——先读代码、再提问、再出方案。设计文档自动保存到\ndocs/plans/\n并 commit。\n[!tip] 不要重复造轮子\npm-dev\n早期版本曾经自己实现了头脑风暴/写计划/执行计划的功能，后来发现\nsuperpowers\n插件已经提供了成熟的 brainstorming、writing-plans、executing-plans 等 Skill，经过大量打磨，效果更好。最终把自制逻辑替换为链式调用现成 Skill。\n教训：自定义 Skill 的核心价值是编排和串联，而不是从零实现所有能力。\n[!tip] 知识库补充上下文 在澄清过程中，AI 可以通过\nwiki-doc\n搜索内部 Wiki 文档，或通过\nknot\n知识库检索已有的技术方案，为设计决策提供依据。\n阶段 3：制定实施计划\n[!info] 使用的工具\nsuperpowers:writing-plans\n(Skill) — 结构化计划编写。AI 深入读代码细节（结构体字段、错误处理方式、依赖版本），确保计划里每个 Task 都有精确的文件路径、代码变更描述和验证标准。计划自动保存到\ndocs/plans/\n并 commit，人工审核通过后才进入执行。\n场景\n：设计方案确认后，AI 自动深入阅读代码，生成可执行的实施计划。\n操作\n：AI 先扎进代码细节——结构体字段、错误处理方式、go mod 版本——确保计划里的代码路径和修改点都是准确的：\n⏺ Read: repo/report/card_report.go, logic/redeem_reward.go, errs 包\n⏺ 查找 Report_table_001 结构体当前字段\n⏺ 当前版本 v1.0.180 还没有 errcode/errmsg 字段，更新 go mod 后新版本才会有\n然后生成实施计划（223 行），自动保存并 commit：\n⏺ Write(docs/plans/2026-03-03-claimgift-report-errcode.md)\n计划拆成 4 个 Task：\n1. 更新 report_data 依赖 — go get 升级版本，验证新字段存在\n2. CardReportParam 新增 ErrCode/ErrMsg — 修改结构体和 ReportCard 函数\n3. RedeemReward 无论成败都上报 — 重构流程，asyncReportRedeemReward 接收 error\n4. 最终验证 — go build/vet\n[!warning] 人工审核是关键 这是你审查 AI 方案的第一道关卡。计划里每个 Task 都有精确的文件路径、代码变更描述、甚至具体的代码片段，方便逐条审核。AI 可能会遗漏边界情况或误判依赖关系，这一步不能省。\n阶段 4：并行执行开发任务\n[!info] 使用的工具\nsuperpowers:executing-plans\n/\nsuperpowers:subagent-driven-development\n(Skill) — 计划执行引擎，两种模式：\nSequential\n：主 Agent 按顺序逐 Task 执行\nSubagent-Driven\n（推荐）：为每个 Task 派独立子 Agent 并行执行，完成后自动跑 spec review（功能是否符合计划）和 code quality review（代码质量检查）\n/commit\n(Command →\ngit-workflow\ncommit 模块) — 智能分析\ngit diff --cached\n，生成 Conventional Commits 格式的 commit message（\nfeat\n/\nfix\n/\nrefactor\n等），交互确认后提交。还会检查是否需要拆分原子提交。\n场景\n：计划审批通过，选择执行方式。\n· 选择哪种执行方式？ → Subagent-Driven (Recommended)\n操作\n：AI 按计划逐个派子 Agent 执行，每个 Task 完成后自动跑 spec review 和 code quality review：\n⏺ Task 1: 更新 report_data\n├─ Agent 执行 (5 tool uses · 49s)\n├─ 新字段: Errcode(string), Errmsg(string), 版本 v1.0.182\n└─ ✅ Spec review 通过\n⏺ Task 2: CardReportParam 新增字段\n├─ Agent 执行 (6 tool uses · 1m 6s)\n└─ ✅ Spec review 通过\n⏺ Task 3: RedeemReward 上报重构（核心变更）\n├─ Agent 执行 (4 tool uses · 6m 25s)\n├─ ✅ Spec review 通过\n└─ ✅ Code quality review 通过，无 critical/important issues\n⏺ Task 4: go build + go vet\n└─ ✅ 全部通过\n每个 Task 完成后自动生成规范的 Git commit：\nd81eaee chore: upgrade report_data\nfor\nnew errcode/errmsg fields\n18a0975 feat: add ErrCode/ErrMsg to CardReportParam and ReportCard\ne978e6b feat: report RedeemReward result regardless of success or failure\n效果\n：4 个 Task 全部完成，3 个实现 commit。你只在关键节点确认就行。\n变更文件汇总：\n- go.mod / go.sum — 升级 report_data v1.0.180 → v1.0.182\n- repo/report/card_report.go — CardReportParam 新增 ErrCode/ErrMsg，ReportCard 填充\n- logic/redeem_reward.go — RedeemReward 无论成败都上报，传入 errcode/errmsg\ngit commit 交互式澄清，自动生成规范的 commit 消息：\n企业微信截图_47eb4fc4-7e23-4fa8-b578-bfc7b2a60a5d\n规范 git commit 示例，更容易看出变更内容。\nsubagents 并发任务示例，superpowers:execute-plan 会自动根据需要执行的计划，决定开几个 subagent，全程不用操作。你唯一需要的就是担心 token 额度。\n阶段 5：代码审查（自审）\n[!info] 使用的工具\ncode-review\n(Skill) — Golang 代码审查工具。对\ngit diff\n变更做系统化审查，按严重程度（Critical / Major / Minor / Suggestion）和分类标签（业务逻辑 / 安全性 / 性能影响 / 编程规范等 8 类）输出 CR 报告。\n内置完整的检查清单，覆盖：\nCritical\n：空指针、SQL 注入、数据竞争、资源泄漏、循环中 defer\nMajor\n：错误处理不规范（未用\nerrs.Newf/Wrapf\n）、嵌套超 4 层、switch 缺 default、并发安全\nMinor\n：命名规范、import 顺序、魔法数字、函数超 80 行\nSuggestion\n：可用\nlo\n简化集合操作、可用\ncopier\n简化结构体复制、Table-Driven Tests\n审查完成后生成 Markdown 报告到\ndocs/\n，并提供三种后续操作：自动修复所有问题 / 仅保存报告 / 指定修复特定问题（如 C1, M2）。\n场景\n：代码写完了，提交 MR 之前先自己过一遍，在 reviewer 看到之前就消灭明显问题。这一步是\"自查\"——用 AI 帮你快速扫一遍格式、命名、规范类的低级问题；后面阶段 9 的 AI 辅助评审则是站在 reviewer 的角度做正式审查，两者定位不同。\n操作\n：直接在终端里说就行：\n❯ 审查一下当前分支相对 master 的代码变更\nAI 自动加载\ncode-review\nskill，获取 diff 并执行审查：\n⏺ git diff master...HEAD — 3 个文件，+21 -11 行\n审查报告：\n┌──────────┬──────┐\n│ 级别     │ 数量 │\n├──────────┼──────┤\n│ Critical │ 0    │\n│ Major    │ 0    │\n│ Minor    │ 1    │\n│ Suggestion│ 1   │\n└──────────┴──────┘\nm1. [CR-可读性] ChannelID 魔法数字缺少注释\n文件: logic/redeem_reward.go:43\nChannelID: 3 缺少注释说明含义（会员页发放场景）\n建议: 添加行内注释或提取为命名常量\nS1. [CR-编程规范] Errcode/Errmsg 字段缩进不一致\n文件: repo/report/card_report.go:57-58\n与上方字段的对齐方式不一致\n建议: 统一使用 gofmt 标准对齐\n⏺ Write(docs/code-review-report-20260303-153022.md) — 保存报告\n· 如何处理审查结果？\n○ 自动修复所有问题\n○ 仅保存报告\n○ 指定要修复的问题（输入编号如 m1, S1）\n[!warning] 本文示例中跳过了自审修复 为了在后面\n阶段 9（AI 辅助代码评审）\n完整展示\n/review-mr\n的工作流——包括 AI 如何发现问题并精确提交行级评论到GitPlatform——这里选了\"仅保存报告\"，把两个问题留给 MR 评审阶段处理。\n实际开发中建议自审阶段就修掉所有问题，让 reviewer 聚焦更高层面的设计和逻辑。\n效果\n：\ncode-review\n相当于一个随时待命的 Golang 审查专家，内置了团队的编码规范和检查清单。提 MR 前先跑一遍，格式、命名、规范类问题基本能清干净，reviewer 就不用在这些细节上浪费时间了。\n阶段 6：编译部署到测试环境\n[!info] 使用的工具\ndtools\n(Skill) — DevOps 平台 CLI 工具集成。自动从 Makefile 探测 APP/SERVER/ENV/INSTANCE 等参数（找不到时依次查 go.mod、trpcprotocol 协议路径），支持\ndpatch\n（包发布）、\nbpatch\n（二进制发布）、\nipatch\n（镜像发布）三种模式。还会自动处理 Mac → Linux 交叉编译（\nCGO_ENABLED=0 GOOS=linux GOARCH=amd64\n），仓库没有 Makefile 时会自动生成标准化构建/部署模板。\n场景\n：代码开发完毕，部署到 pre 环境跑一下看看。\n操作\n：输入\n/dtools\n，AI 自动从 Makefile 中提取部署参数：\n确认部署参数：\nAPP=my_app, SERVER=reward_service, ENV=pre, USER=alice\n· 选择哪种发布方式？ → 指定实例发布 (make deploy)\nAI 执行交叉编译和部署：\nCGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o .build/reward_service\ndtools bpatch -env pre -app my_app -server reward_service \\\n-bin .build/reward_service -user alice \\\n-instances\n\"pre.my_app.reward_service.instance001\"\n[!tip] 自动发现配置过期 部署过程中发现 Makefile 里的实例名\ninstance002\n已经过期了，AI 自动跑了\ndtools node ls\n查到当前可用实例是\ninstance001\n，确认后发布成功，还顺手把 Makefile 里的实例名更新了。这种\"顺手修\"的能力在日常开发中很实用。\n效果\n：编译 + 部署 + 修正过期配置，一条命令搞定。\ndtools发布示例：\n阶段 7：日志排查与调试\n[!info] 使用的工具\ngalileo-log-query\n(Skill) — Galileo日志查询。通过内置 Python 脚本调用 Galileo Log Query API，支持按 target（\nBG-PLATFORM.{appid}.{server}\n）、namespace、时间范围、查询语句、traceID 等条件查日志。自动探测 appid/server（优先从 Makefile、go.mod、trpcprotocol 路径提取），内置防上下文爆炸机制（默认 limit 50，建议先用\nlevel:error\n缩小范围）。脚本查不到结果时会自动降级到Galileo MCP 的\nask_question\n接口。\n场景\n：部署后需要验证上报数据是否正确，或者排查异常。这一步目前还是\"半自动\"的——AI 能帮你查日志、定位问题，但测试请求还得人工手动发，因为 AI 不了解整条调用链的上下游，没法自己构造有效的测试用例。后续计划在代码里加测试入口，让 AI 能直接发 tRPC 请求触发模拟调用。\n操作\n：直接在终端中描述查询需求：\n❯ 帮我查一下 pre 环境 reward_service 最近 10 分钟的 error 日志\nAI 通过Galileo API 查询，拿到结果后自动关联代码上下文分析：\n🔍 问题定位：\n- redeem_reward.go:48 上报时 cfg 为 nil\n- 原因：获取配置失败的路径没有正确传入默认值\n- 建议修复：在 cfg == nil 时使用空 config 而非跳过上报\n[!tip] 支持多种查询方式\n按 trace_id 查询完整调用链\n按关键词搜索特定日志\n按时间范围 + 日志级别过滤\n按 target/namespace 精确定位服务\nGalileo日志自助排查示例：\n再给一个例子，辅助排查Galileo profile 内容，帮忙快速定位了一个 OOM 问题。\n阶段 8：创建 Merge Request\n[!info] 使用的工具\n/create-mr\n(Command →\ngit-workflow\npush-mr 模块) — MR 创建全自动化：\n调用\ngit-context\n获取 project_id、校验分支命名\n从分支名提取 PM short_id，通过 PM MCP 拉取需求标题，组装源码关键字（\n--story={id} {title}\n）\n分析\ngit log origin/master..HEAD\n全部 commit 和 diff，生成 MR 标题和描述（含变更说明 + 影响范围）\n预览确认后，\ngit push -u origin\n+ 调用GitPlatform MCP 创建 MR\ngit-context\n(Skill) — GitPlatform项目上下文提取，两个复用模块：project-context（解析 project_id、校验分支、检查工作区）和 mr-locate（从 URL 或当前分支定位 MR 并获取元数据）。\n场景\n：测试通过，该提代码了。\n操作\n：输入\n/create-mr\n，AI 自动执行完整流程：\n⏺ git-context:\n- 解析分支名 feature/alice_131900001 → 提取 story ID: 131900001\n- 校验分支命名规范 ✅\n- 通过 PM MCP 获取需求标题\n⏺ 分析 git\nlog\norigin/master..HEAD 的全部 commit\n⏺ 预览生成的 MR 信息：\n项目: org/team/project/backend/reward_service\n分支: feature/alice_131900001 → master\nPM: --story=131900001 RedeemReward上报逻辑变更新增错误码\n标题: RedeemReward 上报逻辑变更，无论成败都上报并新增错误码\n确认后自动推送分支并创建 MR：\n⏺ git push -u origin feature/alice_131900001\n⏺ git-platform - create_merge_request\n✅ MR 创建成功！\n- 链接:\nhttps://git.example.com/.../reward_service/-/merge_requests/64\n- 状态: can_be_merged\n- 必要评审人: bob, charlie（GitPlatform项目已配置默认评审规则，自动分配）\n自动生成的 MR 描述：\n--story=131900001 RedeemReward上报逻辑变更新增错误码\n## 变更说明\n-\n升级 report\n_data v1.0.180 → v1.0.182，获取 Report_\ntable_001 新增的 errcode/errmsg 字段\n-\nCardReportParam 新增 ErrCode/ErrMsg 字段，ReportCard 填充到上报结构体\n-\nRedeemReward 接口无论领取成功或失败都执行数据上报，传入错误码和错误信息\n-\n获取配置失败时也上报（cfg 为 nil 安全处理）\n## 影响范围\n仅影响 RedeemReward 接口的数据上报逻辑，其他接口的 ReportCard 调用不受影响\n（ErrCode/ErrMsg 零值默认 0/\"\"）\n效果\n：MR 标题、描述、PM 关联全部自动生成，格式规范、内容完整。\n全自动提交 MR 示例，极大缓解了写 MR 描述的痛苦。\n企业微信截图_548fd035-e052-4b9a-a260-1615df007faf\nGitPlatform MR 页面示例：\n阶段 9：AI 辅助代码评审\n[!info] 使用的工具\n/review-mr\n(Command →\ngit-workflow\nreview 模块) — AI 代码审查，精确提交行级评论到GitPlatform MR：\n通过\ngit-context\n的 mr-locate 定位 MR（支持从 URL 解析或从当前分支自动查找）\n加载\ncode-review\n的审查标准（含 Golang 规范、trpc-go 模式、完整检查清单），仅审查新增/修改的行\n每个问题标注严重程度和分类标签\n用\ngit show {source_branch}:{file_path}\n验证行号准确性，确保评论定位精确\n人工审核后批量调用GitPlatform MCP 提交评论（单条失败不阻塞其余）\n场景\n：MR 创建后，reviewer（同事 charlie）用 AI 辅助审查这个 MR。\n操作\n：reviewer 在自己的终端中输入 MR 链接：\n❯ /review-mr\nhttps://git.example.com/org/team/project/backend/reward_service/-/merge_requests/64\nAI 自动获取 MR 元数据、拉取 diff、读源文件验证行号，然后输出审查结论：\n变更文件：\n- repo/report/card_report.go (+4 行)\n- logic/redeem_reward.go (+17 -11 行)\n- go.mod (+1 -1), go.sum (+2 -2)\n主要逻辑评估：\n- 整体逻辑正确：无论成败都上报，cfg 为 nil 时安全处理 ✓\n- errs.Code(nil) / errs.Msg(nil) 在 trpc-go 框架中 nil 错误返回 0/\n\"\"\n✓\n- 依赖升级合理 ✓\n发现问题：\nMinor 1 个：\n- repo/report/card_report.go:57-58 — Errcode/Errmsg 字段赋值缩进与上方字段不一致\nSuggestion 1 个：\n- logic/redeem_reward.go:43 — ChannelID: 3 魔法数字，原有注释 // 发放场景，3-会员页\n在重构时被误删，建议补回\n审查概要示例：\n[!tip] AI 能区分\"本次引入\"和\"历史遗留\" 审查过程中 AI 发现\nasyncReportRedeemReward\n函数名带 async 前缀但实际是同步调用，但它主动拉了 master 分支原始代码对比，确认这是历史遗留而非本次引入，所以\n没有纳入审查范围\n。这个能力很重要——没人喜欢 reviewer 在你的 MR 里提一堆历史债务。\n确认后，AI 将 2 条评论精确提交到GitPlatform MR 页面：\n· 代码审查已完成，请选择评论提交范围：→ Minor + Suggestion（共 2 条）\n⏺ git-platform - create_merge_request_note\n✅ M1 → repo/report/card_report.go:57（含修复代码建议）\n✅ S1 → logic/redeem_reward.go:43（含补回注释或提取常量两种方案）\n提交评论示例：极大提高了 CR 效率，不用再一个个去评论了。\nAI 提交评论的关键，是找准要评论的位置。经过实测，发现 Claude 模型效果最好，DeepSeek 模型经常找错行数，评论到错误的位置。\nGitPlatform MR 上面的评论效果：\n效果\n：代码评审从人工逐行看 diff 变成了 AI 初筛 + 人工把关。AI 精确定位到文件和行号，附带代码建议，reviewer 只需审核和决定提交哪些评论。更多真实案例见附录中的「AI 代码评审案例」。\n[!warning] AI 评审有对有错，人工审核不能省 AI 给出的评审意见\n不一定都是对的\n。它可能误判代码意图、遗漏业务上下文、或者给出看起来合理但实际不适用的建议。上面这个例子里 AI 提的 2 个问题碰巧都是准确的，但在更复杂的 MR 中，我们见过 AI 把正确的错误处理标记为\"缺少 error check\"、把刻意的空实现标记为\"未完成代码\"等误判。所以 reviewer 拿到 AI 的审查结果后，\n每一条都要过脑子判断\n，该采纳的采纳，不靠谱的直接丢掉。\n[!tip] 跨模型审查：避免同一个模型的盲区 一个实用技巧：\n谁写的代码，就让别的模型来审查\n。同一个模型写的代码再让它自己审，容易陷入相同的思维盲区——它写代码时没考虑到的问题，审查时大概率也发现不了。比如用 Claude 写的代码，可以用 Codex 或 Gemini 来做 AI 评审；反过来也一样。不同模型的知识结构和关注点不同，交叉审查能显著提高问题发现率。\n阶段 10：修复 MR 评审意见\n[!info] 使用的工具\n/fix-mr\n(Command →\ngit-workflow\nfix 模块) — MR 评审意见自动修复：\n通过\ngit-context\n定位 MR，自动切到源分支并拉最新代码\n调用GitPlatform MCP 拉所有未解决评论（\nresolve_states=[1]\n），提取文件路径、行号、评论内容\n读对应文件（前后各 10 行上下文），分析问题是否仍存在并生成修复方案\n交互展示分析结果（含风险评估），确认后逐条修改\n修改后自动跑\ngo build ./...\n验证编译，并调用GitPlatform MCP 回复每条评论\n场景\n：MR 收到了 reviewer 的评审意见，需要逐条修。\n操作\n：终端里输入\n/fix-mr\n，AI 自动定位当前分支的 MR 并拉取未解决评论：\n⏺ MR:\n#64\n- RedeemReward 上报逻辑变更，无论成败都上报并新增错误码\n未解决评论: 2 条\n────────────────────────────────\n[1] logic/redeem_reward.go:43\n评论者: charlie\n评论内容: [Suggestion] ChannelID 魔法数字 3 缺少注释说明\n修复方案: 为 ChannelID: 3 添加注释\n\"// 发放场景，3-会员页\"\n────────────────────────────────\n[2] repo/report/card_report.go:59-60\n评论者: charlie\n评论内容: [Minor] Errcode/Errmsg 字段赋值缩进与上方字段对齐不一致\n修复方案: 调整 Errcode/Errmsg 缩进，使用 gofmt 标准对齐\n────────────────────────────────\n· 如何处理这 2 条未解决评论？ → 全部修复\nAI 自动执行修复：\n[1] 修复 logic/redeem_reward.go:43\n-    ChannelID: 3,\n+    ChannelID: 3, // 发放场景，3-会员页\n[2] 修复 repo/report/card_report.go:59-60\n-    Errcode:    cast.ToString(param.ErrCode),\n-    Errmsg:     param.ErrMsg,\n+    Errcode:     cast.ToString(param.ErrCode),\n+    Errmsg:      param.ErrMsg,\n⏺ go build ./...  ✅ 编译通过\n⏺ gofmt -d ...    ✅ 格式检查通过\n修复完成后，通过\n/commit\n提交：\nfix: address CR comments\nfor\nRedeemReward report changes\n- 为 ChannelID 魔法数字 3 补充注释说明（会员页发放场景）\n- 修正 Errcode/Errmsg 字段缩进，与上方字段对齐一致\n然后自动推送并回复评论。如果后续还有新的评审意见，再跑一次\n/fix-mr\n就行。\n效果\n：评审 → 修复 → 提交 → 回复的完整闭环，全程在终端里完成。\n阶段 11：合入发布\n[!info] 使用的工具 CI/CD 流水线 — DevOps 平台自动构建与发布\n场景\n：评审意见全部修完，MR 拿到 Approve。\n操作\n：\nGitPlatform上点 Merge 合入主干\n03 流水线自动触发：编译 → 构建镜像 → 推送镜像仓库\n按发布流程灰度发布到现网\n这一步目前还是纯人工操作——合入和发布涉及灰度策略和线上风险，暂时不打算交给 AI。\n效果\n：从一句口述需求开始，到代码合入主干触发自动发布，整个流程的核心工作都在一个终端会话里完成了。\n开发这个需求，消耗的 token 情况如下：\n总结\n全流程回顾\n回到开头那张概览表，这里补充一下各阶段的实际耗时：\n阶段\n耗时\n人工操作\n① 需求创建 + 分支初始化\n自动\n口述需求\n② 需求澄清（brainstorming）\n~5 min\n回答 2-3 个问题\n③ 制定实施计划\n~3 min\n审核确认\n④ 并行开发（4 个 Task）\n~10 min\n几乎无需干预\n⑤ 代码自审\n~2 min\n审核报告\n⑥ 编译部署\n~3 min\n确认部署参数\n⑦ 日志排查\n按需\n手动触发测试\n⑧ 创建 MR\n~2 min\n确认 MR 信息\n⑨ AI 辅助评审\n~3 min\n审核 AI 评审意见，决定提交哪些\n⑩ 修复评审意见（2 条）\n~3 min\n确认修复方案\n整个流程走下来，开发者的工作方式发生了比较大的变化：\n传统方式\nClaude Code 方式\n打开 PM 页面创建需求，手动建分支\n口述需求，自动创建需求单和分支\n自己拆解任务、逐个实现\nAI 制定计划、子 Agent 并行执行、自动 commit\n手动\ndtools\n部署，排查实例名过期\nAI 自动检测过期配置并修正\n手动写 MR 描述，对照 commit 逐条整理\nAI 分析全部 commit 自动生成规范描述\n在GitPlatform页面逐条看评审、手动改代码\nAI 拉取评论、定位代码、生成修复、自动提交\n说到底，这就是\nAgentic Engineering\n的核心理念——人是编排者（Orchestrator），AI 是自主执行者：\n人负责\n：定义目标、拆解任务、审核方案、把关质量、最终决策——方案选择、计划审核、部署确认、评审把关、合入发布\nAI 负责\n：在结构化流程中自主执行——代码生成、commit 格式化、MR 描述整理、评审意见定位、日志分析……这些重复性高、规则明确的工作\nSkill/Command 体系就是那个\"结构化流程\"——brainstorming 确保先理解再动手，writing-plans 确保先计划再执行，code-review 确保有检查清单而非凭感觉审查。它们把 AI 的能力约束在可控的工程框架里，而不是让 AI 自由发挥然后祈祷结果正确。\n这和 Vibe Coding 的本质区别在于：Vibe Coding 依赖运气，Agentic Engineering 依赖流程。每个关键节点都有人工审核，AI 是高效的执行者，不是不受控的自动机。\nSkill & Command 的协作架构\n理解了全流程之后，来看看这套工具链内部是怎么协作的。整个体系可以用一张依赖图表达：\n几个设计上的关键决策：\nCommand 是薄壳\n：每个\n/xxx\n命令只有一行——委托给\ngit-workflow\n对应模块执行。所以你在对话中说\"帮我提交代码\"也能触发 commit 流程，不一定非得打\n/commit\n。\nSkill 之间可组合\n：\npm-dev\n创建完需求单后自动调用\nbrainstorming\n，brainstorming 完了接着调\nwriting-plans\n。\ngit-workflow\n的每个模块都复用\ngit-context\n做前置准备。组合优于重复实现。\nSuperpowers 管纪律\n：brainstorming 确保 AI 先理解再动手；writing-plans 确保先计划再执行；executing-plans 确保按步骤推进而不跳跃。这些不是\"可选的好习惯\"，而是写进 Skill 定义的强制流程。\nMCP 对用户透明\n：你不需要知道\"调用GitPlatform API 创建 MR\"这件事——Skill 通过 MCP 自动完成，你只看到\"MR 已创建，链接是 xxx\"。\n附录\n本文涉及的工具速查\n工具\n类型\n对应阶段\n一句话说明\npm-dev\nSkill\n① 需求获取\n解析 PM URL 或自动创建需求单，初始化开发分支\nbrainstorming\nSuperpowers\n② 需求澄清\n交互式需求探索，先理解再动手\nwriting-plans\nSuperpowers\n③ 制定计划\n深入代码生成精确的多 Task 实施计划\nexecuting-plans\nSuperpowers\n④ 并行开发\n按步骤执行计划，支持子 Agent 并行\n/commit\nCommand\n④ 并行开发\n智能生成 Conventional Commits 格式的 commit\ncode-review\nSkill\n⑤ 代码自审\nGolang 审查，4 级严重度 × 8 类标签\ndtools\nSkill\n⑥ 编译部署\nDevOps 平台 CLI，自动探测参数并交叉编译\ngalileo-log-query\nSkill\n⑦ 日志排查\nGalileo日志查询，支持多条件过滤\n/create-mr\nCommand\n⑧ 创建 MR\n分析 commit 自动生成 MR 标题/描述\n/review-mr\nCommand\n⑨ AI 评审\n行级代码评审，精确提交评论到GitPlatform\n/fix-mr\nCommand\n⑩ 修复意见\n拉取未解决评论，逐条修复并回复\ngit-context\nSkill\n⑧⑨⑩\nGitPlatform项目上下文提取，被多个工具复用\n完整的 Skill/Command/Plugin 列表和配置说明，见\n配置仓库\n。\nAI 代码评审案例\n拿一个比本文示例更复杂的 MR（4 个文件，+252 行）来看，AI 审查出了 9 个问题：\n级别\n数量\n典型问题\nCritical\n1\nHTTP 下载无超时控制，goroutine 可能永久阻塞\nMajor\n4\n竞态窗口、重复读配置、缺少 HTTP 状态码\nMinor\n2\n错误封装不规范、不必要的导出字段\nSuggestion\n2\n切片预分配、handler 文件拆分\nreviewer 审阅后调整了 AI 的部分建议（如将 C1 改为\"建议使用 trpc-go http client 代替 net/http\"），然后提交了 7 条评论到GitPlatform。\nMCP 服务配置\n以下 MCP 服务为 Skill 提供外部平台的数据和操作能力，配置一次全局生效：\nMCP 服务\n用途\n依赖的 Skill\nGitPlatform MCP\nGit 仓库操作、MR 管理\ngit-workflow\n、\ngit-context\nPM MCP\n需求/缺陷/任务管理\npm-dev\n、\ngit-workflow\nInternalWiki MCP\nWiki 文档搜索与管理\nwiki-doc\nGalileo MCP\n日志查询与分析\ngalileo-log-query\nKnowledgeBase MCP\n知识库语义+关键词检索\nbrainstorming 阶段补充技术背景\n具体的 MCP 配置命令和 Token 获取方式，见\n配置仓库\n。\n配置目录结构\n~/.claude-internal/\n# Claude Code 全局配置目录\n├── CLAUDE.md\n# 全局指令（操作原则、代码规范、偏好设置）\n├── settings.json\n# 权限白名单、模型选择、启用插件\n├── commands/\n# 自定义斜杠命令（/commit, /create-mr, /review-mr, /fix-mr 等）\n└── skills/\n# 技能库（pm-dev, git-workflow, code-review, dtools 等）\n完整的 Skill/Command/Plugin 列表、官方插件配置、目录详情，均见\n配置仓库\n。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.25,
+        "peripheral": 0,
+        "transfer_business": 0,
+        "direct_local": 0,
+        "transfer_agent": 0.75
+      }
+    },
+    "relevance": {
+      "score": 1.83,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.1,
+        "2": 0.86,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.18,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.03,
+        "2": 0.06,
+        "3": 0.22,
+        "4": 0.57,
+        "5": 0.02
+      }
+    },
+    "decision_action": {
+      "score": 1.24,
+      "probabilities": {
+        "0": 0.61,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.24,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.67,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.35,
+        "3": 0.62,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.79,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.03,
+        "4": 0.84,
+        "5": 0.07
+      }
+    },
+    "anti_hype": {
+      "score": 3.62,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.06,
+        "3": 0.22,
+        "4": 0.7,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 15505,
+    "outputTokens": 172,
+    "totalTokens": 15677
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "decision_action": 0.18,
+        "evidence": 0.75,
+        "actionability": 0.77,
+        "anti_hype": 0.74,
+        "category": 0.69,
+        "relevance": 0.88,
+        "grounding": 0.42
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179973960,
+                "endTime": 1791179974150,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00065121",
+      "marketCost": "0.00065121",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00065121",
+      "inferenceCost": "0.00065121",
+      "inputInferenceCost": "0.00065121",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAS8PJSJMAYH1YF64VZC8"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:34 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::cq2bg-1791179973379-35a52534e156"
+    },
+    "body": {
+      "answers": {
+        "decision_action": {
+          "type": "score",
+          "score": 1.24,
+          "probabilities": {
+            "0": 0.61,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.24,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.67,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.35,
+            "3": 0.62,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.79,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.03,
+            "4": 0.84,
+            "5": 0.07
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.62,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.06,
+            "3": 0.22,
+            "4": 0.7,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.25,
+            "peripheral": 0,
+            "transfer_business": 0,
+            "direct_local": 0,
+            "transfer_agent": 0.75
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.83,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.1,
+            "2": 0.86,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.18,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.03,
+            "2": 0.06,
+            "3": 0.22,
+            "4": 0.57,
+            "5": 0.02
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 15505,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "decision_action": 0.18,
+            "evidence": 0.75,
+            "actionability": 0.77,
+            "anti_hype": 0.74,
+            "category": 0.69,
+            "relevance": 0.88,
+            "grounding": 0.42
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179973960,
+                    "endTime": 1791179974150,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00065121",
+          "marketCost": "0.00065121",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00065121",
+          "inferenceCost": "0.00065121",
+          "inputInferenceCost": "0.00065121",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAS8PJSJMAYH1YF64VZC8"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:33.379Z"
+  }
+}

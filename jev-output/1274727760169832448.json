@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1274727760169832448",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "DeepSeek Harness背后的“心脏”：Cordis 到底是什么",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803959&idx=1&sn=9d18ecc2139e8ab90a44515ca64b0db5",
+      "date": "2026-09-04T09:36:00.298Z",
+      "chars": 29577,
+      "text": "原创\n腾讯程序员\n2026-09-04 17:36\n广东\n从 Koishi 到 DeepSeek Harness: Cordis 的前世今生\n作者：\nlss233\nDeepSeek Harness 的\"一切皆插件\"背后，跑的是一个叫 Cordis 的框架——原本服务于第三方 QQ 机器人，如今被 DeepSeek 用作整个 Agent 运行时的地基。这篇文章希望用通俗易懂的语言，把 Cordis 的魅力介绍给大家：为什么\"卸载\"和\"协作\"能变成框架的默认行为，为什么\"改配置不用重启\"是理所当然，为什么一篇 88 页的论文会以它为研究对象。\n1. 插件系统为什么要一个框架\n1.1 四个问题\n假设你写了一个聊天机器人，最初逻辑都在一个文件里。功能变多后你开始拆模块，但模块化只解决\"代码怎么组织\"，解决不了另外四件事：\n安装\n：新功能怎么被\"接\"进系统？\n配置\n：同一功能在不同部署环境用不同配置，写在哪里？\n卸载\n：功能下线时，它的定时器、监听器、连接由谁来清理？清理不干净就是泄漏。\n协作\n：功能 A 依赖功能 B 的能力，但 B 可能还没启动、之后可能被替换成别的实现，A 该如何应对？\n插件系统就是对这四个问题的回答。Cordis 的特点是：它把\"卸载\"和\"协作\"这两件事，从\"插件作者的自觉\"上升为\"框架级保证\"。\n1.2 作者：Shigma\n先认识一下写出它的人——\nShigma\n。\nShigma 在第三方 QQ 机器人圈子里是相当出名的存在，(群友们)亲切地称呼他为\n梦梦\n。他的 GitHub 账号（\nshigma\n）下有 130 多个公开仓库，如果你把 npm 上几个包的主页打开，会看到一长串 maintainer 都是同一个人：\n包\n一句话描述\nkoishi\n跨平台聊天机器人框架（npm 官方描述：\"Made with Love\"）\ncordis\n插件化应用框架，本文的主角\n@satorijs/core\n跨平台聊天协议适配层（Koishi 支持 QQ、Discord、Telegram 的地基）\nschemastery\n类型驱动的 schema 校验器\nminato\n类型驱动的数据库框架（Koishi 的数据层）\ncosmokit\n通用工具集\n这是一套\n一个人撑起来的技术栈\n：Cordis 是骨架（生命周期与依赖），Schemastery 管配置校验，Minato 管数据存取，Satorijs 管平台协议，Koishi 是集大成者，整个体系共同运行在 Cordis 之上。这篇文章里讲到的每一个概念（fiber、effect、Schema、Service），都出自他一人之手。\nShigma 在 2023 年底接受过腾讯媒体研究院《20 多岁做什么时间更有价值》系列的专访（\nBV1AQ4y157S8\n），那时他是研二学生，做 QQ 机器人开发五年了。被问到 AI 会不会取代人类时，他说旧的岗位被取代，一定会创造出新的岗位，人类反而更有机会生活在更好的世界里。他做 QQ 机器人的初衷之一，就是帮自己提升工作效率。那时 Cordis 还在 Koishi 的小圈子里，没人想到它两年后会成为 DeepSeek Harness 的心脏。\n如今，Cordis 的配套论文《A Programming Paradigm for Spatiotemporal Composability》以预印本发布，署名单位是北京大学与 DeepSeek-AI，第一作者 Yifan Shi，合著者 Wei Zhang、Tianyi Cui。论文把 Cordis 的机制形式化，给出了定义、定理与证明。\n1.3 出身与名字\nCordis 诞生于\nKoishi\n——Shigma 创立的跨平台聊天机器人框架，2020 年 1 月发布首个正式版本。Koishi 的插件体系成熟后，核心层被独立出来成为通用框架：2022 年 4 月\ncordis\n包登上 npm；2023 年底进入 3.x；2024 年底开始迭代 Cordis 4（首个 4.0 预发布发布于 2024 年 11 月），一次彻底重构，引入了基于 fiber 的生命周期体系。\n名字的由来：Cordis 是拉丁语\"心\"（cor）的所有格，意为\"心脏\"。它是 Koishi 的心脏，如今也成了 DeepSeek Harness 的心脏。\n1.4 定位：元框架\nCordis 不是机器人框架（Koishi 才是，Cordis 只是它的底层），也不是 DI 容器。传统 DI 回答\"谁创建谁\"，Cordis 回答的是更困难的问题：\"谁在什么时候活着\"。论文给它的定位是\nmeta-framework\n：它规定\"副作用如何组合、依赖如何解析\"，但不预设任何业务领域，QQ 机器人可以用它，Agent 运行时也可以。\n2. 核心机制：五个概念，七个小节\nCordis 的全部语义可以浓缩为五个概念：\n插件、上下文、注入、事件、可逆副作用\n。由浅入深逐一拆开。\n2.1 第一个插件\n写 Cordis 插件最爽的一点：完全不需要框架启动代码。\n// hello.ts\nimport\ntype { Context }\nfrom\n'@deepseek-ai/cordis'\nexport\nconst\nname =\n'hello'\nexport\nfunction\napply\n(\nctx: Context\n)\n{\nconsole\n.log(\n'hello from my first plugin'\n)\n}\n# cordis.yml —— 应用本身就是一个配置文件\n- name:\n'./hello.ts'\n运行 DSH 自带的小启动器（创建根 Context、挂载 Loader 插件、读取\ncordis.yml\n），输出\nhello from my first plugin\n。注意分工：\n插件只描述贡献，应用长什么样由配置决定\n。这就是\"配置即组合\"。\n插件有三种形态：\nimport\n{ Service, type Context }\nfrom\n'@deepseek-ai/cordis'\nexport\nfunction\napply\n(\nctx: Context\n)\n{}\n// 1. 函数形态（最常见）\nexport\nconst\nobjectPlugin = {\n// 2. 对象形态\nname\n:\n'object-plugin'\n,\napply(ctx: Context) {},\n}\nexport\nclass\nMyService\nextends\nService\n{\n// 3. 类形态（要对外提供服务时用）\nconstructor\n(ctx: Context) {\nsuper\n(ctx,\n'myService'\n)\n}\n}\n在 DSH 里：你写的每一个工具插件、适配器插件、面板插件，都是这三种形态之一。\n2.2 上下文（Context）：一切操作的入口\n在 Cordis 里，你几乎只会跟一个东西打交道：\nctx\n。它是上下文，也是服务容器，承载了插件能做的所有事情：\nexport\nfunction\napply\n(\nctx: Context\n)\n{\nctx.on(\n'some/event'\n, (payload) => {\n/* ... */\n})\n// 监听事件（卸载时自动移除）\nctx.effect(\n()\n=>\n{\n/* ... */\n})\n// 注册副作用（卸载时自动回滚）\nctx.plugin(SomePlugin)\n// 挂载子插件（随父插件卸载）\nctx.get(\n'someService'\n)\n// 读取服务（没有则 undefined）\nctx.provide(\n'someValue'\n,\n42\n)\n// 提供服务\n}\nctx.plugin(child)\n不是简单的\"注册\"，而是派生出一个子上下文。插件因此不是平铺的，而是一棵树：\n子上下文能看到父上下文的一切（继承），但卸载是按层级的：父插件卸载，它的所有子插件递归卸载；子插件卸载，不影响兄弟和父级。这棵插件树是 Cordis 一切生命周期语义的骨架。\n在 DSH 里：你看到的每个功能（工具、模型、会话、面板）都对应着这棵树上的一次\nctx.plugin()\n。\n2.3 fiber：插件的生命周期\nCordis 4 为每个已加载的插件实例维护一个 fiber（纤维），状态机如下：\nPENDING：已声明，但\ninject\n的服务尚未就绪，等待中；\nLOADING / ACTIVE：\napply\n正在执行、已完成；\nFAILED：\napply\n抛异常或配置校验失败；\nUNLOADING / DISPOSED：清理中、已拆除。\n插件可能因配置修改、热重载、显式\ndispose()\n或依赖服务消失而被卸载。无论哪种原因，清理都是自动的。\n在 DSH 里：\ncordis_inspect\n巡检的就是每个 fiber 的状态；一个插件\"加载了却没反应\"，多半是蹲在 PENDING。\n2.4 effect：可逆的副作用\n这是 Cordis 的第一个核心机制，也是它与传统 DI 容器的区别所在。\nctx.effect(\n()\n=>\n{\nconst\nconn = createConnection()\nreturn\n()\n=>\nconn.close()\n// disposer：如何清理\n})\neffect\n的主体在加载时执行，返回的 disposer 在卸载时执行。\n你永远不需要自己调用清理函数\n，不管插件因为什么原因被卸载，Cordis 都会替你把定时器、监听器、连接全部回滚。\n此外，Cordis 的内置 API 本身就是 effect：\nctx.on()\n的监听器随插件卸载、\nctx.plugin()\n的子插件递归卸载、服务注册随提供方消失。论文的实现章节有一个关键结论：\nCordis 中所有对上下文的变更，最终都归结为\nctx.effect\n这一个原语\n，提供服务、挂载插件、注册监听器，全是它的特例。因此\"任何通过上下文进行的操作都自动可追踪、可恢复\"不是设计口号，而是结构事实。\n插件作者只需要记住一条铁律：凡是自己创建、Cordis 不管的资源，都包进\nctx.effect()\n。\n因为副作用可逆，插件就可以被安全地卸载与重装，由此获得热重载（HMR）、故障自动恢复、测试隔离。我们在第 5 章会看到，DSH 的\"动态插件装了就卸\"全部建立在这一行原语上。\n在 DSH 里：改配置 → 旧插件卸载（所有 effect 回滚）→ 新插件加载，进程不重启。这就是\"改配置不用重启\"的底层原理。\n2.5 服务与注入：响应式的依赖\n这是 Cordis 的第二个核心机制。\n把一项能力挂到\nctx\n上，让别的插件按名字取用，这就是 Service：\nimport\n{ Service, type Context }\nfrom\n'@deepseek-ai/cordis'\nexport\nclass\nGreeterService\nextends\nService\n{\nconstructor\n(ctx: Context) {\nsuper\n(ctx,\n'greeter'\n)\n// 注册：以后谁都能 ctx.greeter 拿到我\n}\ngreet(who: string) {\nreturn\n`Hello,\n${who}\n!`\n}\n}\n消费方只声明名字，不 import 实现：\nexport\nconst\ninject = [\n'greeter'\n]\n// 声明依赖\nexport\nfunction\napply\n(\nctx: Context\n)\n{\nconsole\n.log(ctx.greeter.greet(\n'world'\n)\n// 此时 greeter 必定就绪\n}\ninject\n的语义是：插件保持 PENDING，直到所列服务全部就绪。配置文件顺序无关紧要，启动顺序由依赖关系决定。\n与传统 DI 的本质区别在于：传统 DI 假设\"一旦绑定，服务就一直在\"；Cordis 的假设是\"\n服务可以随时出现，也可以随时消失\n\"。在 Agent 场景里这是常态，LLM 提供方被限流、MCP 服务器崩溃导致工具被注销、文件 watcher 被系统杀死。Cordis 的处理是：\n提供方被卸载时，所有依赖它的插件自动卸载（effect 回滚）；新提供方就绪后，自动重载\n。依赖方不需要写任何重连代码。\n此外还有两个配套机制：\nctx.isolate(key, realm)\n：隔离。让一个作用域内某项服务解析到独立实例，两个组各自用各自的实现，互不干扰；\nctx.intercept(key, meta)\n：拦截。给依赖访问附加元数据，外层上下文可以约束组件如何使用某个依赖，而不修改组件本身。\n在 DSH 里：\nctx.tools\n、\nctx.llm\n、\nctx.shell\n、\nctx.sessions\n、\nctx.skills\n全都是这样的服务（第 4 章会列出完整的槽位表）。\n2.6 事件：喊话与决策链\n服务适合\"直接打电话\"，但很多时候插件只想\"喊一嗓子\"或者\"拦一下\"，不关心谁在听。Cordis 的事件系统是类型化的，事件名和监听器签名靠 TypeScript 声明合并获得全链路类型安全：\ndeclare\nmodule\n'@deepseek-ai/cordis'\n{\ninterface Events {\n'stats/report'\n(name: string,\ncount\n: number):\nvoid\n}\n}\nctx.emit(\n'stats/report'\n,\n'tool_call'\n,\n42\n)\n// 发出\nctx.on(\n'stats/report'\n, (name, count) => {\n/* 监听，卸载时自动移除 */\n})\n事件采用哪种分发模式，是它的公开契约，决定了监听器能否返回值、能否并发、能否短路：\n模式\n语义\nemit\n同步广播；不等待、不收集返回值\nparallel\n所有监听器并发执行并等待\nserial\n按序执行；第一个非空返回值胜出，停止后续\nbail\nserial 的同步版本\nwaterfall\n环绕中间件（around-middleware），见下\nwaterfall 是 DSH 用得最多的模式，本质是把 Koa、Express 的中间件搬进事件系统：每个监听器收到参数和一个\nnext()\ncontinuation：\nctx.on(\n'some/decision'\n,\nasync\n(input, next) => {\nif\n(!hasPermission(input)\nreturn\n{\ndenied\n:\ntrue\n}\n// 不调 next() = 否决，短路\nreturn\nnext()\n// 调 next() = 放行\n})\n多个互不相识的插件，就这样组成一条决策链。这里有一条 DSH 明文纪律：只负责观察和记录的 waterfall 监听器必须调用\nnext()\n，否则会无声地吞掉下游所有默认行为。\n在 DSH 里：工具执行管道\ntools/pre-execute → tools/execute → tools/post-execute\n就是一条 waterfall 链；\napproval/request\n、\nagent/request\n也是。\n2.7 Schema 与声明式组合：配置即程序\ncordis.yml\n里的每一项（entry）都可以带元数据：\n- id: greeter          # 稳定身份：loader 靠它区分\n\"修改\"\n与\n\"删了重加\"\nname\n:\n'./greeter.ts'\n- id: consumer\nname\n:\n'./consumer.ts'\ndisabled\n:\ntrue\n# 保留条目但不挂载；改回后自动加载\nid\n：不带\nid\n的条目每次读取都会获得新 id，于是配置文件的任何编辑都会被当作\"先删后加\"。带\nid\n才能精准增量更新。\ngroup\n：把一组插件打包成单元整体装卸；配合\nisolate\n可让组内使用独立的服务实例。\nSchema 校验：插件用 schema 声明配置结构（schemastery，就是 Shigma 写的那个），Cordis 在调用\napply\n前校验。配置非法则加载失败并给出精确错误，\n插件绝不会在配置不完整时半启动\n。\nexport\nconst\nConfig: Schema<Config> = Schema.object({\ngreeting\n: Schema.string().default(\n'Hello'\n),\ntargets\n: Schema.array(\nString\n).default([\n'world'\n]),\n})\n!!js\n表达式\n：DSH 的 Loader 扩展支持在\nconfig\n与\ndisabled\n字段内写运行时求值的表达式（如\n!!js process.env.X ?? 'default'\n），并在依赖就绪后才求值。\n配置即程序：修改配置 = 局部热替换，无需重启。\n在 DSH 里：\ncordis.patch.yml\n与\n--patch\n覆盖层，就是这套声明式组合在生产环境的使用方式（下一章详述）。\nCordis 的五个核心概念全部出场：插件、上下文、注入、事件、可逆副作用，加上把它们串起来的 Schema。这些机制组合起来，能搭出多大的系统？下一章用 DeepSeek Harness 来回答。\n3. 在 DeepSeek Harness 中：一切皆插件\n以下内容来自 DSH 0.1.0-rc.6 的实际源码（\n@deepseek-ai/cordis\n4.0.1）。\n3.1 启动：约二十行代码搭起整个应用\nimport\n{ Context }\nfrom\n'@deepseek-ai/cordis'\nimport\nLoader\nfrom\n'@deepseek-ai/cordis-plugin-loader'\nasync\nfunction\nboot\n(\nbinName, configPath, patches, prepare, baseUrl\n)\n{\nconst\nctx =\nnew\nContext()\nctx.baseUrl =\n/* 相对路径基准 */\nctx.provide(\n'dshHomePath'\n, dshHomePath)\n// 引导值\nawait\nctx.plugin(Loader)\n// 挂载 Loader\nawait\nprepare?.(ctx)\nawait\nmountRootInclude(ctx, configPath, patches, baseUrl)\n// Include 挂载配置树\nawait\nctx.get(\n'loader'\n)?.await()\n// 等整棵树稳定\nawait\nassertEntriesActivated(ctx, binName)\n// 审计：不允许条目半死不活\nreturn\nctx\n}\n根 Context 只做了三件小事。其余一切，来自配置树。\n3.2 Profile：应用被拆成可叠加的层\nDSH 引入了 Profile 概念：\n$DSH_HOME/profiles/<名字>\n下的一个目录，包含 manifest（\ndsh.profile.bundles\n列出按顺序应用的组合包）和用户自己的\ncordis.patch.yml\n。配置树的组装顺序：\nBundle（组合包）就是一个 npm 包，其\npackage.json\n声明\n\"dsh\": { \"bundle\": { \"patch\": \"./cordis.patch.yml\" } }\n。核心组合包\n@deepseek-ai/dsh-base\n的 patch 就是把几十个插件一次 insert 进空根：\n- insert:\n- id: timer\nname\n:\n'@deepseek-ai/cordis-plugin-timer'\n- id: hmr\nname\n:\n'@deepseek-ai/cordis-plugin-hmr'\nconfig\n:\nroot: [\n'.'\n]\n- id: llm\nname\n:\n'@deepseek-ai/dsh-llm'\n- id: session\nname\n:\n'@deepseek-ai/dsh-session'\n- id: agent\nname\n:\n'@deepseek-ai/dsh-agent'\n- id: jobs\nname\n:\n'@deepseek-ai/dsh-jobs-local'\n# ……以及更多\n部署方想改默认行为，无需改任何源码，在自己的 patch 层按\nid\n覆盖一行即可（后写覆盖先写、可\ninsert\n、可\ndisabled\n）。\n连\"应用由哪些插件组成、各是什么配置\"本身，都是可叠加、可覆盖、可审计的声明\n，这就是\"一切皆插件\"的技术底座。\n3.3 工具流水线：Agent 的每一项能力\nAgent 的能力边界是\nctx.tools\n服务。注册一个工具，本质就是一个 Cordis 插件：\nexport\nconst\nname =\n'greet-tool'\nexport\nconst\ninject = [\n'tools'\n]\nexport\nfunction\napply\n(\nctx: Context\n)\n{\nctx.tools.register(defineTool({\nname\n:\n'greet'\n,\ndescription\n:\n'Greet the named person.'\n,\nparameters\n: {\nname\n: {\ntype\n:\n'string'\n,\nrequired\n:\ntrue\n} },\nasync\nexecute(args) {\nreturn\n`Hello,\n${args.name}\n!`\n},\n})\n}\ninject: ['tools']\n等待注册表就绪；\nctx.tools.register(...)\n注册即 effect，插件卸载时工具自动注销；\ntools/result\n事件让任何插件都能观察每次工具调用，无需认识执行者。本文写作过程中用到的\nbash\n、\nread\n、\ngrep\n、\nsubagent\n等工具，全部挂在\nctx.tools\n上。\n3.4 自指的设计：Agent 检查并改装自己的运行时\nDSH 最值得注意的包是\n@deepseek-ai/dsh-tool-cordis\n，官方称之为\"自指的 Cordis 工具集\"（self-referential Cordis toolset）。它给 Agent 提供五个工具：\ncordis_inspect\n：对当前进程只读巡检，哪些服务在运行、各 fiber 的状态、注册了哪些工具、每个\nctx.<key>\n的完整契约；\ncordis_define\n：现场定义一个小插件包（可带\"宿主半 + 浏览器半\"），只记录不执行；\ncordis_run\n：把宿主半放入\nnode:vm\n沙箱执行，把浏览器半推送到每个打开的网页；\ncordis_stop\n、\ncordis_undefine\n：卸载动态包。\nAgent 可以检查自己运行的框架、现场编写并运行动态插件、用完再卸载\n，全程不动\ncordis.yml\n、不装 npm 包、不重启进程。DSH 的信任立场很明确：动态包与 bash 同权，沙箱隔离全局但不构成安全边界。\n与之配套的\"双半插件\"设计：宿主半跑在服务端管逻辑，浏览器半跑在网页里管 UI，二者通过\nhost.call\n做 RPC。\"一切皆插件\"在 DSH 里是字面意义上的：前端 UI 组件也是插件（\ndsh-client-ui-*\n系列有几十个包），浏览器里运行着一个独立的 Cordis 客户端运行时。\n自省 + 现场改装，这两点叠加就是\"可进化 Agent\"的雏形，论文的结论部分恰好把\"自进化 Agent 运行时\"列为这套理论未来的验证方向（见 5.9）。\n4. 在 DSH 里能开发什么：插件槽位与插件创意\n这一章回答一个更实际的问题：如果我想在 DSH 里做点什么，有哪些\"槽位\"可以插？以下槽位清单来自 DSH 的能力文档（capability-seams）与安装包中实际注册的服务键。\n4.1 槽位：扩展点全部是服务\nDSH 的扩展点不是一个\"API 列表\"，而是一张 Cordis 服务注册表：任何插件都可以注册新服务，也可以替换已有服务的提供方（这正是 §2.5 响应式依赖的直接应用）。常用槽位按类别整理如下：\n类别\n槽位（\nctx.<key>\n）\n用途\n现有提供方（可替换）\n执行\nshell\nBash 执行\nbash-local\n、\nbash-sandbox\n、\npwsh-local\n、E2B\n执行\ncodeRuntime\n代码执行\ncode-runtime-worker\n执行\nsubprocess\n、\nterminals\n子进程、持久 PTY\nsubprocess-local\n、\nterminal-bash\n执行\nlsp\n语言服务器导航\nlsp-local\n模型\nllm\nLLM 适配器注册表\nllm-deepseek\n、\nllm-pi-ai\n、\nllm-replay\n智能\nagents\n、\nagentLoop\n、\nagentDefaultModel\nAgent 注册表、循环驱动、默认模型\nagent-loop\n、\nagent-default-model\n智能\nagentPresets\n会话级 Agent 组合\nagent-presets\n智能\nsubagents\n子 Agent 提供方\nsubagent-spawn/fork-in-process\n、ACP、Codex、Claude Code\n数据\nsessions\n、\nsessionPersistence\n会话日志、持久化\nsession-persistence-jsonl\n、\n-sqlite\n数据\nsessionQuery\n会话读取与检索\nsession-query-sqlite\n数据\nstorage\n、\nattachments\n、\nspillStore\n通用存储、附件、溢出存储\nstorage-json\n、\nstorage-sqlite\n、\nattachment-local\n、\nspill-local\n数据\nsessionTitle\n、\nsessionProjections\n会话标题、投影单元\nsession-title-first-prompt-llm\n等\n环境\nfs\n文件系统提供方\nfs-local\n、\nfs-sandbox\n、\nfs-e2b\n环境\nweb\nWeb 访问（抓取、搜索）\nweb-fetch-http\n、\nweb-search-deepseek/exa/perplexity\n环境\ncredentials\n、\nsettings\n凭据、用户设置\ncredentials-local\n、\nsettings-file\n环境\nwebServer\n、\ndirectoryPicker\nHTTP 路由、目录选择\nwebserver\n、\ndirectory-picker-native/browse\n治理\ntools\n工具注册表与受保护执行管道\n所有\ndsh-tool-*\n治理\napproval\n、\npermissionPresets\n、\nsandboxPolicy\n审批、权限、沙箱策略\napproval\n、\npermission-presets\n、\nsandbox-policy\n编排\ngoals\n、\njobs\n、\nworkflowEngine\n、\nplanMode\n长期目标、后台任务、工作流、计划模式\ndsh-goal\n、\ndsh-jobs-local\n、\nworkflow-worker-thread\n自指\ndynamicCordisRunner\n、\ncordisInspect\n动态包宿主、运行时巡检\ncordis-host-runner\n前端\nslots\n、\nclientModules\n、\ntheme\n、\nlocale\nUI 槽位、客户端插件图、主题、语言\ndsh-client-ui-*\n系列\n4.2 槽位背后的设计：三种角色\nDSH 对\"可替换能力\"有一套固定模式，\nService Definition、Service Provider、Consumer\n三种角色，以\nshell\n为例：\nDefinition 只声明服务与类型，几乎不变；\nProvider 可以独立替换，换一个提供方（比如换成沙箱执行），通过\ncordis.yml\n改一行配置，Definition 和所有 Consumer 保持不变；\nConsumer 与 Provider 互不依赖。\n这套模式就是\"一切皆插件\"在能力层面的落地：每一项能力都是一个 seam（接缝），接缝两侧可以独立演进。\n4.3 开发入口：三种方式把插件装进去\npatch 覆盖层\n（最快）：写一个 YAML，\ndsh web --patch ./my-plugins.yml\n启动时插入条目：\n- insert:\n- id: my-plugin\nname\n:\n'/abs/path/to/my-plugin.ts'\nprofile 的\ncordis.patch.yml\n：常驻生效的用户层；\nbundle 包\n：把一组插件打包成 npm 包，声明\ndsh.bundle.patch\n，成为可复用的\"组合包\"。\n插件代码本身依然是 Cordis 那套：函数、对象、类三种形态、\ninject\n声明依赖、\nctx.effect\n管理资源、\nSchema\n校验配置、\nctx.tools.register(defineTool(...)\n注册工具。\n4.4 已经存在的插件（举例）\n内置的插件（\ndsh-*\n包）按角色分四类：\n工具类（挂在\nctx.tools\n上，即 Agent 能调用的能力）：\ntool-bash\n、\ntool-fs\n、\ntool-fs-search\n、\ntool-web\n、\ntool-subagent\n、\ntool-subagent-control\n、\ntool-workflow\n、\ntool-goal\n、\ntool-jobs\n、\ntool-todo\n、\ntool-skill\n、\ntool-ralph\n、\ntool-ask-user\n、\ntool-lsp\n、\ntool-cordis\n（自指工具集）……\n提供方类：模型适配器（DeepSeek、pi-ai 多提供方、replay）、shell 提供方（本地、沙箱、PowerShell）、fs 提供方（本地、沙箱、E2B）、web 搜索源（DeepSeek、Exa、Perplexity）、持久化后端（JSONL、SQLite）、存储后端、技能提供方、会话标题生成器……\n系统类：上下文压缩（\ncompaction-basic\n）、token 计量、消息反馈、权限预设、计划模式、长期目标、审批管道……\n前端类：\ndsh-client-ui-*\n数十个包，设置页、模型选择、插件管理、任务面板、子 Agent 面板、目标面板、主题……\n内置之外，社区已经长出了一片插件生态。GitHub 上有一个社区维护的精选列表\nawesome-dsh-plugin\n（搜\ndsh-plugin\n话题就能找到），截至 2026 年 8 月收录\n174 个\n可通过\ndsh plugin add\n安装的插件：\n几个有代表性的例子：\n改界面\n：\ndsh-visualize\n让模型把交互式 HTML 卡片直接画进会话流；\ndsh-TUI\n是像素鲸鱼顶栏的全屏终端 UI；\ndsh-deep-whale\n是一系列 Web 皮肤；\ndsh-balance-meter\n在输入框显示账户余额与花费；\n改记忆\n：\ndsh-memento\n提供有界、分层、带审批门、可审计的跨会话记忆；\ndsh-mneme\n用 SQLite + 可编辑的 Markdown 镜像做跨会话记忆；\n改能力\n：\ndsh-computer-use\n让 Agent 控制 macOS；\ndsh-data-agent\n帮 AI 连数据库写 SQL；\ndsh-docker\n是带护栏的容器控制；\ndsh-toolkit\n一键装十件套零依赖工具；\n改协作\n：\ndsh-agent-teams\n多智能体团队；\ndsh-crosstalk\n跨会话互发消息；\ndsh-chat-import\n把 Claude Code、Codex、ChatGPT 的聊天记录导入为 DSH 会话；\n自进化\n：\ndsh-evolve\n让 Agent 在会话内给自己热挂载、卸载持久化插件；\ndsh-continual-evolve\n从会话轨迹沉淀可审计、可回滚的 harness 状态；\n插件基建\n：\ndsh-find-plugin\n让 Agent 在会话内直接搜索并安装插件；\ndsh-plugin-manager\n提供\ndsh pm\n多源插件管理。\n4.5 可能的插件：常规与\"惊艳\"\n常规方向（模式成熟、直接照着现有插件写）：\n新工具：数据库查询、浏览器自动化、Docker、K8s 操作、MCP 客户端、Git 操作、部署与测试运行器；\n新提供方：接入任意 LLM 的适配器、远程、容器 shell 提供方、新的搜索源、新的持久化与存储后端、新的技能提供方；\n治理与可观测：审批策略插件（挂在 waterfall 链上）、权限预设、审计日志、token 预算控制、OTel 遥测（已有 seam）；\n界面：新的 Web 面板（\nslots\n）、命令面板、通过\nwebServer\n暴露 HTTP API。\n\"惊艳\"方向（以下都不是空想，每一步都落在 DSH 现成的机制上）：\n会写插件的插件\n：插件可以用\nctx.loader.create()\n在运行时动态挂载、更新、移除其他配置条目，插件本身去\"组装\"插件；再配合\ncordis_define\n、\ncordis_run\n，Agent 可以现场生成并运行自己的工具。\n这是\"自进化\"的闭环\n：生成 → 沙箱运行 → 观测结果 → 保留或卸载。\n会话级隔离的\"分身\"\n：\nctx.isolate\n+\nagentPresets\n让每个会话拥有独立配置的服务实例，这个会话用 DeepSeek 模型 + 本地执行，那个会话用别的模型 + 沙箱执行，互不干扰。相当于一个进程里跑多个\"虚拟 Harness\"。\n生产环境不停机换引擎\n：在 patch 层替换\nllm\n、\nshell\n的提供方，所有依赖方自动卸载重载；如果按论文的 service broker 模式实现（见 5.7），还能做\n灰度与滚动切换\n（新旧提供方并存，按权重分配请求）。\n策略网关\n：用 waterfall 事件把\"审批 → 权限 → 限流 → 审计\"串成一条决策链，新增一条策略 = 新增一个监听器插件，不需要改执行管道。\n专家 Agent 池\n：基于\nctx.subagents\n构建一组常驻子 Agent（代码审查员、测试员、文档员），主 Agent 按需调度、失败续接，子 Agent 从\"一次性工具\"升级为\"常驻服务\"。\n分层记忆系统\n：在\nsessionProjections\n、\nsessionProjectionCache\n上实现工作记忆、长期记忆与摘要折叠，Agent 的\"记忆\"变成可插拔的插件。\n浏览器双半插件\n：一个动态包同时携带宿主半与浏览器半，现场给 Web UI 注入一个面板、一个监控视图，用完即卸，全程不提交代码。\n工作流即插件\n：在\nworkflowEngine\n上注册新的编排范式（除 Ralph 循环、并行 fan-out 之外的自定义迭代模式），把\"如何多 Agent 协作\"本身变成可组合的插件。\n这些方向的共同点是：\n它们都靠\"插一个插件\"实现，而不是靠\"改框架\"\n，这正是 Cordis 的时空可组合性在 DSH 里的兑现。\n5. 论文说了什么：从\"好用的框架\"到\"被证明的范式\"\nCordis 的配套论文《A Programming Paradigm for Spatiotemporal Composability》（\ncordiverse/paper\n）由北京大学与 DeepSeek-AI 的研究者合著，88 页预印本。它做的事不是\"给 Cordis 写说明书\"，而是\n把 Cordis 的核心机制形式化，证明它们构成一种新的编程范式\n。论文里没有一句\"我们的框架很优秀\"，有的是定义、定理与证明，以及一个贯穿始终的主张：\n动态组合（运行时装卸组件）缺乏形式基础；Cordis 用两个运行时机制把它补上了，并证明了由此得到的性质。\n5.1 论文要解决的问题：动态组合为什么难\n软件工程的一切都建立在\"组合\"之上。但传统组合是静态的：函数调用、模块导入、类继承在编译期就固定下来。而现代软件越来越需要动态组合，运行时加载、卸载、重配置组件。插件架构和自进化 Agent 都需要\"运行时安全地增删功能\"，可这类系统的理论基础，远不如静态组合成熟。\n论文把动态组合拆成两个正交维度：\n时间维度（temporal composability）\n：组件被移除时，它对共享环境做的修改必须被完整、安全地逆转。静态程序里这对应词法作用域（RAII：资源获取即初始化）；动态场景下副作用可能是长生命周期的、没有词法边界的，难得多。\n空间维度（spatial composability）\n：组件必须能声明、发现、解析相互依赖。静态程序里这对应模块解析；动态场景下依赖会\n出现、消失、更换身份\n。\n为什么这个问题被长期回避？因为操作系统和容器编排提供了一个粗粒度替代：进程粒度的时间可组合性（进程死了状态全清）＋服务粒度的空间可组合性（依赖交给编排器）。但代价沉重：每次重启丢弃全部进程内状态（缓存、连接、半成品计算），重建要花几秒到几分钟；跨地址空间的依赖无法用函数调用表达，只能走网络。\n论文用 VS Code 做反例，把痛点钉死：\n前 100 个热门扩展里 87 个含可执行代码\n，但扩展宿主无法在运行时卸载单个扩展，禁用或卸载必须重启整个宿主；\ndeactivate\n钩子只在宿主进程退出时调用，且把\"创建效果\"和\"清理效果\"分在两处，违背了关注点局部性。扩展间依赖机制（\nextensionDependencies\n）只有 7 个扩展使用，因为依赖解析是无类型的\nany\n，没有结构契约。\n这些局限不是 VS Code 独有的，而是插件系统的通病。Cordis 的目标，就是把时间与空间两个维度上的保证，做成结构性质。\n5.2 理论支柱：effect 与 coeffect\n论文的两个支柱是编程语言理论里的两个经典概念：\neffect（效应）\n：描述\"计算对环境做了什么\"，写文件、分配内存、发消息。源自 Moggi 的 monad 理论，Haskell 的\nIO\n、代数效应与处理器（algebraic effects）都属于这条线。\ncoeffect（余效应）\n：描述\"计算对环境要求什么\"，需要读哪些配置、依赖哪些服务。源自 Petricek 等人 2013 年的工作，是 effect 的对偶。\n关键观察：\n这两个概念传统上都是编译期静态分析工具\n，类型系统在编译时检查\"这段代码可能产生什么副作用、需要什么上下文\"，约束是词法作用域内固定的。Cordis 的论文把它们\n提升为运行时机制\n，让它们能在组件随时到达和离开的动态场景下工作。这是论文区别于既有工作的出发点。\n5.3 可逆副作用：把\"撤销\"做成结构保证\n5.3.1 核心想法：每个变换都携带逆\n时间维度的诉求是：卸载组件 = 恢复共享环境。论文把 effect 建模为：\ne : Γ → Γ × (Γ → Γ)\n一个 effect 函数作用于当前上下文 Γ，返回新上下文和一个逆函数（undo 函数）。把逆交给运行时，effect 就可追踪；逆被运行时组合，恢复就成为结构保证，而不是\"开发者记得清理\"。\n形式上，定义\n效应上下文\n∂Γ = (γ, φ)\n：\nγ\n是当前状态，\nφ\n是\n累加器\n，到目前为止所有 effect 的逆的复合。于是：\ntrack\n：执行 effect 时，把新状态写入\nγ\n，把它的逆复合进\nφ\n；\nrecover\n：卸载时，把\nφ\n作用到当前状态，\nφ(γ)\n就回到初始状态（论文称\nφ(γ) = γ0\n为 soundness invariant，健全性不变量）；\n逆按相反顺序累积（twisted composition）：先执行的 effect 后撤销，天然 LIFO。\nCordis 中所有上下文变更都归结为\nctx.effect\n这一个原语\n，提供服务、挂载插件、注册监听器全是它的特例。现在它有了证明。\n5.3.2 关键性质 1：精确恢复\n如果每个逆都在它自己应用时的状态上执行，恢复是精确的（Theorem 7、16）：按 LIFO 撤销时，每个逆面对的正是它当初执行时的上下文，因此一切状态都被还原。\n但真实系统里，多个组件交错运行，撤销 A 时，A 之后还有 B、C 的 effect 在执行。这时 A 的逆面对的是一个被\"外来 effect 移动过\"的状态。\n5.3.3 关键性质 2：独立性（independence）\n论文定义两个 effect 独立，当它们的所有变换互相可交换、且互不干扰对方产出的逆。对独立的一族 effect，可以按任意顺序撤销（Corollary 21），这正是\"从交错运行的多个组件中单独撤掉一个\"的理论基础：\n只要组件的 effect 两两独立，任何一个组件都可以被单独卸载，它的贡献归零，周围组件的状态不受影响。\n实际上，独立性的条件大多自动成立：不同 key 上的操作天然独立（Theorem 40，读写不同依赖表条目的操作当然可交换）。这正是事件监听器、路由注册这类\"注册表操作\"可任意增删的数学解释。而\"有序链\"（比如中间件插入顺序影响请求）则不是独立的，需要靠别处维持顺序，这就是为什么 Cordis 的\nctx.on(event, listener, { prepend })\n和 waterfall 事件需要显式顺序语义。\n5.3.4 关键性质 3：恢复是\"观察等价\"而非字面相等\n一个细节：\nfree\n把内存块还给分配器，并不会恢复\nmalloc\n之前堆的布局；生成式名字被丢弃后，下次创建又是新名字。所以论文把恢复读作\n观察等价 ≃\n：两个状态相关，当没有观察者能区分它们。观察者的观察手段就是 coeffect，每个依赖键自带一个等价关系，状态的等价由各键的等价组装而成（Definition 33）。\n恢复的语义不是\"回到过去\"，而是\"任何观察者都看不出区别\"\n——这是让可逆性在真实系统里可成立的关键让步，也让独立性变得可达：两个操作留下的值只要 ≃ 等价，就算可交换。\n5.4 响应式余效应：把\"依赖\"做成结构保证\n5.4.1 依赖表也是类型化的\n空间维度的诉求是：组件声明依赖，系统在运行时解析、提供、撤销依赖。论文把 IoC 容器形式化为\n余效应上下文 Σ\n：一个类型化的部分函数，把依赖键\nk\n映射到类型\nV_k\n的值，\n每个键都有静态类型\n，这是对\"依赖查找是\nany\n\"的根治。\n两个核心操作\nget\n、\nset\n，其中\nset(k, v)\n的类型恰好是 5.3 的 effect 函数，注册一个依赖本身就是可逆 effect，撤销提供方时依赖自动消失。这就是两层机制协同的地方：\ncoeffect 操作是 effect，而 effect 可逆\n。\n5.4.2 规范与通知：激活、停用、无关\n组件用\n规范（specification）\nd ⊆ K\n声明它需要的依赖集合；系统判定满足性\nσ ⊨ d\n（\nd\n中每个键都在表里）。关键在于把每个上下文变化对照规范分类（Definition 26）：\nactivating   ：之前不满足，现在满足了\ndeactivating ：之前满足，现在不满足了\nneutral      ：与满足性无关\n反应式不变量：\nactivating 触发组件执行（带完整 effect 追踪），deactivating 触发组件恢复（应用累加器）\n。由于所有变更都经 effect 函数（可逆），满足性变化在每个 effect 边界都可被检测，\"每个依赖变化都会被观察到\"是代数层面的保证，不是靠轮询。\n这就是\ninject\n的数学形式：\ninject: ['greeter']\n就是声明\nd = {greeter}\n，fiber 保持 PENDING 直到\nσ ⊨ d\n，提供方卸载时\nd\n失满足 → deactivating → 依赖方自动卸载，提供方恢复 → activating → 自动重载。\n5.4.3 隔离与拦截：调整\"解析\"而非\"存储\"\n论文还形式化了两个机制（对应\nctx.isolate\n、\nctx.intercept\n）：\n隔离（coeffect isolation）\n：引入 realm（域）表，\nget(k)\n先解析\nρ(k)\n得到 realm，再查 realm 里的值，\n同一个键在不同上下文解析到不同值\n。论文称这是\"运行时 ad-hoc 多态\"。多租户、测试环境、组件沙箱都是它的直接应用。与 DI 的差别：\nisolate\n是派生（derived）实现，生成一个新上下文，不改共享表，回收时直接丢弃，无需逆。\n拦截（coeffect interception）\n：给依赖访问附加元数据。\nget(k, μ)\n实际调用\nσ(k)(μ ⊕ ι(k)\n，组件声明的元数据与上下文携带的元数据按各键的幺半群语义合并（标量覆盖、集合取并），右偏：外层上下文可以约束组件如何使用某个依赖，而不修改组件本身。比如沙箱策略插件可以给\nshell\n键附加元数据，约束所有使用方。\n5.5 统一上下文：Context 即范式\n5.5.1 一个自相似的递归类型\n把两层机制统一，论文定义\n上下文类型\n：\nΓ∞ = μΓ. Γ × (Γ → Γ) × Σ\n自相似的递归类型：当前状态（递归）、累加器（恢复本层 effect）、依赖表（coeffect 信息）。三个投影让\"效果\"与\"余效应\"两个方向\n收进同一个\nctx\n，每个操作都能归因到调用它的具体上下文，进而归因到拥有该上下文的组件。由于 Σ 的值类型无约束，\"任何需要在组件间共享的状态都可以编码成一个依赖\"，Σ 不只是依赖表，它\n包含了一切共享可变状态\n。\n层次组合是递归结构的直接推论：\n加载组件 = 插电（执行其 effect），卸载 = 拔电（恢复其 effect）\n，父上下文聚合子 effect，任意嵌套，这正是 Cordis 的插件树（见 2.2）。\n5.5.2 观察等价供给独立性\n3 的独立性需要一个条件，5.5 补上了它：在 coeffect 上定义观察等价，商掉（quotient）之后，独立性变得可达，两个操作只要留下 ≃ 等价的表，就算可交换（Theorem 42）。论文把这称为\"把计算的可交换部分与对顺序敏感的部分分开\"：可交换的部分交给 effect（任意顺序执行、任意顺序撤销，组件互不约束）；对顺序敏感的部分交给 coeffect（谁提供、谁声明，由依赖关系强制顺序）。\n5.5.3 范式定位：两端之间的第三极\n论文专门用一节（\"Situating the Context Paradigm\"）论证这不是\"又一个框架\"，而是一个\n独立的编程范式\n，定位在两大传统之间：\n传统\n代表\n优点\n代价\n显式状态传递（函数式）\nState monad、代数效应\n效果在类型中可见、可等式推理\n每个函数都要传递状态参数；monad 堆叠样板爆炸\n隐式变更（命令式、OOP）\nReact\nuseEffect\n、Spring\ngetBean\n易用、无样板\neffect 靠调用顺序标识（藏在隐藏运行时状态里）；依赖是全局注册表 + null 检查 + 类型转换；\"f() 改了什么依赖什么\"要读实现才能懂\nContext 范式 = 函数式的可追踪性 + 命令式的易用性\n：所有 effect 与依赖都通过显式\nctx\n参数中介，操作可归因；同时开发者不需要写 monad 样板，\n提供每个原子操作的逆、声明所需依赖，其余全部自动\n：\n\"对于可逆副作用，开发者提供每个原子操作的逆，任何复合的逆由组合自动得出，组件的 teardown 是从它的 loading 推导出来的，而不是另写的；对于响应式余效应，组件只声明所需依赖，运行时自动解析与重接线。两个方向上，原本依赖开发者纪律的正确性，变成了范式的结构性质。\"\nCordis 把\"正确卸载、正确接线\"从开发者要守的纪律，变成了定理。\n5.6 动态组合演算与元理论：从局部保证到全局保证\n3–5.5 给出的是局部性质（单组件视角）。把它们带到整个交错系统，论文定义组件为三元组\n(d, p, e)\n，声明依赖 d、声明提供 p、带见证的 effect 函数 e；fiber 是一次实例化，携带自己的生命周期状态、累加器与\"已承诺视图\"（committed view，记录各依赖当时解析到哪个提供方）。系统状态里的注册表是一棵 fiber 树，而 coeffect 上下文不是存储的，是从所有活跃 fiber 的提供表联合推导出来的，每个键有且仅有一个提供方，由声明决定而非由状态决定。\n由此给出操作语义（激活、停用、重载、卸载、失败等迁移规则），并证明五条元理论性质：\n性质\n直觉\n工程意义\nPreservation（保型）\n每个迁移保持系统良构\n状态机不会走到非法状态\nTemporal composability（全局）\n撤掉一个 fiber，它的贡献归零，周围 fiber 原样（Corollary 62）\n单个插件可热卸载，不影响邻居\nSpatial composability（全局）\n提供方离开前，依赖它的 fiber 先被停用（Theorem 63）\n不需要手动编排卸载顺序\nProgress（进展）\n只要未达到 quiescent 就有规则可应用（无死锁）；且目标视图翻转次数有限、步骤数有上界，必然终止（Theorem 66）\n配置更新一定会收敛，不会卡死\nConfluence（汇合）\n稳定状态只由最终配置决定，与加载、卸载的中间顺序无关（Theorem 73）\n配置对账（reconciliation）可以增量、任意顺序执行\n其中 Progress 有个很实的前提：\nprecedence 关系 ≺（我提供你声明的键）必须无环\n，这正是依赖图不能成环的数学表达，也是 Cordis 拒绝循环依赖的原因。而 Confluence 是整篇论文最直接的工程收益：\n因为它，Loader 可以对配置做增量对账而不用担心顺序\n，无论先装谁、后卸谁，系统最后到达的状态都一样。\n5.7 理论如何变成代码\n论文的实现章节给出一张完整的理论→代码对照表（摘录）：\n理论\n实现\n上下文 Γ∞\nctx\n（一等上下文）\n效应上下文 ∂Γ、累加器\nctx.effect\n，fiber 的 accumulator\nget(k)\n、\nset(k, v)\nctx.get(key)\n、\nctx.set(key, value)\nisolate(k, r)\n、\nintercept(k, ν)\nctx.isolate(key, realm)\n、\nctx.intercept(key, meta)\n组件实例（fiber）\nfiber：\nuid\n、\ninject\n、\nprovide\n、\napply\n、\nparent\n、\nstate\n、\ncommitted\n、\ninertia\n（进行中迁移的句柄）\n注册表\nctx.registry\n恢复（accumulator）\nfiber.dispose()\nLoader 部分对应论文的声明式配置：\nentry（配置条目）=\nid\n（对账键）、\nurl\n（DSH 配置里写作\nname\n）、\nisolate\n、\nintercept\n（注解）、\nconfig\n（绑定进\napply\n的配置）、\ndisabled\n（管理性关闭），与 DSH 的\ncordis.yml\n条目一一对应；\n配置对账（reconciliation）\n：按字段差异选择最小操作，\nid\n/\nurl\n变了重建，\nisolate\n变了重分配 realm，\nintercept\n原地更新（读取时才咨询），\nconfig\n交给组件自行 diff，\ndisabled\n卸载、重载；group 条目的子列表按 id 做键控 diff，递归下探。\n对账之所以可以增量、任意顺序，正是 5.6 的定理撑腰\n；\nHMR\n三阶段：① 依赖图不动点分类模块 accept/decline（被 accept 的导入 → accept；所有导入都 decline → decline；陷入环的默认 decline）→ ② 按 entry 的传递依赖树检测过期条目 → ③\n事务性重载\n：备份模块缓存，逐个 dispose 旧 fiber、挂载新 fiber，任何一步失败则恢复缓存、用旧模块重建，系统永远不会处于半重载状态。注意：Cordis 的 HMR\n不需要开发者标注 accept 边界\n（对比 Webpack/Vite），因为 fiber 本身就界定了组件全部效果的边界，替换一个组件 = 一次 fiber 操作。\n论文的讨论章节还展开了一些工程延伸：\n系统边界（system boundary）\n：不是所有东西都可逆，可独占修改、可恢复的位置\"在边界内\"（文件、私有内存），会被外部程序读写的位置\"在边界外\"（操作视为不可追踪）。\nctx.intercept\n可以把一个外部位置 reify 成可逆操作：把它包装成一组自带逆的受限操作，边界就向内移动。移动边界本身是权衡：换取可恢复性，付出每次访问的开销。\n补偿（compensation）\n：对真正无法逆转的\"发射\"（邮件已发出、款项已扣），用应用级补偿动作（删文件、退款）替代，且补偿按 LIFO 顺序组合，删除的逆是再创建，退款的逆是再扣款。\n服务多路复用（service multiplexing）\n：独占绑定（一个接口同时只绑一个实现，切换要短暂扰动所有消费方）vs\n服务代理（service broker）\n，一个常驻 broker 注入给提供方和消费方，多个提供方共存、broker 分发请求。消费方永远看到同一个依赖，提供方热更新不触发任何重载。由此获得三个能力：\n负载均衡、滚动更新、跨进程调用\n。这正是 DSH 的\nllm\n适配器注册表与 pi-ai 多提供方机制的论文原型。\n5.8 与既有系统的对比：特点的证明\n把 Cordis 放进坐标里，它的位置才清晰。沿着\"时间维（卸载）→ 空间维（依赖）\"两个轴，逐个对照八类系统。\n传统 DI 容器（Spring、NestJS、InversifyJS）\n模型：容器负责创建与绑定（\nbind\n、\ngetBean\n），对象图在启动时装配。\n时间维：\ngetBean\n拿到的服务没有生命周期管理，容器不知道、也不负责\"服务下线后谁清理它的副作用\"。NestJS 的\nOnModuleDestroy\n是手动钩子，而且把\"创建效果\"与\"清理效果\"写在两处，违背关注点局部性（论文在 VS Code 的\ndeactivate\n上批评过同样的问题）。\n空间维：依赖是运行时查找，\ngetBean\n的返回值往往需要调用方自己断言类型（Java 里是类型转换，很多框架里干脆是\nany\n）；依赖关系隐式、散落在代码各处。\n差距：\n绑定即永久\n。容器的隐含假设是\"一旦装配，对象图不再变化\"，没有\"服务消失 → 依赖方自动重建\"的概念，与 Cordis 的假设（服务可随时出现、可随时消失）正好相反。\nReact Hooks\n模型：\nuseEffect(fn, deps)\n把副作用挂到组件实例上。\n时间维：清理函数是有的（return 的 cleanup），但 effect 的\"目标\"是隐式的，它靠调用顺序在隐藏的运行时状态里登记，函数组件卸载时按注册顺序清理。这套机制绑死在 React 的渲染模型上，无法推广为通用组件的装卸语义。\n空间维：依赖数组是静态声明，\ndeps\n只在渲染时做值比较，没有运行时依赖解析，也没有\"依赖提供方被替换 → 依赖方自动重载\"。\n差距：React 的 effect 是\"组件内的回调\"，Cordis 的 effect 是\"上下文上的可逆变换\"。前者服务于 UI 渲染生命周期，后者服务于任意组件的装卸。\nOSGi\n模型：模块化 Java 的经典方案，服务注册表 + provider、consumer，是所有对照里\n最接近 Cordis 的先驱\n。\n时间维：bundle（模块）可以动态安装与卸载，服务注册、注销是动态的。\n空间维：consumer 通过服务注册表绑定服务；\n但服务消失时，consumer 不会自动重连或重载\n，它拿到的是已失效的引用，需要自己处理。\n差距：OSGi 有\"动态\"的机制，却没有\"响应式\"的语义。Cordis 的 reactive coeffects 把\"依赖变化 → 分类通知 → 激活、停用 → 自动重载\"做成了框架级行为，这正是论文 spatial composability 定理的兑现。\nVS Code 扩展宿主\n模型：扩展在共享进程（extension host）里\nactivate\n，通过固定的扩展点（commands、views）贡献能力。\n时间维：\n无法在运行时卸载单个扩展\n，禁用、卸载必须重启整个宿主（实测数据见 5.1）；\ndeactivate\n钩子只在进程退出时调用。\n空间维：\nextensionDependencies\n几乎没人用；扩展间交互靠\nvscode.extensions.getExtension(...).exports\n，返回值是未检查的\nany\n。\n差距：VS Code 的问题不是\"实现得不好\"，而是\"架构上没有这条路径\"，插件向固定扩展点贡献能力，而不是向其他插件声明依赖。\n微服务、容器（粗粒度替代）\n模型：把时间可组合性下放给进程（重启即恢复），把空间可组合性下放给编排器（K8s 服务发现）。\n代价：每次重启丢弃全部进程内状态（缓存、连接、半成品计算），重建要花秒级到分钟级；跨地址空间的依赖只能用网络表达，无法用函数调用；编排器也无法表达共享同一地址空间的组件间依赖。\n差距：粒度错配。现代系统在进程内、组件级进行组合，而容器提供的组合粒度在进程外。\nmonadic effect（ZIO、Effect-TS、fp-ts）\n模型：把副作用编码进类型系统，\nZIO[R, E, A]\n、\nEffect<A, E, R>\n，其中\nR\n就是\"这个计算需要什么服务\"。\n时间维：追踪是\nmonad 嵌入\n换来的，程序必须整个写进 effect 类型，才能获得追踪；Cordis 则是对普通宿主代码的覆盖式追踪（\nctx.effect\n包住任意代码）。\n空间维：需求（\nR\n）由解释器（interpreter）在运行时装配；\n但服务被撤走时，已经通过它执行的操作留在原地\n，没有逆，没有恢复。\n差距：这正是论文 5.3 / 5.4 的对照：Cordis 把\"追踪\"从类型嵌入换成运行时逆追踪，把\"需求装配\"从一次性解释换成持续重解析。\n代数效应（Effekt、Koka）\n模型：effect 操作对类型系统可见，一个操作可以有不同的 handler 语义。\n时间维、空间维：静态类型层纪律，能力默认是 second-class、限于词法作用域（Effekt 通过 boxing 提升为一等）。\n差距：\n目的不同\n。代数效应让 effect 可见是为了\"模块化解释\"（一个操作多种语义）；Cordis 让 effect 可见是为了\"追踪与逆转\"（每个变换配对逆）。论文 7.1 节明确点出了这一区别。\nWebpack / Vite HMR\n模型：开发期的模块热替换。\n时间维：需要开发者\n标注 accept 边界\n（\nmodule.hot.accept\n），漏标就退化为整页刷新，替换边界由人工声明。\n差距：Cordis 的 HMR 不需要 accept，fiber 本身就界定了组件的全部效果边界，替换一个组件 = 一次 fiber 操作（dispose 旧的 + 挂载新的），且是事务性的（失败回滚，绝不进入半重载状态）。\n收束：一张表\n系统\n时间维（卸载）\n空间维（依赖）\n差距\n传统 DI（Spring）\n无：\ngetBean\n拿到的服务没有生命周期管理\n全局注册表，\nnull\n检查 + 类型转换\n绑定即永久；依赖关系隐式、散落\nReact\nuseEffect\neffect 可清理，但靠调用顺序标识，目标隐式\nhooks 依赖数组与 effect 分离\n卸载语义不随组件树自动成立\nOSGi\n服务可卸载，但消费方不自动重连\n服务模型（provider、consumer）\n有动态机制，无响应式语义\nVS Code\n无法热卸载：87% 热门扩展需重启宿主\nextensionDependencies\n几乎没人用，\nexports\n是\nany\n只能整宿主重启\n微服务、容器\n进程粒度重启，丢弃全部状态\n编排器粒度，无法表达共享地址空间的依赖\n粒度错配\nZIO、Effect-TS\n追踪靠 monad 嵌入，程序必须写进 effect 类型\n需求靠解释器；服务撤走时已执行的操作留在原地\n不能对普通宿主代码做覆盖式追踪\n代数效应（Effekt）\n静态类型层纪律，能力限于词法作用域\n静态解析\n目的不同：Effekt 为解释，Cordis 为追踪与逆转\nWebpack、Vite HMR\n需要开发者标注\naccept\n边界\n—\n替换边界靠人工声明\nCordis\n每个变换携带逆，恢复是定理；HMR 不需要 accept 边界\n依赖是类型化表，变化被分类通知，自动重连是定理\n时间与空间两维同时由运行时承担\n从 Agent 运行时的角度看，这个对比更直观：\n需求\n传统 DI 容器\nCordis\n服务被替换、卸载后自动清理\n不负责，需手写或泄漏\neffect 自动回滚\n依赖提供方热替换后自动重建\n做不到\n依赖方自动卸载重载\n配置决定组合，改配置即热重载\n配置通常启动时一次性\ncordis.yml\n即插件树\n服务运行时消失\n视为异常\n视为常态，优雅降级\n有序决策链（权限→审批→超时→执行）\n需自行搭建 middleware\nwaterfall 事件原生支持\n5.9 结论：点名自进化 Agent\n论文结论明确把\nself-evolving agent harnesses（自进化 Agent 运行时）\n列为未来验证方向：AI 在少有人监督的情况下持续生成并替换自己的组件，需要\"快速替换下的完整恢复保证\"（时间维）与\"频繁拓扑变化下的依赖协调保证\"（空间维）。论文写作时这还只是展望，而\nDSH 的\ncordis_define\n、\ncordis_run\n正是这一方向的具体实现\n：Agent 现场生成动态插件、沙箱运行、随时卸载，恰好是在压测 5.6 的时间与空间定理。\n理论在前，实践随后。Cordis 最值得关注的地方不是它写得不错，而是它把\"安全地动态装卸组件\"从纪律变成了定理——而这恰恰是自进化软件唯一靠得住的地基。\n6. 生态：Cordis 不止有 Koishi\n6.1 Koishi：第一个实战平台\n论文的案例研究就是 Koishi，并给出数据：四年间积累了 4000+ 社区插件。从 npm registry 核实了当前数字：\n@koishijs\n官方 scope：155 个包，其中插件 112 个、各平台适配器 19 个（QQ、Discord、Telegram、Lark……）；\n社区\nkoishi-plugin-\\*\n前缀：约 3951 个包\n。\n只看插件数量，还低估了它的规模。另一组 2026 年 8 月实测的数据：\nnpm 下载量：\nkoishi\n近一年约 34 万次下载，\ncordis\n近一年约 51 万次（周均约 1 万）；\nGitHub：\nkoishijs/koishi\n约 5800 star，\ncordiverse/cordis\n约 2400 star；\n社区规模：官方 FAQ 称有数千位活跃搭建者，其中许多人的单个机器人就覆盖数万活跃用户；\n官方认可：Koishi 以组织身份出现在中科院软件所主办的\"开源之夏\"（Open Source Promotion Plan）2025 的项目列表中。\n论文还指出了一个设计上的验证：Koishi 的 Web 控制台是\n第二个独立的 Cordis 应用\n（浏览器里运行着另一棵插件树）；适配器、数据库驱动与功能插件之间形成了真实的依赖拓扑，切换存储后端或重连适配器时，只有依赖真正变化的那部分插件会被重新激活。这验证了\"跨独立作者协作\"的场景：插件与其依赖通常由不同作者编写，双方只通过服务契约（coeffect）协调。\n一个版本事实：\nKoishi 目前仍使用 Cordis 3.x\n（\n@koishijs/core\n依赖\ncordis: ^3.18.1\n），而论文与 DSH 使用的是 4.x。核心组合模型两代共享，但 4.x 重构了 effect、coeffect 语义与 Loader。\n一个在 Koishi 圈写过几年插件的开发者视角：这套生态里的插件很少直接互相调用，大家靠服务契约（\ninject\n）和事件协作。写插件的人通常只关心自己声明了什么依赖、注册了什么效果，谁先启动、谁依赖谁、谁负责清理，是 Cordis 的事，不是作者的事。\n6.2\n@cordisjs\n：独立的通用生态\nKoishi 之外，Cordis 还维持着一个独立的官方生态，\n@cordisjs\nscope 下现有 101 个包，覆盖了一个通用应用框架所需的全部组件：\n核心机制：\nloader\n、\nplugin-loader\n、\nplugin-include\n、\nplugin-hmr\n、\nplugin-group\n、\nplugin-config\n、\nschema\n、\ntimer\n、\nlogger\n；\n服务端：\nplugin-server\n（含\n-acl\n、\n-proxy\n、\n-static\n、\n-temp\n、\n-webui\n）、\nplugin-http\n；\n数据：\nplugin-database\n及 sqlite、mysql、postgres、mongo、memory 驱动；\n业务基础设施：\nmail\n、\nsms\n（多家供应商）、\nsso\n（十几家登录方式）、\nwebui\n控制台、\nmarket\n插件市场、\nmanager\n、\ninsight\n（插件依赖关系图）、\ncli\n、\nclient\n、\ncomponents\n、\ncreate-cordis\n（脚手架）。\n这些包的存在说明：Cordis 不是\"为 Koishi 定制的内核\"，而是一个\n真正通用的应用框架\n，Koishi 与 DSH 只是它的两个实例，一个在 IM 领域，一个在 Agent 领域。\n6.3 生态背后的几件事\n小且可审计\n：核心几千行 TypeScript，DSH 整体 vendor 进仓库并做了约 18 处本地修改（生命周期加固、配置加载事务化、表达式延迟求值等）。不依赖外部注册表、不怕上游 breaking change、可按自身使用模式调优；\n实战验证\n：Cordis 在 Koishi 生态经历了上千插件的并发运行考验，插件框架最难的\"注册、注销边角问题\"，已经被长期实战覆盖；\nTypeScript-first\n：声明合并让扩展点全链路类型安全；DSH 甚至从这些声明自动生成供模型阅读的 API 目录，\n类型系统本身变成了 Agent 的操作手册\n。\n7. 结语：心脏、引擎与定理\nCordis 是 Koishi 的心，几千行 TypeScript，把\"怎么安全地装卸组件\"从开发者的自觉变成了框架级承诺——\nctx.effect\n注册即回滚，\ninject\n声明即等待，配置文件即应用。DSH 把同一个框架搬进 Agent 运行时，工具、模型、存储、界面全是插件，配置由 patch 层叠加，连 AI 都能通过\ncordis_inspect\n、\ncordis_run\n检查并改装自己运行的系统。论文用 88 页把这两件事形式化，给出证明：卸载必然恢复、依赖自动重连、配置对账必然收敛。\nCordis 最值得关注的地方，不是它写得不错，而是它把\"安全地动态装卸组件\"从开发者纪律变成了定理——而这恰恰是自进化软件唯一靠得住的地基。\n如果还想继续深入，可以按这个顺序：\nDSH 官方教程（七章，每个例子可运行）：\ncordis-tutorial\nDSH 官方入门（五个核心概念浓缩版）：\ncordis-primer.zh.md\n上游仓库：\ncordiverse/cordis\n论文：\nA Programming Paradigm for Spatiotemporal Composability\nKoishi 生态：\nkoishi.chat\nDeepSeek Harness：\ndeepseek-ai/deepseek-harness\n参考资料\nCordis 入门（DSH 官方文档）\nCordis 教程（DSH 官方文档，七章）\ncordiverse/paper（论文全文与 README）\ncordis - npm\n（版本时间线）\ncordiverse/cordis（上游仓库）\nKoishi 常见问题\n（Koishi 由 Shigma 创立，2020 年 1 月发布首个正式版）\n为什么用 Cordis 做 AI Agent 运行时：从 QQ 机器人框架到 DeepSeek Harness\nShigma 专访（腾讯媒体研究院，2023-11-28）：\nQQ机器人开发创业青年Shigma专访：人类未来会被AI取代吗？\n；B 站搬运：\nBV1AQ4y157S8\n影响力数据（2026-08 实测）：koishi、cordis 近一年 npm 下载量约 34 万、51 万次（api.npmjs.org）；\nkoishijs/koishi\n约 5800 star、\ncordiverse/cordis\n约 2400 star（github.com）；社区规模与\"单机器人覆盖数万活跃用户\"见\nKoishi 常见问题\n；Koishi 在\n开源之夏 2025 项目列表\n中\n文中截图（2026-08）：Shigma 的\nGitHub 主页\n、\nKoishi 插件市场\n、DeepSeek Harness 设置页插件清单；社区插件截图（dsh-visualize、dsh-task-status、dsh-stock-market、dsh-web-ui）均取自各自仓库 README；示意图为本文自制 SVG\n社区插件生态：\nawesome-dsh-plugin\n（GitHub\n#dsh-plugin\n，2026-08 收录 174 个插件）\n生态数据（2026-08 实测）：\n@koishijs\nscope 155 包、\nkoishi-plugin-*\n前缀 3951 包、\n@cordisjs\nscope 101 包（npm registry 枚举）；\n@koishijs/core\n4.18.11 依赖\ncordis: ^3.18.1\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0.02,
+        "irrelevant": 0.37,
+        "transfer_business": 0,
+        "transfer_agent": 0.61,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.1,
+        "2": 0.86,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.46,
+      "probabilities": {
+        "0": 0.73,
+        "1": 0.13,
+        "2": 0.1,
+        "3": 0.03,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.69,
+        "1": 0.09,
+        "2": 0.12,
+        "3": 0.05,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.57,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.46,
+        "3": 0.48,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.27,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.06,
+        "2": 0.03,
+        "3": 0.09,
+        "4": 0.69,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.33,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.18,
+        "2": 0.28,
+        "3": 0.46,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 22973,
+    "outputTokens": 172,
+    "totalTokens": 23145
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "evidence": 0.64,
+        "actionability": 0.48,
+        "anti_hype": 0.47,
+        "category": 0.51,
+        "relevance": 0.89,
+        "grounding": 0.69,
+        "decision_action": 0.55
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179944325,
+                "endTime": 1791179944421,
+                "providerRequestId": "61863aa0-1db8-4673-b4a8-79e09aeea7ac",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179944425,
+                "endTime": 1791179944681,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000964866",
+      "marketCost": "0.000964866",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000964866",
+      "inferenceCost": "0.000964866",
+      "inputInferenceCost": "0.000964866",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9WBHD4WEKE0H5JRRQPPM"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:04 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::264p9-1791179943950-2eeb55e7bdd1"
+    },
+    "body": {
+      "answers": {
+        "evidence": {
+          "type": "score",
+          "score": 2.57,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.46,
+            "3": 0.48,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.27,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.06,
+            "2": 0.03,
+            "3": 0.09,
+            "4": 0.69,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.33,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.18,
+            "2": 0.28,
+            "3": 0.46,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0.02,
+            "irrelevant": 0.37,
+            "transfer_business": 0,
+            "transfer_agent": 0.61,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.1,
+            "2": 0.86,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.46,
+          "probabilities": {
+            "0": 0.73,
+            "1": 0.13,
+            "2": 0.1,
+            "3": 0.03,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.69,
+            "1": 0.09,
+            "2": 0.12,
+            "3": 0.05,
+            "4": 0.05,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 22973,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "evidence": 0.64,
+            "actionability": 0.48,
+            "anti_hype": 0.47,
+            "category": 0.51,
+            "relevance": 0.89,
+            "grounding": 0.69,
+            "decision_action": 0.55
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179944325,
+                    "endTime": 1791179944421,
+                    "providerRequestId": "61863aa0-1db8-4673-b4a8-79e09aeea7ac",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179944425,
+                    "endTime": 1791179944681,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000964866",
+          "marketCost": "0.000964866",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000964866",
+          "inferenceCost": "0.000964866",
+          "inputInferenceCost": "0.000964866",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9WBHD4WEKE0H5JRRQPPM"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:03.909Z"
+  }
+}

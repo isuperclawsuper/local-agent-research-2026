@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "240029248891718657",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "大模型思维链推理速度倍增！——RoT新框架把思维链「画」进隐空间",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798677&idx=2&sn=772a84999b3ed984298fb2cf17e7518c",
+      "date": "2026-01-30T09:08:00.549Z",
+      "chars": 4460,
+      "text": "腾讯程序员\n2026-01-30 17:08\n广东\n思维链\n作者：ethanntang 、wyattyfwang\n引言\n随着大模型规模的扩展，思维链（Chain-of-Thought, CoT）已成为处理复杂推理任务的标准范式。但我们在实际应用中发现，CoT 的有效性往往建立在生成大量中间文本的基础上。这种对长序列生成的依赖，不可避免地导致了推理延迟的增加和显存（特别是 KV Cache）的过度消耗。虽然目前业界存在一些针对显式 CoT 的压缩尝试，例如通过启发式算法筛选关键 Token 或利用强化学习缩短推理路径，但这些方法依然受限于离散的文本表征，难以在保留完整推理逻辑的同时，实现计算效率的数量级提升。\n为了突破文本生成的限制，研究界开始探索“隐式 CoT”方向，即尝试将推理过程内化为连续的隐状态向量，而非输出具体的文本。虽然 Coconut、CoLaR 等早期工作验证了这一方向的可行性，但我们在复现和研究中发现，这类方法面临着严峻的优化挑战。由于要求模型在没有任何语义约束的情况下，从零开始在潜空间构建推理拓扑，训练过程往往极不稳定，容易出现表征坍缩。此外，现有的隐式方法通常缺乏对中间过程的监督，导致推理过程变得不可解释。\n有什么方案既保证推理速度快，又使得过程可分析，还无需昂贵的预训练？\n我们提出了一种全新的范式——\nRender-of-Thought (RoT)\n。我们的核心思路极具想象力：\n利用多模态模型（VLM）中冻结的视觉编码器作为“语义锚点”，将文本推理步骤“渲染”为图像的视觉嵌入。\n这种方法不仅利用了视觉模态的高信息密度来实现\n3-4 倍的 Token 压缩\n，更重要的是，它通过视觉化让隐式推理过程变得可分析。通过将 LLM 的隐状态与结构化的视觉表征对齐，我们实现了一种无过多训练的高效推理方案。实验证明，RoT 在大幅提升推理速度的同时，依然保持了强大的逻辑推理能力，为推理场景开辟了一条新路径。\n项目主页：\nhttps://tencentbac.github.io/RoT\nGithub 地址：\nhttps://github.com/TencentBAC/RoT\nHuggingface地址：\nhttps://huggingface.co/collections/TencentBAC/rot\n论文地址：\nhttps://arxiv.org/abs/2601.14750\n显式太慢，隐式黑盒？RoT 走出第三条路\n显式 CoT (Explicit CoT)\n：让模型把每一步推理都写出来，就像学生做数学题写步骤一样。 生成几百个 Token 的中间步骤不仅费时，还极其消耗显存。\n隐式 CoT (Implicit CoT)\n：模型直接在内部隐状态中进行推理，不输出具体文本。这种方式就像把思考过程扔进了一个黑箱，缺乏中间过程的监督。\nRender-of-Thought (RoT)\n：\n另辟蹊径，\n把“思考”变成了“作画”\n。利用视觉信息的高密度特性，将冗长的文本压缩成紧凑的视觉向量。这不仅有迹可循，还大幅提升了推理速度。\n拒绝「黑盒」，两步训练实现「移花接木」\nRoT 是一种将文本思维链通过渲染（Rendering）和视觉知识蒸馏转化为紧凑视觉表征的新范式。\n与以往需要从头学习“推理Token”的隐式方法不同，RoT 直接利用了现有 VLM（如 Qwen-VL, LLaVA）中冻结的视觉编码器。通过将 LLM 的隐状态与渲染文本的视觉嵌入对齐，RoT 无需昂贵的预训练开销。渲染方案将文本推理步骤转化为单行图像，隐空间推理方法通过投影头将 LLM 生成的隐状态与视觉特征对齐。\n为了适应自回归思维链的序列化建模，我们摒弃了固定尺寸的图像渲染方案，采用了\n单行图像\n渲染。该策略可以根据根据文本长度动态修改所需的图像宽度。此外，单行的渲染方式确保图像的Patch严格按照从左到右的方式提取，自然地将视觉序列与文本顺序对齐。\nRoT 的实现过程主要分为两个阶段，旨在逐步将 LLM 的离散推理能力转化为连续的视觉隐空间推理能力。\n阶段一：视觉对齐 (Visual Alignment)\n这一阶段冻结了 LLM 和视觉编码器，仅训练一个轻量级的“视觉投影头”（Visual Projection Head）。目标是将 LLM 的文本隐状态映射到由视觉编码器提取的“渲染CoT图像”的特征空间上。\n在推理步骤\n时，生成的 latent embedding 可以记为\n，target vision embedding 记为\n。此时 vision embedding 的对齐损失可以记为：\n此外，在第一阶段中，为了使模型与所提出的推理模式保持一致，同时对\n<|img_end|>\n这一 special token 和答案的交叉熵损失进行了建模：\n其中\n是生成的 latent visual tokens，\n为问题\n的 ground truth 答案。阶段一的整体损失函数为上述两者加权：\n阶段二：潜在监督微调 (Latent Supervised Fine-Tuning)\n在对齐之后，第二阶段通过 LoRA 微调 LLM，并且冻结已经训练对齐的投影头。此时，模型不再生成文本 Token，而是自回归地生成一串连续的“潜在视觉 Token”（Latent Visual Tokens）。这些 Token 在隐空间中模拟了视觉编码器的输出，最终引导模型解码出正确的文本答案。\n推理与解码策略\n推理过程要求模型自主地从连续的潜在推理空间导航到离散的文本解空间。研究团队探索了两种方案：\n基于 Special Token 的动态终止策略\n以及\n固定 Token 预算的静态终止策略\n。\n基于 Special Token 的动态终止策略\n推理阶段在第一个时间步长\n结束，此时终止标记的概率达到最大值：\n其中\n表示 Token 集，\n表示在时间步长\n时的隐藏状态。模型从后续状态\n开始对文本答案进行解码。\n固定 Token 预算的静态终止策略\n该策略将潜在思维链的长度限制为一个固定的超参数。达到这个阈值时，会手动添加\n<|img_end|>\n这一 special token，以触发从潜在推理到文本生成的转换。\n我们在实验中发现，动态终止策略的性能明显低于固定 Token 预算策略。这种性能差距可能源于连续潜空间中自我调节停止机制的\n内在不稳定性\n。在生成潜空间推理嵌入时，隐藏状态可能无法始终如一地为终止标记生成高置信度的预测，从而导致过早或延迟的转换，破坏推理流程。\n此外，采用固定 Token 预算策略时，每个数据集的最优 Token 预算各不相同。在 GSM8k-Aug 数据集上，32 个 Token 能实现最佳性能，而 MATH 数据集则需要 64 个 Token 才能达到峰值准确率。研究者推测这种差异的出现是因为 MATH 数据集更具挑战性，需要更长的推理链。\n实测结果\n我们在 GSM8k、MATH、SVAMP 等多个数学和逻辑推理基准上对 RoT 进行了广泛测试。实验基于 Qwen3-VL 和 LLaVA-V1.6 等主流架构。\n显著的压缩与加速\n。相比于显式 CoT，\nRoT 实现了 3-4 倍的 Token 压缩率\n。在推理速度上，RoT 展现出了巨大的优势。例如在 Qwen3-VL-4B 模型上，Pass@1/\n#L\n（准确率与长度比）指标显著优于基线。\n优于现有的隐式推理方法\n。与 Coconut、CoLaR 等最新的隐式推理方法相比，RoT 在准确率上表现出色。特别是在 MultiArith 数据集上，RoT (Qwen3-VL-4B) 达到了 97.2% 的准确率，显著优于同等规模下其他隐空间推理方案。\n隐空间推理的可分析性\n。RoT 的一大亮点在于其\n可分析性\n。由于隐状态被对齐到了视觉空间，可以通过热力图（Heatmap）等来观察模型的“思考过程”。研究团队展示了 MATH 数据集的一个案例。可以看到，生成的潜在 Token 呈现出明显的结构化模式，Token 相似度矩阵显示了推理的阶段性。这证明模型并非在随机生成向量，而是在进行有逻辑的隐式推理。\n单行渲染 vs. 多行渲染\n在RoT中，传统的固定尺寸的多行渲染会导致文本在图像中频繁换行。对于模型来说，这种换行在视觉空间中引入了不必要的“空间跳跃”，打断了语义的连续性。\n为了验证这一点，我们对比了“固定尺寸的多行渲染图像”与 RoT 文中使用的“单行动态宽度图像”。\n如上图所示，单行渲染相比多行渲染收敛更快，同时能够更好地契合语言模型从左到右的序列生成特性。\n两阶段训练缺一不可\n为了评估渐进式训练策略的效果，我们分别对每个阶段进行独立消融实验。\n去除第一阶段会导致 MATH 的准确率从 33.2% 降至 22.2%，表明视觉对齐对于构建潜在空间结构以及在复杂任务中防止表示坍缩至关重要。同样，排除第二阶段也会导致性能显著下降，这会导致模型难以从连续的潜在空间中推导出最终答案。\n展望\nRender-of-Thought (RoT) 的提出，验证了“将思维渲染为图像”这一范式的可行性，为大模型的推理效率优化打开了一扇新的窗口。它打破了文本模态的限制，利用视觉信息的高密度特性来压缩推理过程。不过，我们认为RoT仍有一些问题等待探索：\n自适应推理长度与停止机制\n：目前我们在实验中发现，模型在连续潜空间中很难自主决定“何时停止思考”，因此暂时采用了固定 Token 预算（如 GSM8k 用 32 个，MATH 用 64 个）。这显然不符合实际应用中问题难度动态变化的特性。我们在RoT探索过程中尝试将EOS渲染至图像思维链的尾部并自回归停止Token的方式进行训练，但难以停止。我们认为需要探索\n自适应的预算机制\n，或者设计更鲁棒的\n潜空间停止信号\n，以解决此问题。\n黑盒的可视化与逆向解析\n：虽然我们现在可以通过热力图观察到隐状态的结构化模式，但这离真正的完全可视化还有距离。我们计划尝试通过训练一个图像Decoder将生成的视觉潜变量解码回图像或文本。这将极大地帮助研究者调试和观察模型的推理过程，真正打破推理黑盒。\n验证场景的广度与深度\n：目前的验证主要集中在数学和逻辑推理（GSM8k, MATH）这类具有强确定性的任务上。为了证明 RoT 的通用性，需要在更多维度上进行测试。更多场景应包含常识推理、代码生成、内容理解等。并且多语言、多模态场景也有待验证，不同语言在渲染后的视觉密度不同；RoT 能否反哺 VLM 本身的图文推理任务（如 VQA），实现真正的模态互助也值得探索。\n此外，我们也正在尝试RoT在一些内容理解业务复杂场景下的验证和落地，通过压缩复杂冗长的推理思维链来降低业务模型推理时的开销，取得效果和效率之间的平衡。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.88,
+        "peripheral": 0.09,
+        "transfer_agent": 0.03,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.49,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.33,
+        "2": 0.57,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.38,
+      "probabilities": {
+        "0": 0.67,
+        "1": 0.3,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.46,
+      "probabilities": {
+        "0": 0.71,
+        "1": 0.13,
+        "2": 0.16,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.74,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.06,
+        "3": 0.13,
+        "4": 0.8,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.3,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.1,
+        "2": 0.05,
+        "3": 0.13,
+        "4": 0.67,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.63,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.04,
+        "2": 0.22,
+        "3": 0.66,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.83,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5685,
+    "outputTokens": 173,
+    "totalTokens": 5858
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.52,
+        "anti_hype": 0.7,
+        "category": 0.85,
+        "decision_action": 0.69,
+        "evidence": 0.83,
+        "grounding": 0.75,
+        "relevance": 0.65
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "digitalocean",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179983440,
+                "endTime": 1791179983725,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00023877",
+      "marketCost": "0.00023877",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00023877",
+      "inferenceCost": "0.00023877",
+      "inputInferenceCost": "0.00023877",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB2GBMYTAH7947CD1DDN2"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:43 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::mmcr7-1791179983364-c7863d0632c7"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.3,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.1,
+            "2": 0.05,
+            "3": 0.13,
+            "4": 0.67,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.63,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.04,
+            "2": 0.22,
+            "3": 0.66,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.88,
+            "peripheral": 0.09,
+            "transfer_agent": 0.03,
+            "transfer_business": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.46,
+          "probabilities": {
+            "0": 0.71,
+            "1": 0.13,
+            "2": 0.16,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.74,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.06,
+            "3": 0.13,
+            "4": 0.8,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.83
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.38,
+          "probabilities": {
+            "0": 0.67,
+            "1": 0.3,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.49,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.33,
+            "2": 0.57,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5685,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.52,
+            "anti_hype": 0.7,
+            "category": 0.85,
+            "decision_action": 0.69,
+            "evidence": 0.83,
+            "grounding": 0.75,
+            "relevance": 0.65
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "digitalocean",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179983440,
+                    "endTime": 1791179983725,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00023877",
+          "marketCost": "0.00023877",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00023877",
+          "inferenceCost": "0.00023877",
+          "inputInferenceCost": "0.00023877",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB2GBMYTAH7947CD1DDN2"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:42.957Z"
+  }
+}

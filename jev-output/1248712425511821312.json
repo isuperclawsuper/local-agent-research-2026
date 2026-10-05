@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1248712425511821312",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qwen-Audio-3.0系列语音模型正式上线千问AI平台",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561890&idx=1&sn=9ef07932c013aa647d11056b74bf52a6",
+      "date": "2026-08-17T07:56:00.932Z",
+      "chars": 878,
+      "text": "阿里云\n2026-08-17 15:56\n浙江\n刚刚，Qwen-Audio-3.0系列语音模型正式上线千问AI平台。开发者可以通过API服务调用模型能力，也可以订阅Token Plan使用。\nQwen-Audio-3.0系列模型是阿里巴巴推出的自研语音模型，包括语音识别大模型Qwen-Audio-3.0-ASR、语音合成大模型Qwen-Audio-3.0-TTS、实时语音交互对话模型Qwen-Audio-3.0-Realtime。\n在全球权威AI评测平台Artificial Analysis今年7月的语音排行榜上，该模型斩获语音识别（ASR）、实时交互（RealTime）和语音合成（TTS）三个赛道的全球第一，拿下“大满贯”。\n其中，Qwen-Audio-3.0-ASR将语音转为文字，支持复杂语境和专业领域识别；Qwen-Audio-3.0-TTS将文字转为语音，支持多语种、多方言，可控制情绪、语气与节奏；Qwen-Audio-3.0-Realtime支持端到端语音理解与对话，可边听边说、随时打断追问，并支持工具调用。目前该系列模型已在千问App、千问办公、Qoder等产品中应用。\n千问AI平台近期密集上线了多款主力模型，包括阿里巴巴新一代基座大模型Qwen3.8-Max、图像生成模型Qwen-image 3.0 pro、全新一代视频生成模型Wan3.0，以及Kimi K3等模型，从文本、代码到语音、图像和视频，开发者可以在一个平台调用不同模态的模型能力。\nToken Plan订阅服务限时优惠：\n个人版：\nLite 39元/月（每7天2500Credits），Standard 139元/月（4倍Lite用量），Pro 499元/月（16倍Lite用量）\n团队版：\n标准席位50元/席位/月（降至7.6折），高级席位550元/席位/月（降至7.9折），尊享席位1398元/席位/月\n千问\nAI\n平台\n-\n为\nAgent\n而生，驱动\nAI\n生产力\n扫描下方二维码，直达千问\nAI\n平台体验\n点击阅读原文即可体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "transfer_agent": 0,
+        "irrelevant": 0.2,
+        "transfer_business": 0,
+        "peripheral": 0.8,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 0.78,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.66,
+        "2": 0.06,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.08,
+      "probabilities": {
+        "0": 0.92,
+        "1": 0.08,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.06,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.05,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.97,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.97,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 0.28,
+      "probabilities": {
+        "0": 0.8,
+        "1": 0.15,
+        "2": 0.04,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.01,
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.73,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 2547,
+    "outputTokens": 174,
+    "totalTokens": 2721
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.75,
+        "relevance": 0.77,
+        "grounding": 0.94,
+        "decision_action": 0.96,
+        "evidence": 0.98,
+        "actionability": 0.81,
+        "anti_hype": 1
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179816244,
+                "endTime": 1791179816330,
+                "providerRequestId": "3c52942c-5bfd-49b0-9dac-d88fd0bb414b",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179816332,
+                "endTime": 1791179816479,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000106974",
+      "marketCost": "0.000106974",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000106974",
+      "inferenceCost": "0.000106974",
+      "inputInferenceCost": "0.000106974",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5Z96E0DAZM46VM3RKB63"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:56 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::q77ps-1791179816225-d03626efc6dc"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "transfer_agent": 0,
+            "irrelevant": 0.2,
+            "transfer_business": 0,
+            "peripheral": 0.8,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.78,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.66,
+            "2": 0.06,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.08,
+          "probabilities": {
+            "0": 0.92,
+            "1": 0.08,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.06,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.05,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.97,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.97,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 0.28,
+          "probabilities": {
+            "0": 0.8,
+            "1": 0.15,
+            "2": 0.04,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.01,
+          "probabilities": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.73
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 2547,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.75,
+            "relevance": 0.77,
+            "grounding": 0.94,
+            "decision_action": 0.96,
+            "evidence": 0.98,
+            "actionability": 0.81,
+            "anti_hype": 1
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179816244,
+                    "endTime": 1791179816330,
+                    "providerRequestId": "3c52942c-5bfd-49b0-9dac-d88fd0bb414b",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179816332,
+                    "endTime": 1791179816479,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000106974",
+          "marketCost": "0.000106974",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000106974",
+          "inferenceCost": "0.000106974",
+          "inputInferenceCost": "0.000106974",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5Z96E0DAZM46VM3RKB63"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:55.709Z"
+  }
+}

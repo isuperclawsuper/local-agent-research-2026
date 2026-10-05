@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "\n},\n},\n\"merge\"\n: {\n\"type\"\n:\n\"boolean\"\n,\n\"description\"\n:\n\"true: update by id. false (default): replace all.\"\n,\n\"default\"\n:\nFalse\n,\n},\n},\n},\n},\n}\ndef\ntodo_tool\n(\ntodos=\nNone\n, merge=\nFalse\n, store=\nNone\n) ->\nstr\n:\n\"\"\"Todo 工具 handler。store 参数由 ToolDispatcher 注入。\"\"\"\nif\nstore\nis\nNone\n:\nreturn\njson.dumps({\n\"error\"\n:\n\"TodoStore not initialized\"\n})\nif\ntodos\nis\nnot\nNone\n:\ncurrent = store.write(todos, merge=merge)\nelse\n:\ncurrent = store.read()\n# 无参数 = 读取当前列表\n# 返回完整列表 + 统计摘要，让 LLM 有全局视角\nsummary = {\n\"total\"\n:\nlen\n(current),\n\"pending\"\n:\nsum\n(\n1\nfor\nt\nin\ncurrent\nif\nt[\n\"status\"\n] ==\n\"pending\"\n),\n\"in_progress\"\n:\nsum\n(\n1\nfor\nt\nin\ncurrent\nif\nt[\n\"status\"\n] ==\n\"in_progress\"\n),\n\"completed\"\n:\nsum\n(\n1\nfor\nt\nin\ncurrent\nif\nt[\n\"status\"\n] ==\n\"completed\"\n),\n}\nreturn\njson.dumps({\n\"todos\"\n: current,\n\"summary\"\n: summary})\n之所以\n每次返回完整列表\n，是因为\nLLM 没有\"记住上次工具调用结果\"的可靠能力。如果只返回 diff（\"任务 3 已完成\"），LLM 很容易忘记其他任务的状态。返回完整列表虽然多用些 tokens，但保证 LLM 在做下一步决策时有全局视角。\nTodo 的存储设计刻意选择了最简单的方案——纯内存\nlist[dict]\n，不需要数据库，不需要文件 IO。\n# tools/todo_tool.py — TodoStore 核心实现\n# 合法的任务状态值\nVALID_STATUSES = {\n\"pending\"\n,\n\"in_progress\"\n,\n\"completed\"\n,\n\"cancelled\"\n}\nclass\nTodoStore\n:\n\"\"\"会话级内存任务列表。每个 Agent 实例持有一个独立实例。\n任务项有序——列表位置即优先级。每个任务项包含：\n- id: 唯一字符串标识符（由 LLM 选择）\n- content: 任务描述\n- status: pending | in_progress | completed | cancelled\n\"\"\"\ndef\n__init__\n(\nself\n):\nself\n._items:\nList\n[\nDict\n[\nstr\n,\nstr\n]] = []\n这么做的原因在于，todo 是会话级的——这次对话的任务计划，下次对话不需要。持久化到数据库只会增加复杂度，而且 todo 的状态已经通过\nformat_for_injection()\n在上下文压缩时保留了。\nTodo 工具最关键的设计在于\n两种写入模式：替换 vs 合并\n，即通过\nmerge\n参数支持两种写入语义。\n# tools/todo_tool.py — 写入逻辑\ndef\nwrite\n(\nself, todos:\nList\n[\nDict\n[\nstr\n,\nAny\n]], merge:\nbool\n=\nFalse\n) ->\nList\n[\nDict\n[\nstr\n,\nstr\n]]:\n\"\"\"写入任务列表。返回写入后的完整列表。\"\"\"\nif\nnot\nmerge:\n# ═══ 替换模式：用新列表完全替换 ═══\n# 场景：创建新计划、发现新情况需要推翻重来\nself\n._items = [\nself\n._validate(t)\nfor\nt\nin\nself\n._dedupe_by_id(todos)]\nelse\n:\n# ═══ 合并模式：按 id 增量更新已有项，追加新项 ═══\n# 场景：完成一步后更新状态，或发现需要追加新步骤\nexisting = {item[\n\"id\"\n]: item\nfor\nitem\nin\nself\n._items}\nfor\nraw_todo\nin\nself\n._dedupe_by_id(todos):\nitem_id =\nstr\n(raw_todo.get(\n\"id\"\n,\n\"\"\n)).strip()\nif\nnot\nitem_id:\ncontinue\nif\nitem_id\nin\nexisting:\n# 只更新 LLM 实际提供的字段（不会意外覆盖其他字段）\nif\n\"content\"\nin\nraw_todo\nand\nraw_todo[\n\"content\"\n]:\nexisting[item_id][\n\"content\"\n] =\nstr\n(raw_todo[\n\"content\"\n]).strip()\nif\n\"status\"\nin\nraw_todo\nand\nraw_todo[\n\"status\"\n]:\nstatus =\nstr\n(raw_todo[\n\"status\"\n]).strip().lower()\nif\nstatus\nin\nVALID_STATUSES:\nexisting[item_id][\n\"status\"\n] = status\nelse\n:\n# 新项——完整验证后追加到末尾\nvalidated =\nself\n._validate(raw_todo)\nexisting[validated[\n\"id\"\n]] = validated\nself\n._items.append(validated)\n# 重建列表保持原始顺序\nseen:\nset\n=\nset\n()\nrebuilt:\nList\n[\nDict\n[\nstr\n,\nstr\n]] = []\nfor\nitem\nin\nself\n._items:\ncurrent = existing.get(item[\n\"id\"\n], item)\nif\ncurrent[\n\"id\"\n]\nnot\nin\nseen:\nrebuilt.append(current)\nseen.add(current[\n\"id\"\n])\nself\n._items = rebuilt\nreturn\nself\n.read()\n@staticmethod\ndef\n_dedupe_by_id\n(\ntodos:\nList\n[\nDict\n[\nstr\n,\nAny\n]]\n) ->\nList\n[\nDict\n[\nstr\n,\nAny\n]]:\n\"\"\"同批次内按 id 去重，保留最后一个出现的位置。\"\"\"\n# 防止 LLM 在同一次调用中发送重复 id\nlast_index:\nDict\n[\nstr\n,\nint\n] = {}\nfor\ni, item\nin\nenumerate\n(todos):\nitem_id =\nstr\n(item.get(\n\"id\"\n,\n\"\"\n)).strip()\nor\n\"?\"\nlast_index[item_id] = i\nreturn\n[todos[i]\nfor\ni\nin\nsorted\n(last_index.values())]\n@staticmethod\ndef\n_validate\n(\nitem:\nDict\n[\nstr\n,\nAny\n]\n) ->\nDict\n[\nstr\n,\nstr\n]:\n\"\"\"验证并规范化任务项。缺失字段做安全降级。\"\"\"\nitem_id =\nstr\n(item.get(\n\"id\"\n,\n\"\"\n)).strip()\nor\n\"?\"\ncontent =\nstr\n(item.get(\n\"content\"\n,\n\"\"\n)).strip()\nor\n\"(no description)\"\nstatus =\nstr\n(item.get(\n\"status\"\n,\n\"pending\"\n)).strip().lower()\nif\nstatus\nnot\nin\nVALID_STATUSES:\nstatus =\n\"pending\"\n# 无效状态回退到 pending\nreturn\n{\n\"id\"\n: item_id,\n\"content\"\n: content,\n\"status\"\n: status}\n为什么需要\n_dedupe_by_id\n：LLM 有时会在同一个工具调用中发送重复的 id（比如先创建一个任务，然后在同一批次中又更新它的状态）；去重保留最后一个，确保意图得到正确执行。\nTodoStore 是每个 agent 实例私有的，通过 ToolDispatcher 在运行时注入：\n# agent/tool_dispatcher.py — store 注入\ndef\n_dispatch\n(\nself, tool_name:\nstr\n, arguments:\nDict\n[\nstr\n,\nAny\n]\n) ->\nstr\n:\n# ...\nif\ntool_name ==\n\"todo\"\n:\n# 将 Agent 实例的私有 TodoStore 注入到 handler 参数中\nexecution_args = {**arguments,\n\"store\"\n:\nself\n._todo_store}\nelse\n:\nexecution_args = arguments\nresult = tool_entry.handler(**execution_args)\n不用全局单例是因为，\n如果用全局 TodoStore，主 agent 和子 agent 会共享任务列表，子 agent 完成的任务会影响主 agent 的计划。每个 agent 实例持有独立的 TodoStore，实现计划隔离。\n上下文压缩后，未完成的 todo 会被自动注入回 messages。这是确保长任务不会因为 context 管理而\"失忆\"的关键。\n# tools/todo_tool.py — 确保计划在压缩后不丢失\ndef\nformat_for_injection\n(\nself\n) ->\nOptional\n[\nstr\n]:\n\"\"\"渲染任务列表用于上下文压缩后注入。\n仅输出 pending 和 in_progress 的任务——\n已完成和已取消的任务会导致 LLM 在压缩后误以为需要重做。\n\"\"\"\nif\nnot\nself\n._items:\nreturn\nNone\nmarkers = {\n\"completed\"\n:\n\"[x]\"\n,\n\"in_progress\"\n:\n\"[>]\"\n,\n\"pending\"\n:\n\"[ ]\"\n,\n\"cancelled\"\n:\n\"[~]\"\n,\n}\nactive_items = [\nitem\nfor\nitem\nin\nself\n._items\nif\nitem[\n\"status\"\n]\nin\n(\n\"pending\"\n,\n\"in_progress\"\n)\n]\nif\nnot\nactive_items:\nreturn\nNone\n# 全部完成，不需要注入\nlines = [\n\"[Your active task list was preserved across context compression]\"\n]\nfor\nitem\nin\nactive_items:\nmarker = markers.get(item[\n\"status\"\n],\n\"[?]\"\n)\nlines.append(\nf\"-\n{marker}\n{item[\n'id'\n]}\n.\n{item[\n'content'\n]}\n(\n{item[\n'status'\n]}\n)\"\n)\nreturn\n\"\\n\"\n.join(lines)\n注入时机在\ncontext_compressor.py\n的\n_inject_todo_state()\n中：\n# agent/context_compressor.py — 压缩后自动注入 todo 状态\ndef\n_inject_todo_state\n(\nself, messages:\nList\n[\nDict\n], todo_store\n) ->\nNone\n:\n\"\"\"将未完成的 todo 注入压缩后的 messages。\"\"\"\nif\ntodo_store\nis\nNone\n:\nreturn\ninjection = todo_store.format_for_injection()\nif\ninjection:\nmessages.append({\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: injection})\n如果用户的会话被恢复（比如从持久化的消息历史重新加载），TodoStore 则需要从历史中恢复状态。\n# agent/tool_dispatcher.py — 从对话历史恢复 todo 状态\ndef\nhydrate_todo_store\n(\nself, messages:\nList\n[\nDict\n[\nstr\n,\nAny\n]]\n) ->\nNone\n:\n\"\"\"从对话历史恢复 TodoStore 状态。\"\"\"\nif\nself\n._todo_store.has_items():\nreturn\n# 已有内容，不覆盖\n# 从最近的消息往前找，找到第一个包含 todos 的工具返回值\nfor\nmessage\nin\nreversed\n(messages):\nif\nmessage.get(\n\"role\"\n) !=\n\"tool\"\n:\ncontinue\ncontent = message.get(\n\"content\"\n,\n\"\"\n)\nif\n'\"todos\"'\nnot\nin\ncontent:\ncontinue\ntry\n:\ndata = json.loads(content)\ntodos = data.get(\n\"todos\"\n)\nif\nisinstance\n(todos,\nlist\n):\nself\n._todo_store.write(todos, merge=\nFalse\n)\nreturn\n# 找到最近的状态即可\nexcept\n(json.JSONDecodeError, TypeError, KeyError):\ncontinue\n这保证了即使对话被压缩或会话被恢复，LLM 仍然知道\"接下来该做什么\"——Plan 的状态不会因为上下文管理而丢失。\n设计方案有如下优势，对比传统各种agent方案均较优。\n优势\n传统方案\n本项目方案\n简单任务\n也要走 Plan 阶段（浪费）\n直接 ReAct 执行，零开销\n循环逻辑\n需要两套（ReAct loop + Plan loop）\n只有一套 ReAct loop\n计划调整\n需要专门的 re-plan 触发机制\ntodo(merge=False)\n随时替换\n压缩存活\n计划可能被压缩丢失\nformat_for_injection()\n自动注入\n06 Skill 设计\n设计目标：\n用最少的 context 占用提供最丰富的能力，每个能力自带完整的操作规范。\n核心方案\n：SKILL.md 标准 + 四阶段加载 + MCP 工具联动 + 路径安全检查。\n核心问题在于，\n为什么需要 skill 系统？\n一个 agent 可能有 50+ 个工具，如果全部注入 LLM 的 tools 列表，可能出现以下情况——\n-context 膨胀：\n每个工具 schema 约 200-500 to",
+      "fulltext_obtained": true,
+      "chunk_index": 17,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.93,
+        "peripheral": 0,
+        "direct_local": 0,
+        "irrelevant": 0.07
+      }
+    },
+    "relevance": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.12,
+        "2": 0.87,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.46,
+      "probabilities": {
+        "0": 0.77,
+        "1": 0.1,
+        "2": 0.05,
+        "3": 0.06,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.7,
+        "1": 0.11,
+        "2": 0.07,
+        "3": 0.08,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.7,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.28,
+        "3": 0.72,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.44,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.11,
+        "4": 0.74,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.12,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.24,
+        "2": 0.19,
+        "3": 0.48,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.67,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5075,
+    "outputTokens": 172,
+    "totalTokens": 5247
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.9,
+        "relevance": 0.9,
+        "grounding": 0.7,
+        "decision_action": 0.55,
+        "evidence": 0.8,
+        "actionability": 0.6,
+        "anti_hype": 0.39
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180421734,
+                "endTime": 1791180422084,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00021315",
+      "marketCost": "0.00021315",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00021315",
+      "inferenceCost": "0.00021315",
+      "inputInferenceCost": "0.00021315",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AREJHYBQ0Y8D9X5BCFFGB"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:02 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::6sq4r-1791180421704-45ce570a2ab0"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.93,
+            "peripheral": 0,
+            "direct_local": 0,
+            "irrelevant": 0.07
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.12,
+            "2": 0.87,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.46,
+          "probabilities": {
+            "0": 0.77,
+            "1": 0.1,
+            "2": 0.05,
+            "3": 0.06,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.7,
+            "1": 0.11,
+            "2": 0.07,
+            "3": 0.08,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.7,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.28,
+            "3": 0.72,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.44,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.11,
+            "4": 0.74,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.12,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.24,
+            "2": 0.19,
+            "3": 0.48,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.67
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5075,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.9,
+            "relevance": 0.9,
+            "grounding": 0.7,
+            "decision_action": 0.55,
+            "evidence": 0.8,
+            "actionability": 0.6,
+            "anti_hype": 0.39
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180421734,
+                    "endTime": 1791180422084,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00021315",
+          "marketCost": "0.00021315",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00021315",
+          "inferenceCost": "0.00021315",
+          "inputInferenceCost": "0.00021315",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AREJHYBQ0Y8D9X5BCFFGB"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:01.345Z"
+  }
+}

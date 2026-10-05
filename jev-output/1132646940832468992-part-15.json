@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1132646940832468992",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "OpenClaw与Hermes：源码里的 AI Agent 架构知识大复盘",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801805&idx=1&sn=9c7e3936218bba9c8d0ee6c04afb1615",
+      "date": "2026-05-29T09:36:00.904Z",
+      "chars": 6500,
+      "text": "扩展与核心的解耦付出了设计成本（契约/版本/兼容性），后者省下这部分成本换改动直接、反馈快。\n不存在哪个更好，只有哪个更匹配你的扩展场景\n——要做\"插件化\"时，先盘清扩展频率、是否需要多方并行扩展、是否要做版本兼容，再选路径。\n21.5 安全模型对比\n安全层\nOpenClaw\nHermes Agent\n网络层\nTLS 强制 + 证书 Pinning + SSRF 防护\nIPv4 偏好 + 代理支持\n认证层\nDevice Identity + Ed25519 签名 + RBAC\nDM 配对验证码\n命令执行\nAllowlist + 交互式审批\n35 条 DANGEROUS_PATTERNS +\nSmart Approval\n内容安全\n插件安装静态扫描\nTirith 扫描 + 上下文注入检测 + 记忆扫描 + MCP 扫描\n技能安全\n路径遍历 + 文件权限\n4 级信任\n+ 6 类威胁静态分析\n沙箱\nDocker / SSH\nLocal/Docker/SSH/Modal/Daytona/Singularity\n供应链\nnpm 签名验证\nTirith cosign + SHA-256\n供应链证明\n小结\n：两个框架的安全重心落在不同层——\nOpenClaw 偏底层\n（网络层 TLS Pinning + SSRF 防护、身份层 Ed25519 签名 + RBAC），\nHermes 偏应用层\n（Tirith Rust 扫描 + cosign 供应链验证 + Smart Approval 三态评估 + 8 种沙箱后端含 Modal/Singularity）。从覆盖广度看 Hermes 的应用层防御更密集，从底层防护看 OpenClaw 做得更扎实——对沙箱隔离/内容扫描要求高的场景倾向 Hermes，对跨机器身份认证/RPC 安全要求高的场景倾向 OpenClaw。\n21.6 子 Agent / 委派对比\n维度\nOpenClaw\nHermes Agent\n机制\n多 Agent 路由 + Session 隔离\ndelegate_tool\n子 Agent 并行\n并发\nSession 级并行（无进程内并发限制）\nThreadPoolExecutor（最大 3 并发）\n嵌套\n无限制（Session 隔离）\n默认深度 1（可配置\nmax_spawn_depth\n）\n工具隔离\n插件级隔离\n阻止列表（禁止 delegate_task/memory/send_message）\n记忆共享\n通过记忆插件\n子 Agent skip_memory，共享 session DB\n小结\n：对应两种**\"任务分解哲学\"\n——OpenClaw 用 Multi-Agent 路由实现\"\n职责分解\n\"（不同 Agent 服务不同用户/角色，物理隔离），Hermes 用 delegate_tool 实现\"\n任务分解\n\"（同一 Agent 把复杂任务拆给子 Agent 并行）。\n前者解决\"多人协作\"，后者解决\"单任务复杂度\"\n。背后共通的工程模式是\n\"状态隔离：串行 + 多实例\"**——只要问一句\"并发修改后下次读取会不一致吗？\"，答案是\"会\"就该走这条路，把并发问题转化成实例数量问题。跨架构编排讨论见\"写在最后\"第 4 点。\n21.7 Prompt 缓存对比\n维度\nOpenClaw\nHermes Agent\n策略\n依赖 Provider 侧缓存\n主动\nsystem_and_3\n（4 个 cache_control 断点）\n系统提示\n每次\nbuildPrompt()\n动态构建\n首轮构建后冻结（跨轮次稳定）\n记忆注入时机\n每次 Prompt 构建时\n仅新会话开始时（当前会话冻结）\n成本节省\n取决于 Provider\n~75% 输入 token 成本（Anthropic）\n动态性\n高（记忆实时反映）\n低（记忆延迟一个会话）\n小结\n：最有意思的是\n\"动态性 vs 命中率\"的取舍\n——OpenClaw 每次 buildPrompt 动态构建（记忆实时反映但缓存命中率低），Hermes 首轮冻结快照（命中率 75% 但记忆延迟一个会话）。\n这是个没有\"正确答案\"的工程取舍\n：成本敏感选 Hermes，记忆驱动场景选 OpenClaw。\n21.8 记忆+检索方案\n业界目前对 Agent 记忆+检索方案的讨论，主要围绕三种范式展开——\nStatic RAG、Agentic RAG、LCM（Lossless Context Management）\n，核心区别在于检索策略和数据建模方式：\n维度\nStatic RAG\nAgentic RAG\nLCM\n一句话\n一次检索 + 一次生成\n多次检索 + 反思循环\nDAG 建模 + 按需下钻\n检索次数\n1 次（固定）\n多次\n（LLM 自主决定）\n按需沿因果链下钻\n数据建模\n扁平索引（向量/BM25）\n扁平索引（向量/BM25）\nDAG（保留因果/时序关系）\n信息保留\n有损\n有损\n无损\n能否反思\n❌\n✅\n✅\n典型实现\nLangChain RetrievalQA\nSelf-RAG, Multi-Hop, Adaptive\nlossless-claw（\nlcm_grep\n/\nlcm_expand\n）\n三者不是递进替代关系，而是解决不同层面的问题：Static RAG 和 Agentic RAG 关注**\"怎么检索\"\n（一次 vs 多次+反思，作用对象可以是外部文档、对话历史或记忆），LCM 关注\n\"怎么建模上下文\"**（用 DAG 替代线性流水，确保信息无损）。一个成熟的 Agent 可能同时需要 Agentic RAG 做多轮检索 + LCM 管理对话历史。\nLCM 的核心思想\n：传统 Agent 的对话历史是线性流水——消息按时间追加，超出窗口就压缩或丢弃。LCM 把对话历史建模为\n有向无环图（DAG）\n：原始消息永久存储，逐层生成摘要节点（叶摘要 → 浓缩摘要），Agent 日常只看摘要 + 最近原始消息，需要历史细节时沿 DAG 逐级展开回溯。类似 Git 的 commit graph——可以 checkout 到任意历史节点看当时的完整上下文，\n信息永远不丢\n。\n两个框架在三种范式中的位置\n：\nStatic RAG\n：两框架都已具备——OpenClaw 的 Memory Search 单次召回，Hermes 的 MemoryManager + 8 插件提供者\nAgentic RAG\n：两框架都有潜力但尚未成体系——OpenClaw 可通过 hooks 串联多次召回但无内置 Self-RAG，Hermes 的 Memory Nudge 是周期性反思而非严格的检索-反思循环\nLCM\n：两框架核心都未覆盖——真正实现 LCM 的是 OpenClaw 第三方插件 **\nlossless-claw\n**（DAG + SQLite 持久化 +\nlcm_expand_query\n子 Agent 下钻）\n自动记忆整理\n：OpenClaw 独有\nDreaming 三阶段\n（Light/REM/Deep 加权晋升），Hermes 无等价物\nlossless-claw 存在本身，就是\"微内核 + 插件\"长期红利的具体体现：\n核心不够的能力，生态可以补\n。\n22. 写在最后：超越框架对比——面向落地的延伸思考\n前面 21.1-21.9 完成了框架对比和业界定位的梳理。这一节聚焦\n面向实际落地的增量思考\n——结合 2026 年业界新进展（特别是 Anthropic 的 Harness Engineering 实践——通过 GAN-like 多智能体架构和上下文重置机制，成功让 AI 持续运行 6 小时以上、完成百万级代码量的复杂应用），从源码分析中延伸出值得进一步探索的 7 个方向。\n按 MECE 原则，这 7 个方向覆盖一个 Agent 系统从输入到输出的完整链路：\n连接\n（怎么接入）→\n记忆\n（怎么记住）→\n上下文\n（怎么管当前推理窗口）→\n能力\n（怎么知道自己能做什么）→\n编排\n（怎么省去重复推理）→\n协作\n（怎么多 Agent 分工）→\n治理\n（怎么保证质量和安全）。最后一节\"沙箱执行\"是治理在隔离维度的延伸。\n22.1 插件化 + 协议互通——让连接不成为瓶颈\nOpenClaw 的微内核设计让 ACP/MCP/CLI Backend/HTTP API 可以\n同时共存在同一个进程\n里——一个 Agent 既能被 Claude Code 调（MCP Server），也能调 Claude Code（CLI Backend），还能被 Zed 调（ACP Server），同时对外暴露 HTTP API。这种\"任意位置可插拔\"的灵活性，根源是把\"循环层\"和\"能力层\"彻底拆开。任何需要编排多个 LLM、多个外部服务的后端系统，都值得参考这种分层。\n一个进程同时扮演四种协议角色\n：对上游是 MCP Server + ACP Server + HTTP API + WebSocket（被调），对下游是 CLI Backend 驱动者 + MCP 客户端 + Provider 插件调用者（调人）。这让 OpenClaw 可以在任何拓扑中充当主、辅或中间层。\n22.2 记忆系统——不是\"存起来就行\"，需要主动整理和分层管理\nOpenClaw 的 Dreaming（Light → REM → Deep 三阶段自动整理）和 Hermes 的 Session Search（FTS5 全文搜索 + LLM 现场摘要）代表了两种互补的记忆策略。前者让 Agent \"越用越聪明\"（自动沉淀重要信息），后者让 Agent \"什么都能想起来\"（全量历史可搜索）。对于任何长期运行的 AI Agent，记忆的\"写入-整理-检索-淘汰\"全链路都需要显式设计，不能靠 context window 硬撑。\nDreaming 的进一步延伸——结合记忆工程新范式\n：\n2026 年 Mem0 将 Agent 记忆显式定义为三类：\n情景记忆\n（发生了什么）、\n语义记忆\n（知道什么）、\n程序性记忆\n（如何做事）。Dreaming 三阶段恰好覆盖了这条转化链路——Light 摄入情景（近期对话和召回记录），REM 提取跨日反复主题形成\"潜在真理\"（抽象思考），Deep 将通过评分门控的真理固化为长期知识写入 MEMORY.md（注入每轮 prompt）。如果 Deep 晋升时给内容打上类型标签（fact/preference/procedure），就能区分\"用户住北京\"（语义）和\"用户习惯先列大纲再写正文\"（程序性）——后者本质上就是\n用户级 Skill 的自动沉淀\n。\n更关键的是\n千人千面潜力\n：Dreaming 的 6 信号评分完全由用户交互行为驱动（频率/相关性/多样性），只要加一层\nuser_id\n维度隔离，同一套算法 + 不同用户的行为模式 = 每个用户各自的长期记忆。用户 A 频繁讨论编程 → Dreaming 晋升编程偏好；用户 B 频繁讨论烹饪 → Dreaming 晋升烹饪知识——\n算法不变，数据区分，千人千面自然涌现\n。\n三个演进方向\n：\n与 Session 轮换联动\n：当 session 使用率达 60% 时触发一次 Light sweep，将当前高价值内容提取为候选（不写 MEMORY.md），Handoff 时作为新 session 的暖启动缓存——既保持 Dreaming \"不轻易固化\"的审慎，又解决 session 切换的记忆断裂\nREM 输出关系图\n：当前\nbuildRemReflections\n提取的是扁平 concept tags；如果升级为实体关系三元组（\n用户 -[用]-> Python -[做]-> 数据管道\n），Deep 阶段就能晋升结构化知识而非孤立事实，支持多跳推理\n增加遗忘机制\n：MEMORY.md 中长期未被召回的条目可能已过时（\"用户住北京\"但已搬家）；定期标记为\"待验证\"，下次对话主动确认——模拟人脑遗忘曲线，防止\"自信但错误\"的旧记忆污染决策\n22.3 Context Engineering——从\"上下文管理\"到\"上下文工程\"\n2026 年业界已将 Agent 的上下文管理提升为独立工程学科（Context Engineering）。核心认知：\n上下文窗口不是\"能装多少\"的问题，而是\"装什么、何时装、何时清\"的系统设计问题\n。OpenClaw 的 Session（JSONL append-only）和 Hermes 的 Session（SQLite FTS5）都能\"存\"和\"搜\"，但在\n主动管理 session 生命周期\n和\n跨 session 动态召回\n方面，相比业界前沿还有差距。\n上下文焦虑症——长周期任务失败的首要原因\nAnthropic 在 Harness Engineering 实践中发现，长周期任务失败的首要原因不是模型能力不足，而是\n上下文焦虑症（Context Anxiety）\n。当模型在单次会话中连续运行数小时，处理包含大量代码、设计和状态信息的上下文时，会逐渐接近其注意力窗口的容量极限，产生三种典型症状：\n信息丢失\n：早期对话中的关键设计决策和约束条件被逐渐遗忘或边缘化\n注意力崩溃\n：模型在处理新信息时无法有效关联先前的上下文，导致设计一致性丧失\n提前收工倾向\n：当模型感知到上下文窗口接近极限时，会下意识地试图提前结束任务，即使工作远未完成\n这与 Chroma Research 的发现互为印证——不是同一个问题的两种描述，而是同一个根因的\n微观和宏观视角\n。Chroma 从 Transformer 注意力机制出发，证明 Context Rot 是架构级属性（上下文每增长 10 倍，每个 token 获得的注意力权重减少 10 倍）；Anthropic 从工程实践出发，发现 Agent 在约 35 分钟 / 80K-150K tokens 时开始出现\"焦虑\"行为——本质都是\n上下文长度超过有效注意力范围后，模型的推理质量不可避免地退化\n。\n对照分析\n：OpenClaw 的三级 Compaction（§6.5）和 Bootstrap Budget（§6.8）在做类似的事——L1 pre-request 主动压缩、L2 timeout-triggered 紧急压缩、L3 overflow 降级——但触发时机偏保守（接近上限才压缩），且压缩后仍在同一 session 内继续，没有\"彻底重启\"的选项。\n上下文重置（Context Reset）vs 上下文压缩（Context Compaction）\n针对上下文焦虑症，Anthropic 提出了比传统压缩更激进的解法——\n上下文重置（Context Reset）\n：\n策略\n做法\n适用场景\n信息保留\nContext Compaction\n在原会话中压缩历史，保留关键信息\n上下文焦虑不严重的短-中期任务\n有损但连续\nContext Reset\n彻底起一个新的 Agent，通过结构化工件进行工作交接\n任务极长或模型焦虑明显的情况\n选择性但完整重启\n类比\n：不是所有内存泄漏都能靠\"清理缓存\"解决，有时候得重启进程。在长周期任务中，当一个 Agent 完成一个冲刺后，系统会启动一个新的 Agent，只传递必要的状态信息——代码仓库的当前状态、已完成的任务清单、下一步的计划——从而彻底解决上下文窗口溢出问题。\n两个框架的现状\n：\nOpenClaw\n：Compaction 是主要手段，Context Engine 的\ncompact()\n接口支持可插拔的压缩策略，但没有内置的 session 级 reset 机制\nHermes\n：四步压缩（工具裁剪→边界→摘要→组",
+      "fulltext_obtained": true,
+      "chunk_index": 15,
+      "chunk_count": 18
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0,
+        "irrelevant": 0.08,
+        "direct_local": 0,
+        "transfer_agent": 0.92,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.09,
+        "2": 0.89,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.49,
+      "probabilities": {
+        "0": 0.67,
+        "1": 0.2,
+        "2": 0.09,
+        "3": 0.03,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.18,
+      "probabilities": {
+        "0": 0.43,
+        "1": 0.04,
+        "2": 0.47,
+        "3": 0.05,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.69,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.29,
+        "3": 0.67,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.11,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.03,
+        "2": 0.14,
+        "3": 0.48,
+        "4": 0.34,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 3,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.06,
+        "3": 0.77,
+        "4": 0.13,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.83,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6711,
+    "outputTokens": 172,
+    "totalTokens": 6883
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.89,
+        "relevance": 0.92,
+        "grounding": 0.67,
+        "decision_action": 0.35,
+        "evidence": 0.77,
+        "actionability": 0.61,
+        "anti_hype": 0.82
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180435178,
+                "endTime": 1791180435368,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000281862",
+      "marketCost": "0.000281862",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000281862",
+      "inferenceCost": "0.000281862",
+      "inputInferenceCost": "0.000281862",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARVPS2JW8NKW39JNFYVEG"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:15 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::2n5bf-1791180435074-0b3a06e25b1a"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0,
+            "irrelevant": 0.08,
+            "direct_local": 0,
+            "transfer_agent": 0.92,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.09,
+            "2": 0.89,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.49,
+          "probabilities": {
+            "0": 0.67,
+            "1": 0.2,
+            "2": 0.09,
+            "3": 0.03,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.18,
+          "probabilities": {
+            "0": 0.43,
+            "1": 0.04,
+            "2": 0.47,
+            "3": 0.05,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.69,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.29,
+            "3": 0.67,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.11,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.03,
+            "2": 0.14,
+            "3": 0.48,
+            "4": 0.34,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.06,
+            "3": 0.77,
+            "4": 0.13,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.83
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6711,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.89,
+            "relevance": 0.92,
+            "grounding": 0.67,
+            "decision_action": 0.35,
+            "evidence": 0.77,
+            "actionability": 0.61,
+            "anti_hype": 0.82
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180435178,
+                    "endTime": 1791180435368,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000281862",
+          "marketCost": "0.000281862",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000281862",
+          "inferenceCost": "0.000281862",
+          "inputInferenceCost": "0.000281862",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARVPS2JW8NKW39JNFYVEG"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:14.738Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1202424188942393345",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "9.9 元/月，用 AgentPlan + OpenViking 给销售团队配一个不会忘事的 AI 助手",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247520930&idx=2&sn=d28d61e9a893bc39fdbe6797404755cb",
+      "date": "2026-07-16T10:59:00.339Z",
+      "chars": 3568,
+      "text": "原创\nOpenViking\n2026-07-16 18:59\n北京\n你的销售团队是不是也这样？\n销售小王下午 3 点打开飞书，准备跟进 A 公司。\n他需要先翻两周前的群聊找客户口头提过的预算范围，再翻上周的会议纪要确认对接人换了谁，再去云文档里看产品经理写的需求分析，最后打开 Excel 查一下上个月录入的跟进记录——四个窗口，来回切换，20 分钟过去了，还没开始打电话。\n这不是小王一个人的问题。\n几乎所有销售团队都面临同一个困境：\n客户的资料散落在飞书群聊、会议纪要、云文档、客户需求表和手动上传的材料里\n，全靠人肉整理。\n我们做了一件事：\n用火山方舟 AgentPlan + OpenViking，花 9.9 块钱一个月，搭了一个能查公司、看档案、问历史的销售工作台。\n不是 Demo，不是 PPT，是真的能用的东西。下面把整个过程拆开讲。\n一、一句话说清楚：这套方案用了什么\n先上一张全景图，搞清楚各组件的角色：\n简单说：\nAgentPlan 是大脑和钱包，OpenViking 是记忆体，其他组件是手脚和感官。\n你可能会问，这些能力单拎出来都不新鲜，组合在一起有什么特别的？\n关键在两个字：\n编排\n。以往你要自己写代码对接飞书 API、自己搭向量数据库、自己写 RAG pipeline、自己搞前后端。现在，AgentPlan + OpenViking 把这些全打通了——你只需要告诉你的 Agent“我想要什么”，它帮你把整条链路自动搭起来。\n二、从零到一：2 步快速搭完销售工作台\nStep 1：购买 AgentPlan + 配置 Harness\n登录火山方舟官网（\nhttps://console.volcengine.com/ark/region:cn-beijing/subscription/agent-plan?projectName=default），购买\nAgentPlan Small 套餐（原价 ¥40/月，\n新用户活动期低至 ¥9.9\n）。购买后在控制台获取专属 Base URL 和 API Key。\n注意：AgentPlan 有独立的接口地址（\n/api/plan\n），不要和 Coding Plan 的凭证混用，否则会扣错额度。\n然后在控制台的“配置 Harness”处，根据需要开启：\n专业数据集（DataPro）\n：用于查询企业工商信息\n豆包搜索\n：套餐内每月赠送免费额度，用于补充公开网页信息\nAgent 记忆\n：接入 OpenViking\n火山引擎 Supabase\n：用于存储业务数据\n这一步纯控制台操作，大约 10 分钟搞定。\nStep 2：使用这份 Skill，剩下的交给 Agent\n我们提供了一份\n销售商机商单 Agent Setup Skill\n，并开源在了 GitHub 上，你可以直接复制这句话给 Agent 实现快速搭建：\n帮我初始化销售助手：\nhttps:\n/\n/docs.openviking.net/agents/skills/sales\n-opportunity-order-builder.md\nCodex 跑完 Skill 后你会看到什么？\nAgent 会依次完成环境检查、建库、凭据配置、飞书 CLI 安装，最后跑一轮最小闭环验证——写入一条测试销售记忆、上传一份测试文档、搜索确认、精确读取确认。全部通过后，你就可以直接开始用了。\n搭好之后如何开始使用？\n上传资料：把飞书文档链接发给 Agent，它自动读取并存入 OpenViking。\n查询商机\n：“总结 A 公司当前进展、风险点和下一步动作”——Agent 基于所有已上传资料回答，不瞎编。\n生成跟进计划\n：“基于已上传材料，帮我生成下一次和 A 公司的沟通提纲。”\n记忆自动沉淀\n：每次对话中产生的销售判断、客户偏好，Agent 会自动提取并写入 OpenViking 长期记忆。下次聊到同一个客户时，它真的“记得”上次你们聊了什么。\n持续补充\n：新的会议纪要、飞书对话随时导入。知识库越用越厚，Agent 越用越懂你的客户。\n三、为什么是 OpenViking ？\n市面上不缺 RAG 方案，缺的是让 Agent 真正能理解的统一上下文数据库。\n传统 RAG 把文档切成碎块扔进向量数据库，检索时靠关键词或语义相似度匹配。对销售场景来说，这有几个致命问题：\n1.\n上下文碎片化\n：一份会议纪要被切成 10 个 chunk，检索回来的是碎片，Agent 要自己拼凑上下文\n2.\nToken 浪费\n：每次检索返回大量冗余内容，模型还没开始干活，Token 已经用掉一半\n3.\n记忆无法积累\n：每次对话都是新的开始，上周的分析结果这周又得重新来\nOpenViking 的做法是用\n虚拟文件系统范式\n替代传统 chunk-based RAG：\n像操作本地文件一样管理记忆\n：Agent 可以按目录浏览、按层级检索，而不是在碎片堆里大海捞针\n三层上下文分级\n：L0 摘要 → L1 总结 → L2 完整内容，Agent 按需取用，用最少 Token 拿到最关键信息\n记忆持续沉淀\n：每次生成的档案、每次问答的结论，都可以回写到 OpenViking，下次使用时直接调用\n这就是为什么 Agent 能回答“上次他们提的预算是多少”——因为它真的\n记住了\n。\n四、实际效果\n工作台搭好后，最能打动销售的不是“功能有多全”，而是几个具体的瞬间——他们第一次意识到，这个助手是真的“记住了”。\n🎬 OpenViking 赋能销售助手\nAha moment 1：\n拜访前的一分钟，AI 把防弹衣递到手上\n下午 2 点要去见 A 客户，小王上车前打开工作台，丢进去一句“给我一份拜访 Brief”。\n十秒钟后，他看到一份带时间线的档案：\nA 公司上周发了什么新闻、上个月对接人在飞书群里随口吐槽过我们哪个接口响应慢、年初会议纪要里提过的预算上限是多少——甚至连上次产品经理答应要补的一份白皮书还没给，都被 Agent 从 OpenViking 的历史记忆里捞了出来，标上了数据来源。\n小王在车上过一遍，进门第一句话就从“最近怎么样”换成了“上次你们说的问题，我们这边已经优化了\"。\n客户的眼神立刻不一样了。\nAha moment 2：\n周五下班前，一句“帮我写周报”换来早走半小时\n以前周五晚上 7 点，小王还在工位上对着 Excel 挤牙膏——A 客户上周聊到哪了？B 客户是不是该约第二次了？C 客户那个卡在合同流程的单子到底推进了没？\n现在他收拾东西时对着助手说一句：“帮我生成本周的跟进周报。”\nAgent 自动检索 OpenViking 里这一周新增的会议纪要、群聊摘要、上传的客户需求文档，10 秒内吐出一份结构化报告：\n核心进展：A 客户预算确认 200 万，B 客户对接人从张总换成李总\n卡点与风险：C 客户对安全合规有疑虑，需下周拉技术开会\n下一步 Action：优先推进 A 客户的合同流程，B 客户需要重新建联\n这不是流水账，是基于历史事实的业务洞察。\n销售早下班半小时，主管也能一眼看到真正的业务阻力在哪里——不用再一个个去追“你这周干了啥”。\n五、适合谁？\n这套方案特别适合：\n销售团队\n，客户资料散落在飞书生态里，需要一个统一的资料中心\n创业者 / 小团队负责人\n，不想花大价钱买 CRM，但需要一个能沉淀客户信息的工具\n已经在用飞书办公的团队\n，飞书 CLI 可以直接读取你已有的资料，零迁移成本\n不太适合的场景：你需要的是一个完整的 CRM 系统（带审批流、合同管理、回款跟踪），那建议看看专业 CRM 产品。这个工作台解决的是“资料散落”和“记忆断裂”的问题。\n9.9 元/月，一杯咖啡的钱\n换一个不会忘事的销售助手\n这可能是目前性价比最高的 AI Agent 落地场景之一\n不需要动用庞大的开发资源\n把 Skill 发给 Agent：\n我们就要这个 OpenViking + AgentPlan 的方案\n今天下午就能让团队用上\n加入我们，共建 Agent 上下文的未来！\n🚀\n上手试用\n：\n试着按文档步骤配置你的工作助手。或访问官网\nhttps://openviking.ai/，将你的\nAgent 接入 OpenViking，收获更丝滑、更流畅的交互体验。\n🌟\n给个 Star：\n访问我们的 GitHub 仓库\nhttps://github.com/volcengine/OpenViking，为我们点亮一颗Star，你的\nStar 是我们前进的最大动力！\n💬\n加入社区：\n扫描下方飞书二维码，加入官方交流群，与顶尖开发者一起探讨 Agent 上下文的无限可能。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.13,
+        "direct_local": 0,
+        "peripheral": 0.02,
+        "transfer_business": 0.01,
+        "transfer_agent": 0.84
+      }
+    },
+    "relevance": {
+      "score": 2.09,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.12,
+        "2": 0.62,
+        "3": 0.24,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.54,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.4,
+        "4": 0.54,
+        "5": 0.03
+      }
+    },
+    "decision_action": {
+      "score": 1.8,
+      "probabilities": {
+        "0": 0.27,
+        "1": 0.11,
+        "2": 0.22,
+        "3": 0.34,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.95,
+      "probabilities": {
+        "0": 0,
+        "1": 0.07,
+        "2": 0.92,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.84,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.89,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 1.81,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.06,
+        "2": 0.81,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4807,
+    "outputTokens": 172,
+    "totalTokens": 4979
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.79,
+        "relevance": 0.74,
+        "grounding": 0.66,
+        "decision_action": 0.12,
+        "evidence": 0.94,
+        "actionability": 0.87,
+        "anti_hype": 0.81
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179916710,
+                "endTime": 1791179916851,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000201894",
+      "marketCost": "0.000201894",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000201894",
+      "inferenceCost": "0.000201894",
+      "inputInferenceCost": "0.000201894",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A91CRBY4KV2YAV22PQ5HQ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:36 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::99nb8-1791179916687-5257cbd8d0ec"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.13,
+            "direct_local": 0,
+            "peripheral": 0.02,
+            "transfer_business": 0.01,
+            "transfer_agent": 0.84
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.09,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.12,
+            "2": 0.62,
+            "3": 0.24,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.54,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.4,
+            "4": 0.54,
+            "5": 0.03
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.8,
+          "probabilities": {
+            "0": 0.27,
+            "1": 0.11,
+            "2": 0.22,
+            "3": 0.34,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.95,
+          "probabilities": {
+            "0": 0,
+            "1": 0.07,
+            "2": 0.92,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.84,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.89,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.81,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.06,
+            "2": 0.81,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4807,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.79,
+            "relevance": 0.74,
+            "grounding": 0.66,
+            "decision_action": 0.12,
+            "evidence": 0.94,
+            "actionability": 0.87,
+            "anti_hype": 0.81
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179916710,
+                    "endTime": 1791179916851,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000201894",
+          "marketCost": "0.000201894",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000201894",
+          "inferenceCost": "0.000201894",
+          "inputInferenceCost": "0.000201894",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A91CRBY4KV2YAV22PQ5HQ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:36.094Z"
+  }
+}

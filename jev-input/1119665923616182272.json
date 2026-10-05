@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1119665923616182272",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "三个关键词，2026谷歌 I/O大会全说透了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801563&idx=1&sn=31ffe905a1be1e5ddb9594b9fef76fa5",
+      "date": "2026-05-20T07:25:00.759Z",
+      "chars": 7328,
+      "text": "腾讯技术工程\n2026-05-20 15:25\n广东\nGemini有多强？\n导语\n北京时间今天凌晨 1 点，谷歌 I/O 2026 在 Shoreline 圆形剧场落幕。整场 keynote 大约 1 小时 51 分钟，涉及十几款产品、三代模型、一个新 IDE、一个新 Agent、一套新搜索范式\n但如果只能记一句话，那就是皮查伊（Sundar Pichai）在演讲第 16 分钟说的那一句。\n\"There are three areas where I want to go deeper today to show you the progress in each:\nModels, coding, and agents.\n\"\n这不是日程表，这是谷歌交给 AI 下半场的答题卡。\n而这三块拼图最令人振奋的地方在于：\n模型\n：Gemini 3.5 Flash 一个 \"Flash 级\" 的小模型，把谷歌自己三个月前的旗舰 Gemini 3.1 Pro 在几乎所有基准上\n正面打穿\n；\n编程\n：Antigravity 用 93 个子 Agent、12 小时、不到 1000 美元，\n从零造了一个能跑 Doom 的操作系统\n；\nAgent\n：Search 直接进入\"\nSearch agents\n\"时代——它不再只回答你，\n它开始替你做。\n这一夜，AI 第一次大规模地从\"对话框\"走进了\"日常事\"。\n一、模型层：3.5 Flash 把自家上一代 Pro 干翻了，Omni 让 AI 第一次会\"改\"视频\n1. 数据先行：每分钟 190 亿 tokens，13 个产品月活破 10 亿\n讲模型之前，皮查伊先甩了一组数据，定调\"现在到底有多大\"：\n谷歌每月处理 tokens：\n从 9.7 万亿涨到 3.2 千万亿\n；\n每分钟处理：\n190 亿 tokens\n；\n全球开发者：\n850 万\n；\n月活破 10 亿的谷歌产品：\n13 个\n，其中 5 个超 30 亿；\nAI Overviews 月活：\n25 亿\n；\nAI Mode 上线一年，月活突破\n10 亿\n；\nCapex 投入：\n从 2022 年的 310 亿美元，飙到 2026 年的 1800–1900 亿美元\n——四年 6 倍。\n这是 Gemini 3.5 出场前的全部底气。\n2. Gemini 3.5 Flash：今日全量上线，把自家上一代旗舰按在地上\n接下来是模型层最大一块石头——\nGemini 3.5 Flash 今日全量上线\n。\n今天起在所有谷歌产品和 API 中\n全量开放\n；\n同时成为 Gemini App 与 Google Search AI Mode 的默认模型\n——没错，你今天打开 AI Mode 搜的每一条，背后都已经是 3.5 Flash；\nGemini 3.5 Pro\n下个月跟上。\n但真正让现场倒吸一口凉气的是数字：\n速度\n：输出\n289 tokens/秒\n，比 GPT-5.5、Claude Opus 4.7\n快 4 倍以上\n；\n价格\n：比同级前沿模型\n便宜超过一半\n；\n性能\n：\n在几乎所有基准上，与自家三个月前的旗舰 Gemini 3.1 Pro 正面对标并实现反超。\n最后这一条值得停下来再读一遍——这是一个\nFlash 级\n模型，在主要 benchmark 上\n全面对标自家上一代 Pro\n。换算到外部世界，约等于：一辆刚出厂的\"经济款\"，把自家三个月前的\"性能旗舰\"按在地上摩擦。\n四组关键基准成绩：\n基准\n项目\n3.5 Flash 成绩\nTerminal-Bench 2.1\n编码能力\n76.2%\nGDPval-AA\n真实世界 Agent 任务\n1656 Elo\nMCP Atlas\n大规模工具使用\n83.6%\nCharXiv Reasoning\n多模态推理\n84.2%\n更暴力的是它对企业账单的杀伤力——皮查伊原话：\n大客户若把 80% 的工作切到 3.5 Flash，一年能省下超过 10 亿美元的 API 成本。\n这是谷歌今晚扔在桌上的第一张牌：\n\"我用一个 Flash 级模型，把整个前沿模型市场的均衡价格区间，向下又拉了一档。\"\n3. Gemini Omni：AI 第一次会\"改\"一段已经拍好的视频\n如果说 3.5 Flash 是模型层的\"性价比王炸\"，那 Omni 就是模型层的\"想象力天花板\"。\nDemis Hassabis 上台揭幕：\nOmni 是一个原生的视频生成与编辑模型家族\n，今晚发布的首款成员叫\nGemini Omni Flash\n，更强的 Omni Pro 不久后跟上。\n它最炸的地方，\n不是从零生成视频\n——这事 Veo 早能做。\n\"Just like Nano Banana redefined image editing,\nOmni gives you a much more natural way to edit video with conversational language\n.\"\n（正如 Nano Banana 重新定义了图片编辑，\nOmni 让你能用对话式语言、自然地编辑视频\n。）\n—— Demis Hassabis\n真正的跨越，是它能改一段已经存在的视频，而不破坏原有人物的表演。\n你拍了一段 selfie，一句 prompt + 一张参考图，它能：把背景换掉、加上特效、塞进一个新角色——而你脸上的表情、肢体语言、说话节奏，\n纹丝不动\n。\n这一步是从\"生成\"迈向\"编辑\"——而\n这一步，正是创作者真正在意的那一步\n。\n发布会还顺手秀了一手原生\n音视频同步生成\n：画面、配乐、音效在同一次推理里出来，不再需要三个模型接力配菜。\n首发渠道\n：Omni Flash 今日正式上线，同时接入\nGemini App、Google Flow 和 YouTube Shorts\n——其中\nYouTube Shorts 用户可直接免费使用\n。to-C 的扩散速度，谷歌这次没省力气。\n顺带一提，谷歌 AI 内容防伪水印 SynthID 自上线以来，\n已为 1000 亿张图像和视频、6 万年时长的音频打上水印\n——他们清楚 Omni 这种工具会带来什么。研究显示，人类只能正确识别约 25% 的高质量深伪视频，水印这件事不再是\"可选项\"。\n二、编程层：Antigravity 2.0——一个能跑 Doom 的操作系统\n如果说模型层是地基，那今晚最让开发者血压升高的一段，全部发生在编程板块。\n主讲人是\nVarun Mohan\n——前 Codeium / Windsurf 创始人 CEO，加入谷歌后操盘 Antigravity。他给 2.0 写下的定位只有一句：\n\"\nUnabashedly agent first.\n\"（\n毫不掩饰地，Agent 优先。\n）\n1. 一组先扔出来的数据：Antigravity 内部已经\"飞起来\"了\n光是 Antigravity 一个产品，谷歌内部处理 token 的速度——\n从今年 3 月的 5000 亿/天，飙到现在的 3 万亿/天。\n两个月，6 倍。\n这是 Antigravity 在内部跑出来的真实加速度。\n而开发者今天拿到的 Antigravity 里的 Flash，\n是经过专项优化的 12× 加速版\n——也就是 3.5 Flash 在同等任务上吞吐能再翻 12 倍。\n2. Antigravity 2.0 给开发者的三件大事\n全新独立桌面应用\n：抛开传统 IDE 的\"编辑器+插件\"思路，把\nAgent 对话面板 / Agent 产物面板 / 多 Agent 编排面板\n做成一等公民；\nCLI + SDK + 原生语音\n：接入 Gemini audio 模型，可以直接用嘴和 Antigravity 谈需求；\nAndroid、Firebase、AI Studio 全栈原生集成\n；\n底层引擎：\nGemini 3.5 Flash × Antigravity Agent Harness\n，自带 sub-agents、hooks、async 三大原语。\n3. 王炸时刻：93 个子 Agent，12 小时，造了一个能跑 Doom 的操作系统\nVarun 在台上点开了一个不可思议的实验记录——\n指标\n数字\n子 Agent 并行数\n93 个\n总耗时\n12 小时\n模型请求次数\n超 15,000 次\n处理 tokens\n26 亿\nAPI 总成本\n不到 1000 美元\n产物\n一个能跑 Doom 的操作系统\n（含调度器 / 内存管理 / 文件系统）\n用谷歌自己的话说——\n\"\n调度程序、内存管理、文件系统，每一行代码都是 Agent 写的、Agent 测的、Agent 审计的。\n\"\n现场演示更震惊：Varun 在自家 OS 里随手敲了个\nsl\n（Linux 老\nls\n输错梗），跳出一只小火车；接着试着跑 Doom——缺驱动；他随口让 Antigravity 自己去修——修好了，全场鼓掌。\n一件以前需要一整支系统团队做半年的事。\nVarun 给这件事下的定调，是今晚开发者圈最值得被钉在墙上的一句话：\n\"\nMultiday engineering efforts are collapsing into hours, if not minutes.\n\"（\n以前要拉几天的工程任务，正在被压缩成几小时，甚至几分钟。\n）\nAntigravity 2.0 今天起全球开放。\n三、Agent 层：Spark + Search Agents，AI 走出对话框的两条路径\n到模块三，皮查伊把这一年的 \"agentic\" 叙事钉死：\n\"We are firmly in our\nagentic Gemini era\n.\"\n（我们已经稳稳进入\nagentic Gemini 时代\n。）\n但 Agent 不是一个产品，而是\n两条铺设路径\n——\n一条是 Gemini App 里的主控大脑\nSpark\n；\n一条是直接长在全球最大入口里的\nSearch Agents\n。\n1. Gemini Spark：你的 24×7 数字管家\nSpark 是 Gemini App 里新冒出来的彗星图标。它的定位非常直白：\n\"It's your personal AI agent that helps you navigate your digital life, taking action on your behalf and under your direction.\nIt runs on dedicated virtual machines on Google Cloud, and it is 24/7.\n\"\n翻译成人话：\n它是一台 7×24 小时不打烊、托管在谷歌云上的\"你\"。\n关键设计\n：\nUI 是\nChat / Agent 双 Tab\n——Chat 还是问答，Agent 才是派活；\n跨端：网页 / 桌面 / Android & iPhone 实时同步；接下来还会铺到\n邮件 + IM\n；\n能跑\n定时任务\n（\"每周一 8 点把上周会议纪要整理给我\"）；\n通过 MCP 协议，\n未来几周打通第三方工具\n；\n数据视野：连接的 Google 应用 + 聊天记录 + 已登录网站 + Personal Intelligence 个人画像 + 实时位置；\n下半年\n，Spark 将\n直接落地到 Chrome 里\n，成为 \"agentic browser\"——这就是去年传闻已久的 \"Chrome Auto Browse\" 叙事的真正归宿；\n同期还会推出\nAndroid Halo\n——手机上专门为 Agent 准备的\"基地\"。\n节奏与价格\n：\n本周：仅对 trusted testers 灰度；\n下周\n：向\n美国 Google AI Ultra 订阅用户\n开 Beta；\nAI Ultra 订阅同步调整\n：\n新增 $100/月 入门档\n——这是开通 Spark Beta 的最低门槛；\n最高档 Ultra 计划从\n降\n到\n200/月\n；\n此外，Gemini App 同步改版（代号 Neural Expressive），\n计费模式改为按算力计费\n。\n⚠️\nSpark 自带的诚实自白\n：\nSpark 是实验性产品。虽然它被设计成在敏感操作前征求许可，但\n它可能在未询问的情况下分享你的信息或代你完成购买\n。请勿依赖它做医疗、法律、财务等专业决策。\n—— 这段话是谷歌自己写在产品安全说明里的。它不是免责声明，是\n当下所有 agentic 产品集体面对的真实风险\n。\n2. Search 的 25 年最大改版：进入 \"Search Agents\" 时代\n接下来上台的是\nLiz Reid\n（谷歌搜索负责人）。她甩出今晚 Agent 板块第二组震撼数据：\nAI Mode\n上线刚一年\n，月活突破\n10 亿\n；\nAI Mode 查询数\n自上线以来每季度翻倍\n；\n已升级到\nGemini 3.5\n——现在打开 AI Mode，你用的就是它。\n然后她说出全文最值得划线的那句：\n\"\nWe're entering the era of Search agents.\n\"\n（\n我们正在进入\"搜索智能体\"的时代。\n）\n3.三件具体的事\n(1) 全新的 AI 搜索框\n—— 25 年来最大的一次搜索框升级。原生支持\n文本 / 图像 / 文件 / 视频混合输入\n，AI Overviews 与 AI Mode 之间无缝切换。\n(2) Information Agents（信息智能体）—— 24×7 在后台替你\"盯着\"\n它主动监控你交代过的事：\ndemo 1：\n监控生物科技板块\"市盈率<15、正现金流、低负债\"的股票\n，命中即推送；\ndemo 2：\n租房\n——你随口讲一段需求，它持续在背后筛新房源；\ndemo 3：\n心仪球鞋一发售即时预警。\n预计的上线时间：\n今年夏天\n。\n(3) Generative UI in Search —— Antigravity 直接被嵌进 Search 后端\n这是今晚 Search 部分最反直觉的一段。\ndemo 1：问一个关于黑洞引力波的物理问题，\nSearch 现场写出了一个交互式可视化 mini-app\n；\ndemo 2：Search 主动提议——\"要不要给你做个\n周末家庭计划器\n？\"它结合 Gmail / Photos / Calendar 里的家庭画像，实时排出周末两天的行程，能转发给老婆、能一键同步到全家共享日历。\n预计上线时间：\n今年夏天免费向所有人开放。\n这意味着什么？\n意味着 Search 不再只是给你一个\"答案页\"——它给你一个\n为你这个问题专门生成的临时 App\n。\n4.顺带的一颗长期变量：UCP（Universal Commerce Protocol）\nSearch 章节末尾，Vidhya Srinivasan 抛出了一个野心更大的东西——\nUCP 通用商业协议\n：\n\"\nUCP does for agentic commerce what HTTP did for the web\n: It gives agents and systems a common language.\"\n（\nUCP 之于 agentic 商业，正如 HTTP 之于 Web\n——它让所有 Agent 和系统说同一种语言。）\n谷歌 Shopping Graph 已收录\n600 亿条商品\n，这是 UCP 一上来就能撑住的底盘。这一步如果跑成，\"AI 替你购物\"就不再是各家厂商各自的小作坊，而是\n整个互联网商业层的协议级重构\n。\n四、把三块拼图咬合起来看：谷歌究竟在赌什么？\n把今晚的三块板块叠在一起，会浮出一句异常清晰的判断：\nAI 第一次大规模地，从\"对话框\"走进了\"日常事\"。\n模型\n→ Omni 让 AI 第一次能改一段已经拍好的视频；\n编程\n→ Antigravity 用 1000 美元造了一个能跑 Doom 的操作系统；\nAgent\n→ Spark 24×7 替你跑后台，Search 边搜索边替你下单。\nOpenAI 的 Agent 平台、Anthropic 的 Conway、微软的 Agent 365 都在路上。但谷歌今晚交出的这份答卷，差异化只有一句话——\n\"我把 Agent 直接装进了你每天必开的搜索框和 Gemini App。\"\n这场 Agent 决赛的胜负手，可能不在谁的模型 benchmark 高一两个点。\n它在——\n谁能把 AI 真的铺到 10 亿人的日常里\n。\n谷歌握着三个一般人一抬手就会用到的入口：\nGemini App（Spark）+ Google Search（Search Agents）+ Antigravity（开发者）\n——这是一道别家短期内复制不出来的分发护城河。\n至于另一面：\n当一个 24×7 的 Agent 拥有你的邮箱、相册、日历、位置和支付权限时，安全边界谁来守？谁来负责？\n——这是谷歌今晚没能给出完整答案的题，也是接下来一年所有大厂都绕不开的题。\n五、写在最后\n回头看皮查伊那句开场白——\"\nModels, coding, and agents.\n\"——它其实不是日程表，是谷歌交给 AI 时代下半场的答案：\n模型\n继续往前推（更便宜、更多模态、能编辑而不只是生成）；\n编程\n被 Agent 重写（一个人 + 一群子智能体 = 一个工程团队）；\nAgent\n借着搜索框和 App 入口，第一次真正走进了\n10 亿人\n的日常。\nAI 不再只回答你，它开始替你做。\n你最期待哪一件事先发生在自己身上？——\n☐ Spark 替你管收件箱和日程\n☐ Search Agent 替你抢球鞋 / 监控租房 / 盯股票\n☐ Antigravity 替你写下一个项目的代码\n评论区聊聊。\n一分钟视频速览\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "239283155656576000",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "KOOK 携手火山引擎 RTC ，重构游戏开黑新体验",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518340&idx=1&sn=fec7b9f3ab534ab09ca52457ae90e2f4",
+      "date": "2026-01-27T10:05:00.795Z",
+      "chars": 2311,
+      "text": "原创\n视频与边缘团队\n2026-01-27 18:05\n北京\n对游戏玩家来说，开黑绝非简单的组队对战，而是集精准战术传递、清晰画面共享与默契实时互动于一体的核心体验。无论是 MOBA 游戏中瞬息万变的团战指令同步，还是 3A 大作里细致入微的通关攻略分享，玩家对开黑体验的核心诉求始终一致：清晰无扰的语音沟通、流畅高清的画面传递、稳定可靠的协作支撑。\n当玩家对开黑体验的要求日益严苛，单纯的功能叠加已无法满足需求，技术创新成为突破体验上限的关键。正是基于对玩家核心需求的深刻洞察，\n国内用户量第一的游戏开黑专用工具 KOOK 选择与拥有亿级产品服务经验的火山引擎 RTC 携手\n，一场以技术为纽带、以用户体验为核心的深度合作就此展开。\n深耕游戏开黑，直面两大痛点\nKOOK 前身名为 “开黑啦”，覆盖实时语音、高清屏幕共享、多元社区互动等全场景，成为数千万硬核玩家不可或缺的协作与社交利器，月活跃用户接近数千万、日均语音时长达数十亿分钟。在游戏社交赛道竞争日趋激烈的背景下，KOOK 始终将玩家需求放在首位，但在真实游戏场景中，两大技术痛点长期存在。\n首先是嘈杂环境下的语音清晰度问题，玩家的开黑场景多样且复杂，环境的杂音极易污染语音采集过程。模糊不清的语音往往导致沟通失误，甚至影响团队协作的凝聚力，让开黑的乐趣大打折扣。\n其次是高画质屏幕共享的性能与稳定性。在游戏社交中，屏幕共享是核心的互动场景之一，但高画质游戏画面的共享，对终端性能和网络带宽是巨大考验。尤其是在共享高帧率的 3A 游戏 Boss 战时，常出现游戏掉帧、画面卡顿、音画不同步等问题，既影响操作的流畅性，也降低了内容的观赏性。\n这两大痛点不仅让玩家的开黑体验大打折扣，更成为行业技术升级的核心方向。为了解决这些问题，KOOK 始终在追求对游戏场景的极致贴合与产品迭代，这种理念不仅让它积累了庞大的忠实用户群体，更成为它与火山引擎 RTC 合作的重要契合点。\n火山引擎 RTC 赋能，实现 AI 与游戏社交的技术协同\nKOOK 对音频纯净度和画面流畅度有着极致追求，而火山引擎 RTC 凭借服务抖音的全球化基础设施与亿级用户打磨的音视频技术，为 KOOK 提供了针对游戏场景的专属优化方案。双方针对游戏场景的核心痛点，共同打造了专属优化方案，通过 AI 降噪与高刷屏幕共享两大核心能力，彻底改写了游戏开黑的体验标准。\nAI 降噪与音频 3A 协同，打造零干扰纯净语音\n为解决复杂环境下的语音沟通问题，双方对音频处理链路进行了深度优化，核心在于 AI 降噪技术与音频 3A 的协同发力。\n在噪声识别层面，火山引擎 RTC 基于深度学习模型，实现了对游戏场景噪声的精准区分。无论是键盘敲击声、鼠标点击声、电脑风扇声，还是嘈杂人声，都能被精准识别并过滤。同时，技术团队重点保护 1-4kHz 的人声关键频段，这一频段是人类语音清晰度的核心，确保降噪过程中语音的保真度不受影响。整个降噪过程的收敛速度控制在 100 毫秒以内，实现全频带语言清晰的同时，保持低功耗运行，不占用过多设备资源。\n在游戏开黑中，不同玩家的麦克风距离、说话音量存在差异，火山引擎的 AGC 技术最高支持 400% 的增益调节，能稳定麦克风采集的人声电平，让队友的听感保持一致。同时，它能有效抑制近距离喊话造成的削波失真，避免突然的音量峰值影响听觉体验，让队友间的交流始终处于舒适范围。\n高性能屏幕共享，解锁 4K 超高清流畅体验\n针对高画质屏幕共享的性能瓶颈，火山引擎 RTC 为 KOOK 量身打造了 “低延迟、高画质、低负载” 的专属方案。\nPC 端支持 4K 60fps 的屏幕共享，移动端支持 1080P 60fps，无论是游戏中的细腻画质、操作细节，还是攻略演示中的关键步骤，都能精准呈现在观众面前。同时，火山引擎 RTC 带来了 GPU 硬件编码优先的策略，并实现多显卡适配，KOOK 能在不牺牲游戏性能的前提下，稳定输出超高清画面，解决了高刷推流与游戏流畅度之间的矛盾。\n在网络适配层面，技术团队针对游戏场景优化了网络策略，端到端延迟稳定在百毫秒以内，实现了操作指令与画面的高度同步。同时，方案能智能分配网络带宽，在不影响游戏联网体验的前提下确保画面稳定，让玩家即便在网络条件一般的环境下，也能畅享流畅的超高清共享体验。\nKOOK 与火山引擎 RTC 的合作，本质上是技术实力与场景需求的精准匹配。双方通过深度合作，将火山引擎 RTC 的技术优势与 KOOK 的场景经验相结合，不仅解决了当下的用户痛点，更共同推动了游戏社交领域的技术前沿探索。\n未来，共建 AI 驱动的智能化游戏社区\n此次技术合作的成功，为 KOOK 与火山引擎 RTC 的深度绑定奠定了坚实基础。双方将继续聚焦 AI 技术在游戏社交领域的应用落地，从 AI 智能搜索和游戏 AI 助手两个方面，为玩家带来更具沉浸感的互动体验。\n在 AI 智能搜索的角度，KOOK 积累了海量的游戏内容，火山引擎能够通过 AI 技术实现精准语义搜索，玩家无需在逐字查找就能快速定位所需信息让社区内容的价值得到充分释放。\n同时，双方也在计划探索构建智能化的游戏 AI 助手，通过 AI 助手的赋能，玩家的游戏体验将更加高效、便捷，游戏社交的智能化水平也将迈上新台阶。\nKOOK 与火山引擎的深化合作，在技术探索与场景落地中不断突破，用更先进的技术、更优质的产品，为广大游戏玩家打造更沉浸、更智能、更具温度的游戏社交生态，一个 “沟通无阻碍、协作更高效、互动更智能” 的游戏社交新时代，正在悄然到来。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.75,
+        "transfer_agent": 0.01,
+        "direct_local": 0,
+        "peripheral": 0.24
+      }
+    },
+    "relevance": {
+      "score": 0.52,
+      "probabilities": {
+        "0": 0.63,
+        "1": 0.21,
+        "2": 0.16,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.28,
+      "probabilities": {
+        "0": 0.29,
+        "1": 0.33,
+        "2": 0.21,
+        "3": 0.16,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.03,
+      "probabilities": {
+        "0": 0.99,
+        "1": 0.01,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.63,
+      "probabilities": {
+        "0": 0,
+        "1": 0.38,
+        "2": 0.62,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.55,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.19,
+        "2": 0.32,
+        "3": 0.14,
+        "4": 0.07,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.08,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.04,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4114,
+    "outputTokens": 173,
+    "totalTokens": 4287
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.68,
+        "relevance": 0.65,
+        "grounding": 0.43,
+        "decision_action": 0.98,
+        "evidence": 0.73,
+        "actionability": 0.31,
+        "anti_hype": 0.95
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179938612,
+                "endTime": 1791179938747,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000172788",
+      "marketCost": "0.000172788",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000172788",
+      "inferenceCost": "0.000172788",
+      "inputInferenceCost": "0.000172788",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9PS15P8B7BQHWR5YZQSB"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:58 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7lzxs-1791179938582-d74177e0bb2b"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.75,
+            "transfer_agent": 0.01,
+            "direct_local": 0,
+            "peripheral": 0.24
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.52,
+          "probabilities": {
+            "0": 0.63,
+            "1": 0.21,
+            "2": 0.16,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.28,
+          "probabilities": {
+            "0": 0.29,
+            "1": 0.33,
+            "2": 0.21,
+            "3": 0.16,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.03,
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.63,
+          "probabilities": {
+            "0": 0,
+            "1": 0.38,
+            "2": 0.62,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.55,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.19,
+            "2": 0.32,
+            "3": 0.14,
+            "4": 0.07,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.08,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.04,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4114,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.68,
+            "relevance": 0.65,
+            "grounding": 0.43,
+            "decision_action": 0.98,
+            "evidence": 0.73,
+            "actionability": 0.31,
+            "anti_hype": 0.95
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179938612,
+                    "endTime": 1791179938747,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000172788",
+          "marketCost": "0.000172788",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000172788",
+          "inferenceCost": "0.000172788",
+          "inputInferenceCost": "0.000172788",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9PS15P8B7BQHWR5YZQSB"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:58.005Z"
+  }
+}

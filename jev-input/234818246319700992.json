@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "234818246319700992",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "极速开发出一个高质量 Claude Agent Skills 最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557538&idx=1&sn=2ae6648085081892642b6bde75b5cc51",
+      "date": "2026-01-16T00:31:00.779Z",
+      "chars": 7021,
+      "text": "悟鸣\n2026-01-16 08:31\n浙江\n继 MCP（Model Context Protocol）之后，Anthropic 最近又推出了\nSkill（技能）\n。因工作需要，我近期快速上手并实践开发了一个 Skill，过程中积累了一些经验，整理成本文，希望能帮助更多同学：\n快速理解\nSkill 到底是什么\n？\n掌握关键要点，\n提升 Skill 的开发质量与效率\n。\n在第三部分，我将通过一个具体案例，完整展示如何将一个想法快速落地为可运行的 Skill。即使你对 Skill 还一知半解，只要能清晰描述需求、准备好相关资料，也能轻松开发出一个高质量的 Skill。\n文章有很多主观性，仅供参考。\n一、快速认识 Skill\nSkill 即技能，一般放在 skills 文件夹内，一个技能一个文件夹，一个技能通常包括 SKILL.md 文件，相关的文档和可运行的脚本等。\n一个 SKILL  文件通常包括一个 YAML 头和 Markdown 格式的技能描述。\n技能描述中可以提及 Skill 中的其他资和脚本等，Agent 会按需加载。\nSKILL.md 中 YAML 的元信息，总是会放到上下文中， Body 部分在技能触发的时候才会加载，要小于 5K，其他的文件（文本文件、可运行的脚本、数据等）没有限制。\nAgent 的系统提示词和 Skill 的元信息始终会在上下文中，这样 Agent 根据对话动态决策使用哪个技能，以及根据技能描述动态加载所需要的资源。\n详情参见：\nhttps://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills\n补充：\nhttps://code.claude.com/docs/en/skills\n目前主要在 Claude 桌面、Claude Code 和 API 里面使用。很多其他 AI  Coding 工具，如\nAntigravity\n：\n参见：\nhttps://antigravity.google/docs/skills\nQwen Code\n参见：\nhttps://qwenlm.github.io/qwen-code-docs/zh/users/features/skills/\n也已经支持 Skills。\n如果工具本身暂时没有直接支持，可以借助 OpenSkills 这个开源项目来使用 Skills：\nOpenSkills\nbrings Anthropic's skills system to\nall\nAI coding agents(Claude Code, Cursor, Windsurf, Aider).\nOpenSkills 可以非常方便地将 skill 安装到全局或项目级 skills 文件中，自动创建项目规则 Markdown 文件，“教会”其他 AI Agent 使用 Skills。\n常用命令\n安装工具：npm i -g openskills\n安装技能：openskills install anthropics/skills\n安装技能（全局）：openskills install anthropics/skills --global\n安装技能（通用模式）：openskills install anthropics/skills --universal\n安装技能（非交互）：openskills install anthropics/skills --yes\n同步到 AGENTS.md：openskills sync\n同步到自定义文件：openskills sync -o .ruler/AGENTS.md\n同步（非交互）：openskills sync -y\n读取技能：openskills read\n列出技能：openskills list\n管理技能（交互删除）：openskills manage\n删除技能：openskills remove\n详情参见：\nhttps://github.com/numman-ali/openskills\n二、Skill VS  MCP\n说实话，最开始听到的时候还是有点懵逼的，不是已经有了 MCP 了吗？为啥还出一个 Skill?\n图片来源：\nhttps://skillsmp.com/docs\n简单来说，技能就是怎么做；MCP 是有什么工具、有什么功能。\n技能的话，主要是经验、最佳实践、流程的封装，而 MCP 是连接与交互的协议，主要是 API 调用、数据读写和工具等。\nSkills主要是 Markdown 文件和一些脚本文件，优势在于渐进式加载，不需要服务器资源，适用性好；MCP 主要是客户端和服务端的架构，启动时加载所有工具定义，集成外部功能，Tokens 消耗更高，使用起来更复杂。\n两者是互补的关系，Agent 可以通过 Skills 获取知识，通过 MCP 拓展功能。\n当然，现在 Rule、MCP、Skill 边界也越来越模糊。\n三、快速开发 Skill 的最佳实践\n我们已经对 Skill 有了一个初步的认识，也大概了解它和 MCP 的区别。那么接下来，如何快速、高质量地开发一个 Skill？\n这里分享自己总结的一套最佳实践。\n传送门：\nhttps://github.com/anthropics/skills\n有些人知道官方给出了一个 skills 开源仓库，里面有很多 skill 示例。\n有些同学可能想到了，我们下载下来学习一下，参考一下，\n自己写一个呗\n！\n且慢！\n我们为啥要自己写？\n说实话，如果我们自己手写，还是比较浪费时间的。我们需要去思考文件的结构、提示词的布局，要花很多时间，而且未必能写好。\n上下文工程实践\n这里分享一个自己探索的最佳实践。\n首先，咱们先把 Claude 的 Skills 仓库源码拉下来。\n这里面不仅有 Skill 的例子，而且还有非常详细的规约。不过都是英文的。\n学习 AI 的开源项目我会习惯用\nQoder\n对代码仓库生成一个仓库 Wiki。 可以快速熟悉对应的结构、原理和知识。\n当然，我们还可以把 Skill 相关的高质量资料，灌到 NotebookLM 中，各种提问，生成信息图（上图）、视频概览、PPT 等快速学习。\n我们需要思想转变，一个是默认让 AI来做。因此，\n我们默认 Claude 的 Skills 就该 AI  来写\n。\n一个是既然让 AI 做事情，就需要\n把任务拆解到模型能力以内\n，\n把任务描述清楚\n，并\n提供充足准确的上下文\n。\n我们已经有了啥？\n有了它的这些官方的优质案例、 Skill 的规约，还有了仓库 Wiki。\n我们需要做的是把我们的任务表达清楚，然后把他写技能所需要的资料都给到它就可以了！\n说了这么多，具体怎么做？\n我一直想做一个“提示词优化专家”工具。\n现在很多提示词调优工具，\n没有澄清就直接优化\n，而且一般都会\n套一个比较通用的框架\n。\n最好是让 AI 判断是否存在错误或歧义，\n对焦好了以后再优化\n。通用提示词框架经常比不上最贴切和专业的框架，哪怕做 AI 业务的同学也不可能记住那么多专业框架，\n为啥比如不让 AI自动匹配呢\n？\n趁着学习 Skill 的机会尝试搞成一个 Skill 试试看。\n我只需要把逻辑捋清楚，还要把他需要的资料整理出来。\n逻辑\n：\n1. 当用户给出原始提示词或创作想法时；\n2. 我们需要匹配最专业的提示词框架，判断是否存在歧义和遗漏。若存在，提示用户补充；\n3. 若不存在，则按最佳框架撰写成专业提示词。\n素材：\n各种专业的提示词框架。 这些提示词框架，也是通过  AI Coding 工具中使用 MCP 爬下来的（如 Qoder MCP 广场中的 fetch 或者自己配置 Firecrawl）。\n虽然，Claude 支持“渐进式加载”\n。\n我们也不要让智能体把所有框架都加载进来，再做判断\n，这样既浪费 tokens 又慢。\n我们把所有框架准备一份摘要 Markdown（摘要也是使用  Qoder 或 Cursor 这类工具， 根据 57个框架自动汇总出来的）。\n它先看摘要，从中匹配出最合适的框架，再去针对性得读对应框架详情文件即可。\n那我们把我们的想法描述清楚，把我们的资源给到他，他就能够帮我们写出非常专业清晰的 Skill。说实话可能比我们自己写强很多。\n当然，这也是有前提的：选择目前全球最顶尖的模型。\n注：原本的“提示词框架”文件夹其实已经被修改为“prompt-optimizer” skill，只是为了让大家理解所以重新 Copy 进来。\n我的 prompt-optimizer Skills Github 地址：\nhttps://github.com/chujianyun/skills\n当然，我们也可以通过 Qoder 或 Cursor 把 Claude 的Skills 仓库压缩成一个 Skill 模板，后续作为 AI Coding 工具的项目 Rule，再让 AI Coding 工具拿到这个规则和我们的需求和上下文，帮我们生成也可以。\n有些同学说了，你这个写得挺快的，看着也不错，但好不好使？\n我们在 Claude Code 里试一试：\n我们创建了一个测试项目，叫 skill-test，然后在项目的 `\n.claude/skill\n里把我们的技能放进去。\n接着我们告诉它要优化一个提示词。\n我们看到它匹配到了我们的技能，并按照技能中的指引读取了摘要文件，匹配到最适合的框架后，再去读取对应框架的详情。\n给出选择 RACE 框架的原因和优化后的提示词。\n最后给出一个非常专业、全面的优化提示词，而且还贴心得给出了一个精简版。\n这样的好处就是不需要依赖 Claude 的 Skill，也可以生成很高质量的 Skill。\n官方 skill-creator\n突发奇想，是不是可以搞一个 创建 skill 的 skill 呢？\n结果居然发现， Claude 也提供了一个 skill-creator  ！！！！\n那么，大家就可以创建一个空的目录，像前面一样将资料放进去，把  skill-creator 放到技能目录中，让 它帮我们生成。\n生成出来的 Skill 非常专业。\n所以，我们要做的不是关心 Skill 怎么写，而是如何表达清楚，如何给足 AI 上下文。\n四、Claude Skill 自身的最佳实践\n1. 核心设计哲学：不仅要写给 AI 看，还要省着写\n上下文是公共品 (Public Good)\n：\n你的 Skill 会与系统提示词、对话历史和其他 Skill 共享上下文窗口。\n默认假设 Claude 很聪明\n：\n不要解释显而易见的概念（如“什么是 PDF”）。只提供它不知道的特定上下文。\n每个 Token 都要接受质问\n：\n“Claude 真的需要这句话吗？”、“删掉这段会影响效果吗？”。\nSKILL.md 的黄金法则\n：\n保持精简\n：\n一旦加载，每个 Token 都在烧钱并占用注意力。\n500 行限制\n：\n主文件体保持在 500 行以内，超过则需拆分。\n2. 自由度控制 (Degrees of Freedom)\n根据任务的容错率，设定不同的指令严格程度：\n低自由度 (Low Freedom)\n：\n适用于数据库迁移等高风险操作。\n比喻\n：悬崖边的独木桥。\n做法\n：提供精确的脚本、严格的步骤，不留发挥空间。\n中自由度 (Medium Freedom)\n：\n适用于有首选模式但允许微调的任务。\n做法\n：提供伪代码或带参数的脚本。\n高自由度 (High Freedom)\n：\n适用于代码审查或创意写作。\n比喻\n：开阔的平原。\n做法\n：提供大致方向，相信 Claude 的判断。\n3. 结构与文件组织：渐进式披露 (Progressive Disclosure)\n不要一次性把所有东西都塞进上下文，而是像“洋葱”一样一层层剥开。\n文件系统架构\n：\nClaude 像操作 Linux 文件系统一样操作 Skill。它只在需要时通过\nread\n工具读取特定文件。\n三种组织模式\n：\na.\n概览 + 引用\n：\nSKILL.md\n只是目录，详情在\nREFERENCE.md\n。\nb.\n领域隔离\n：\n销售看\nsales/\n，财务看\nfinance/\n，互不干扰。\nc.\n按需加载\n：\n只有用户提到特定功能（如 \"红线修订\"）时，才去读对应的高级文档。\n避免深层嵌套\n：\n引用层级不要超过 1 层（\nSKILL.md\n->\nref.md\n，不要再 ->\nsub_ref.md\n），否则 Claude 可能偷懒只读部分内容。\n路径规范\n：\n永远使用正斜杠\n/\n（Unix 风格），严禁使用 Windows 的反斜杠\n\\\n。\n4. 命名与元数据规范\nName (名称)\n：\n推荐使用\n动名词形式 (Gerund form)\n：如\nprocessing-pdfs\n,\nanalyzing-spreadsheets\n。\n规则：仅限小写字母、数字、连字符。\n避免：\nhelper\n,\nutils\n这种毫无意义的名字。\nDescription (描述)\n：\n至关重要\n：\n这是 Claude 在 100+ 个 Skill 中决定是否调用你的唯一依据。\n第三人称写法\n：\n不要用 \"I can...\" 或 \"You use...\"，直接写 \"Processes Excel files...\"。\n包含触发词\n：\n明确写出 Skill 做什么以及\n何时\n使用。\n5. 迭代开发流：用 Claude 训练 Claude\n不要完全自己手写，利用 AI 的能力来生成和优化 Skill。\n角色分工\n：\nClaude A (架构师)\n：负责编写和优化 Skill 文档。\nClaude B (测试员)\n：加载 Skill 进行实战测试。\n开发循环\n：\na.先裸跑任务，识别出必须的上下文和模式。\nb.让 Claude A 将这些模式总结为 Skill。\nc.让 Claude B 使用该 Skill 执行任务。\nd.观察 Claude B 的失败点（如忘记过滤测试账号），反馈给 Claude A 修正。\n多模型测试\n：\n必须在 Haiku (测试引导是否足够)、Sonnet (测试效率)、Opus (测试是否啰嗦) 上都跑通。\n6. 进阶：代码与执行 (Executable Skills)\n对于复杂任务，\n代码脚本 > 纯文本指令\n。\nPlan-Validate-Execute 模式\n：\n对于批量或高风险操作（如修改 50 个表单字段），不要直接执行。\n流程：分析 ->\n生成计划文件\n(\nchanges.json\n)\n->\n运行脚本验证计划\n-> 执行 -> 确认。\n错误处理\n：\n脚本必须显式抛出具体错误（如 \"Field 'date' not found\"），而不是把报错扔给 Claude 去猜。\n避免魔术数字\n：\n所有配置项必须有文档说明，不要让 Claude 猜参数。\nMCP 工具调用\n：\n必须使用全限定名\nServerName:tool_name\n（例如\nGitHub:create_issue\n），防止工具冲突。\n7. 避坑速查表\n❌\n拒绝\n：\n包含时间敏感信息（如 \"当前是 2024 年\"），除非放在 \"Old Patterns\" 章节。\n❌\n拒绝\n：\n术语不一致（一会叫 \"URL\"，一会叫 \"Endpoint\"）。\n❌\n拒绝\n：\n在 Windows 上写出\nscripts\\run.py\n这样的路径。\n✅\n必须\n：\n为超过 100 行的参考文件添加目录 (TOC)。\n✅\n必须\n：\n在发布前创建至少 3 个评估测试用例。\n参见：\nhttps://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices\n五、写在最后\n这篇文章简单谈谈自己对 Skill 的理解，以及用一个具体的案例展示如何快速地开发出一个相对高质量的 Skill。\n当模型足够强大的时候\n，我们的工作方式会发生比较大的变化。我们更多的是需要\n把自己的想法表达清楚\n，第二是\n把\nAI 干活所需要的信息给充足\n。\n因此，我们如果需要再去研发一些 Skill 的时候，我觉得可能更多的是关注其中的逻辑是什么样的，然后把资料准备充足。那具体怎么写，可以交给最强大的模型，帮我们去做。\n参考资料：\n[1]\nhttps://github.com/numman-ali/openskills\n[2]\nhttps://github.com/anthropics/skills\n[3]\nhttps://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills\n[4]\nhttps://code.claude.com/docs/en/skills\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

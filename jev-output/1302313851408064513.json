@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1302313851408064513",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "OpenViking × LLM-Wiki：让团队文档不再“各说各话”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247522837&idx=2&sn=bad9384fcc463a40aca07d4a442c7121",
+      "date": "2026-09-23T10:06:00.216Z",
+      "chars": 7184,
+      "text": "原创\nOpenViking\n2026-09-23 18:06\n北京\n从一通不敢回答的电话，到一套跨平台、跨 Agent 的团队知识\n周三下午，客户在电话那头问了一个再普通不过的问题：这票货没保价，出了问题怎么赔？\n你刚接手业务不太熟悉，在工作群里问了一句，结果：\n——老王说按 1 倍运费，他做这块四年了；\n——小李翻出一份产品文档，白纸黑字写着 3 倍基本运费、最高 1000 元；\n——售后的同事更谨慎：这个得分产品，我再查查。\n三个人，三个答案，而且每个人都能翻出一份正式材料。\n客户还在电话那头等，团队却从不同正式资料中找出了三个答案。\n负责任的你没有立刻报一个赔付数字，转头把这句话输入给你的办公智能体，想进一步核实清楚再回复。Agent 能检索团队知识库、给出引用，似乎应该比单独问人更靠谱？\n但是，Agent 这次也帮不到你了，它告诉你“根据当前信息无法给出准确回复”，然后甩给了你一堆线索文档，让你自己先确认清楚客户采购的服务类型，再去查看相应的计费标准找答案。\nAgent 给出了多种带引用的口径，但没法判断哪一条适用于眼前这个客户。\n你作为新人，客户的情况还没来得及了解清楚，只能回复客户：\n“我这边确认一下，稍后回复您。”\n这就是团队知识最容易卡住的地方：\n团队沉淀了很多文档和知识库，AI 办公工具也有，但资料都找到了，适用关系却还没有理清。\n一、团队缺的不是文档，而是一张能串起来的 Wiki 网络\nAgent 找到了很多资料，却仍然无法回答 “到底怎么赔”，因为团队真正缺少的，不是更多知识库文档，而是围绕客户、产品、规则和流程组织的 Wiki。\n2026 年 4 月，Andrej Karpathy 提出了 LLM-Wiki 这一知识库范式：在原始资料和用户之间，增加一层由 LLM 维护的、持久化的 Markdown Wiki。新资料进入后，需同步更新实体页、概念页、对比页，补充交叉引用，并标记新旧材料之间的矛盾。\n这些 Wiki 既能独立维护，又能被 Agent 按问题动态检索和串联。而且当新证据出现时，更新的是同一套知识，而不是再生成一份互不相认的新答案。\n也许下一次遇到赔付问题，可以不用再从一堆文档中拼凑答案，而是有一条可追溯的知识链：\n先查客户 Wiki，确认客户采购了什么服务、属于哪种业务类型；\n再查产品 Wiki，确定对应的产品、线路和服务范围；\n最后关联到计费与赔付 Wiki，找到当前生效的标准、适用条件和例外规则。\n这正是 LLM-Wiki 的价值：把散落的文档编织成一张可以\n按需查找、关联和更新的业务知识网络\n，沉淀成可以继续生长的团队知识。\n方法论有了，那应该如何搭建起团队的 LLM-Wiki 呢？团队把这个任务交给了你，让你探索出来一个最佳实践。\n不用感觉到有压力，因为现在可以用 OpenViking 零代码构建了。\n二、使用 OpenViking 搭建 LLM-Wiki\n2.1 散落四处的资料，先导入至 OpenViking\n你先从那通赔付电话出发，把相关资料盘点了一遍：产品说明和 FAQ 在飞书里，历年的赔付细则存在本地电脑上，产品变更的背景散落在项目记录中，还有在 GitHub 的代码仓库等等......\n要把这些资料编成 Wiki，第一步是让它们汇集到同一个地方。\nOpenViking 已有现成的 Connector 和导入入口，可以把分散在不同位置的数据接进来，作为后续编译 Wiki 的原料。\n进入 OV 控制台，点击左侧目录树上方的“＋”：\n对应刚才盘点的资料，你可以这样操作：\n本地电脑里的文件\n：选择“本地上传”，上传赔付细则、历史规则和业务说明等文件。\n网页、在线资料与 Git 仓库\n：通过链接接入对应资源。例如，当你需要导入业务线下的整个代码仓库时，只需要把 GitHub 地址填入即可把 README、代码和配置文件一起纳入团队知识。\n飞书里的产品说明与 FAQ\n：选择“数据源同步 → 飞书文档”，按页面提示完成授权与导入配置。\n......\n更多 Connector 正在陆续开放中...\n如果你需要定期跟进仓库更新时（或者有大批量的数据需要导入），也可以用 add-resouce 命令完成接入：\nov\nadd\n-\nresource \"\nhttps://github.com/your-org/product-config\n\" \\  此处填入你代码仓库的地址\n--to viking://resources/xxx \\   此处填入你自定义的写入目录\n--watch-interval 60\n--watch-interval 60\n表示每 60 分钟同步一次。Git 导入保留原有目录层级，并遵循\n.gitignore\n等过滤规则；后续查阅时，仍能沿着目录找到相关说明、代码和配置。\n资料导入并完成处理后，就已经可以接入 Agent 使用了。\n你可以按\n官方接入指南\n（\nhttps://docs.volcengine.com/docs/84313/2371368?lang=zh），为\nCodex、TRAE 等配置对应的插件或集成，让它们访问同一套 OV 资源。\n到这一步，其实你已经可以用这套资料查问题、做工作了，OpenViking 的检索是层级式渐进读取：先看摘要与概述，定位到相关模块后，再读取具体文档详情——这种全新的检索范式，可以帮你节省很多的检索 Token。\n但你没有忘记初心：接下来，为了让客户、产品和规则之间的关系也沉淀下来，你计划通过 Compile 将它们整理成团队可复用的 Wiki。\n2.2 使用 Compile 功能，把数据编译为 Wiki\nCompile 是 OpenViking 最新上线的功能，可以支持你自定义 skill 或使用预置的 LLM-Wiki skill  ，并基于 skill 指导 Agent 把原始数据重新组织、编译成你想要的形式。\n简单来说就是，你告诉它读取哪些资料、按什么规则组织、把结果写到哪里，它就会执行这次整理任务，并将产物保存回 OpenViking，供团队继续查看、检索和复用。\n第一步，你要先把“怎样才算一份好 Wiki”写进自定义 Skill。\n你回想那通电话：老王和小李都找到了依据，但适用条件没有对齐。因此，这次生成的 Wiki 必须同时保留产品、地区、版本和例外，还要把相关页面连接起来。\n这些要求，就应该成为 Skill 的一部分。\n自定义 Skill，可以先说清四件事：\n给谁用\n按什么方式组织\n哪些事实和条件必须保留\n完成后如何检查\n你按照这个思路，写完了适用于你们团队业务场景的 skill，并通过\nadd-skill\n将它导入 OV：\nov add-skill ./claims-wiki\n导入完成后，别忘了记住导入任务返回的实际 Skill URI（后面发起 compile 任务时要用到）。这份 Skill 可以持续维护，团队新增规则后，下次编译继续复用。\n当然，作为业务新人的你，有可能没法立刻写出一份完美的 skill，不用担心，你可以先用官方现成的 Skill：\nOpenViking 已提供\nllm-wiki\n模板，用于生成有出处、相互链接、带导航入口的知识库。这次搭建团队 Wiki，可以直接导入它：\nov add-skill\nhttps:\n/\n/github.com/volcengine/OpenViking/tree/skills/llm\n-wiki\n官方还提供日报、知识蒸馏、知识图谱等模板，可按任务选择。\n第二步，在控制台发起 compile 。\n使用 compile 功能之前，需要开通火山方舟 Managed Agents 并配置推理接入点，可按\n官方指引\n（\nhttps://docs.volcengine.com/docs/84313/2692655?lang=zh）完成前置准备\n。\n打开 OV 控制台的终端界面，输入 /，在“核心流程”菜单中选择\ncompile\n，进入编译任务的参数配置。\nCompile 命令的核心参数有 3 个：\n来源\n--from\n：这次让 Agent 读取哪些资料，填写已导入的来源目录或文件 URI。\n目标\n--to\n：生成的 Wiki 保存到哪里，使用一个独立的产物目录。\n生成规则\n-\n-skill\n：使用哪份 Skill，决定如何处理资料、生成什么内容。\n刚刚你自定义或者导入的官方 skill URI，就是粘贴在这里\n。\n补充说明\n--instruction\n：补充这一次的受众、范围和侧重点等一些你希望强调的内容，也可以不填。\nov\ncompile\n\\\n--from viking://resources/demo/raw\n\\\n--to viking://resources/xxx/wiki\n\\\n--skill <导入后返回的Skill_URI>\n\\\n--instruction\n\"面向一线答疑整理，重点关联客户、产品和赔付规则\"\n发送指令后，控制台会返回\ntask_id\n，可用下面的命令查看进度：\n发送指令后，控制台会返回 task_id，可用下面的命令查看进度：\n到这里，你已经把“读哪些资料、怎样整理、结果存在哪里”交代清楚。等任务完成，就可以打开目标目录，检查这套 Wiki 是否真正能支持一线答疑。\n2.3 团队成员可查看 Wiki，不满意随时改\n编译任务完成后，Wiki 会保存在 OV 的目标目录中，\n团队成员可以随时打开、查阅，也可以继续编辑和更新\n。\n登录控制台，找到本次 Compile 的目标目录，即可查看完整 Wiki 的内容。\n比如，小李想确认某个产品的赔付标准，可以从 index.md 进入对应规则页；你要了解某位客户采购了什么服务，也可以先读客户页，再顺着关联查看产品说明。有访问权限的同事，都可以从同一个目录查阅这套知识。\n如果习惯使用命令行，也可以直接查看目录和导航页。将示例路径替换为上一节实际使用的目标目录：\nov tree viking://resources/xxx/wiki\nov\nread\nviking://resources/xxx/wiki/index.md\n你读到某条赔付规则，发现数字有了，适用地区却漏写了。这时可以点击页面右上角的\n“编辑”\n，在当前页面中补齐条件并保存。表述不清、标题不好找、页面关联不完整等问题，也都可以在查阅时逐项调整。\n保存后，再重新打开页面确认修改结果。你修正的是保存在 OV 中的这份 Wiki，下一位同事查阅时，可以直接看到已经补充好的内容。\n2.4 还可以让你的 Agent 直接检索 Wiki\nWiki 已经整理好了，你又想到一个更顺手的用法：下次客户来问，能不能直接在自己常用的 Agent 里得到答案，不必再手动打开目录、逐页查找？\n当然可以。OpenViking 目前已经支持 MCP、CLI、API、SDK 等通用方式接入各大主流 Agent。接下来只需要补上两件事：\n把 OpenViking 接入到你的 Agent 里，再用检索 Skill 告诉它应该怎样查、怎样判断。\n第一步，把 OpenViking 接到 Agent。\n以接入 Codex 为例，直接复制下方指令，将地址与密钥替换成团队的实际配置，发送给你的 Codex：\n## 步骤1：安装\n1\n. 在终端执行如下安装命令：\n```bash\nbash <(curl -fsSL\nhttps://ovrelease.tos-cn-beijing.volces.com/memory-plugin-shared/install.sh)\n--harness codex --dist tos\n`\n``\n2\n. 安装器会依次询问以下信息：语言（English / 中文）、OpenViking 凭据。在 OpenViking 凭据配置中，选择连接至「火山引擎 OpenViking 云服务 [api.vikingdb.cn-beijing.volces.com]」，并填入 API KEY：\n```text\n此处替换成你的 API KEY\n`\n``\n## 步骤2：验证\n1\n. 启动 Codex。\n2\n. 审批 Hooks：输入\n`/hooks`\n，系统将提示类似\n`4 hooks need review`\n的信息，逐一审批通过。其中 OpenViking 相关的\n4\n个 Hook 为：\n```text\nSessionStart\nUserPromptSubmit\nStop\nPreCompact\n`\n``\n3\n. 验证 Profile 加载：审批完成后，提交第一条 Prompt（内容随意即可）。此时插件应自动加载 Profile——若对话开头出现记忆召回内容，则表明接入成功：\n```text\n• UserPromptSubmit hook (completed)\nhook context: <openviking-context source=\"auto-recall\" format=\"digest\">\nOpenViking memory digest:\n`\n``\n## 故障排查\n| 问题 | 处理 |\n|---|---|\n| 鉴权失败 | 检查\n`~/.openviking/ovcli.conf`\n的\n`api_key`\n，重启 Codex |\n| 连接失败 |\n`curl \"$(jq -r '.url' ~/.openviking/ovcli.conf)/health\"`\n|\n|\n`4 hooks need review`\n|\n`/hooks`\n里批准 |\n| 需要日志 |\n`OPENVIKING_DEBUG=1`\n，看\n`~/.openviking/logs/codex-hooks.log`\n|\n使用其他 Agent 的同事，也可按\nOpenViking 接入说明\n（\nhttps://docs.openviking.ai/zh/agent-integrations/01-overview）连接同一套服务。\n安装完成并重启 Codex 后，输入\n/mcp\n检查连接，再让 Codex 实际读取一次 Wiki：\n请使用\nOpenViking\n读取：\nviking:\n/\n/resources/xxx/wiki/index\n.md\n列出其中的主要主题，并保留对应页面的\nURI\n。\n能返回导航页里的实际内容，说明这条链路走通了。\n第二步，把团队的查阅方法写成检索 Skill。\n编译 Skill 负责生成 Wiki，检索 Skill 则把团队“怎样查、怎样判断”的经验交给 Agent。以赔付答疑为例，把下面四件事说清楚即可：\n何时使用\n：遇到客户服务、产品适用范围、计费或赔付问题时，查阅团队 Wiki。\n去哪查\n：指定 Wiki 目录，先通过导航或检索定位相关主题，再按需读取正文。\n怎么核实\n：沿“客户 → 服务 → 产品 → 规则”查清适用关系，核对地区、时间和例外，必要时回看原始来源。\n如何回答\n：给出结论、适用条件和来源；依据不足或口径冲突时明确说明，不补猜答案。\nPS：同样地，这里也可以让 Agent 帮你生成一个检索 OV Wiki 的skill，只需要把上述要点告诉它即可。\nSkill 在团队内分享后，团队成员就可以继续使用各自熟悉的 Agent，而答案背后查阅的，会是同一套持续维护的 Wiki。\n2.5 不止 Wiki，还有更多\n团队 Wiki 搭起来后，你还可以用这些资料做更多事。正如上方提到的，\nCompile 生成什么，取决于你选择的 Skill\n。换用日报、知识蒸馏或知识图谱 Skill，就能把相关资料整理成工作日报、专题分析或实体关系，让同一批知识服务不同的工作场景。\n这些产物也都会保存在 OV 中，供同事查阅、编辑，供 Agent 检索和复用。\nWiki 是这次实践的起点，团队还可以继续探索更多用法\n。\n三、回到那通电话，变化发生在哪里\n下一次客户再问未保价怎么赔，一线看到的不再是三份互相打架的文档，而是一条可以继续向下展开的团队知识：\n目前确认的口径；\n适用的产品、地区、时段和例外；\n历史版本与变更关系；\n仍未解决的冲突；\n每句话对应的来源。\n能回答的，当场回答；需要确认的，知道找谁、确认什么。确认结果回到同一套知识里，下一位同事不必重新找三个人。\n这才是 OpenViking × LLM-Wiki 的价值\n：它不只是让 Agent“搜得更快”，而是把一次次搜索、讨论和确认，变成团队下一次可以直接复用的共同知识。\n从一通不敢回答的电\n话，到一套可以继续使用的团队知识，现在已经是人人都可以快速落地的资产升级了。\n加入我们，共建 Agent 上下文的未来。\n🚀\n上手试用\n：\n访问\nOpenViking 官网\n（\nhttps://www.volcengine.com/product/openviking-service），无需自行部署，即可将常用\nAgent 接入 OpenViking，体验上下文的持续积累与跨任务复用。\n🌟\n给个 Star：\n访问我们的\nGitHub 仓库\n（\nhttps://github.com/volcengine/OpenViking），为我们点亮一颗Star，你的\nStar 是我们前进的最大动力！\n💬\n加入社区：\n扫描下方飞书二维码，加入官方交流群，与顶尖开发者一起探讨 Agent 上下文的无限可能。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.13,
+        "transfer_agent": 0.86,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.14,
+        "2": 0.78,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.27,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.02,
+        "2": 0.07,
+        "3": 0.41,
+        "4": 0.45999999999999996,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.95,
+      "probabilities": {
+        "0": 0.47,
+        "1": 0.27,
+        "2": 0.13,
+        "3": 0.12,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.01,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.92,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.86,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.02,
+        "4": 0.93,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.09,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.13,
+        "2": 0.47,
+        "3": 0.27,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7299,
+    "outputTokens": 172,
+    "totalTokens": 7471
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.82,
+        "relevance": 0.83,
+        "grounding": 0.51,
+        "decision_action": 0.37,
+        "evidence": 0.95,
+        "actionability": 0.9,
+        "anti_hype": 0.55
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179906405,
+                "endTime": 1791179906618,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000306558",
+      "marketCost": "0.000306558",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000306558",
+      "inferenceCost": "0.000306558",
+      "inputInferenceCost": "0.000306558",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8QAM4M391GZG7BZ8SY4F"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:26 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::hgbnr-1791179906340-87a0014d983f"
+    },
+    "body": {
+      "answers": {
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.13,
+            "transfer_agent": 0.86,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.14,
+            "2": 0.78,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.27,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.02,
+            "2": 0.07,
+            "3": 0.41,
+            "4": 0.45999999999999996,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.95,
+          "probabilities": {
+            "0": 0.47,
+            "1": 0.27,
+            "2": 0.13,
+            "3": 0.12,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.01,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.92,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.86,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.02,
+            "4": 0.93,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.09,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.13,
+            "2": 0.47,
+            "3": 0.27,
+            "4": 0.05,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7299,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.82,
+            "relevance": 0.83,
+            "grounding": 0.51,
+            "decision_action": 0.37,
+            "evidence": 0.95,
+            "actionability": 0.9,
+            "anti_hype": 0.55
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179906405,
+                    "endTime": 1791179906618,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000306558",
+          "marketCost": "0.000306558",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000306558",
+          "inferenceCost": "0.000306558",
+          "inputInferenceCost": "0.000306558",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8QAM4M391GZG7BZ8SY4F"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:25.850Z"
+  }
+}

@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "241467957986003968",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "UGC 人脸增强异常检测挑战赛",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518404&idx=1&sn=826ab72ad0672794efb01ff65acbc512",
+      "date": "2026-02-03T10:12:00.863Z",
+      "chars": 3772,
+      "text": "原创\n抖音研发用户体验\n2026-02-03 18:12\n北京\n—— NTIRE Workshop & Challenges @ CVPR 2026\n一、竞赛背景：从“好看”到“可信”的UGC图像增强\n在短视频与社交平台高度发达的今天，图像增强与修复技术已经深度融入各类UGC（User-Generated Content）创作流程。无论是“一键美颜”、照片应用中的人像修复，还是近年快速发展的\nText-to-Image/Image-to-Image 生成式增强\n，图像增强与修复技术已经能够在真实场景中显著提升画质与观感。\n然而，伴随生成式模型能力的飞跃，新的问题也在加速暴露：\n结构与语义失真：\n如人脸结构错位、面部器官缺失或变形、脸与身体比例异常等；\n细节与纹理异常：\n如皮肤纹理“过度平滑”、伪造高频细节、局部块状伪影；\n语义敏感区域问题：\n如人脸身份特征被篡改、表情被误生成、不真实的面部光影；\n内容合规与信任危机：\n人脸错误、文本错误、商标篡改等，不仅影响视觉质量，还引发版权、隐私及内容可信度风险。\n在短视频与社交平台场景中，\n人脸是用户最关注、最敏感的区域\n：它直接影响作品美观度、创作者表达的准确性和观众的信任感。一旦人脸增强出现异常，不仅破坏观感，更可能违背创作者本意，甚至引发用户投诉和平台风险。\n在此背景下，我们计划在\nCVPR 2026 NTIRE Workshop & Challenges\n发起\n“Anomaly Detection of Face Enhancement for UGC Images”\n竞赛，  聚焦“面向真实UGC场景的人脸增强异常检测”，推动学术界与产业界共同探索这一关键但尚未充分研究的问题。\n二、竞赛目标：面向真实UGC的人脸增强异常检测基准\n本次竞赛的核心目标可以概括为三点：\n建立首个面向UGC人脸增强异常检测的公开基准\n聚焦“原始图像 → 增强后图像”这一真实业务链路；\n标注增强过程中引入的人脸异常类型与严重程度；\n为学术界与工业界提供可复现、可对比的评测平台。\n推动“质量提升”向“质量+可信度+可控性”升级\n传统工作更多关注 PSNR、SSIM、LPIPS、画质质量等画质指标；\n本竞赛强调：\n画面变“好看”的同时，不能牺牲语义正确性与可信度；\n鼓励参赛者将质量评价、异常检测、可解释性分析结合起来。\n促进算法在真实业务场景中的落地与闭环\n关注真实UGC分布与实际生成算法所带来的“自然分布异常”，而非人工构造的极端样本。\n三、\n竞赛任务与数据形式\n1. 竞赛链接\nhttps://www.codabench.org/competitions/13105/\n（请先登陆）\n2. 任务定义\n参赛者需要在给定的\n成对图像数据\n上完成以下任务：\n输入：\nI_orig：\n原始 UGC 图像（未经增强/修复的版本）；\nI_enh：\n经过增强、修复或生成式处理后的图像（人脸增强后版本）。\n输出（模型需要完成的核心任务）：\n人脸增强异常检测（分类 / 检测）\n判断在人脸区域是否存在增强引入的异常；\n对异常进行类型识别，例如（示例，不限制于此）：\n人脸结构篡改 / 错位（结构异常）\n面部五官缺失或伪造（局部异常）\n不自然的皮肤纹理或伪细节（纹理异常）\n明显违背原始身份特征的面部生成（身份相关异常）\n其他明显降低可信度的视觉异常\nb. 异常严重程度评估（评分 / 分级）\n对已检测到的人脸异常进行\n严重程度量化\n：\n例如：轻微可接受、中度干扰、严重不可接受等等级；\n或回归式评分，用以反映对用户感知和内容表达的破坏程度。\n3. 数据形式与标注信息\n本次竞赛计划提供的核心数据形式为：\n成对UGG图像数据\nI_orig\n：用户生成的原始图像（存在噪声、模糊、压缩伪影等问题）；\nI_enh\n：经真实或模拟的增强/生成流程处理后的图像。\n这些数据将尽可能贴合真实平台场景中的分布与处理链路。\n人脸区域与异常标注\n（示意）：\n人脸区域位置（如 bounding box / mask）；\n异常类型标签，如：\n{structure_error, texture_error, identity_shift, unnatural_effect, ...}；\n异常严重程度标签，如：\n{0, 1, 2, …}\n或分级标签（轻度/中度/重度）。\n训练/验证/测试集划分：\n训练集：提供完整的图像对及对应标签，用于模型训练；\n验证集：提供部分标签，供方法调参与模型选择；\n测试集：仅提供图像对，不提供标签，由参赛者提交预测结果，由主办方统一评测。\n4. 评测指标\n在最终评测中，我们将综合考虑：\n异常检测能力：\n如分类准确率、F1-score、AUC 等；\n严重程度回归或分级质量：\n如 MAE、RMSE、加权Kappa 等；\n整体系统鲁棒性与泛化能力：\n针对不同增强方法、不同类型UGC的表现一致性。\n四、竞赛关注的核心问题\n本次竞赛鼓励参赛团队从以下关键方向展开探索：\n面向\n人脸的增强质量与异常联合建模\n如何将传统图像质量评价（IQA / NR-IQA）与人脸结构一致性、身份保持、语义合理性结合？\n如何利用深度特征空间中的“分布偏移”揭示增强引入的潜在异常？\n生成式模型与异常检测的协同\n利用大规模预训练的视觉/多模态模型（如视觉大模型、视觉-语言模型）进行异常感知；\n探索自监督、对比学习等范式，在缺乏海量异常标注的情况下学习鲁棒特征。\n跨增强算法与多域泛化\n模型是否能够在不同类型的增强算法（传统超分 / 去噪 / Diffusion / GAN / LMM编辑等）之间保持稳定表现？\n如何降低对特定算法分布的过拟合，提升面对未知增强方式时的检测能力？\n与主观感知的对齐\n如何让异常严重程度评估更好地对齐用户主观感知？\n如何在“允许一定程度美化”与“避免过度扭曲/篡改”之间找到平衡？\n五、竞赛的意义与价值\n1. 学术研究层面的意义\n促进多方向交叉融合\n任务本质上融合了图像增强、质量评价、人脸理解、异常检测、生成式模型安全等多个方向，有助于推动 跨领域方法创新，催生新的问题定义和算法范式。\n构建系统化评测基准\n通过成对 UGC 图像及异常标注，本竞赛为社区提供一个可复现、可对比的标准基准，促进不同方法在统一框架下进行公平评测，有助于形成清晰的研究脉络与共识。\n拓展图像增强研究边界\n本竞赛将研究重点从传统的“画质提升”（如分辨率、噪声抑制）拓展到 “增强过程中的异常与风险”，推动图像增强领域从单一质量优化向“质量 + 可信度 + 语义正确性”的综合目标演进。\n多样化方法探索空间\n可结合自监督学习、对比学习、图像-文本多模态建模、Diffusion-based feature 等多种前沿技术；  鼓励端到端检测、两阶段“定位+评估”、评分回归与排序学习等多种方案。\n学术影响力\n竞赛依托\nCVPR 2026 NTIRE Workshop & Challenges\n，具有良好的学术曝光度与影响力。\n2. 面向用户与社会信任的价值\n保护创作者意图与形象\n人脸是最直接承载身份与情绪表达的区域。针对人脸增强异常进行检测与控制，有助于更好地保护创作者的形象与原始意图，减少“被算法误伤”的情况。\n增强内容消费端的信任感\n减少明显的人脸结构错误、身份错配与不自然效果，可以显著提升观众对内容的真实性与可靠性认知，缓解“算法过度美化”“虚假形象”等引发的负面观感。\n推动可信与负责任的生成式AI实践\n面向异常检测的系统化研究，是构建稳健、可控、负责任的生成式 AI 系统的重要组成部分。本竞赛为业界与学界提供了一个围绕“可信增强”展开协作与对话的平台。\n六、预期影响与展望\n通过本次\nAnomaly Detection of Face Enhancement for UGC Images\n竞赛，我们希望在以下方面产生持续影响：\n推动社区关注“增强异常”这一长期被低估的问题：\n让研究者不仅关心“增强得更清晰”，也同样重视“增强得更正确、更可信”。\n形成面向UGC人脸增强的统一评测体系：\n在学术论文、工业实践中，为“人脸增强异常检测与严重度评估”建立可复用的基准与指标。\n促进生成式大模型与质量评估/安全性评估的深度融合：\n借助大模型的强大表征能力，将“质量感知、语义理解、风险审查”融为一体，为未来的智能创作平台提供核心能力。\n七、结语：期待你的加入\n面向UGC时代，图像增强技术已经从“锦上添花”走向“基础设施”。\n如何在大规模生成与自动增强的浪潮中，确保人脸内容的\n真实、可信与可控\n，是一个兼具技术挑战与社会价值的关键问题。\n我们诚挚邀请来自\n高校实验室、科研机构、互联网与内容平台企业、AI创业团队\n的研究者和工程师，共同参与\n“Anomaly Detection of Face Enhancement for UGC Images”\n竞赛，在 CVPR 2026 的舞台上，一起定义这一方向的技术标准与未来边界。\n请参赛人员加入如下微信群，方便沟通交流与通知发布。如二维码失效，可联系主办方人员（WeChat：ZhongYan946）拉进群聊。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.23,
+        "transfer_business": 0,
+        "irrelevant": 0.76,
+        "transfer_agent": 0.01
+      }
+    },
+    "relevance": {
+      "score": 0.76,
+      "probabilities": {
+        "0": 0.43,
+        "1": 0.38,
+        "2": 0.19,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.87,
+      "probabilities": {
+        "0": 0.44,
+        "1": 0.35,
+        "2": 0.14,
+        "3": 0.06,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.1,
+      "probabilities": {
+        "0": 0.94,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.87,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.86,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.72,
+      "probabilities": {
+        "0": 0.25,
+        "1": 0.23,
+        "2": 0.27,
+        "3": 0.09,
+        "4": 0.14,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.36,
+        "2": 0.13,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5178,
+    "outputTokens": 173,
+    "totalTokens": 5351
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.7,
+        "relevance": 0.49,
+        "grounding": 0.42,
+        "decision_action": 0.93,
+        "evidence": 0.9,
+        "actionability": 0.23,
+        "anti_hype": 0.55
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179937343,
+                "endTime": 1791179937495,
+                "providerRequestId": "245d6fbc-839b-4656-b969-e4c42b3aeec8",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179937500,
+                "endTime": 1791179937677,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000217476",
+      "marketCost": "0.000217476",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000217476",
+      "inferenceCost": "0.000217476",
+      "inputInferenceCost": "0.000217476",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9NH3351WS70TFHQA5GA8"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:57 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::glh9p-1791179937305-ebc12d090f37"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.23,
+            "transfer_business": 0,
+            "irrelevant": 0.76,
+            "transfer_agent": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.76,
+          "probabilities": {
+            "0": 0.43,
+            "1": 0.38,
+            "2": 0.19,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.87,
+          "probabilities": {
+            "0": 0.44,
+            "1": 0.35,
+            "2": 0.14,
+            "3": 0.06,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.1,
+          "probabilities": {
+            "0": 0.94,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.87,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.86,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.72,
+          "probabilities": {
+            "0": 0.25,
+            "1": 0.23,
+            "2": 0.27,
+            "3": 0.09,
+            "4": 0.14,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.36,
+            "2": 0.13,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5178,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.7,
+            "relevance": 0.49,
+            "grounding": 0.42,
+            "decision_action": 0.93,
+            "evidence": 0.9,
+            "actionability": 0.23,
+            "anti_hype": 0.55
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179937343,
+                    "endTime": 1791179937495,
+                    "providerRequestId": "245d6fbc-839b-4656-b969-e4c42b3aeec8",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179937500,
+                    "endTime": 1791179937677,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000217476",
+          "marketCost": "0.000217476",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000217476",
+          "inferenceCost": "0.000217476",
+          "inputInferenceCost": "0.000217476",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9NH3351WS70TFHQA5GA8"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:56.911Z"
+  }
+}

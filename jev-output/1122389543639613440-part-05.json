@@ -1,0 +1,353 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "          │                     │\n│                     │                     │                     │\n│                     ▼                     │                     │\n│              结果汇总 + 综合推理           │                     │\n│                     │                     │                     │\n│                     ▼                     │                     │\n│              最终回答给用户                │                     │\n└─────────────────────────────────────────────────────────────────┘\n代表产品\n：Claude Code（subagent）、本项目（DelegateManager）、AutoGen\n典型场景示例\n：\n用户:\n\"帮我调研竞品 A、B、C 的定价策略，然后给出我们的定价建议\"\nOrchestrator\n拆解:\n├──\nWorker\nA\n: 调研竞品A的定价（独立搜索+分析）\n├──\nWorker\nB\n: 调研竞品B的定价（独立搜索+分析）\n└──\nWorker\nC\n: 调研竞品C的定价（独立搜索+分析）\n↓ 三者并行完成后\nOrchestrator\n汇总: 综合三份报告 → 生成定价建议\n优势\n：并行执行快、上下文隔离、Worker 可以各自专精\n劣势\n：Orchestrator 是单点瓶颈（拆解不好则全盘失败）、Worker 之间无法直接通信\n适用场景\n：可明确拆解为独立子任务的场景（搜索、分析、数据处理）\n模式二：接力传递（Sequential / Pipeline）\n类比\n：工厂流水线——原材料经过一道道工序，每道工序加工后传给下一道。\n┌─────────────────────────────────────────────────────────────────┐\n│                    Pipeline 模式                                  │\n│                                                                 │\n│  用户需求                                                        │\n│     │                                                           │\n│     ▼                                                           │\n│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐  │\n│  │ Agent 1  │    │ Agent 2  │    │ Agent 3  │    │ Agent 4  │  │\n│  │  研究者   │───→│  编码者   │───→│  审查者   │───→│  部署者   │  │\n│  │          │    │          │    │          │    │          │  │\n│  │•理解需求 │    │•接收需求 │    │•接收代码 │    │•接收审查 │  │\n│  │•收集资料 │    │ +研究结果│    │ +需求上下文    │ 通过的代码│  │\n│  │•输出需求 │    │•编写代码 │    │•代码审查 │    │•写部署脚本│  │\n│  │ 分析报告 │    │•输出代码 │    │•输出修改 │    │•执行部署 │  │\n│  └──────────┘    └──────────┘    │ 建议或通过│    └──────────┘  │\n│                                  └──────────┘                   │\n│                                                                 │\n│  每个 Agent 的输出是下一个 Agent 的输入                            │\n└─────────────────────────────────────────────────────────────────┘\n代表产品\n：GitHub Copilot Workspace（需求→设计→编码→验证）、传统 CI/CD pipeline\n典型场景示例\n：\n用户: \"帮我实现用户注册功能\"\nPipeline:\nAgent 1 (需求分析): 确认功能细节 → 输出需求文档\n↓\nAgent 2 (架构设计): 读取需求 → 设计接口和数据模型 → 输出设计方案\n↓\nAgent 3 (代码实现): 读取设计 → 编写代码 → 输出源代码\n↓\nAgent 4 (测试验证): 读取代码 → 编写并运行测试 → 输出测试报告\n优势\n：流程清晰可控、每步可审计、前序步骤为后续提供结构化上下文\n劣势\n：串行执行慢、一步出错后面全部受影响、反馈循环困难（后面发现前面有问题很难回退）\n适用场景\n：有明确先后顺序依赖的工作流（需求→设计→编码→测试→部署）\n模式三：对等讨论（Peer Discussion / Debate）\n类比\n：圆桌会议——多位专家轮流发言、互相质疑补充，最终达成共识。\n┌─────────────────────────────────────────────────────────────────┐\n│                    Debate 模式                                    │\n│                                                                 │\n│            ┌─────────────────────────────────┐                  │\n│            │        讨论话题 / 问题           │                  │\n│            └────────────────┬────────────────┘                  │\n│                             │                                   │\n│              ┌──────────────┼──────────────┐                    │\n│              │              │              │                    │\n│         ┌────▼────┐    ┌───▼────┐    ┌───▼────┐               │\n│         │ Agent A │    │Agent B │    │Agent C │               │\n│         │ 乐观派  │    │ 悲观派  │    │ 实用派  │               │\n│         │         │    │        │    │        │               │\n│         │\n\"这方案 │    │\"\n但是有 │    │\n\"折中一 │               │\n│         │ 可行！\" │    │ 风险…\n\" │    │ 下吧…\"\n│               │\n│         └────┬────┘    └───┬────┘    └───┬────┘               │\n│              │             │             │                     │\n│              └─────────────┼─────────────┘                     │\n│                            │ 多轮对话                           │\n│                            ▼                                   │\n│              ┌─────────────────────────┐                       │\n│              │     Moderator（主持人）   │                       │\n│              │  • 判断是否达成共识       │                       │\n│              │  • 超过N轮强制总结       │                       │\n│              │  • 输出最终结论          │                       │\n│              └─────────────────────────┘                       │\n└─────────────────────────────────────────────────────────────────┘\n代表产品\n：ChatDev（软件公司模拟）、CAMEL（角色扮演对话）、MetaGPT\n典型场景示例\n：\n问题:\n\"我们的登录系统应该用 Session 还是 JWT？\"\nAgent\nA\n(安全专家)\n:\n\"Session 更安全，服务端控制力强，可以即时撤销\"\nAgent\nB\n(架构师)\n:\n\"JWT 无状态，适合微服务分布式架构，扩展性好\"\nAgent\nC\n(产品经理)\n:\n\"我们现在单体应用，但半年后要拆微服务\"\n第\n2\n轮:\nAgent A:\n\"如果要拆微服务，Session 需要引入 Redis 共享，确实麻烦\"\nAgent B:\n\"JWT 的安全问题可以通过短过期时间+refresh token 缓解\"\nAgent C:\n\"那用 JWT + 短过期 + refresh token 方案？\"\nModerator: 共识达成 → 输出结论和理由\n优势\n：多角度思考避免盲点、激发创造性方案、决策质量高\n劣势\n：Token 消耗极高（多轮多人）、收敛时间不确定、容易陷入无意义的循环辩论\n适用场景\n：决策类问题（技术选型、方案评审、风险评估）\n模式四：层级分治（Hierarchical / Manager-of-Managers）\n类比\n：公司组织架构——CEO 管 VP，VP 管总监，总监管一线员工。\n┌─────────────────────────────────────────────────────────────────┐\n│                    Hierarchical 模式                              │\n│                                                                 │\n│                    ┌──────────────┐                              │\n│                    │   CEO Agent  │                              │\n│                    │ (顶层决策)    │                              │\n│                    └──────┬───────┘                              │\n│                           │                                     │\n│              ┌────────────┼────────────┐                        │\n│              │            │            │                        │\n│       ┌──────▼─────┐┌────▼──────┐┌───▼───────┐                │\n│       │ 前端经理    ││ 后端经理   ││ 测试经理   │                │\n│       │ Agent      ││ Agent     ││ Agent     │                │\n│       └──────┬─────┘└────┬──────┘└───┬───────┘                │\n│              │           │           │                         │\n│         ┌────┼────┐  ┌──┼───┐   ┌──┼───┐                     │\n│         │    │    │  │  │   │   │  │   │                     │\n│        ┌▼┐  ┌▼┐  ┌▼┐ ┌▼┐ ┌▼┐  ┌▼┐ ┌▼┐ ┌▼┐                   │\n│        │W│  │W│  │W│ │W│ │W│  │W│ │W│ │W│  Worker Agents     │\n│        └─┘  └─┘  └─┘ └─┘ └─┘  └─┘ └─┘ └─┘                   │\n│                                                                 │\n│  信息流向: 上级只和直属下级通信，不跨级                            │\n│  汇报路径: Worker → Manager → CEO → 用户                        │\n└─────────────────────────────────────────────────────────────────┘\n代表产品\n：MetaGPT（CEO/CTO/PM/E",
+      "fulltext_obtained": true,
+      "chunk_index": 5,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0.1,
+        "direct_local": 0,
+        "irrelevant": 0.11,
+        "transfer_business": 0.02,
+        "transfer_agent": 0.77
+      }
+    },
+    "relevance": {
+      "score": 1.81,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.27,
+        "2": 0.63,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.23,
+      "probabilities": {
+        "0": 0.22,
+        "1": 0.36,
+        "2": 0.4,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.84,
+      "probabilities": {
+        "0": 0.5700000000000001,
+        "1": 0.09,
+        "2": 0.29,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.25,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.64,
+        "2": 0.29,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.43,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.18,
+        "2": 0.21,
+        "3": 0.53,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.66,
+      "probabilities": {
+        "0": 0,
+        "1": 0.07,
+        "2": 0.21,
+        "3": 0.7,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.68,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6542,
+    "outputTokens": 172,
+    "totalTokens": 6714
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.71,
+        "relevance": 0.75,
+        "grounding": 0.45,
+        "decision_action": 0.44,
+        "evidence": 0.76,
+        "actionability": 0.53,
+        "anti_hype": 0.75
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791180419045,
+                "endTime": 1791180419212,
+                "providerRequestId": "921d7d17-bba3-47d2-95af-3dd59574082f",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180419218,
+                "endTime": 1791180419368,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000274764",
+      "marketCost": "0.000274764",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000274764",
+      "inferenceCost": "0.000274764",
+      "inputInferenceCost": "0.000274764",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARBYQKV4RHJMA12ZK65RQ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:59 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::pmr67-1791180419015-69d4a8141663"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0.1,
+            "direct_local": 0,
+            "irrelevant": 0.11,
+            "transfer_business": 0.02,
+            "transfer_agent": 0.77
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.81,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.27,
+            "2": 0.63,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.23,
+          "probabilities": {
+            "0": 0.22,
+            "1": 0.36,
+            "2": 0.4,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.84,
+          "probabilities": {
+            "0": 0.5700000000000001,
+            "1": 0.09,
+            "2": 0.29,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.25,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.64,
+            "2": 0.29,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.43,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.18,
+            "2": 0.21,
+            "3": 0.53,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.66,
+          "probabilities": {
+            "0": 0,
+            "1": 0.07,
+            "2": 0.21,
+            "3": 0.7,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.68
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6542,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.71,
+            "relevance": 0.75,
+            "grounding": 0.45,
+            "decision_action": 0.44,
+            "evidence": 0.76,
+            "actionability": 0.53,
+            "anti_hype": 0.75
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791180419045,
+                    "endTime": 1791180419212,
+                    "providerRequestId": "921d7d17-bba3-47d2-95af-3dd59574082f",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180419218,
+                    "endTime": 1791180419368,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000274764",
+          "marketCost": "0.000274764",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000274764",
+          "inferenceCost": "0.000274764",
+          "inputInferenceCost": "0.000274764",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARBYQKV4RHJMA12ZK65RQ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:58.628Z"
+  }
+}

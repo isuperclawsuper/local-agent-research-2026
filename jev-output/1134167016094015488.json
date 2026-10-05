@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1134167016094015488",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "让 Agent 真正“记得住”：飞书妙搭 OpenClaw × 火山 Mem0 的企业级记忆升级",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247520140&idx=1&sn=e04a92eb4b3a892f59490059b1f327a9",
+      "date": "2026-05-29T13:16:00.918Z",
+      "chars": 6483,
+      "text": "火山引擎数据库\n2026-05-29 21:16\n北京\n在 AI Agent 快速普及的今天，\n提供记忆能力\n已成为决定智能互动效果的核心组件之一\n—— 能否记住用户偏好、延续会话逻辑、沉淀长期经验，直接影响用户的有趣度体验、智能体的执行效率和效果。这对于需要服务千万级企业用户的办公 Agent 尤为重要。\n为此，飞书与火山引擎携手，为其 AI 助手 —— 妙搭 OpenClaw，接入了火山 Mem0这一深度增强的企业级记忆服务\n，从存储底座、抽取策略到检索算法进行了系统性升级。\n业务在此基础上围绕场景进行适配性优化后，业务模拟 QA\n准确性高达 97.6%，\n而在长期对话记忆基准 Locomo 评测场景下，\n记忆问答准确率最高提升 86%，Token 消耗节省最高达 96%，这意味着跨设备、跨会话的“记忆延续”能力，真正成为开箱即用的企业级体验。\n那么，为什么 OpenClaw 原有的记忆能力难以完全满足业务需求？火山 Mem0 又带来了哪些不同的价值？接下来，我们结合具体场景展开分析。\n妙搭 OpenClaw：“会动手、会思考”的 AI 智能体，为高效工作赋能\n妙搭 OpenClaw 是飞书面向全体用户推出的轻量化 AI 助手的\n专属数字分身，具备“能动手、会思考、有记忆”的能力\n，用户无需复杂部署，在飞书内即可一键启用，依托与飞书生态的深度集成以及丰富的内置技能，真正实现零门槛养「虾」。\n“虾”养久了，记忆问题来了\n妙搭 OpenClaw 在早期客户灰度过程中，一个反馈频繁出现：“\n我希望它能真的认识我\n”。然而，OpenClaw 原生的记忆架构并不完全支持这种长期、持续的陪伴式体验。\n使用端 —— 原生记忆的局限\nOpenClaw 原生采用\n本地文件式记忆架构\n：长期记忆存储在\nMEMORY.md\n中，每日短期记忆则记录在\nmemory/YYYY-MM-DD.md\n，并通过本地 SQLite 建立向量索引。这套方案在单人、单机以及可通过 Git 管理的场景下运行良好，但当它应用到企业级办公环境时，一些局限性便很快显现：\n记忆易丢失\n：本地文件是唯一的数据来源。一旦环境异常、重新部署或更换设备，历史记忆就可能无法继承。对于用户而言，这意味着每次都需要重新建立认知和上下文。\n抽取覆盖有限\n：原生策略更偏于“按需触发”，通常需要用户明确发出“请记住”的指令后才会写入记忆。因此，大量有价值的个人偏好、决策过程和业务上下文，往往难以被有效沉淀。\n复杂场景召回不足\n：基于 KNN 的语义检索与固定权重融合策略，在处理简单查询时效果较好；但面对涉及时间、实体和关系等多维信息的复杂问题时，仍可能出现“记过但找不到”的情况。\n架构端 —— 平台方的架构诉求\n归根结底，\nOpenClaw 原生记忆解决的是“能否记住”的问题，而企业级办公场景更专注于“记得准、找得到、不会丢、值得信任”。\n妙搭 OpenClaw 面向的是飞书生态中的海量用户和真实业务场景，这意味着记忆能力不仅是功能模块，更需要成为一项稳定、可靠的基础服务。因此，记忆系统至少需要满足以下要求：\n企业治理能力\n：记忆数据能够集中存储，支持结构化查询、审计追踪以及权限控制，而非分散保存在用户本地设备中；\n可靠的记忆召回\n：不同业务场景对“什么值得被记住”有着不同定义，平台必须支持\n自定义抽取策略\n；\n跨 Agent 知识复用\n：同一个用户在不同 Agent 中产生的背景信息、工作习惯与历史决策，应能够实现共享与复用，而不是在每个新 Agent 中重新建立认知；\n数据安全与合规保障\n：记忆承载着用户偏好、待办事项以及各类业务信息，其背后需要稳定可靠的服务体系，以及完善的容灾、运维和合规能力作为支撑。\n火山引擎 Mem0：企业级 AI 记忆，突破原生瓶颈\n火山 Mem0 是火山数据库面向 Agent 场景打造的专属长效记忆系统，兼容社区版 Mem0 的使用方式，基于自研架构以及对核心组件、底层代码的深度优化\n，用户在延续社区 Mem0 使用体验的同时，还能够获得企业级能力增强，在准确性、稳定性、性能、可用性和可靠性等方面实现进一步提升。在架构层面，火山 Mem0 采用全新设计，底层依托火山 AIDAP（AI-Native Database Platform）的PostgreSQL Serverless存储能力构建，面向 Agentic 业务场景，它能够为 Agent 提供海量、弹性扩展且相互隔离的专属记忆空间。\n火山 Mem0 架构示意图\n妙搭 OpenClaw 为什么选择火山 Mem0？\n对于妙搭 OpenClaw 团队而言，评估记忆方案时最关注的几个问题很明确：接入是否足够简单、运行是否足够稳定，以及能否随着业务发展持续演进。\n而在这些关键维度上，火山 Mem0 展现出了较强的适配能力。\n接入侧：把“接入工程”压缩成两步\n火山 Mem0 以插件形式融入 OpenClaw 框架，开发者只需要一行命令安装插件 + 配置 API 密钥，即可在无需改动核心业务代码的情况下，为妙搭 OpenClaw 接入完整的记忆能力。对于仍处于快速迭代阶段的 Agent 产品来说，这种“零侵入”的接入方式，比任何性能数字都更实在。\n形态侧：突破“本地记忆”架构的限制\n原生方案依赖本地存储，随着记忆规模的增长，往往需要持续应对容量、并发和容灾等问题。火山 Mem0 则将记忆托管到云端 Serverless 数据库，支持弹性扩展、跨设备实时同步以及双 AZ 高可用部署，从根本上消除了“本地存储容量受限”和”设备切换后记忆难以延续”等常见问题。\n记忆能力：从信息存储到智能管理\n从功能上看，OpenClaw 原生记忆和火山 Mem0 都支持“关键词 + 语义”混合搜索，因此在基础搜索层面看起来差异并不明显。但进一步深入到记忆的抽取、组织、压缩、检索以及长期维护等环节，两者的设计思路存在明显区别。\n飞书 × 火山引擎：当\"懂你的虾\"真的出现在你的 IM 里\n飞书与火山引擎的深度融合，并非简单为妙搭 OpenClaw 增加一个记忆组件，而是围绕记忆能力完成了一次底层升级。\n🚀\n如何体验\n接入之后，妙搭 OpenClaw 的体验升级\n当一个用户的妙搭 OpenClaw 从“本地文件记忆”切换到“云端 Mem0 记忆”的瞬间，整体使用体验会在几个方面发生明显变化：\n记忆不再丢失、关键信息可以被更稳定地沉淀、记忆能够在自然交互中被调用和唤起。\n自动备份——用户记忆，从硬盘转移到云端\n自动记忆 —— 不需要主动说“请记住”。\n每次对话结束后，系统会自动提炼并沉淀关键信息，不需要依赖用户额外提示。\n实现真正意义上的“记忆”—— 不是记录，而是理解。\n例如：\n自动回忆——即使切换到全新的对话窗口，它依然能够识别并延续上下文。\n这一能力在实际使用中往往容易被低估，但体验上差异明显。\n当用户发起新一轮对话时，OpenClaw 首先从记忆库中检索相关信息，并将与当前任务相关的背景自动注入上下文中。\n这意味着，即使是新开对话窗口、间隔较长时间为交流，甚至更换设备后再次使用，它依然能够延续对用户项目、偏好以及历史决策的理解。\n这种跨会话的连续性，正是 Agent 区别于“普通 Chatbot”的本质。\n看数据：从 Benchmark 到业务实测\nBenchmark 评测\n为了量化火山 Mem0 在长上下文记忆场景中的实际收益，我们通过两组 Benchmark 来模拟 OpenClaw 的长期运行状态，并对比接入前后的表现差异：\nLocomo：代表了某具体对话场景下，Agent的智能表现\nOfficeQA：代表了某具体执行任务场景下（财务数据的分析、整体、洞察、计算等任务），Agent的智能表现\n评测结果\n：\nLocomo 评测场景下，\n火山 Mem0 最大可以提升 QA 的准确性 86%，最大可节省 Token 96%。\n（详细数据参考附录章节）\nOfficeQA 评测场景下，\n火山 Mem0 的自进化能力（即将发布，敬请期待）能够帮助任务准确率提升 10%，Token 较少 44%，时延减少 39%。\n（详细数据参考附录章节）\n业务评测\n为更贴近真实使用体验，飞书基于 500 条长程办公场景数据构建了一套业务拟真 QA 评测集，用于评估妙搭 OpenClaw 在真实记忆场景下的表现。在妙搭 OpenClaw 和火山 Mem0 双方围绕场景进行了一轮抽取和召回优化，评测集显示在火山 Mem0 的记忆加持下，\n妙搭 OpenClaw 的拟真 QA 评测集准确性高达 97.6%，证明在使用火山 Mem0 基础上，业务方凭借对业务的理解、围绕场景进行针对性的调试后，通常可以达到满意的业务记忆效果。\n（详细数据参考附录章节）\nOpenClaw VS 火山 Mem0 的 5 大差异\n1. 记忆设计理念：以“文件”为中心，还是以“记忆”为中心\n一句话区分：\nOpenClaw 把记忆当文件，火山 Mem0 把记忆当数据。\n前者诞生于“个人开发者笔记”的语境，后者诞生于“生产级 Agent 应用”的语境。\nOpenClaw 以 Markdown 本地文件为真相源，SQLite/LanceDB 只是派生索引，记忆条目之间没有关系、没有元数据、没有生命周期；\n火山 Mem0 设计思路围绕记忆数据展开，主存储是向量数据库、关系存储交给可选的知识图谱，从对话流中主动提取、合并、压缩、更新，并自动维护时间戳等元数据。前者诞生于“个人开发者笔记”，后者诞生于“生产级 Agent 应用”。\n2. 记忆写入：从“被动登记”到“主动炼化”\nOpenClaw 抽取记忆极为克制，这也导致大量潜在有价值的信息未能被有效沉淀。其记忆抽取规则主要包括：\n长期记忆 Memory.md：仅抽取“significant events, thoughts, decisions, opinions, lessons learned”内容，实际保存下来的长期记忆寥寥无几；\n日志记忆 Workspace/Memory/YYYYMMDD.md：主要记忆来自于会话触发 Context Compact，将 session 的转录信息{sessionId}.jsonl 中抽取 durable Memories（ User prefers、Decided、Incident、Task progress、Tool call），以及用户明确提到“请记住”时才会保存日志记忆，所以天然对用户的对话以及业务化场景内容关注不够，同样实际保存下来的价值记忆少之又少；\n火山 Mem0 的抽取思路是主动炼化，它就像用户的得力助手 —— LLM 全程参与实时分析对话、抽取关键事实/实体/关系，做向量去重与语义合并、冲突检测与过时标记，进行三层智能压缩（摘要/聚类/洞察），再叠加 UserID/AgentID/RunID 多级隔离与自动元数据，实际保存的记忆非常丰富，同时每一条内容又是精炼的，记忆与记忆之间被逻辑隔离，结构清晰，存放井井有条；\n结果上，火山 Mem0 能够将一段原本分散的对话信息，转化为可检索、可推理、可复用的知识资产。\n3. 记忆压缩：靠用户写摘要，还是系统自动提炼洞察\n核心差异在于：OpenClaw 更依赖用户手动整理摘要，而火山 Mem0 则由系统自动生成结构化洞察，\n随着使用时间增长，妙搭 OpenClaw 的记忆质量就越好。\nOpenClaw 不仅没有自动压缩，还依赖手工摘要，即便后来引入的 Dream 也只是围绕关键字对非重要内容进行剪枝，直接把选中的判断复制进\nMEMORY.md\n；\n火山 Mem0 的压缩是自动 + 智能的三层流水线 —— 事实级剪枝可让单条记忆 Token 减少 90% 以上、它还可以将相关事实进行关联级合并、把分散信息进行洞察级提炼，从而变为高级知识。\n4. 检索流程：不仅要找得到，还要找得对\n核心差异在于：OpenClaw 是“先召回再过滤”，而火山 Mem0 是“预过滤 + 智能融合 + 图谱增强”。\nOpenClaw 用语义 + 关键词混合排序加固定权重线性合并，事后再过滤，这样容易出现“召回不足”或“权重不适配”的情况；\n火山 Mem0 先做预过滤来保证召回的总量，再用 RRF 自动适配不同查询类型，并且可以从知识图谱拉出与查询实体相关的全部记忆做多跳推理。例如在查询“上次那个改版方案是怎么决定的”时，火山 Mem0 可以沿着实体关系追溯完整的决策链路。\n5. 性能与扩展性：从\"单机\"到\"云原生\"的代际差\n核心差异在于：两者的差距已不仅体现在性能指标上，而是架构层级的不同。OpenClaw 止步于个人长期使用，火山 Mem0 足以承载企业级千万用户并发。\n总结\nOpenClaw 的长期记忆文件 Memory.md 由于抽取的克制性，保留的价值记忆“极少”，开启一天一次的 Dream 巩固任务后可适当改善，但仍然难以满足日常深度使用需求。\nOpenClaw 的日志记忆文件 Workshop/Memory/YYYYMMDD.md，定位为 Context Compact 前对短期记忆发起的一种备份，虽然有历史文档参与记忆召回，但内容仍然偏少，难以满足日常深度使用需求。\n结语：让记忆变成 Agent 的下一阶段能力底座\n火山 Mem0 致力于让 Agent 在与用户的每一次交互中，都能高效地完成记忆的\n抽取、存储与精准调用\n。并在此基础上逐步具备持续学习与认知积累的能力，使其从“能够回答问题的工具”，演进为能够在长期协作中持续提供价值的智能系统。\n对于飞书妙搭与火山 Mem0 而言，\n这次合作也标志着办公 AI 体验的一次重要升级\n。妙搭 OpenClaw 不再局限于“临时应答工具”，而是逐步成为\n懂偏好、知历史、有延续性\n的专属智能助手。这一方向也延续了飞书一贯的产品理念：先进的 AI 体验，应该首先在飞书内被用户感知。\n面向未来，双方的探索仍在继续。\n下一阶段，\n记忆图谱能力\n将进一步增强 OpenClaw 对“事件之间关系”的理解，使其不仅能够记住“发生了什么”，也能够理解“这些事情如何关联”；同时，\n终身学习与自进化能力\n也将逐步完善，使妙搭 OpenClaw 能够在长期使用中不断优化对用户、团队与业务的理解方式。\n我们相信，\n当记忆成为基础设施，Agent 才真正具备长期服务复杂工作的能力。\n而妙搭 OpenClaw，也将在这一过程中持续与用户共同成长。让每一次交互都更有延续性，也让每一份工作更高效。\n附录一：测试详细\nLocomo 实验详情\n：\n实验设置\n：\n测试集\n：locomo10\n基模信息\n：Doubao 1.8 Pro\nOpenClaw 使用版本\n：openclaw 2026.3.13\nOpenClaw Memory-core 模式\n：locomo 的原始对话通过 OpenClaw 的 Gateway 传入，OpenClaw 按默认行为生成 .md 文件，此列测试的是 OpenClaw 原生记忆系统的默认行为。\nOpenClaw Memory-core 模式（检索完整对话原文）\n：为了对比公平性，此测试对 OpenClaw 做了记忆抽取改良/加强，对于数据集中任意两个用户，当天完整原始对话存储在日志文件\nmemory/YYYY-MM-DD.md\n中；所有的完整原始对话已完全存储在长期记忆\nMEMORY.md\n中。\nOfficeQA 实验详情\n：\n实验设置\n：One-pass test-time adaptation，即先答的题积累经验记忆，后答的题注入相关度 Top K 的经验记忆。\n模型\n：GPT-5.4\n业务自有数据集\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.13,
+        "transfer_agent": 0.86,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.79,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.19,
+        "2": 0.77,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.36,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.19,
+        "2": 0.25,
+        "3": 0.29,
+        "4": 0.2,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.67,
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.28,
+        "2": 0.13,
+        "3": 0.03,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.73,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.09,
+        "3": 0.06,
+        "4": 0.84,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.1,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.04,
+        "2": 0.14,
+        "3": 0.31,
+        "4": 0.44,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 1.9,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.16,
+        "2": 0.48,
+        "3": 0.23,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7462,
+    "outputTokens": 172,
+    "totalTokens": 7634
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.82,
+        "relevance": 0.83,
+        "grounding": 0.3,
+        "decision_action": 0.55,
+        "evidence": 0.82,
+        "actionability": 0.38,
+        "anti_hype": 0.56
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179923310,
+                "endTime": 1791179923481,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000313404",
+      "marketCost": "0.000313404",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000313404",
+      "inferenceCost": "0.000313404",
+      "inputInferenceCost": "0.000313404",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A97TZCRJKGYRNT6FA4STV"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:43 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::x8d9k-1791179923119-99b66e6f5cc5"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.13,
+            "transfer_agent": 0.86,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.79,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.19,
+            "2": 0.77,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.36,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.19,
+            "2": 0.25,
+            "3": 0.29,
+            "4": 0.2,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.67,
+          "probabilities": {
+            "0": 0.55,
+            "1": 0.28,
+            "2": 0.13,
+            "3": 0.03,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.73,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.09,
+            "3": 0.06,
+            "4": 0.84,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.1,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.04,
+            "2": 0.14,
+            "3": 0.31,
+            "4": 0.44,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.9,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.16,
+            "2": 0.48,
+            "3": 0.23,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7462,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.82,
+            "relevance": 0.83,
+            "grounding": 0.3,
+            "decision_action": 0.55,
+            "evidence": 0.82,
+            "actionability": 0.38,
+            "anti_hype": 0.56
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179923310,
+                    "endTime": 1791179923481,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000313404",
+          "marketCost": "0.000313404",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000313404",
+          "inferenceCost": "0.000313404",
+          "inputInferenceCost": "0.000313404",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A97TZCRJKGYRNT6FA4STV"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:42.711Z"
+  }
+}

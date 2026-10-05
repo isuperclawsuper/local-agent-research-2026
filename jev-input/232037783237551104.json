@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "232037783237551104",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "GenAI输出内容控制的5种设计模式",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650542372&idx=1&sn=2ce340a20243f07f5e8ff950539e7d61",
+      "date": "2026-01-07T10:17:00.815Z",
+      "chars": 11869,
+      "text": "原创\n直播技术团队\n2026-01-07 18:17\n浙江\n本文系统介绍了在生成式人工智能（GenAI）应用中控制模型输出内容的五种设计模式。\n本文\n系统介绍了在生成式人工智能（GenAI）应用中控制模型输出内容的五种设计模式，并对比了各模式的适用场景、优缺点及典型反模式，为开发者提供了一套结构化的输出控制方法论。\n写在前面\n我们在结合LLM做应用的时候，如何去约束模型的生成样式、格式、风格，这个是一些比较常见的问题，对于通用问题沉淀下来的通用解决方案，有一个大家熟悉的名词，设计模式，笔者下面基于如何在大家的应用中去更方便的控制输出内容style，介绍五种设计模式，分别是Logits掩码模式（Logits Masking）、语法模式（Grammar）、样式转换模式（Style Transfer）、逆向中和模式（Reverse Neutralization）以及内容优化模式（Content Optimization）。\n模式一：Logits Masking\nLogits Masking，Logits掩码模式，介绍该模式之前，简单说下两个概念，一个是Logits是什么，另外一个涉及到Logits Masking后续实现的束搜索（Beam Search）的概念。\nLLM在生成结果的时候，是token by token生成的，LLM在每个token生成时，给的不是一个token，是给了一系列的tokens，同时附带了模型对这些tokens作为下一个token输出的推荐分值，之后再做激活（比如softmax）得到一个整体加和等于1的概率值，后面会结合Sampling算法和Temperature，来决定哪个token作为要输出的那个结果。\n然后再来介绍下束搜索，束搜索解决的是如何在\n确定性优先\n（每次输出都是最高概率的那个token）和\n随机创新\n（引入Temperature，在比较高概率的tokens小集合中做一定的随机选取）之间的权衡，在束搜索的机制下，LLM会在生成token的过程中维护多个队列（通过束宽beam_width来控制），意味着每次在生成下一个token的时候，中间会保留beam_width个可能的候选结果分支（比如概率最高的beam_width个tokens），然后每个分支各自继续生成下一个结果的token概率列表，每个分支选择beam_width个可能候选结果，接着对这beam_width * beam_width个分支做修剪，按照新增tokens的logits加和的降序排列，只保留加和最高的beam_width个，整体持续迭代，直到句子完结（<EOS>出现或者达到长度限制）。\nLogits掩码，是在模型内部进行束搜索的时候，增加用户给于的其他一些约束和限制，去干预每一步的token选择，最后达到控制LLM输出内容符合自身期望的结果。\n▐\nCases\n这里列举一些可能可以使用该设计模式的场景：\n品牌一致性\n，\n在述说A商品相关的信息时，需要使用该商品对应的品牌主打的特性词汇，比如运动、舒适，而不要使用B商品品牌主打的品牌特性，比如优雅、大方等；\n准确性\n，\n比如在输出一份账单的时候，账单的编码以及账单金额只输出在特定位置，不在正文中重复出现，避免多次输出可能带来的不一致性；\n合规性\n，\n在引用A公司的案例进行陈述的时候，不要同时引用其竞争对手B公司的案例，以免造成商业敏感和合规等问题；\n风格指南\n，\n可能对于输出文档的语法、标点、格式或术语有特定的要求。\n▐\nAntipattern\n该模式的反例，估计大家都比较熟悉，\n就是对模型生成的结果，使用rule set进行校验，如果不符合，打回让模型重新生成，一直到生成的结果满足输出规则为止\n；\n该方式不仅会新增很多不必要的模型调用（成本），同时也会增加本次服务的RT（体验）。\nLogits Masking模式的反例描述\n▐\nSolution\nLogits掩码（Logits Masking） 的工作原理如下：\n用户可以针对输出内容的约束，生成一些Rules，这些Rule是可以通过程序来自己实现的（比如对于一些关键字、词的屏蔽）；\n在生成过程的每一个中间步骤，获取当前可能的后续词元（continuations）集合，对于不符合预设规则的候选续写项，将其对应的logits（模型输出的原始分数）置零，从而在概率分布中彻底排除这些非法选项；\n只要还存在至少一个符合规则的合法续写路径，生成过程就可以继续向前推进；\n如果当前状态没有符合条件的续写选项，或该状态此前已被标记为“死胡同”（dead end），则需要回退一步（backtrack），尝试其他可能的前序选择；\n当达到预设的最大重试次数后，若仍无法生成满足所有规则的内容，则向用户返回拒绝响应，说明“无法生成符合要求的内容”。\n相关的流程图如下所示：\nLogits Masking流程图\n具体实现上写一个单独的继承了transformers.generation.logits_process中LogitsProcessor的处理类，复写__call__方法，在该方法中实现自己定义的rule的程序化逻辑。\nfrom\ntransformers\nimport\npipeline\nMODEL_ID =\n\"/Users/mario/.cache/modelscope/hub/models/LLM-Research/Phi-3-mini-4k-instruct\"\npipe = pipeline(\ntask=\n\"text-generation\"\n,\nmodel=MODEL_ID,\nkwargs={\n\"return_full_text\"\n:\nFalse\n,\n},\nmodel_kwargs={}\n)\nresults = pipe(input_message,\nmax_new_tokens=\n512\n,\ndo_sample=\nTrue\n,\ntemperature=\n0.8\n,\nnum_beams=\n10\n,\n# 束宽为10\nuse_cache=\nTrue\n,\nlogits_processor=[<Your_Customized_Processor extends LogitsProcessor>])\n# 设置你实现的Processor实例\n模式二：Grammar\n语法模式，Grammar，基于语法的字符输出限制，可以理解为一种内置的特殊的Logits Masking，可以类比内置了一套正则表达式\n（\n实际使用的是GBNF，\nGrammar-Based Normal Form，基于语法的范式\n），用于Logits的权重调整，从而控制最终输出的内容和样式。\n比如一段控制时间格式输出的Grammar如下所示：\ngrammar_str\n=\n\"\"\"\ntimestamp_literal ::=\n{ t 'yyyy-mm-dd hh:mi:ss' } |'date_literal time_literal'\ndate_literal ::=\n{ d'yyyy-mm-dd'}\n|mm-dd-yyyy| mm/dd/yyyy| mm-dd-yy| mm/dd/yy| yyyy-mm-dd\n| yyyy/mm/dd| dd-mon-yyyy| dd/mon/yyyy| dd-mon-yy| dd/mon/yy\ntime_literal ::=\n{ t 'hh:mi:ss'}|hh:mi:ss[:mls]\n\"\"\"\n由于该模式的实现需要模型在推理引擎中集成GBNF解析器，因此不是所有的LLM都支持，目前从大面来看，闭源的模型基本都不支持，开源的模型在这块的支持会好一些，如果是私有部署的模型，也可以自己在推理框架中集成这个能力。\n▐\nAntipattern\n当前的做法是在prompt中写清楚需要返回的信息的格式，比如是JSON，或者是一些特殊的sql，虽然Anthropic也推荐了这样的做法，但是这个方式不一定能保证结果格式的输出一定能如你所愿，头部的大模型在模型能力上有比较好的调优，可以在更大概率上遵循用户在prompt中约束的指令，但是小一些的模型，在这方面的表现就会比较差，同时不管是头部闭源模型还是一些自己部署的小模型，在输出格式遵循的确定性上，都是有一定的概率；LangGraph（25年6月）的实现是通过在一个额外的模型调用，去重新调整返回格式到目标格式上，这样的做法也不\n是特别推荐，因为会有额外的调用的损耗。\n▐\nSolution\n该模式整体的处理流程如下，步骤上和Logits Masking类似，原理上稍有区别：\nGrammar执行流程\n下面是一个简单的针对数据问题解答结果的输出约束的例子，该例子中的Grammar限制了输出结果中可以出现任意数量的空格和制表符（ws ::= [ \\t\\n]*），数字0-9且后面可以跟任意空格和制表符（num   ::= [0-9]+ ws），变量必须小写字母开头（ident ::= [a-z] [a-z0-9_]* ws），项\nterm可以是标识符或者单个数字或者是括号包裹的表达式（term  ::= ident | num | \"(\" ws expr \")\" ws，即不太能出现z = 1 + 2这样的结果），等等。\nfrom\ntransformers\nimport\npipeline\nfrom\ntransformers_cfg.grammar_utils\nimport\nIncrementalGrammarConstraint\nfrom\ntransformers_cfg.generation.logits_process\nimport\nGrammarConstrainedLogitsProcessor\nMODEL_ID =\n\"/Users/mario/.cache/modelscope/hub/models/LLM-Research/Phi-3-mini-4k-instruct\"\npipe = pipeline(\ntask=\n\"text-generation\"\n,\nmodel=MODEL_ID,\nkwargs={\n\"return_full_text\"\n:\nFalse\n,\n},\nmodel_kwargs={}\n)\ndef\nget_expression_that_solves\n(\nmath_problem:\nstr\n) ->\nstr\n:\nsystem_prompt =\n\"\"\"\nYou are a math instructor. I will ask you a math question.\nRespond with the mathematical expression that can be used to solve the problem.\n\"\"\"\n# load the grammar\ngrammar_str =\n\"\"\"\nroot  ::= (expr \"=\" ws term \"\\n\")+\nexpr  ::= term ([-+*/] term)*\nterm  ::= ident | num | \"(\" ws expr \")\" ws\nident ::= [a-z] [a-z0-9_]* ws\nnum   ::= [0-9]+ ws\nws    ::= [ \\t\\n]*\n\"\"\"\ngrammar = IncrementalGrammarConstraint(grammar_str,\n\"root\"\n, pipe.tokenizer)\ngrammar_processor = GrammarConstrainedLogitsProcessor(grammar)\ninput_message = [\n{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt},\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: math_problem}\n]\nresults = pipe(input_message,\nmax_new_tokens=\n256\n,\ndo_sample=\nFalse\n,\nlogits_processor=[grammar_processor]\n)\nreturn\nresults[\n0\n][\n'generated_text'\n][-\n1\n][\n'content'\n].strip()\n上面说到该模式可以支持约束最终的输出结果的格式，比如按照JSON输出，但是这类比较通用的针对返回类型的控制，现在很多模型API中可以去做指定，如下例子：\nimport\nos\nfrom\nopenai\nimport\nOpenAI\nclient = OpenAI(\n# 若没有配置环境变量，请用ideaLAB的API Key将下行替换为：api_key=\"xxx\",\napi_key=os.getenv(\n\"OPENAI_API_KEY\"\n),\nbase_url=\n\"\nhttps://idealab.alibaba-inc.com/api/openai/v1\n\"\n,\n)\nsystem_prompt =\n\"\"\"\nYou will be given a short paragraph about a book.\nExtract the author, title, and publication year of the book.\nReturn the result as JSON with the keys author, title, and year.\nIf any piece of information is not found, fill the spot with NULL\n\"\"\"\ncompletion = client.chat.completions.create(\nmodel=\n\"DeepSeek-R1-671B\"\n,\n# 此处以DeepSeek-R1-671B为例，可按需更换模型名称。\nmessages=[\n{\n'role'\n:\n'system'\n,\n'content'\n: system_prompt},\n{\n'role'\n:\n'user'\n,\n'content'\n:\n'Love in the Time of Cholera'\n}],\nresponse_format={\n\"type\"\n:\n\"json_object\"\n},\n# 指定返回的结果类型\n)\nprint\n(completion.choices[\n0\n].message.content)\n当然也可以支持自定义的python数据类，这里的实现逻辑还是Grammar这一套，只是在\n使用方式上做了公共API的参数封装支持，内部还是会根据这样的类型约束转换成具体的Grammar语法。\n▐\n和Logits Masking的比较\nGrammar机制相比Logits Masking，在下面这些维度的权衡上，可能会更推荐后者：1.如果只是一些逻辑上的规则，不是一些特定的格式或者结构的约束；2.BNF的grammar不太好调试，也不太容易发现错误，人不友好；3.规则可以覆盖更多的场景，同时处理起来更加动态；4.规则可以通过一层规则引擎来针对不同的场景做选取；5.规则可以进行外部api的调用，更加灵活，功能更强大。\n同时Grammar和Logits都是针对模型输出的中间结果做了干预，主要是去除了一些不满足要求的token的输出，这个行为对于模型生成结果的整体准确性以及生成结果的成功率（因为会出现排除完之后没有往下生成的token序列的情况，会默认输出一堆空格）都会有影响。\n模式三：Style Transfer\n介绍完Logits掩码和Grammar之后，我们发现\n这\n两种模式都有一个共同的前提，那就是我可以明确的定义出来规则\n，才能以程序化的方式去做输出的干预，那接下来介绍的样式转换模式比较适用于在没有这样的共同前提下，该如何处理。\n▐\nCases\n如果你的场景和下面三种描述比较符合，那么Style Transfer可能是一个不错的选择：\n内容已经ready，但是最终的输出我们有额外的偏好、格式等要求；\n这些要求，有些比较具体，这部分可能可以通过上述的基于动态规则以及一些数据格式来约束，但是有些要求比较细节，不太容易沉淀出rule，也不太容易去做格式化的约束；\n虽然给不出具体的判定规则，但是可以给出一些范本的例子。\n▐\nSolution\n样式转换模式涉及的解决方案有两种，分别是few-shot和Fine-Tuning；\nFew-shot\n：\n通过Few-shot的方式，让模型按照示例所给出的输入和输出案例的一些特征（输出的格式、语调、风格等），来约束回答的样式，这是一种比较常用的方式；\nFine-Tuning\n：\n收集示例数据，使用这部分数据对模型进行微调，改变相关的权重参数，重新部署微调后的模型；\n相较于第一种通过few-shot来约束输出style的方式，第二种fine-tuning的方式，具有如下一些优点：\n微调可以让模型更充分地学习到输出样式的细节，比如需要按照标准术语及口语类型进行输出，会涉及比较庞大的术语映射表和映射关系，这个通过few-shot的方式不太能很好的达到最终效果；\n可以提升整体推理速度，因为相较于前者，在整体context的token数上有比较明显的优势；\n当然Fine-Tuning方式也需要增加额外的成本，包括去对模型做训练，同时对微调后的模型做部署，这里有一些知识门槛，数据准备和模型微调、部署的成本。\n▐\nConsiderations\n不管是few-shot方式，还是微调模型的方式，都是在一定程度上增加了模型对于结果输出样式的约束力，相比于Logits Masking和Grammar这两种方式，在输出的确定性上都是有不足的；但是Style Transfer中通过few-shot方式来实现，在成本上是最低的。\n因此，面对你要处理的场景，如果能够比较好的做结构化的约束输出（比如规则或者具体的数据格式），那优先选用Logits Masking和Grammar，但是如果约束条件不太能全面表达，可能是一种人为的隐性判断，那么few-shot和Fine-Tuning的方式会是不错的选择。\n在使用few-shot方式的时候，有以下几点可能和效果有关联：\nBigger models lead to better results\n：\n模型参数越大，在同等example下，表现会更优，不过效果不好时，可以先看下纰漏点在哪里，可以适当进行例子的补充，来进行第一步的调优；\nLimits of the Context\n：\n例子的数量多，会让模型可以有更好的转换效果，但是同时，这些例子会增加推理上下文的长度，长度过大，模型整体的处理效果，极端的话会超出模型可处理的context长度的上限，这里可以对用户的问题进行分类，同时去额外召回和该query相关的例子来补充context，可以达到一定程度的平\n衡；\n推理速度\n：f\new-shot会增加模型处理的context大小，这部分会直接影响推理响应的速度，优化这部分损失可以是换比较小的模型，亦或者是对few-shot的例子进行一些缩减或者按需添加，如果对rt非常敏感，可能建议做fine-tuning。\n模式四：Reverse Neutralization\nReverse Neutralization（逆向中和），和Style Transfer类似，都是将原始回答转换成一种特定类型、风格的最终输出；\n实现上一般是先使用一个通用的GenAI生成中性的中间态的结果，然后再使用一个经过微调过的特定模型，将中间态结果转换成所需要的特定类型和风格的输出。\n不同于Style Transfer的点在于，Style Transfer是通过提供给模型Input-Output这样的案例对，通过few-shot或者是Fine-Tuning的方式让模型在两种类型之间做转换，而Reverse Neutralization模式下，只需要给出目标Output的样例，让模型基于这样的数据样本进行微调，能够比较好的生成这种类型的输出。\n▐\nCases\n比如你想让模型按照你的人设和风格，去写一篇文章或者电子邮件，在这样的场景下，按照Style Transfer的方式，需要给出不同场景下或者面向不同主题下的\n普通风格内容\n和\n你个人风格下的内容\n的样本pair，这里会存在两个问题：\n历史内容中没有沉淀所谓你个人风格下的内容产物对应的普通风格内容；\n这类内容所能覆盖的内容主题会比较有限；\n▐\nSolution\n逆向中和（Reverse Neutralization）模式的关键是需要微调训练出一个能够产生目标风格的模型，该训练过程如下图（以个人邮件场景为例）所示：\n逆向中和模式的流程图\n核心有以下三步：\n收集你的历史的邮件，让一个通用LLM以你的历史邮件为输入，生成中性的版本（可以是一个商务邮件对话风格）；\n将上一步产生的结果和你的历史邮件一一对应，但是输入输出做调换，即产生的中性邮件版本为输入，你个人的邮件作为输出，构建一个训练样本集；\nNeutralize the tone\nand\nstyle\nfrom\nthe following email\nto\nmake it professional\nand\nsuitable\nfor\ncommunication\nbetween\nexecutives who may\nnot\nknow\neach\nother very well.\n3.\n使用该训练数据，选择一个开源模型，进行微调；\n在实际推理使用中，和上述描述的一样，会分拆两步，首先使用普通GenAI模型进行中性结果生成，然后再把该结果输入到微调后的模型，进行定制风格内容形式的输出，如下图所示：\n逆向中和模式推理流程\n▐\nConsideration\nReverse Neutralization\n非常依赖中性结果的生成质量\n，需要保证这个结果只是在风格上有不同，核心内容上要保持\n完整并且准确的。\n因此在使用的过程中，需要额外关注中性结果和目标风格结果之间的信息关联度，尽量保证不要因为风格的转换丢失关键的内容，或者让原本清晰的表达变得模糊、词不达意；这里可以通过下面两个方面进行一些尝试和调整：\n中性风格的选择上，可以做一些调试，还是以邮件为例，比如按照初中一年级水平输出，亦或是按照英国商务标准输出，都可以是一种中性内容输出的提示，但是这里可以针对两种风格定义看下输出的内容和原始个人邮件内容的差异性，选一种差异性小、在表达的内容完整程度上更接近的一种风格；\n微调数据的选择上，在主题方面也需要尽量涵盖丰富一些，至少能覆盖到后续可能使用到的场景，同时针对模型生成的训练数据，进行人为的判断和筛选，可以提升整体的效果。\n模式五：Content Optimization\nContent Optimization（内容优化），是一种\n利用偏好调优来生成表现最优内容的模式；即通过持续在多个输出中，标识哪个输出更优，从而强化模型在更优输出上的产出比例。\n▐\nCases\n传统的内容优化的方式，使用比较多的是A/B实验，但是A/B实验有一个前提，就是需要明确定义出来产生A、B内容样本的规则或者差异的因子，如果这个不能很好的被定义，那么A、B的实验比较，以及后续如何决策和使用，都是问题。\n▐\nSolution\nContent Optimization模式的特点是，不要明确定义A、B产生的差异因子，同时在评判的时候，只需要说明更喜欢A还是更喜欢B，而不用进一步说明为什么更喜欢的理由，然后把更喜欢的内容和不太喜欢的内容生成为一个pair数据集，通过该数据集对模型进行微调，使该微调后的模型可以更大概率的生成用户更喜欢的内容。\n简单说：用户只决定更喜欢哪个，至于更喜欢的理由交给模型中数据中去学习获取。\n整体解决方案的流程如下：\n图中几点做下额外说明：\n在Step1中，有涉及到对于原始Prompt的改写，这里的改写主要做的是在保持prompt原意的前提下，进行同等的替换、或者是进一步的解释说明，或者是提供一些例子，使得让两次生成的结果有一些差异性；\nStep2中使用的是LLM来评估两个结果的好坏，标注为LLM-as-judge，一般是参数量更大的模型，当然也可以是人为标注，这里可以结合场景来看，各有利弊；\nStep4中的Preference tuning，比较常见的是做DPO强化，增对一个prompt，\n有倾向的选择“chosen”，和不太倾向的结果选择“rejected”。\n▐\nConsiderations\nContent Optimization模式比较关键的点在于如何评估两个结果的好坏，或者说决定哪个结果更优，比较主流的做法有以下三个：\n使用更权威的模型做判定\n，\n模型参数越大，一般来说效果越好，整体在处理大量数据的标注上，有比较大的优势，但是对于什么是更好的评定标准是个黑盒，不一定\n能够非常好的match使用场景；\n专家标注\n，\n该方式成本偏高，在处理少数据量的时候，有可行性，同时在一些客观和高难度问题上，标注准确性有比较大的保障，但是，对于一些主观类的问题，在标注的时候会潜在带入个人的价值观、喜好等因素；\n基于反馈的判定\n，\n比如在产品链路上做的反馈设计（好or不好），亦或者是基于结果指标的一些判定（比如基于某个回答下，用户后续的互动率更高等等），该方式需要结合后置的体验交互链路设计以及相关指标的定义和数据的回收来达成，优点\n是会更契合使用场景。\n结语\n这里简单把上述几个模式的问题、解决方案和使用场景做了个表格化展示：\n模式（Pattern）\n问题（Problems）\n解决方案（Solutions）\n使用场景（Usage Scenarios）\nLogits掩码模式\n（Logits Masking）\n需要针对输出的内容做一些准确性、合规、风格等的规则约束\n在模型Sampling阶段，针对不符合规则的Token生成分支，进行提前干预\n明确的一些屏蔽词规则，相关的风格要求，避免重复的陈述内容等\n语法模式\n（Grammar）\n需要对输出有一定的输出格式和数据结构的要求\n使用类似BNF的语法明确输出的格式规则，约束token的生成\n比如生成SQL语句，生成一些标准的JSON格式或者是有明确数据结构的返回值\n样式转换模式\n（Style Transfer）\n想要输出去follow一定的风格或者人设，但是又没法去针对这样的输出定义明确的规则\n使用input-output对的例子，使用few-shot或者微调的方式让模型去follow这样的样式\n特定领域文本的编写，特定受众的内容生成（比如科普文章或者专业技术文章）\n逆向中和模式\n（Reverse Neutralization）\n和Style Transfer类似，也不太能抽象一些明确的规则，同时也不太能提供input-output例子，只能提供想要的样式的输出的例子\n使用模型针对目标风格生成中性风格内容，然后使用该内容对模型进行微调，使模型可以驾驭这样的风格；\n个人人设的邮件or文档编写；\n内容优化模式\n（Content Optimization）\n需要对输出进行一版优化，但是无法定义出可用于传统AB实验比对的不同元素；\n生成多个结果，并且对于多个结果进行评估（好or不好），然后基于某个prompt下的好和不好的结果样本对模型进行强化训练；\n在一些影响因素不太能显性化定义的场景，比如如何编写一份更好的营销文案，教材等；\nGenAI相关的设计模式属于一个新的话题，不像Java的设计模式，非常成熟以及具有比较多的共识，这里罗列的几种设计模式，从针对模型输出内容控制这个方面来说，笔者认为应该大部分实践中的场景都在案例范围内，大家可以看下自身的场景、当前的做法，结合上面模式中提供的思路做一个实现的参考，同时在使用某种方式的时候，结合自己的上下文，权衡好利弊~~~\n参考资料\nhttps://learning.oreilly.com/library/view/generative-ai-design/9798341622654/\n团队介绍\n本文作者 Mario，来自淘天集团-直播技术团队。淘宝直播作为全球领先的直播电商平台，正在重新定义人与商品、人与内容的连接方式。我们致力于打造沉浸式、互动式的购物体验，让数亿用户在这里发现好货、感受乐趣。无论是时尚穿搭、美食评测，还是科技新品发布，淘宝直播都在引领电商行业的创新潮流。同时淘宝直播也在推进打造行业领先的AI数字人技术，实现虚拟主播、智能互动、个性化推荐等创新功能。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

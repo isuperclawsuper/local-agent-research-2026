@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1200302974404894720",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "想到即建、不用即停 —— 火山 PostgreSQL 助力飞书妙搭的 AI 效率革新",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247520827&idx=1&sn=543e0e51b78349e2c5f87c4867713da5",
+      "date": "2026-07-14T10:00:00.033Z",
+      "chars": 8298,
+      "text": "原创\n火山引擎数据库\n2026-07-14 18:00\n北京\n“我的 APP 已经通过 AI 开发好了，怎么才能快速上生产？”\n——这是许多 Vibe Coding 用户感受到最真实的体验断点。当 AI 把“代码生产”的时间压缩到秒级，而“结果落地”却卡在传统数据库近 10 分钟的初始化过程中，Vibe Coding 的丝滑体验就会在此刻断崖式下跌。\n火山云数据库 PostgreSQL  Serverless 版的接入，为这些问题提供了新的解决思路。 自上线以来，火山云数据库 PostgreSQL Serverless 版 对比传统数据库，将实例创建速度压缩至\n10s\n，\n提速\n40 倍\n，分支创删能力\n提速 200 倍\n，非活跃实例自动 Scale-to-Zero ，\n综合成本降低 99.99%\n，支持百万级规模实例的企业级管理，数据库第一次跟上了 AI 生成代码的速度。\n当 Vibe Coding 秒级写码，数据库却在拖后腿\n「飞书妙搭」\n是飞书开发套件旗下的 AI 原生系统搭建平台。用户通过自然语言描述需求，妙搭就能自动生成完整应用——前端界面、后端逻辑、数据库结构，为用户带来全栈式的体验。\n在 Vibe Coding 海量用户的使用下，妙搭的应用呈现出典型 AI 时代场景业务的特殊性：\n应用形态跨度大：\n既支持搭建长期运行的业务系统、管理后台和复杂工作流，也覆盖活动公告、临时验证页、轻量落地页等短周期场景；\n项目规模大、迭代快：\n大量项目从想法验证到正式上线持续产生和演进，要求底层能力具备规模化供给、自动化运维和低门槛接入；\n访问负载峰谷明显：\n不同项目、不同阶段的访问量差异较大，平台需要支持按需弹性、自动休眠与快速唤醒，在用户体验、稳定性和成本之间取得平衡。\n这种模式下，传统数据库暴露出多种问题：\n创建慢：\n创建实例需要填写版本、规格、网络等内容，创建耗时 5～10 分钟，与秒级响应相差 100+倍，打断“对话即开发”的心流；\n价格高：\n365×24 全时段计费，闲置资源持续收费，资源成本浪费高达 90%；\n难恢复：\n数据恢复需要小时级，恢复时间点难定义，开发者与 Agent 无法大胆试错。\n妙搭对数据库的期许，用一句话概括：\n数据库不该再是一个需要手工准备的基础设施，而应该成为一种随应用一起生成、一起伸缩、一起演化的服务。\n不是「Serverless 化改造」，而是为 AI 重造的数据库\n当前，Vibe Coding 通过火山云数据库 PostgreSQL  Serverless 版创建的数据库实例已突破百万，平台支持上万活跃实例的并发操作稳定运行。这意味着 Vibe Coding 的数据底座，从“基础验证可测试”真正迈向了\n“规模化高可用”\n的范畴。\n火山云数据库 PostgreSQL  Serverless 版并非传统 RDS 的“Serverless 化改造”，而是从架构底层为 AI 时代重新设计的数据库服务。\n图：火山云数据库 PostgreSQL  Serverless 示意图\n它的几大特性，完美解决 Vibe Coding 用户遭遇的问题：\nServerless ——开发成本降低 90%\n计算资源按需伸缩，无请求时 Scale to Zero。相比传统 数据库，\n综合成本降低 90%，节省上亿数据库成本。\n非活跃项目自动释放资源，无需手动清理。\nData as Git ——任意开发，允许试错\n一个代码分支对应一个数据库分支，\n秒级创建/删除\n，对比传统方案提升近\n200 倍\n，支持 Schema Diff 对比、Schema Merge 安全合并、Time Travel\n≤ 1 秒回退\n。\nAI Function —— 多模数据，SQL 搞定\n支持向量、图、文本 多模态数据检索，一条 SQL 即可进行智能数据分析、语义理解、趋势预测。Agent 接入周期从 2～4 周降至\n5 分钟\n。\n企业级管理 ——百万实例稳定运行\n百万 Vibe Coding 项目的数据高可用管理与恢复。支持上万项目的并发请求，将数据库的企业级管理做到极致。\n接入效果：从对话到应用，全链路秒级\n当火山云数据库 PostgreSQL  Serverless 版接入妙搭后，Vibe Coding 的体验发生了质变：\n秒级创建，心流不断\n用户：\n\"帮我做一个客户管理系统\"\n云数据库 PostgreSQL Serverless 版：\nAI 生成代码的同时，后台秒级创建独立数据库分支。从对话到可运行应用，全链路秒级交付。\n大胆试错，一秒回退\n用户：\n\"把订单表拆成三张子表试试\"\n云数据库 PostgreSQL Serverless 版：\n子分支上操作，主分支不受影响。不满意？Time Travel 一秒回退。Schema Diff 精确展示变更，Schema Merge 安全合并确认的改动。\n数据分析，开箱即用\n用户：\n\"分析一下最近的销售趋势\"\n云数据库 PostgreSQL Serverless 版：\nai_query 一条 SQL 调用大模型分析原始数据，清扫复杂数据处理逻辑。\n手把手实操：误删生产数据？\nData as Git\n帮你搞定！\n在和 Agent 对话中，总会“一不小心”，将数据库搞坏了，数据搞丢了。火山云数据库 PostgreSQL Serverless 版提供 Data as Git 的能力，如果出现错误，支持从原有的数据版本上，秒级创建一个新的数据库分支来恢复历史数据，配合Agent 的快速验证与开发。\n图：Data as Git 分支管理模型示意\n下面用一个小 demo，亲身体验火山云数据库 PostgreSQL Serverless 版 如何一秒帮你恢复数据。\nStep1：填写你的数据库信息\n\"\"\"\n场景：误删表的某一列后，通过分支能力极速恢复\n预装依赖\npip install volcenginesdkcore volcenginesdkaidap psycopg2-binary\n\"\"\"\nimport\nvolcenginesdkcore\nimport\nvolcenginesdkaidap\nfrom\nvolcenginesdkaidap\nimport\n(\nCreateBranchRequest, DeleteBranchRequest,\nDescribeDBAccountConnectionRequest, DescribeComputesRequest,\nBranchSettingsForCreateBranchInput\n)\nimport\npsycopg2\nimport\ntime\n# ========== 配置（请填入你的信息） ==========\nconfiguration = volcenginesdkcore.Configuration()\nconfiguration.ak =\n\"Your AK\"\n# 替换为你的火山引擎 Access Key\nconfiguration.sk =\n\"Your SK\"\n# 替换为你的火山引擎 Secret Key\nconfiguration.region =\n\"cn-beijing\"\nconfiguration.host =\n\"aidap.cn-beijing.volcengineapi.com\"\nconfiguration.client_side_validation =\nTrue\nvolcenginesdkcore.Configuration.set_default(configuration)\napi = volcenginesdkaidap.AIDAPApi()\nWORKSPACE_ID =\n\"Your workspace ID\"\n# 替换为你的 Workspace ID\nMAIN_BRANCH_ID =\n\"Your main branch ID\"\n# 替换为你的主分支 ID\nDATABASE_NAME =\n\"aidb\"\n# 默认数据库名\nACCOUNT_NAME =\n\"user_admin\"\n# 默认账号名\n# ========== 获取信息 ==========\ndefget_compute_id(branch_id):\nmax_retries =\n30\nretry_interval =\n5\nfor\ni inrange(max_retries):\nresp = api.describe_computes(DescribeComputesRequest(\nworkspace_id=WORKSPACE_ID,\nbranch_id=branch_id,\n))\nif\nresp.computes andlen(resp.computes) >\n0\n:\nreturn\nresp.computes[\n0\n].compute_id\nprint\n(\nf\"  ⏳ 等待 compute 就绪... (\n{i+\n1\n}\n/\n{max_retries}\n)\"\n)\ntime.sleep(retry_interval)\nraise\nException(\nf\"等待 compute 就绪超时，分支\n{branch_id}\n没有可用的 compute\"\n)\ndefget_connection_url(branch_id):\ncompute_id = get_compute_id(branch_id)\nresp = api.describe_db_account_connection(DescribeDBAccountConnectionRequest(\nworkspace_id=WORKSPACE_ID,\nbranch_id=branch_id,\ncompute_id=compute_id,\naccount_name=ACCOUNT_NAME,\ndatabase_name=DATABASE_NAME,\n))\nconnection_url = resp.connection_url.strip()\nif\nconnection_url.startswith(\n\"psql \"\n):\nconnection_url = connection_url[\n5\n:].strip()\nif\nconnection_url.startswith(\n\"'\"\n)\nand\nconnection_url.endswith(\n\"'\"\n):\nconnection_url = connection_url[\n1\n:-\n1\n]\nreturn\nconnection_url\n# main 分支连接串\nPG_CONN = get_connection_url(MAIN_BRANCH_ID)\nStep2：模拟生产数据写入\n# ========== Step 2: 在 main 分支建表并写入数据 ==========\nprint\n(\n\"\"\"\n╔═══════════════════════════════════════════════════════╗\n║  Step 2: 在 main 分支创建表并写入 5 行数据                ║\n╚═══════════════════════════════════════════════════════╝\n\"\"\"\n)\nconn = psycopg2.connect(PG_CONN)\nconn.autocommit =\nTrue\ncur = conn.cursor()\ncur.execute(\n\"\"\"\nCREATE TABLE IF NOT EXISTS employees (\nid SERIAL PRIMARY KEY,\nname TEXT NOT NULL,\ndepartment TEXT NOT NULL,\nsalary INT NOT NULL,\nemail TEXT NOT NULL\n)\n\"\"\"\n)\ncur.execute(\n\"\"\"\nINSERT INTO employees (name, department, salary, email) VALUES\n('Alice', 'Engineering', 25000, 'alice@example.com'),\n('Bob', 'Product', 22000, 'bob@example.com'),\n('Charlie', 'Design', 20000, 'charlie@example.com'),\n('Diana', 'Marketing', 23000, 'diana@example.com'),\n('Edward', 'Operations', 21000, 'edward@example.com')\nON CONFLICT DO NOTHING\n\"\"\"\n)\ncur.execute(\n\"SELECT * FROM employees\"\n)\nrows = cur.fetchall()\nprint\n(\n\"  ✅ 表创建成功，当前数据：\"\n)\nprint\n(\nf\"\n{\n'id'\n:<\n4\n}{\n'name'\n:<\n6\n}{\n'department'\n:<\n8\n}{\n'salary'\n:<\n8\n}{\n'email'\n}\n\"\n)\nprint\n(\nf\"\n{\n'-'\n*\n50\n}\n\"\n)\nfor\nrow\nin\nrows:\nprint\n(\nf\"\n{row[\n0\n]:<\n4\n}{row[\n1\n]:<\n6\n}{row[\n2\n]:<\n8\n}{row[\n3\n]:<\n8\n}{row[\n4\n]}\n\"\n)\ncur.close()\nconn.close()\nStep3：模拟误操作\n# ========== Step 3: 创建 dev 分支，误删 email 列 ==========\nprint\n(\n\"\"\"\n╔═══════════════════════════════════════════════════════╗\n║  Step 3: 创建 dev 分支，执行删除列操作（模拟误操作）        ║\n╚═══════════════════════════════════════════════════════╝\n\"\"\"\n)\n# 从 main 创建 dev 分支\nresp = api.create_branch(CreateBranchRequest(\nworkspace_id=WORKSPACE_ID,\nbranch_settings=BranchSettingsForCreateBranchInput(\nname=\n\"dev\"\n,\nparent_id=MAIN_BRANCH_ID,\n),\n))\ndev_branch_id = resp.branch_id\nprint\n(\nf\"  📸 dev 分支已创建:\n{dev_branch_id}\n\"\n)\n# 连接 dev 分支，执行误操作：删除 email 列\nPG_CONN_DEV = get_connection_url(dev_branch_id)\nconn_dev = psycopg2.connect(PG_CONN_DEV)\nconn_dev.autocommit =\nTrue\ncur_dev = conn_dev.cursor()\ncur_dev.execute(\n\"ALTER TABLE employees DROP COLUMN email\"\n)\nprint\n(\n\"  ⚠️  执行了: ALTER TABLE employees DROP COLUMN email\"\n)\ncur_dev.execute(\n\"SELECT * FROM employees\"\n)\nrows = cur_dev.fetchall()\nprint\n(\n\"\\n  dev 分支数据（email 列已丢失）：\"\n)\nprint\n(\nf\"\n{\n'id'\n:<\n4\n}{\n'name'\n:<\n6\n}{\n'department'\n:<\n8\n}{\n'salary'\n}\n\"\n)\nprint\n(\nf\"\n{\n'-'\n*\n35\n}\n\"\n)\nfor\nrow\nin\nrows:\nprint\n(\nf\"\n{row[\n0\n]:<\n4\n}{row[\n1\n]:<\n6\n}{row[\n2\n]:<\n8\n}{row[\n3\n]}\n\"\n)\nprint\n(\n\"\\n  ❌ 糟糕！email 列被误删了，数据无法恢复...\"\n)\ncur_dev.close()\nconn_dev.close()\nStep4：秒级恢复完整数据！\n# ========== Step 4: 从 main 重新拉出 dev2 分支，数据完好 ==========\nprint\n(\n\"\"\"\n╔═══════════════════════════════════════════════════════╗\n║  Step 4: 从 main 重新创建 dev2 分支，数据完好无损         ║\n╚═══════════════════════════════════════════════════════╝\n\"\"\"\n)\n# 从 main 创建 dev2 分支（main 不受 dev 的误操作影响）\nresp2 = api.create_branch(CreateBranchRequest(\nworkspace_id=WORKSPACE_ID,\nbranch_settings=BranchSettingsForCreateBranchInput(\nname=\n\"dev2\"\n,\nparent_id=MAIN_BRANCH_ID,\n),\n))\ndev2_branch_id = resp2.branch_id\nprint\n(\nf\"  📸 dev2 分支已创建:\n{dev2_branch_id}\n\"\n)\n# 连接 dev2 分支，验证数据完整\nPG_CONN_DEV2 = get_connection_url(dev2_branch_id)\nconn_dev2 = psycopg2.connect(PG_CONN_DEV2)\nconn_dev2.autocommit =\nTrue\ncur_dev2 = conn_dev2.cursor()\ncur_dev2.execute(\n\"SELECT * FROM employees\"\n)\nrows = cur_dev2.fetchall()\nprint\n(\n\"\\n  ✅ dev2 分支数据（完好无损，email 列仍在）：\"\n)\nprint\n(\nf\"\n{\n'id'\n:<\n4\n}{\n'name'\n:<\n6\n}{\n'department'\n:<\n8\n}{\n'salary'\n:<\n8\n}{\n'email'\n}\n\"\n)\nprint\n(\nf\"\n{\n'-'\n*\n50\n}\n\"\n)\nfor\nrow\nin\nrows:\nprint\n(\nf\"\n{row[\n0\n]:<\n4\n}{row[\n1\n]:<\n6\n}{row[\n2\n]:<\n8\n}{row[\n3\n]:<\n8\n}{row[\n4\n]}\n\"\n)\ncur_dev2.close()\nconn_dev2.close()\n火山云数据库 PostgreSQL  Serverless 版 的 Data as Git 的能力，为你与 Agent 都提供了一套更加完整的开发链路，真正实现了数据结构可以随业务任意改，数据丢失也可快速恢复。\n数据库的未来：与应用一起生长的数据底座\n飞书妙搭为编程新手 & 项目专家解决“应用怎么更快做出来 & 怎么做的更好”，火山云数据库 PostgreSQL  Serverless 版配合解决了 “应用做出来之后，数据库的能力与速度如何能跟上 AI 的迭代步伐”。未来，火山云数据库 PostgreSQL  Serverless 版将支持\n千万级实例规模，更高性能的向量检索、更智能的 AI 分析（NL2Everything 覆盖 90%+ 操作）、更极致的弹性体验。\n让数据库从“需要手工准备的基础设施”，变成“随应用一起生长的数据底座”。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0.01,
+        "irrelevant": 0.54,
+        "transfer_agent": 0.17,
+        "peripheral": 0.28,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.72,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.16,
+        "2": 0.77,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.53,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.1,
+        "2": 0.19,
+        "3": 0.32,
+        "4": 0.27,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.34,
+      "probabilities": {
+        "0": 0.79,
+        "1": 0.15,
+        "2": 0.03,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.06,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.91,
+        "3": 0.03,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.11,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.04,
+        "2": 0.04,
+        "3": 0.05,
+        "4": 0.7,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 0.18,
+      "probabilities": {
+        "0": 0.87,
+        "1": 0.1,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6505,
+    "outputTokens": 173,
+    "totalTokens": 6678
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.4,
+        "anti_hype": 0.88,
+        "category": 0.44,
+        "relevance": 0.8,
+        "grounding": 0.32,
+        "decision_action": 0.78,
+        "evidence": 0.92
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179917007,
+                "endTime": 1791179917151,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00027321",
+      "marketCost": "0.00027321",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00027321",
+      "inferenceCost": "0.00027321",
+      "inputInferenceCost": "0.00027321",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A91NY3F04HN8W9AKXW5MJ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:37 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::2n5bf-1791179916943-6f5dd6188b3d"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.11,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.04,
+            "2": 0.04,
+            "3": 0.05,
+            "4": 0.7,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.18,
+          "probabilities": {
+            "0": 0.87,
+            "1": 0.1,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        },
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0.01,
+            "irrelevant": 0.54,
+            "transfer_agent": 0.17,
+            "peripheral": 0.28,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.72,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.16,
+            "2": 0.77,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.53,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.1,
+            "2": 0.19,
+            "3": 0.32,
+            "4": 0.27,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.34,
+          "probabilities": {
+            "0": 0.79,
+            "1": 0.15,
+            "2": 0.03,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.06,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.91,
+            "3": 0.03,
+            "4": 0.03,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6505,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.4,
+            "anti_hype": 0.88,
+            "category": 0.44,
+            "relevance": 0.8,
+            "grounding": 0.32,
+            "decision_action": 0.78,
+            "evidence": 0.92
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179917007,
+                    "endTime": 1791179917151,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00027321",
+          "marketCost": "0.00027321",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00027321",
+          "inferenceCost": "0.00027321",
+          "inputInferenceCost": "0.00027321",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A91NY3F04HN8W9AKXW5MJ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:36.379Z"
+  }
+}

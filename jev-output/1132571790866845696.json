@@ -1,0 +1,34 @@
+{
+  "answers": {
+    "category": {
+      "choice": "transfer_business"
+    },
+    "relevance": {
+      "score": 2.6664
+    },
+    "grounding": {
+      "score": 2.5819
+    },
+    "decision_action": {
+      "score": 2.3282
+    },
+    "evidence": {
+      "score": 2.8508
+    },
+    "actionability": {
+      "score": 3.5271
+    },
+    "anti_hype": {
+      "score": 2.6527
+    },
+    "fulltext_usable": {
+      "value": true
+    }
+  },
+  "assessment_method": "full_text_chunked_length_weighted_mean",
+  "parts": 6,
+  "aggregation_note": "连续6500字符无遗漏分段；评分按段长加权均值，分类按多数段。局部证据可能被稀释，不能等同整体判断。",
+  "usage": {
+    "totalTokens": 44735
+  }
+}

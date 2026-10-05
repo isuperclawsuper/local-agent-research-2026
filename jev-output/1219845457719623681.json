@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1219845457719623681",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "灵骏真武M890超节点实例 Day0 适配 Kimi K3",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510586&idx=2&sn=e5e4e61dcdd7afe0315c7653c524f0d4",
+      "date": "2026-07-28T10:18:00.472Z",
+      "chars": 1580,
+      "text": "阿里技术\n2026-07-28 18:18\n浙江\n7\n月\n27\n日晚，阿里云灵骏真武\nM890\n超节点实例已成功适配\n2.8\n万亿参数大模型\nKimi K3\n，基于芯片、推理平台和模型的联合优化，有效提升模型推理效率。\n实测结果显示，该超节点运行\nKimi K3\n的首\nToken\n时延降低约\n35%\n，长上下文场景下用户体验更流畅。\nKimi\nK3\n是月之暗面（\nMoonshot AI\n）最新的旗舰模型，参数规模达到\n2.8\n万亿，采用混合专家（\nMoE\n）架构，其完整模型权重于今日正式开放下载。作为目前业界参数规模最大的模型之一，\nKimi\nK3\n的高效运行不仅需要大规模算力和显存支撑，还需要高速互联网络让几十张\nGPU\n紧密协作，仅靠传统\nAI\n集群无法满足高吞吐、低延迟、低成本的推理需求。\n根据月之暗面\n官方博客，推荐将\nKimi K3\n部署在\n“64\n卡以上加速器组成的超节点\n”\n上。\n灵骏真武超节点实例基于平头哥训推一体\nAI\n芯片真武\nM890\n打造，通过\nICN Switch 1.0\n互联芯片，可让\n64\n张真武\nM890\n实现\n800 GB/s\n的\nAll-to-All\n高速互联，显存规模也达到\n9TB\n，可\n将万亿级\nMoE\n模型的\nEP\n专家并行通信流量，跑在一个高带宽通信域内，有效保证\nToken\n生成的效率。\n为了让\nKimi K3\n在真武\nM890\n超节点实例上实现\nDay0\n高效运行，阿里云、平头哥与\nKimi\n团队从算子、软件栈等层面进行了深度联合适配。依托真武\nAI\n芯片的\nT-Head SAIL\n软件栈，\nKimi\n自研的\nMooncake\n推理框架实现了快速部署及\n“\n开箱即跑\n”\n。例如在算子层面，真武\nM890\n对\nTriton\n的良好支持让大量基于\nTriton\n编写的自定义算子无需重写即可直接运行，大幅降低了适配工作量。\n在此基础上，三方还针对\nK3\n的超大规模\nMoE\n架构做了三方面重点优化：\nEP 专家并行通信优化\n借助ICN64高带宽通信域对MoE最核心的All-to-All专家路由通信进行深度调优，将2.8 万亿参数的专家并行流量完整承载在单一超节点内部，避免跨节点通信成为瓶颈。\nMXFP4 混合精度推理\n结合真武M890原生支持的MXFP4低精度算力，在保证模型效果无损的前提下，大幅提升计算密度与显存利用效率。\nKDA 混合架构算子深度优化\nKimi K3采用KDA（Kimi Delta Attention）线性注意力与全注意力相结合的混合架构，联合团队在真武M890上深度调优了KDA核心算子。充分对齐芯片的并行计算架构与访存特性，并通过算子融合减少Kernel启动与中间访存开销，使注意力计算的算力与带宽利用效率大幅提升。\n经过联合优化，Kimi K3在灵骏真武M890超节点实例上不仅实现了Day0平稳跑通，关键推理指标也获得可观提升\n（以下为阶段性优化实测经验值，供参考）：\n相比迁移初期基线，首Token时延（TTFT）降低约\n35%\n，\n长上下文场景下体感更流畅；单卡解码吞吐（Decode Tokens/s）提升约\n1.8倍\n；\n借助MXFP4混合量化，提升整体推理效率；\n得益于KDA线性注意力混合架构与算子优化，长序列推理算力开销随长度近线性增长，稳定支持最长\n1M\n上下文，从容应对长文档理解、复杂推理等场景。\n此次Day0适配背后，是阿里云、平头哥、Kimi团队从芯片、推理框架到云平台的全栈协同。\n这不仅为Kimi K3 这类万亿参数大模型提供了开源开放的软件栈、国内可获取的高算力选择。未来，三方将继续在模型适配、性能调优与工程化部署上深化合作，持续提升Kimi 系列模型在真武超节点上的推理性能与性价比。\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.26,
+        "irrelevant": 0.7,
+        "transfer_agent": 0.04,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 0.86,
+      "probabilities": {
+        "0": 0.38,
+        "1": 0.37,
+        "2": 0.25,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.04,
+      "probabilities": {
+        "0": 0.98,
+        "1": 0.02,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.02,
+      "probabilities": {
+        "0": 0.99,
+        "1": 0.01,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.86,
+      "probabilities": {
+        "0": 0,
+        "1": 0.08,
+        "2": 0.43,
+        "3": 0.04,
+        "4": 0.45,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.59,
+      "probabilities": {
+        "0": 0.37,
+        "1": 0.12,
+        "2": 0.21,
+        "3": 0.15,
+        "4": 0.14,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 0.22,
+      "probabilities": {
+        "0": 0.85,
+        "1": 0.09,
+        "2": 0.06,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.86,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3269,
+    "outputTokens": 173,
+    "totalTokens": 3442
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.62,
+        "relevance": 0.42,
+        "grounding": 0.98,
+        "decision_action": 0.98,
+        "evidence": 0.24,
+        "actionability": 0,
+        "anti_hype": 0.85
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179794041,
+                "endTime": 1791179794120,
+                "providerRequestId": "b76be128-1bff-450c-ba62-b9d7f2ba46e0",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179794122,
+                "endTime": 1791179794285,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000137298",
+      "marketCost": "0.000137298",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000137298",
+      "inferenceCost": "0.000137298",
+      "inputInferenceCost": "0.000137298",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A59JRYC3KKMFRETWAPAMJ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:34 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::5j5gb-1791179793984-441c328ca8b0"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.26,
+            "irrelevant": 0.7,
+            "transfer_agent": 0.04,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.86,
+          "probabilities": {
+            "0": 0.38,
+            "1": 0.37,
+            "2": 0.25,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.04,
+          "probabilities": {
+            "0": 0.98,
+            "1": 0.02,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.02,
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.86,
+          "probabilities": {
+            "0": 0,
+            "1": 0.08,
+            "2": 0.43,
+            "3": 0.04,
+            "4": 0.45,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.59,
+          "probabilities": {
+            "0": 0.37,
+            "1": 0.12,
+            "2": 0.21,
+            "3": 0.15,
+            "4": 0.14,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.22,
+          "probabilities": {
+            "0": 0.85,
+            "1": 0.09,
+            "2": 0.06,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.86
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3269,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.62,
+            "relevance": 0.42,
+            "grounding": 0.98,
+            "decision_action": 0.98,
+            "evidence": 0.24,
+            "actionability": 0,
+            "anti_hype": 0.85
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179794041,
+                    "endTime": 1791179794120,
+                    "providerRequestId": "b76be128-1bff-450c-ba62-b9d7f2ba46e0",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179794122,
+                    "endTime": 1791179794285,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000137298",
+          "marketCost": "0.000137298",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000137298",
+          "inferenceCost": "0.000137298",
+          "inputInferenceCost": "0.000137298",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A59JRYC3KKMFRETWAPAMJ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:33.513Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1300889330629246977",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "云栖首发｜Logics-Parsing-V3 重磅升级：贯通全文，长文无界",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511554&idx=2&sn=bb63ca216e344e7ab783a06ef3dacd39",
+      "date": "2026-09-22T04:30:00.902Z",
+      "chars": 2446,
+      "text": "阿里数据\n2026-09-22 12:30\n浙江\n以下文章来源于：阿里数据\n阿里数据\n了解阿里数据动态，数据助力商业成长！\n阿里巴巴全新推出 Logics-Parsing-V3 开源模型\n01\n为什么“全局解析”如此重要\n举个例子：装修一套房子，各支队伍依次进场，每位师傅都能把手头的活做好，但如果交接时没说清“哪里要留线、哪里不能封、哪里需要避让”，麻烦就会在最后冒出来：预埋的线路没用上，柜子装上挡住了插座、开关与灯对不上号。每支队伍都完成了自己的任务，合在一起却不是原本想要的家。问题就在“局部正确、全局失联”。长文档解析也面临同样的困境。\n模型可以识别每一页的文字、表格和图片，但如果翻页就“重新开工”，段落可能断开、表格拆成两截、标题层级发生错位——每一页都识别正确，整份文档却没有真正读通。\n在今年的云栖大会上，阿里巴巴推出了 Logics-Parsing-V3 开源模型。\n把这场“交接”放进了解析过程：让模型带着前文的结构状态继续翻页，在跨页过程中保持内容连续、关系完整，最终还原一份结构清晰的完整文档。\n在延续Logics-Parsing-V2复杂版面解析与精准元素识别能力的基础上，\nLogics-Parsing-V3通过循环滑动窗口与结构状态传递，让页面之间拥有了“统一施工图”：\n模型在翻页时延续前文的结构状态，再将解析结果重建为完整文档树。文档不再是一组彼此割裂的页面，而成为一个能够被连续理解和结构化还原的整体，为下游的检索、问答和深度分析提供更精准的识别结果和层级结构。\nGithub:\nhttps://github.com/alibaba/Logics-Parsing\nHuggingFace:\nhttps://huggingface.co/Logics-MLLM/Logics-Parsing-V3\nDemo:\nhttps://www.modelscope.cn/studios/Alibaba-DT/Logics-Parsing\n02\n模型优势\n跨页不断，长文无界：\n同时支持单页与多页解析，通过长文档滑窗方案灵活处理超长内容，有效解决跨页表格截断、文本割裂等问题，让全文语义衔接更连贯。\n不止识别，更懂结构：\n能够抽取全文层级结构、定位图表所属层级并建立图文关联，让模型真正“读得懂、理得清”每一份文档。\n复杂内容，精准还原：\n面对密集文字、复杂表格、科学公式、化学符号等复杂排版，依然能够精准识别，并支持乐谱、思维导图、代码及伪代码等内容还原。\nSOTA 表现，性能领先：\n模型仅0.8B，在MPDocBench多页榜单取得SOTA表现，层级结构识别（Heading TEDS）大幅领先。\n03\n技术拆解：从识别单页，到理解全文\nLogics-Parsing-V3 如何做到翻页之后，依然记得前文？\n核心在于一套循环滑动窗口推理框架（Structure-Aware Recurrent Parsing）。\n它将长文档按顺序划分为一组连续的页面窗口。模型每读完一个窗口，都会提炼并更新一份结构状态，其中记录着尚未结束的标题路径、近期已闭合的标题以及跨页延续的内容。就像装修中每支队伍进场前，都要接过一份持续更新的交接清单：前一道工序做到了哪里，哪些部分已经完成，哪些接口还要保留，接下来该从哪里继续。\nLogics-Parsing-V3 循环滑动窗口推理框架\n具体来看，每个页面窗口不仅接收当前几页的内容，还会接收上一窗口传来的结构状态。经过模型解析后，它会输出带有页面定位、标题层级、内容延续标记和图文引用关系的结构化结果；这些结果一边汇入持续累积的文档记忆，一边更新结构状态，继续传递给下一个窗口。\n当全部窗口处理完成，系统再依据页面来源、层级关系和阅读顺序，对各窗口的解析结果进行统一重建，最终形成一棵完整的文档树。至此，模型面对的不再只是一页页彼此孤立的内容，而是一份结构连续、关系清晰的完整文档。这套机制要解决的，本质上是长文档翻页之后的三类“失联”：\n让段落与跨页表格更不易被截断，让标题层级与阅读顺序得到延续，也让图片、表格、图注及正文引用保持关联。\n即使面对论文、报告、书籍等超长文档，模型也能沿着全文结构持续阅读，让跨页内容更连贯、文档层级更清晰、图文关系更准确。\n04\n模型表现优异\n在 MPDocBench-Parse 综合评测中，Logics-Parsing-V3 以 85.26排名第一，领先端到端方法第二名 PaddleOCR-VL-1.5达4.46分。\n面对 PaddleOCR-VL、MinerU、OvisOCR 等主流文档解析模型，Logics-Parsing-V3 拉开了清晰的综合得分优势，此次升级在整体文档解析能力上提升明显。\n在跨页文本衔接和全文层级重建方面Logics-Parsing-V3 的优势突出，公式识别、表格结构与跨页表格等指标也保持在第一梯队。\nLogics-Parsing-V3 长文解析能力优势还体现在在 MPDocBench-Parse 明细评测中, 其中，截断文本编辑距离降至 0.07，在参评模型中表现最佳；Heading TEDS 达到 62.33，领先第二名8.97分。\n同时，公式识别、表格结构与跨页表格等指标保持前列。另外面对多页复杂文档，Logics-Parsing 3.0 不仅支持跨页文本与跨页表格合并，还能建立图文关联并恢复标题层级，是表中两个覆盖全部四项关键能力的模型之一。\n05\n案例效果展示\n跨页文档\n1）多层级结构提取\n2）截断表格合并\n3）跨页文本合并\n单页文档\n1）学术海报\n注：箭头表示阅读顺序，绿色正确，红色错误\n2）复杂表格\n3）代码块\n4）化学试卷\n5）手写笔记\nGithub:\nhttps://github.com/alibaba/Logics-Parsing\n点击\n“阅读原文”\n访问项目Github\n欢迎留言一起参与讨论~\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "peripheral": 0.27,
+        "direct_local": 0,
+        "transfer_agent": 0.25,
+        "irrelevant": 0.48
+      }
+    },
+    "relevance": {
+      "score": 1.67,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.18,
+        "2": 0.75,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.71,
+      "probabilities": {
+        "0": 0.51,
+        "1": 0.3,
+        "2": 0.18,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.11,
+      "probabilities": {
+        "0": 0.91,
+        "1": 0.08,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.5,
+      "probabilities": {
+        "0": 0,
+        "1": 0.07,
+        "2": 0.14,
+        "3": 0.01,
+        "4": 0.78,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.47,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.16,
+        "2": 0.23,
+        "3": 0.29,
+        "4": 0.24,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 0.08,
+      "probabilities": {
+        "0": 0.93,
+        "1": 0.06,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3936,
+    "outputTokens": 173,
+    "totalTokens": 4109
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.34,
+        "relevance": 0.77,
+        "grounding": 0.53,
+        "decision_action": 0.92,
+        "evidence": 0.67,
+        "actionability": 0.32,
+        "anti_hype": 0.95
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179784093,
+                "endTime": 1791179784229,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000165312",
+      "marketCost": "0.000165312",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000165312",
+      "inferenceCost": "0.000165312",
+      "inputInferenceCost": "0.000165312",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A4ZW3XG2Q2632F1XNWXB1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:24 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::4h9hv-1791179784054-a2c989aab8a9"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "peripheral": 0.27,
+            "direct_local": 0,
+            "transfer_agent": 0.25,
+            "irrelevant": 0.48
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.67,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.18,
+            "2": 0.75,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.71,
+          "probabilities": {
+            "0": 0.51,
+            "1": 0.3,
+            "2": 0.18,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.11,
+          "probabilities": {
+            "0": 0.91,
+            "1": 0.08,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.5,
+          "probabilities": {
+            "0": 0,
+            "1": 0.07,
+            "2": 0.14,
+            "3": 0.01,
+            "4": 0.78,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.47,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.16,
+            "2": 0.23,
+            "3": 0.29,
+            "4": 0.24,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.08,
+          "probabilities": {
+            "0": 0.93,
+            "1": 0.06,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3936,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.34,
+            "relevance": 0.77,
+            "grounding": 0.53,
+            "decision_action": 0.92,
+            "evidence": 0.67,
+            "actionability": 0.32,
+            "anti_hype": 0.95
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179784093,
+                    "endTime": 1791179784229,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000165312",
+          "marketCost": "0.000165312",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000165312",
+          "inferenceCost": "0.000165312",
+          "inputInferenceCost": "0.000165312",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A4ZW3XG2Q2632F1XNWXB1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:23.446Z"
+  }
+}

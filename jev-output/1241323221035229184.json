@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1241323221035229184",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "把 AI 视频的钱花在刀刃上，不是每一刀上",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247521239&idx=1&sn=3d1c9e6773e98f7468cf08edd574c940",
+      "date": "2026-08-12T10:00:00.254Z",
+      "chars": 2627,
+      "text": "视频与边缘\n2026-08-12 18:00\n北京\nAI 视频生成正在跨过一个清晰的分界线。\n过去，它更像一个周末玩具。用户拿它尝鲜、娱乐，生成一条新奇的视频，看模型还能玩出什么花样。\n但这个状态正在变化。Seedance 2.0 上线后，一个细节很有意思：工作日负载和使用次数开始明显超过周末。过去，视频生成更多发生在周末，带有很强的尝鲜和娱乐属性；现在，它开始进入工作日，进入办公与生产节奏。\n调用时间的变化，说明 AI 视频正在从“好玩”走向“好用”，从个人消遣进入真实生产。\n一旦进入生产，问题就变了。过去大家关心的是：能不能生成？画质够不够好？效果是不是惊艳？现在更现实的问题是：能不能稳定产出？能不能快速试错？能不能把一个想法从草稿推到成片，避免卡在一次又一次等待里？\nAI 视频真正进入生产后，第一个被放大的问题，不是高清能力，而是生产效率。\n一、当 AI 视频进入生产，效率成为新命题\n视频生产本来就是一条重链路。\n它不像图文内容，改一个标题、换一句文案、调一张配图，就能很快看到结果。视频有画面，有节奏，有镜头，有风格，也有时间成本。\nAI 降低了视频生成的门槛，但还没有让视频生产变得足够轻。\n一条视频从提示词到成片，中间往往要经历多次生成、筛选、调整和再生成。画面是否稳定，节奏是否成立，主体是否符合预期，风格是否贴近目标，都不是一次点击就能确定的。\n这也是 AI 视频进入生产后，很多团队会遇到的真实情况：模型能生成视频，但生产链路仍然不够顺。\n如果每一次尝试都很慢，每一次调整都很重，效率问题就会被放大。视频生成的考验，也从 “出一条片子”，转向了能不能支撑持续生产。\n持续生产最怕的，不是单次效果不够惊艳，而是整个链路跑不动。\n对整个行业来说，AI 视频进入生产后，真正的挑战已经从生成能力，延伸到生产链路本身。\n二、好创意不是一次生成的，好作品也不是一版定稿的\n创意生产有一个基本事实：\n好东西很少一次成型\n。\n一个想法刚出现时，通常并不完整。它需要被试出来，被比较出来，被排除出来。视频尤其如此。\n很多时候，团队并不是一开始就知道哪种画面最好、哪种节奏最合适、哪种风格最能打动用户。它只能通过多个版本去看差异，通过反复比较去接近答案。\n有些版本注定不会被使用，但它们不是浪费。\n它们的价值在于帮助团队判断：这个方向能不能走？这个表达有没有潜力？这一版值不值得继续投入？\n所以在创意前期，更重要的是让每一版更快被看见，而不是一开始就把每一版都做成高清。\n“试错越轻，创意探索的空间越大”。反过来，如果每一次试错都以最高规格启动，团队自然会变得谨慎。生成成本越高，等待时间越长，愿意尝试的方向就越少。\n这和创意生产本身是冲突的。\n创意需要发散，生产需要收敛。问题在于，不能在还没发散的时候，就先把成本拉满。\n所以面向 AI 视频生产，火山引擎提供的是一套分层的选择：既可以通过 Seedance 4K 高清直出，服务从一开始就明确追求高画质交付的内容，也可以通过更灵活的生产流程，让团队先轻量试错，再把确定下来的版本推向高清。\n在第二种路径里，火山引擎 AI MediaKit 画质增强方案承担的是后期增强角色：前期先用更轻的方式完成方向探索，等值得保留的版本被筛选出来，再把它提升到更适合交付和传播的状态。\n增强前后对比视频\n三、先跑通方向，再拉满画质\n更合理的路径，是先跑通方向，再拉满画质。\n这句话看起来简单，但它背后其实是一种生产分工。\n前期要解决的，是方向问题：画面是否成立，风格是否准确，节奏是否舒服，表达是否接近业务目标。这些问题没有必要一开始就用最高规格去回答。\n前期真正需要的是快。更快看到结果，更快比较差异，更快排除不合适的方向。\n等方向确认之后，再把高清资源投向最终版本。\n在这个流程里，AI MediaKit 画质增强的作用就更清楚了。它不负责替代创意判断，但它可以在方向已经跑通之后，把值得保留的版本进一步增强。\n前期轻一点，后期精一点。\n这更像是在重新分配生产资源：探索阶段先把方向跑出来，交付阶段再把画质做上去。\nAI MediaKit 画质增强适合放在这个环节。前期不增加试错负担，后期再增强最终被选中的版本。\n成熟的生产流程，关键在于把合适的能力放到合适的位置。\n四、把高清资源用在被看得见的版本上\n高清当然有价值。\n但越有价值的资源，越不应该被平均消耗。\n在 AIGC 视频生产流程中，高清版本的生成时间和生成成本通常明显高于低规格版本。以 1080P 与 480P 视频生成为例，1080P 单条视频生成成本约为 480P 版本的 5～6 倍，高清版本单条生成耗时通常约为低清版本的 3 倍以上。\n这组差异说明一件事：\n高清不是免费的默认项，而是一种需要被管理的生产资源\n。\n如果从第一版开始，每一次尝试都走高清流程，大量资源就会消耗在不会被采用的版本上。那些版本可能只是用来验证构图，测试节奏，比较风格，甚至只是为了排除一个错误方向。\n它们需要被快速生成，但未必需要被高清生成。\n真正应该高清的，是最终会被交付、被投放、被用户看到的版本。\n这也是“低规格生成 + AI MediaKit 画质增强”这条路径的意义：避免在错误阶段提前消耗高清资源。\n把前期试错做轻，把后期交付做精。\n高清资源就不会被浪费在每一次探索里，而是集中服务真正产生价值的内容。对需要持续产出、反复筛选、快速迭代的团队来说，这比“每一版都高清”更接近真实生产。\n五、真正成熟的生产，不只有一条路径\nAI 视频进入生产之后，需求会变得分层。\n有些内容从一开始就有明确的高画质目标，适合选择 Seedance 4K 高清直出。比如对画面细节、质感稳定性和最终交付标准要求极高的项目，高清直出本身就是生产效率的一部分。\n但也有大量视频需求，更需要先跑方向，先试表达，先找到可用版本，再进入高清交付。这类场景下，“低规格生成 + AI MediaKit 画质增强”会更接近真实生产节奏。\n一条路径强调直接交付，一条路径强调敏捷试错，二者面向不同的需求和场景。\n真正成熟的视频生产，应该让不同阶段、不同目标、不同业务，都能匹配合适的生产方式。\n核心资源不应该消耗在每一次试错里，而应该留给真正值得被看见的版本。不是所有创意，都要从第一版开始高清生成，但每一个真正值得被看见的创意，都应该拥有走向高清成片的机会。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "irrelevant": 0.48,
+        "direct_local": 0,
+        "peripheral": 0.48,
+        "transfer_business": 0,
+        "transfer_agent": 0.04
+      }
+    },
+    "relevance": {
+      "score": 1.01,
+      "probabilities": {
+        "0": 0.25,
+        "1": 0.51,
+        "2": 0.22,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.27,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.15,
+        "2": 0.24,
+        "3": 0.43,
+        "4": 0.08,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.73,
+      "probabilities": {
+        "0": 0.61,
+        "1": 0.07,
+        "2": 0.3,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.48,
+      "probabilities": {
+        "0": 0,
+        "1": 0.59,
+        "2": 0.35,
+        "3": 0.05,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.3,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.13,
+        "2": 0.42,
+        "3": 0.36,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.74,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.05,
+        "2": 0.15,
+        "3": 0.61,
+        "4": 0.13,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4397,
+    "outputTokens": 174,
+    "totalTokens": 4571
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.36,
+        "relevance": 0.66,
+        "grounding": 0.39,
+        "decision_action": 0.52,
+        "evidence": 0.68,
+        "actionability": 0.56,
+        "anti_hype": 0.64
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179912790,
+                "endTime": 1791179912926,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000184674",
+      "marketCost": "0.000184674",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000184674",
+      "inferenceCost": "0.000184674",
+      "inputInferenceCost": "0.000184674",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8XJ3FHMHFT76ES8P04P3"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:32 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::htb2m-1791179912762-893759d5e6e5"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "irrelevant": 0.48,
+            "direct_local": 0,
+            "peripheral": 0.48,
+            "transfer_business": 0,
+            "transfer_agent": 0.04
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.01,
+          "probabilities": {
+            "0": 0.25,
+            "1": 0.51,
+            "2": 0.22,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.27,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.15,
+            "2": 0.24,
+            "3": 0.43,
+            "4": 0.08,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.73,
+          "probabilities": {
+            "0": 0.61,
+            "1": 0.07,
+            "2": 0.3,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.48,
+          "probabilities": {
+            "0": 0,
+            "1": 0.59,
+            "2": 0.35,
+            "3": 0.05,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.3,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.13,
+            "2": 0.42,
+            "3": 0.36,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.74,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.05,
+            "2": 0.15,
+            "3": 0.61,
+            "4": 0.13,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4397,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.36,
+            "relevance": 0.66,
+            "grounding": 0.39,
+            "decision_action": 0.52,
+            "evidence": 0.68,
+            "actionability": 0.56,
+            "anti_hype": 0.64
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179912790,
+                    "endTime": 1791179912926,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000184674",
+          "marketCost": "0.000184674",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000184674",
+          "inferenceCost": "0.000184674",
+          "inputInferenceCost": "0.000184674",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8XJ3FHMHFT76ES8P04P3"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:32.154Z"
+  }
+}

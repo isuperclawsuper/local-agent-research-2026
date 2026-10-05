@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1200682989923598336",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "如何将本地CodeBuddy/Cursor嵌入在线应用",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696401&idx=1&sn=d7ae12fb6298a719d8b17f3855124707",
+      "date": "2026-07-15T00:45:00.943Z",
+      "chars": 8775,
+      "text": "原创\n周晓楷\n2026-07-15 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n本文会介绍如何把本地 CodeBuddy/Cursor 这类 Agent 接入在线应用，重点拆解从裸 LLM API、自建 Agent、Spawn CLI 到 ACP + MCP 的方案取舍，以及最终如何通过 Local Agent Proxy、Session Sandbox 和 Browser Tool Bridge 让 Agent 安全修改在线业务状态，或许能为有类似 Agent 嵌入需求的团队提供一些参考。\n00\n问题：在线编辑器效率低\n我们业务在做一个在线模板编辑器。用户可以在浏览器里打开模板代码，可以看到画布、组件树、预览和保存审核流程。模板本身是一棵 JSON/DSL 树，所有的变更修改都围绕这个 JSON 内容展开。\n这会导致，一个看起来很简单的需求，比如 “按钮圆角调大一点”，“修改文字黑暗模式颜色”，“补一下点击态”，这些操作都需要开发来去找节点、改代码、预览、排查，再回到 JSON 继续改。\n在 AI 时代，这不是一个优化的开发体验：\n非开发同学很难直接参与\n，往往一个小改动就需要产品/设计/开发投入人力排期；\n大量重复劳动\n，一个需求往往牵扯到多个模板，每个模板做类似的操作，开发时间会被大量重复性调整占住。\n视觉调整通常不是一次完成\n，需要长期反复调整迭代。\n规范检查依赖经验\n，新人很难快速上手，避免踩过的坑。\n能不能让用户用自然语言描述目标，让 Agent 理解当前模板，并直接完成受控修改？\n01\n为什么需要 Agent，而不是 Chat Bot?\n如果只是回答问题，一个普通 Chat API 其实就够了。但我们要解决的不是“问答”，而是“让 AI 真的完成一次编辑任务”。\n模板编辑天然是一个带状态、带工具、带校验的流程。用户说一句“把按钮圆角调大一点”，背后不只是生成一段文案，而是要让 Agent 真的理解当前模板、找到目标节点、做最小修改、触发预览，并且不能破坏原有的保存审核链路。\n所以，一个真正可用的模板编辑 Agent 至少要能做到：\n读取当前模板摘要。\n理解用户提到的节点或当前选中节点。\n在需求不清楚时多轮澄清，必要的时候读取知识库。\n调用工具修改局部节点，而不是整棵树乱写。\n展示修改过程和工具调用状态。\n失败后能重试。\n用户能取消长任务。\n根据团队规则执行检查。\n修改后仍走原有预览、diff、保存审核流程。\n这些能力叠在一起，本质上已经不是“LLM 生成一段 JSON”了，而是一个完整的 Agent 工作流。这也是后面所有技术选择的前提：我们要接入的是一个能\n完成任务\n的 Agent。\n02\n如何引入 Agent?\n明确了要的是 Agent 之后，下一步就是选接入方式。\n一开始看起来有很多选择：最容易想到的是直接调模型 API；再进一步，可以自建 Agent Runtime；也可以直接拉起本地 CLI 子进程（\ncodebuddy -p \"Hi\"\n）；或者接某个厂商的 Agent SDK（\nhttps://www.codebuddy.ai/docs/cli/sdk\n）。\n这些方案都各有优劣，结合我们的场景：\n司内 B 端应用，核心用户集中，我们想要“又快又好”的解决方案。\n最好可以直接复用本地已经成熟的 Agent，而不是把在线模板编辑器变成一个自研 Agent 平台。\n方案\n形态\n优势\n问题\n适合度\n裸 LLM API\n在线应用直接调用模型 API，自己拼 prompt、解析输出\n最快做 demo，依赖少\n没有完整 Agent 循环；工具调用、权限、会话、重试、上下文管理都要自己做\n适合轻量问答\n自建 Agent Runtime\n自己实现 planning、tool calling、memory、权限、会话\n控制力最强\n成本最高，需要长期维护 Agent 框架和模型适配\n小团队不划算\nSpawn 本地 CLI\n本地服务直接拉起 Cursor/CodeBuddy CLI，解析输出\n复用现成本地 Agent 能力\n每个 CLI 的启动、认证、事件格式、工具语义都不同\n可行但脆弱\nVendor Agent SDK\n接某个厂商提供的 Agent SDK\n单一 Agent 接入体验好\n绑定单一生态，换 Agent 成本高\n适合明确押注单一厂商\nACP + MCP\n在线应用通过 ACP 连接本地 coding agent，同时用 MCP 暴露业务工具\n标准会话、流式更新、权限、取消、MCP 工具注入；可复用本地 Agent，也能保持业务工具标准化\n需要本地 Proxy、CORS/PNA、Session Sandbox、工具 schema\n最符合“又快又好”\n对比下来，裸 LLM API 和自建 Agent Runtime 都会把大量 Agent 基础设施压回我们自己身上；直接 Spawn 本地 CLI 虽然能复用用户本机的 CodeBuddy/Cursor，但会很快陷入不同 CLI 私有协议的适配成本。\n所以我们最终选择的是\nACP + MCP\n：用 ACP 标准化在线应用和本地 Agent 的会话连接，用 MCP 标准化 Agent 能调用的业务工具。这样既能复用成熟的本地 Agent，又不用把在线编辑器改造成一个自研 Agent 平台。\n拆开看就是三件事：\nACP 负责接入本地 Agent。\nMCP 负责暴露业务工具。\n在线应用仍然拥有自己的业务状态、预览和保存流程。\n03\n等等，ACP 是什么?\nACP 是 Agent Client Protocol，用于标准化 code editors/IDEs 与 coding agents 的通信。它使用 JSON-RPC。典型本地形态是 client 启动 agent 子进程，再通过 stdio 通信。\n这个协议最早是由 Zed 编辑器推动并在 Zed Agent Panel 里落地的：Zed 希望编辑器不再为每个 Agent 单独做私有适配，而是像 LSP 连接 language server 一样，通过一套标准协议连接不同 coding agent。后来协议仓库也独立到了 agentclientprotocol/agent-client-protocol，定位就是 “connecting any editor to any agent”。\n放到我们的场景里，可以这样对应：\n在线编辑器承担 ACP Client 角色。\nCodeBuddy/Cursor 是 ACP Agent。\nMCP 用来把在线应用的业务能力暴露给 Agent。\n需要注意，业界有其他协议也缩写为 ACP。本文里的 ACP 指的是 agentclientprotocol.com 的 Agent Client Protocol。\n我们不需要一上来就把 ACP 的所有细节都讲完。对这篇文章来说，简单了解下面这几个核心能力就够了：\n能力\n方法/通知\n本文用途\n初始化\ninitialize\n协商版本和能力\n认证\nauthenticate\n处理 Cursor 或其他 CLI 登录\n新会话\nsession/new\n创建 Agent conversation，注入 cwd 和 MCP servers\n发起任务\nsession/prompt\n发送用户 prompt\n流式进度\nsession/update\n驱动 Agent 面板里的消息、思考、工具调用\n取消\nsession/cancel\n中断长任务\n权限\nsession/request_permission\n敏感操作前让 Host 授权\n恢复\nsession/load\nAgent 支持时恢复历史会话\n一句话概括就是：\nACP 是 Agent 和 Client 通信的标准协议，让 Client 可以介入/感知 Agent 认证、权限审批、Session 会话、工具调用等过程。\n04\nAgent 如何修改编辑器状态?\n接入之后，Agent 应该怎么修改在线应用里的业务状态呢？我们当时也尝试过几种方案。\n4.1\n让 Agent 直接操作 DOM 或页面函数\n最直接的想法，是让 Agent 通过 browser eval、页面 API 或隐藏 RPC 改页面。\n这个方案看起来简单：改完马上可见。但问题也很明显：\nVue/React 状态会和 DOM 结果漂移。\n页面内部实现一变，Agent 工具就坏。\n权限边界模糊，很难审计“改了什么业务对象”。\n所以这条路不能走。它太依赖页面内部实现，也很难回答“Agent 到底改了哪个业务对象”。\n4.2 把模板 JSON 镜像成本地文件\n另一个自然想法是：每个在线会话生成一个本地 session 目录，把当前模板写成\ntemplate.json\n，让 Agent 像改代码一样改文件，再同步回网页。这个方案非常符合 coding agent 的直觉，初期也容易实现。但做下去会发现，浏览器状态和本地文件很容易变成双写源，并继续带来一串问题：\nAgent 容易整文件覆盖，破坏局部 diff。\ndirty flag、保存审核、画布状态可能和文件同步结果不一致。\n一旦有并发操作或用户手动编辑，就会出现同步竞态。\n我们放弃了模板文件镜像。\n4.3 MCP-only Access\n最终我们采用的是 MCP-only Access。\nAgent 不直接写 DOM，也不直接写本地模板文件。我们给 Agent 提供理解、变更、校验的结构化 MCP 工具：\ntemplate.get_summary\ntemplate.get_node\ntemplate.get_template\ntemplate.patch_node\ntemplate.insert_child\ntemplate.remove_node\ntemplate.validate\n这些工具的实际执行会落回浏览器里的在线编辑器状态。这样做的核心好处是：\n在线编辑器依然是唯一业务状态源。\nAgent 可以思考、读取、请求修改，但真正修改模板状态的是在线应用暴露出来的工具。画布、预览、diff、保存审核都还能沿用原来的产品链路。\n05\n整体架构\n把前面的选择合起来，最终架构可以拆成几层：\nOnline Template Editor\n|\nHTTP\n/\nWebSocket\nto\n127.0.0.1\nv\nLocal\nAgent Proxy\n|\nACP JSON\n-\nRPC\nover\nstdio\nv\nCodeBuddy\n/\nCursor\n|\nMCP tool\ncall\nv\nTemplate MCP\n|\nproxy\n/\napi\n/\ntool\n/\ncall\nv\nBrowser Tool Bridge\n|\nin\n-\nmemory state mutation\nv\nOnline Template Editor\n这几层的职责是这样的：\n在线编辑器：业务状态、画布、保存审核、用户交互。\n本地 Agent 代理：本地进程生命周期、ACP WebSocket、Session Sandbox、HTTP bridge、MCP 配置生成。\nACP Agent：推理、多轮任务、工具调用。\nMCP + Browser Tool Bridge：把产品能力暴露给 Agent，但执行权回到浏览器。\n这里最重要的边界是：本地 Agent 不是直接拥有模板状态。它通过 MCP 请求修改，Host 决定怎么执行。这样既能复用本地 Agent 的能力，又不会把在线编辑器原有的状态模型打散。\n06\n实\n现细节\n补充\n6.1\n一次会话的工作区是怎样的？\n本地 Agent 通常期待自己运行在一个“项目目录”里。这个目录里可以有项目说明、MCP 配置、技能文件等。但在线应用不能把真实业务状态随便写成文件让 Agent 改。否则前面好不容易建立起来的“Host 是唯一状态源”又会被破坏。\n所以我们为每个编辑器会话创建一个独立的 Session Sandbox，也就是一个专门给本地 Cursor/CodeBuddy 准备的会话工作区，每次对话都是一个全新的目录。\n一个 Session Sandbox 大概长这样：\nsession-cwd/\nAGENTS.md\nCODEBUDDY.md\n.mcp.json\n.cursor/\nmcp.json\nskills -> ../.online-agent/skills\n.codebuddy/\nmcp.json\nsettings.json\nskills -> ../.online-agent/skills\n.claude/\nskills -> ../.online-agent/skills\n.online-agent/\nhost-system-prompt.md\nskills/\nux-master/\nSKILL.md\nrules/\n这个目录里有三类关键内容：Agent 要读的系统说明、Agent 要连接的 MCP 工具，以及按需安装的 skills。\nSystem Prompt\n应用层需要定义 Agent 在这个在线编辑器里的身份、边界和工作流。工程上可以把它叫做 Host System Prompt。\n这部分很关键。因为对 Cursor/CodeBuddy 来说，它默认是在一个代码项目里工作；但在我们的场景里，它真正要服务的是一个在线编辑器。System Prompt 需要把这个身份切换讲清楚：\n你是在线模板编辑器里的模板 Agent，不是底层 Cursor/CodeBuddy 产品本身。\n你的任务是友好地解决用户需求；\n模板是 JSON/DSL 树，节点、样式、children 的基本结构是什么。\n只能通过 Template MCP 读写模板，不允许读写磁盘里的模板文件。\n推荐流程是先读摘要，再读节点，最小 patch，校验，最后回复用户。\nskill 文件在 session skills 目录，按路径读取\nSKILL.md\n。\nProxy 在 session 启动时会把这段 System Prompt 写入：\nAGENTS.md\nCODEBUDDY.md\n这样这些 Agent 工具自动就会读取系统提示词。同时还会补充当前 session cwd 的说明，明确所有相对路径都相对于这个目录。\nMCP Config\n只有 prompt 还不够。Agent 还需要知道有哪些工具可以用，所以 Proxy 还会写 MCP 配置，让本地 Agent 在创建会话时能连接 Template MCP。\n简化后的配置像这样：\n{\n\"mcpServers\"\n:\n{\n\"template\"\n:\n{\n\"command\"\n:\n\"node\"\n,\n\"args\"\n:\n[\n\"template-mcp.js\"\n],\n\"env\"\n:\n{\n\"PROXY_HTTP\"\n:\n\"\nhttp://127.0.0.1:8090\n\"\n,\n\"EDITOR_SESSION_ID\"\n:\n\"<editor-session-id>\"\n}\n}\n}\n}\n其中的\nEDITOR_SESSION_ID\n是会话 ID，MCP 被 Agent 调用时，会带着这个 session id 回到 Local Agent Proxy，再由 Proxy 找到对应的 Browser Tool Bridge。也就是说，Agent 不需要知道浏览器页面在哪里，也不直接调用浏览器。它只调用 MCP。\nSkills\n除了工具，Agent 还需要领域知识。技能就是团队规则和流程的载体。比如某个 skill 可以告诉 Agent 如何检查点击态、如何修复布局规范、如何处理特定组件。类似的操作封装成技能就可以快速在其他场景下复用。\n我们不会把所有 skill 都塞进每次 prompt。一方面上下文会变长，另一方面不同任务需要的规则也不同。更好的流程是：\n在线输入框展示 slash command。\n用户选择某个 skill。\nHost 在发送 prompt 前调用\nensureSessionSkills(editorSessionId, skillIds)\n。\nProxy 检查\n.online-agent/skills/<id>/SKILL.md\n是否存在。\n不存在则下载并安装。\n.cursor/skills\n、\n.codebuddy/skills\n、\n.claude/skills\n都链接到工作区里的同一个 skills 目录。\n这样做有几个好处：\n不把所有规则都塞进上下文。\nskill 可以独立发布，实时更新。\n同一个 session 内已经安装的 skill 可以复用。\n不同 Agent 可以用自己习惯的 skills 路径。\n6.2\n一次 prompt 的完整链路\n现在把前面的组件串起来，看一次用户请求到底发生了什么。\n一次用户请求大概会经历这些步骤：\n在线编辑器中创建\neditorSessionId\n。\nHost 调用 Local Agent Proxy 的 session setup 接口。\nProxy 创建 Session Sandbox。\nProxy 写入 MCP 配置、\nAGENTS.md\n/\nCODEBUDDY.md\n、Host System Prompt、skills 目录链接。\nBrowser Tool Bridge 建立 WebSocket，注册\ntemplate.*\nhandlers。\nHost 打开 ACP WebSocket。\nProxy 启动 CodeBuddy/Cursor 子进程。\nHost 调用\ninitialize\n/\nauthenticate\n。\nHost 调用\nsession/new\n，传入\ncwd\n和 MCP servers。\n用户发送 prompt。\nAgent 通过\nsession/update\n流式回传消息和工具调用状态。\nAgent 调用 Template MCP。\nTemplate MCP 通过 Local Agent Proxy 找到 Browser Tool Bridge。\nBrowser Tool Bridge 调用在线应用注册的工具，修改内存模板状态。\n在线应用刷新画布，并继续走原有预览、diff、保存审核流程。\n6.3\n直连 Localhost 的工程细节\n在线网页要连接用户本机服务，最直接的方式是访问\n127.0.0.1\n。\n链路大概是：\nHTTP：\nhttp://127.0.0.1:8090/api/*\nWebSocket：\nws://127.0.0.1:8090/ws*\n这条链路听起来简单，但有些细节是需要考虑的：\n第一是 CORS。Local Agent Proxy 要允许在线应用所在 origin，并返回必要响应头。\n第二是 dev gate。请求里可以带一个约定的 header 或 query，避免任意网页随便调用本机 Agent。\n第三是 Chrome Private Network Access。线上 HTTPS 页面访问本地网络地址时，浏览器可能发起 PNA preflight。Proxy 需要响应：\nAccess\n-Control-\nAllow\n-Origin:\nhttps://online-editor.example.com\nAccess\n-Control-\nAllow\n-Methods: GET, POST, PUT, OPTIONS\nAccess\n-Control-\nAllow\n-Headers: Content-Type, x-agent-dev-gate\nAccess\n-Control-\nAllow\n-Private-Network: true\n第四是启动体验。启动脚本至少要做：\n解析最新 Agent 包版本。\n停掉占用端口的旧进程。\n启动 Local Agent Proxy。\n轮询\n/api/health\n。\n给出明确的“回编辑器重试”提示。\n使用 Chrome Private Network Accss 需要 HTTP，我们业务站点还是 http，目前是通过在脚本中加入 whistle 代理来实现的。\n07\n总结\n回到标题，如何把本地 CodeBuddy/Cursor 嵌入在线应用？用 ACP 连接并驱动本地 Agent，用 MCP 暴露业务工具，用 Browser Tool Bridge 把工具调用落回在线应用状态，再用 Session Sandbox 给每次对话准备可控上下文。对于司内应用场景，这是一个性价比非常高的 Agent 集成方案。这个模式不只适用于模板编辑器，任何在线应用想接入本地 coding agent 都可以尝试这个方案。前提是，\n用户都能接受本地启动一个 Proxy Server。\n最后，再演示下我们应用里的最终接入效果\n-End-\n原创作者｜\n周晓楷\n感谢你读到这里，不如关注一下？👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。7月22日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

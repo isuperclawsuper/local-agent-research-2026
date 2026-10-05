@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1101170443907211264",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "当桌面 Agent 成为常态，飞连 ADR 给出全链路安全答案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247519532&idx=1&sn=e2213c55dc6598f8174a937c21abc7be",
+      "date": "2026-05-07T06:59:00.736Z",
+      "chars": 3320,
+      "text": "原创\n火山引擎飞连\n2026-05-07 14:59\n江苏\n一场由 AI Agent 引发的生产力革命，正席卷全球办公室。以 OpenClaw（“龙虾”）、Hermes Agent 等为代表的 AI 智能体，能自主规划、执行复杂工作，带来效率革命。据权威报告数据，超过84%的企业正在探索或试点 AI Agent，CIO 们想知道的不再是“能不能用”，而是“怎么安全地用”。\n三个趋势正在重塑企业办公安全\n趋势一：从“聊天”到“做事”，安全风险激增\n传统 AIGC 应用以聊天交互为主，风险主要集中在数据隐私和内容合规层面。然而，新一代的 AI Agent 具备了任务执行能力，Agent 易被模糊指令诱导执行高危操作，引发业务流程中断、核心数据批量篡改、跨部门资产误操作等重大生产事故。当前主流应对思路是将 Agent 运行在自带安全能力的云端环境中，如火山引擎 ArkClaw 提供了全流程安全能力，保障企业安全放心使用。同时长期来看，越来越多本地办公软件（如各类 IDE 插件、效率工具等）也在“长出手脚”变成 Agent，企业必须面对一个混合部署、风险无处不在的 AI 办公环境。\n趋势二：从 MCP 到CLI，权限“无限”放大\n2026年 AI Agent 从传统 MCP 模式转向更轻量化、更高效的 CLI（命令行交互）驱动模式，降低交互成本、提升执行稳定性。相比于有明确边界的 API，CLI 几乎是“无所不能”的。一个被授予了 CLI 权限的 Agent，理论上拥有了与登录用户等同的所有权限，一旦被 Prompt 注入等方式劫持，其破坏力将是灾难性的。\n这要求安全体系必须超越传统的应用层防护，建立一套“端网一体”的 Agent 权限管控思路，既能在网络层限制其访问范围和通信行为，也能在终端精细化监控 Agent 的每一个动作。\n趋势三：从“人”到“AI 与人”，安全运营极具挑战\n当 Agent 开始大规模替代人工执行重复性任务时，一个可预见的副作用是日志和告警数量的爆炸式增长。一个 Agent 在一分钟内产生的操作日志可能超过一个人类员工一天的工作量。面对由 AI 带来的复杂性和规模性挑战，单纯依靠人力已无法应对，必须引入 AI 来治理 AI。通过构建专门的安全智能体，可以实现对海量告警的自动化研判、降噪、聚合与响应，将人类分析师从重复性劳动中解放出来，专注于最高价值的威胁狩猎和决策。\n飞连建议：全链路保护桌面 Agent\nAI Agent 带来的挑战并非凭空产生，而是传统办公安全风险在 AI 场景下的异化和放大。与此同时，它也催生了全新的、传统手段难以覆盖的风险类型。\n建议一：基础安全是底线，Agent 安全要升级\nAI 时代的企业安全，必须建立在坚实的传统安全基础之上。一个连内部有多少“影子 AI”资产都搞不清、员工还在使用弱密码访问核心系统的组织，谈论 Agent 安全建设无异于空中楼阁。\n然而，我们不能止步于此。AI Agent 带来了一些传统安全框架难以解决的新变量：自主决策、动态上下文、工具链协同、记忆状态等，因此我们需要面向 Agent 的安全风险本质，匹配新的安全能力。\n飞连 All-in-One 架构让基础安全与 Agent 安全共用同一个客户端和控制台。面对爆发的 AI 风险，企业无需再做加法（不加设备、不装新软件），只需在现有底座上快速激活 Agent 管控能力，用一套方案同时解决“当下的基础需求”与“未来的 AI 变量”。\n建议二：高权限 Agent 是“核武器”，需全链路最小权限约束\n为了提升效率，Agent 常常被赋予极高的自主权限——自行规划路径、调用 API、读写文件，甚至代收发邮件。这正是它生产力的来源，但也意味着：它自主执行的每一步，都可能成为风险敞口。 一旦 Agent 出现\"幻觉\"，或在处理外部文档时遭遇提示词注入攻击，就会沿着高权限链路造成数据泄露甚至系统级破坏。\n因此，对 Agent 的权限管控绝不能是单一环节的，而必须是贯穿其任务执行全链路的。一个理想的架构是\n“端、网、云一体化的架构”\n，它能够：\n在端侧：\n保护 Agent 运行时对本地文件和系统资源的每一次调用。\n在网侧：\n安全代理 Agent 的所有网络访问流量，精细化管控 CLI 访问流量。\n在云端：\n借助 Skill 云端情报和大模型赋能，识别意图偏离和注入攻击风险。\n这种全链路的可见性与控制力，是实现 Agent 权限最小化的前提。\n建议三：从“操作管控”到“意图治理”，识别行为背后的“为什么”\n传统安全策略的核心是“操作”，即“什么进程不能运行”、“什么端口不能开”、“什么网站不能访问”。这种基于固化规则的模式在 AI 时代将逐渐失效。因为相同的操作，在不同的意图和情境下，其风险是截然不同的。\n一个典型的例子是：\n在正常情况下，Agent 调用写文件 API 修改 MEMORY.md，是为了沉淀用户偏好，让后续对话更智能。\n但在读取外部网页被提示词注入劫持后，同样是调用写文件 API 修改 MEMORY.md，却变成了偷偷植入攻击者指定的攻击指令。\n两者在 Agent 操作层面完全相同，但背后的意图天壤之别。安全策略必须能够理解这种差异。\n意图治理\n的核心，就是从关注“做了什么”（What）升级到理解“为什么这么做”（Why）。这需要安全系统具备强大的\n上下文感\n知和\n语义理解\n能力，能够将用户的身份角色、设备状态、网络环境、数据敏感度以及任务目的等信息综合起来，判断一个行为背后的真实意图是否合理、合规。只有上升到意图层面，才能精准拦截真正的威胁，并恰当地处置。\n建议四：告警风暴需“智能体共治”，用 AI 研判 AI 风险\n如前所述，Agent 带来的海量告警是人力无法应对的。安全运营必须进入“智能体共治”的新阶段。以\n飞连办公安全智能体\n的实践为例，通过引入 AI 能力，可以实现革命性的效率提升。例如，在 Agent 办公数据安全场景中，智能体可以：\n智能日志分析：\n通过语义理解，自动为海量外发日志打上内容标签，精准过滤出高风险行为。\n风险事件聚合：\n将孤立的告警日志（如“修改后缀名”、“发送至个人邮箱”、“短时间多次外发”）智能聚合成结构化的“安全事件”，并附上摘要，帮助运营人员快速聚焦核心风险。\n自动化调查：\n在研判高风险事件时，智能体可自动调取该员工的岗位信息、历史行为基线等上下文，进行深度推理，输出可解释的调查结论。\n根据实践数据，采用智能体共治后，\n数据安全事件的分析研判效率可提升 40 倍，风险识别与响应时长缩短 50%\n。这种“用 AI 治理 AI”的模式，是应对未来安全挑战的必由之路。\n“端-网-云”一体化的飞连ADR方案\n飞连 ADR（Agent Detection and Response）方案采用“端-网-云”一体化的全链路防护架构，以“All in One + AI”为基座，从本质上应对企业引入 AI Agent 后的意图劫持、数据泄露及越权滥用等新型威胁。\n端侧（行为护栏与本地管控）：\n全面盘点终端 AI 软件资产，提供 OpenClaw 加固与恶意 Skill 本地扫描。通过构建 Agent 行为护栏与高危行为检测响应机制，结合本地数据保护与高危端口封禁，将管控下沉至文件与进程级，确保 Agent 本地运行绝对合规。\n网侧（流量边界与交互审计）：\n在网络边界实现 GenAI 应用的自动化发现，并直接拦截恶意 Skill 下载。通过 CLI 权限精细管控与 LLM 对话内容审计，从流量通道上掐断敏感数据违规外发与非法调用风险。\n云端（意图洞察与情报赋能）：\n以“飞连智能体”为核心大脑，汇聚 Skill 云查能力与恶意 URL 情报，为端、网提供全局威胁输入；同时依托大模型算力，实现深度的 Prompt 注入检测与意图偏离识别，精准防御复杂的 AI 逻辑劫持。\nAI Agent 的崛起，正重塑工作方式，也必然要求我们重构安全范式。扫码预约体验 AI 时代的办公安全平台！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.14,
+        "direct_local": 0,
+        "irrelevant": 0.58,
+        "peripheral": 0.28
+      }
+    },
+    "relevance": {
+      "score": 1.41,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.47,
+        "2": 0.44,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.34,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.48,
+        "2": 0.31,
+        "3": 0.07,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.69,
+      "probabilities": {
+        "0": 0.43,
+        "1": 0.02,
+        "2": 0.24,
+        "3": 0.09,
+        "4": 0.21,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 1.24,
+      "probabilities": {
+        "0": 0,
+        "1": 0.77,
+        "2": 0.23,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.35,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.11,
+        "2": 0.36,
+        "3": 0.47000000000000003,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.47,
+        "1": 0.39,
+        "2": 0.13,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4821,
+    "outputTokens": 173,
+    "totalTokens": 4994
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.48,
+        "relevance": 0.63,
+        "grounding": 0.6,
+        "decision_action": 0,
+        "evidence": 0.83,
+        "actionability": 0.52,
+        "anti_hype": 0.55
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179925193,
+                "endTime": 1791179925382,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000202482",
+      "marketCost": "0.000202482",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000202482",
+      "inferenceCost": "0.000202482",
+      "inputInferenceCost": "0.000202482",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A99NS3KZH53Y6W81V7FTA"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:45 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::52xp2-1791179925165-d4dc84649150"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.14,
+            "direct_local": 0,
+            "irrelevant": 0.58,
+            "peripheral": 0.28
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.41,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.47,
+            "2": 0.44,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.34,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.48,
+            "2": 0.31,
+            "3": 0.07,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.69,
+          "probabilities": {
+            "0": 0.43,
+            "1": 0.02,
+            "2": 0.24,
+            "3": 0.09,
+            "4": 0.21,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.24,
+          "probabilities": {
+            "0": 0,
+            "1": 0.77,
+            "2": 0.23,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.35,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.11,
+            "2": 0.36,
+            "3": 0.47000000000000003,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.47,
+            "1": 0.39,
+            "2": 0.13,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4821,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.48,
+            "relevance": 0.63,
+            "grounding": 0.6,
+            "decision_action": 0,
+            "evidence": 0.83,
+            "actionability": 0.52,
+            "anti_hype": 0.55
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179925193,
+                    "endTime": 1791179925382,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000202482",
+          "marketCost": "0.000202482",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000202482",
+          "inferenceCost": "0.000202482",
+          "inputInferenceCost": "0.000202482",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A99NS3KZH53Y6W81V7FTA"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:44.610Z"
+  }
+}

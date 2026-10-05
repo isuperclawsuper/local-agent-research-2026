@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1209680663477723137",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "30 分钟搞定个人情报站：Viking AI 搜索让前沿资讯实时推到面前",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247521013&idx=2&sn=5b131b80fc41bb583e9fc227484fbfe6",
+      "date": "2026-07-21T10:27:00.949Z",
+      "chars": 4020,
+      "text": "Viking AI 搜索\n2026-07-21 18:27\n北京\n小 V 是那种\"永远在追新\"的开发者。\n每天早上到公司，泡好咖啡打开电脑的第一件事，就是依次点开一长串书签栏：GitHub Trending 看看今天又冒出来什么新星项目，arXiv 刷一下最新的 AI 论文摘要，几个常看的技术博客要走一遍，各大厂的产品更新公告不能漏，还有几个微信群和社区论坛里也总藏着一手讨论。\n起初他觉得这是自己的信息优势——比别人更早知道新工具、新论文、新方向。那种\"我又发现了一个宝藏项目\"的兴奋感，但慢慢的，事情开始变味了。\n浏览器的标签页越开越多，经常一抬头就是十几个窗口挤在上面，想找昨天看到的那篇文章，翻半天收藏夹也想不起来存在了哪个文件夹里。更糟的是，真正有价值的线索开始被淹没：上午看到的一个有意思的开源项目，下午就被新的论文和产品动态冲得没影了；上周标记\"周末仔细读\"的深度文章，到了周末连标题都记不清。他像个在信息海洋里徒手捞鱼的渔夫，网撒得越来越大，真正捞上来的有用东西却越来越少。\n他想要的其实不是另一个更整齐的收藏夹，也不是把所有资讯简单堆到一个页面里。他真正想要的，是一个属于自己的\"前沿技术雷达\"——新内容进来时，能按他关注的方向自动分拣、主动推荐；想深挖某个方向时，可以直接搜；看到一条线索想继续追问时，还能顺着往下聊。\n如果从零开始搭这么一套系统，想想就头大。数据源要一个个接，爬虫要自己写，清洗规则要慢慢调，索引要建，推荐算法要配，问答能力还得接上大模型。最麻烦的是，这东西不能是一锤子买卖——今天导入的数据是新鲜的，过三天不更新，雷达就变成了旧闻仓库。\n他不是没尝试过自己解决。试过用 RSS 阅读器把所有源聚在一起，结果只是把\"开十几个标签页\"变成了\"在一个超长信息流里往下刷\"，信息噪音一点没少；也试过周末花半天时间写爬虫、搭 ES、做简单的关键词匹配，折腾完才发现，光是维护各个网站的爬虫规则就够喝一壶，更别说推荐和问答了，最后还是得回到手动刷的老路上。\n直到他偶然发现了一套组合：Viking AI 搜索及其搭配专门为 Agent 打造的智能体工具 SearchCLI。\nViking AI Search 本身是一个开箱即用的智能搜索服务，你把数据接进来，就能直接获得完整的搜索、推荐、问答一体化体验 —— 不用自己从零搭一套搜推系统，也不用分别对接多个服务，这三种能力是天然打通的。而 SearchCLI 就是专门给 Agent 和开发者准备的工具。它把从环境配置、数据接入到任务监控的整套流程都封装好了，小 V 完全不需要在这些底层环节分心 —— SearchCLI 会引导 Agent 精准爬取他关心的内容、完成数据清洗和结构化，再通过自带的 Connector 增量同步能力自动完成后续工作。从首批数据入库到后续新内容的持续更新，整个过程都是自动流转的：新内容一到位，就会顺滑地进入 Viking AI Search 完成索引，全程无感，不需要任何手动操作。\n小 V 本来以为要折腾一整天，没想到跟着 Agent 的引导走，整个流程三步就走完了。\n第一步：装好工具\n没有复杂的前置配置，也不用先研究半天产品文档。小 V 做的第一件事，就是把安装指令直接发给 Agent，让它自己把 SearchCLI 装好、配好。\n复制这句话给 Agent：\n“帮我按照这个安装文档，在我的真实终端里安装 SearchCLI，并在安装完成后执行\nvs --help\n确认可用：\nhttps://github.com/volcengine/SearchCLI/blob/main/docs/install-guide.md”\n工具装好后，只需要去火山引擎官网获取一组 AK/SK，作为接入 Viking AI Search 的鉴权凭据就可以了。\n如何获取 AK/SK：\n点击\n火山 AI 搜索首月体验版\n（\nhttps://console.volcengine.com\n），注册火山账号，获取 AK/SK 即可体验产品功能，\n首月仅需 9.9 元 🥰\n等安装和鉴权都跑完，小 V 又让 Agent 确认了一遍 SearchCLI 的可用状态，确保后续数据接入的路是通的。\n复制这句话给 Agent：\n“已经安装 SearchCLI，如何使用？”\n这一步花了不到十分钟。小 V 没敲几行命令，甚至没怎么看文档，基础环境就全部就绪了。\n第二步：接入数据\n环境准备好之后，就到了最核心的一步：把他关心的内容接进来。\n他还是没填任何配置表单，只是像提需求一样，把自己想追踪的内容和更新频率告诉了 Agent：哪些来源、要什么主题、多久更新一次。剩下的事都不用他管 —— SearchCLI 会引导 Agent 完成数据爬取、清洗和结构化，再通过 Connector 自动把数据同步进 Viking AI 搜索，爬虫调度和增量同步都会在后台自动跑起来。\n复制这句话给 Agent：\n请帮我启动一个定时爬虫任务，配置规则如下：从当前时间开始,每三天执行一次爬取任务，具体爬取内容包括：\n获取最近3天内微信公众号平台中浏览量较高的关于 AI 应用产品的推文\n获取最近3天内各大互联网厂商发布的 AI 模型和 AI 产品相关的最新产品报告文档\n在 arxiv 平台获取最新发布的关于 SparseAttention 主题的前20篇论文\n完成爬取后，将所有获取到的内容正确导入到 Viking AI 搜索系统中\n看着数据一条条流入系统，小V意识到，以前最让他头疼的数据接入问题，居然就这么无声无息地解决了。他不用为每个数据源写单独的接入脚本，也不用第一次导入完就担心下次更新怎么办 —— 从首批数据入库到后续定时抓取的新内容，整个流转都是自动的。\n他也完全不需要自己写监控、查日志，想确认链路状态的时候，只要问一句 Agent，就能看到爬虫是不是在正常跑、数据有没有持续同步进来，整个过程透明可控。\n复制这句话给 Agent：\n“帮我查看当前爬虫任务、Connector 数据接收任务，以及 Viking AI Search 导入任务的状态。”\n爬虫调度器在后台稳稳跑着，Connector 的同步游标在慢慢往前走，每一批新爬回来的内容都会被自动送进 Viking AI Search 建好索引。他不用再操心\"今天有没有新内容进来\"这件事了。\n第三步：体验产品\n等第一批数据索引完成，小 V 很快就使用 Agent 搭出了属于自己的前沿技术雷达页面。\nViking AI Search 已经把最核心的三种能力都准备好了——个性化推荐、全文语义搜索、多轮智能问答，这三种能力是天然打通的。Agent 只需要基于这三个接口做一层简单的前端封装，就能快速搭出一个能用的业务入口：每天打开能看到按关注方向推荐的新内容，想找特定主题可以直接搜，有疑问还能基于入库内容直接提问。\n问答能力尤其让人惊喜。看到推荐里感兴趣的内容，不用自己点进去逐篇读，直接提问就能获得基于全量入库内容的整理回答，系统还会标注参考了哪些来源，既能快速拿到结论，也能点进原文深挖细节，还支持多轮连续追问。\n想定向找某个方向的内容时，搜索体验也很顺滑。不管是搜技术关键词、论文标题还是产品名称，都能基于语义理解找到相关内容，而不只是简单的字符串匹配，找资料的效率比翻十几个标签页高太多。\n坐在电脑前看着自己的技术雷达真的跑起来 —— 新的论文已经入库，推荐列表里出现了他关心的方向，随便问一个问题都能得到有条理的回答 —— 小 V 还有点没反应过来。\n从他在对话框里敲下\"我想做一个自己的前沿技术雷达\"开始，到装完工具、配好数据源、第一批内容自动同步完成、搜推问三个能力全部能用，满打满算才过了三十分钟。\n放在以前，光是搭数据接入、写爬虫、调索引这几件事，可能就要花掉他一整个周末，更别说后续还要维护爬虫、更新数据、接问答能力。而现在，他甚至没怎么敲命令，也没去研究复杂的搜索技术文档，只是把自己想要什么说清楚，整条链路就跑通了。\n省流总结\n回头看整个过程，小 V 其实没有做什么复杂的开发工作。他既没有从零搭一整套搜推系统，也没有花几周时间写爬虫、调索引、对接模型。\n他做的所有事情，就是把自己的需求讲清楚：我想要一个每天自动更新的前沿技术雷达，持续追踪这几个方向的新内容。剩下的事情，Agent 负责把需求落地成实际的爬取和清洗任务，SearchCLI 引导 Agent 走通全流程并通过 Connector 自动完成数据同步，Viking AI Search 在背后承接搜索、推荐、问答的全部核心能力。\n这条路最大的价值，不是\"什么都不用做\"，而是把原来分散在各个环节、卡了开发者很久的脏活累活，都整理成了一条顺滑的路径。尤其是数据接入这个最大的门槛被彻底打平之后，你不用再在基础设施上耗几周时间，从想法到一个真正能用、会自己更新的产品入口，只要三十分钟。\n立即体验：让关心的内容自动来到你面前\n如果你也在做技术资讯聚合、企业知识库、内容推荐、智能客服或开发者工具，想把持续变化的数据变成可搜索、可推荐、可问答的真实体验，不如现在就从 Viking AI Search 和 SearchCLI 开始试一试。\nViking AI Search 产品页：\nhttps://www.volcengine.com/product/AI-Search-Rec\nSearchCLI GitHub 仓库：\nhttps://github.com/volcengine/SearchCLI\n别让每天出现的新线索，停在散落各处的信息源里。\n把你真正关心的内容持续接入 Viking AI Search，让新的发现每天主动来到你面前。\n点击\n阅读原文\n，立刻体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.54,
+        "peripheral": 0.38,
+        "transfer_agent": 0.08,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.63,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.21,
+        "2": 0.71,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.98,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.05,
+        "2": 0.07,
+        "3": 0.37,
+        "4": 0.42,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.52,
+      "probabilities": {
+        "0": 0.72,
+        "1": 0.15,
+        "2": 0.05,
+        "3": 0.06,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.94,
+      "probabilities": {
+        "0": 0,
+        "1": 0.13,
+        "2": 0.79,
+        "3": 0.08,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.5,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.82,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 0.52,
+      "probabilities": {
+        "0": 0.72,
+        "1": 0.11,
+        "2": 0.12,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.85,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5382,
+    "outputTokens": 173,
+    "totalTokens": 5555
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.65,
+        "anti_hype": 0.65,
+        "category": 0.41,
+        "decision_action": 0.66,
+        "evidence": 0.85,
+        "grounding": 0.32,
+        "relevance": 0.75
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "digitalocean",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179915582,
+                "endTime": 1791179915852,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000226044",
+      "marketCost": "0.000226044",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000226044",
+      "inferenceCost": "0.000226044",
+      "inputInferenceCost": "0.000226044",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A908ZAVJ0TWZV7RS3WSDB"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:35 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::4lzxd-1791179915537-89f4fac07be0"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.5,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.82,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.52,
+          "probabilities": {
+            "0": 0.72,
+            "1": 0.11,
+            "2": 0.12,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.54,
+            "peripheral": 0.38,
+            "transfer_agent": 0.08,
+            "transfer_business": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.52,
+          "probabilities": {
+            "0": 0.72,
+            "1": 0.15,
+            "2": 0.05,
+            "3": 0.06,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.94,
+          "probabilities": {
+            "0": 0,
+            "1": 0.13,
+            "2": 0.79,
+            "3": 0.08,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.85
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.98,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.05,
+            "2": 0.07,
+            "3": 0.37,
+            "4": 0.42,
+            "5": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.63,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.21,
+            "2": 0.71,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5382,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.65,
+            "anti_hype": 0.65,
+            "category": 0.41,
+            "decision_action": 0.66,
+            "evidence": 0.85,
+            "grounding": 0.32,
+            "relevance": 0.75
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "digitalocean",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179915582,
+                    "endTime": 1791179915852,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000226044",
+          "marketCost": "0.000226044",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000226044",
+          "inferenceCost": "0.000226044",
+          "inputInferenceCost": "0.000226044",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A908ZAVJ0TWZV7RS3WSDB"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:35.072Z"
+  }
+}

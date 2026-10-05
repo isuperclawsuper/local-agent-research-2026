@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1127438012951597056",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI Infra入门干货总结：大模型是如何高效推理的",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801625&idx=1&sn=7c7a7d2148c6907f65c9f747717b3197",
+      "date": "2026-05-25T09:36:00.354Z",
+      "chars": 19988,
+      "text": "原创\n腾讯程序员\n2026-05-25 17:36\n广东\n2个月深入阅读vLLM源码的心得\n作者：binnnliu\n看了很多的文章和视频，我以为我理解大模型的工作原理了，直到看了vLLM的代码，我发现很多地方理解的太过表面。因此花了大概2个月的业余时间，深入阅读了vLLM的源码，本文算是对于学习代码的一个总结。另外由于当前主流LLM都是 Decoder-Only 架构，本文会聚焦LLM，不会像网络上其他介绍Transformers的文章从原始论文的 Encoder-Decoder架构讲起。\n在阅读 vLLM 源码的过程中发现，追踪推理过程中每一步的张量维度变化，对于理解大模型工作原理非常有用。因此，本文将以 Llama 3为例，介绍推理过程中的每个计算环节，在每个计算环节都会标注Tensor的维度变化。\n我们知道通过批处理可以提高GPU的利用率：本质是提升计算强度，即通过复用权重数据来均摊内存访问开销；而减少Kernel启动开销与通过海量warp充分发挥隐藏延迟仅是随之而来的次要优化。而批处理内的请求要步调一致，同时开始，同时结束。而对于LLM这类生成式任务，其核心矛盾在于每个请求的输出序列长度是不可预测且差异巨大的。那怎么办呢？\n有没有可能将调度的从request level下沉到token level呢？ 恭喜你发明了continuous batching。\n那每个请求的KV Cache显存申请是不是应该也是token level，不要一次申请所有的显存。搞一个地址数组(block table)来维护每个请求的KV Cache地址就好？ 恭喜你发明了Paged Attention。\n没错，以上两个概念是当今大模型得以高性能运行的关键。\n连续批处理 (Continuous Batching)\n在vLLM调度器的视角中，不存在Prefill 阶段和Decode阶段的区分。 每个请求主要关注：\nnum_computed_tokens：已经计算过的 token 数（含 Prefix Cache 命中的部分）\nnum_tokens：该请求当前总共拥有的 token 数（prompt + 已生成的 output）\n每一步调度的目标就是：让\nnum_computed_tokens\n追上\nnum_tokens\n。差多少就调度多少——当然要受限于 token 预算。\n调度受4个硬性约束限制：\n最大并发请求数\nself.max_num_running_reqs = scheduler_config.max_num_seqs\ntoken budget   单步最多计算多少 token（所有请求之和），控制 GPU 计算量上限\nself.max_num_scheduled_tokens = (\nself.scheduler_config.max_num_scheduled_tokens\n# 优先用这个\nif\nself.scheduler_config.max_num_scheduled_tokens\nelse\nself.scheduler_config.max_num_batched_tokens\n# fallback\n)\n模型最大序列长度\nself.max_model_len = model_config.max_model_len\n是否还有空闲的KV Cache blocks\n如上图所示，vLLM的每轮推理都会基于token level调度，后续的执行的输入都是类似input_ids这种打平的token数组，即Flattened。(这里的调度逻辑是在Tokenize之后, 本文后续的num_sched_tokens都对应上图中的total_num_scheduled_tokens)\nPaged Attention\nvLLM启动时会申请显存 kv_cache shape为：\n[num_layers, 2, num_blocks, block_size, num_kv_heads, head_dim]\n，每一层key_cache和value_cache的shape都是\n[num_blocks, block_size, num_kv_heads, head_dim]\n。\nblock_table会记录每个请求分配到的物理块ID，shape为\n[max_num_reqs, max_num_blocks_per_req]\n，请求0分配了块\n[5, 8, 12]\n，请求1分配了块\n[3, 7]\n为什么\nslot_mapping\n和\nblock_table\n不需要\nnum_layers\n维度？\n如果一个请求的第 25 个 Token 被分配到了物理块 ID 为\n8\n的位置，那么在模型的\n第 0 层到第 31 层\n，这个 Token 的 KV 值都会被存储在物理块\n8\n的相同位置。\n而推理过程中，通过slot_mapping告诉kernel 把新产生的 KV 写到哪个 slot，通过block_table告诉 kernel 去哪些物理 block 读取 KVCache。\n# slot_idx对应token对应的最终存储位置:  slot_idx = block_idx * block_size + block_offset\nconst int64_t slot_idx = slot_mapping[token_idx];\nconst int64_t block_idx = slot_idx / block_size;     // 计算块索引\nconst int64_t block_offset = slot_idx % block_size;  // 计算块内偏移\n比如：\nblock_size = 16\n（每个块存储16个token）,请求0的block_table为：[5, 8, 12]，token位置为25，计算过程：\nblock_idx = 25 // 16 = 1（属于第1个虚拟块）\nblock_idx = block_table[0, 1] = 8（从页表查找物理块ID）\nblock_offset = 25 % 16 = 9\nslot_idx = 8 * 16 + 9 = 137\nPagedAttention 的虚拟页表机制解决了显存碎片的问题，极大地提升了 GPU 的显存利用率，是支撑 Continuous Batching 高性能推理的基础。\n然而PagedAttention 引入的 block_table 间接寻址机制，打破了一个请求在物理显存上的绝对连续性。当 Attention Kernel 跨越 block 读取历史 KVCache 时，会触发离散访存（Uncoalesced Access），这在底层对 Memory Controller 是非常不友好的，同时也会导致 L2 Cache 的命中率下降，带来一定的带宽折损。当然，系统设计从来都是 Trade-off。\nvLLM 通过设置合理的 block_size（默认通常是 16）来缓解这个问题：在一个 block 内部的 16 个 Token 的物理显存依然是连续的，能够保证高效率的合并访存。相比于因显存碎片导致的OOM，牺牲少部分的访存带宽换取整个系统吞吐量（Throughput）的大幅跃升，在 LLM 推理的整体逻辑中是划算的。\nLLM推理流程\nTokenize\n对用户输入提示词进行分词并转换为数字表示。目前主流 LLM 几乎全部使用 BPE（Byte Pair Encoding）。\nBPE的词表训练方式如下：\nEmbedding Lookup\nEmbedding Lookup 本质上是一个查表操作，它将一维的 Token ID 数组\n[num_sched_tokens]\n直接转化为\n[num_sched_tokens, hidden_size]\n的特征矩阵，作为进入大模型真正意义上的数学输入。\n理论实现\n目标矩阵\n计算公式\n输入\n维度\n权重矩阵\n维度\n输出结果维度\n备注\nEmbedding\n[batch_size, seq_len]\n[V, hidden_size]\n[batch_size, seq_len, hidden_size]\n本质是索引取值，而非矩阵乘法\nvLLM中的实现\n目标矩阵\n计算公式\n输入\n维度\n权重矩阵\n维度\n输出结果维度\n备注\nEmbedding\n[num_sched_tokens]\n[V, hidden_size]\n[num_sched_tokens, hidden_size]\nFlattened 布局\n将 Batch 中所有请求的有效 Token 拼接为一维长向量，彻底消除 Padding。\nTransformer Block\nAttention Module (以标准GQA + RoPE为例)\nRMSNorm\n为了保证大模型在神经网络中的数值稳定性，必须引入特征归一化（Normalization）机制。与传统 LayerNorm 要求同时缩放与平移不同，为了提升计算效率，现代大模型广泛为采用了 RMSNorm ：砍掉平移操作，仅沿特征维度对数据进行尺度缩放，能够有效防止前向传播中的方差膨胀与硬件数值溢出，从而极大缓解反向传播时的梯度异常（消失或爆炸）问题，为深层网络的稳定训练提供基础保障。\n目标矩阵\n计算公式\n输入\n维度\n权重\n维度\n输出结果维度\n备注\nRMSNorm\n[num_sched_tokens, hidden_size]\n[hidden_size]\n[num_sched_tokens, hidden_size]\n是一维向量而非矩阵，做的是逐通道缩放而非 GEMM\nQ/K/V Linear Proj - Fused QKV\n目标矩阵\n计算公式\n输入 X 维度\n权重矩阵\n维度\n输出结果维度\n备注\nFused QKV\n[num_sched_tokens, hidden_size]\n[hidden_size,qkv_proj_size]\n[num_sched_tokens, qkv_proj_size]\n权重按列拼接，执行单次宽矩阵 GEMM\n4096 (Q) + 1024 (K) + 1024 (V) = 6144\nReshape & Cache\n目标矩阵\nQ, K, V Slice\nRoPE(维度不变)\nMulti-Head Reshape\n备注\nQuery (\n)\n[num_sched_tokens, hidden_size]\n[num_sched_tokens,num_heads,head_dim]\n前 4096 列\nKey (\n)\n[num_sched_tokens, kv_channels]\n[num_sched_tokens,num_kv_heads,head_dim]\n中间 1024 列\nValue (\n)\n[num_sched_tokens, kv_channels]\n[num_sched_tokens,num_kv_heads,head_dim]\n最后 1024 列\n注：\n是一个块对角旋转矩阵，实际实现中通过元素级 sin/cos 运算避免矩阵乘法。\n这个阶段的大概流程： QKV 按列拆分 -> 对Q、K进行RoPE计算 -> Q、K、V Reshape多头视角  -> 然后reshape_and_cache按照slot_mapping Scatter写入Paged KVCache。\nRoPE 的核心思想就是：\n用旋转的角度来代表 Token 的位置\n。 虽然不是矩阵乘法，sin/cos 属于超越函数，在 GPU 上由 SM 内的特殊函数单元（SFU, Special Function Unit）执行。SFU 的吞吐量通常仅为 FP32 ALU 的 1/4。所以VLLM中不在 RoPE kernel实时计算sin/cos ，而是引擎初始化时按模型配置预计算好 cos_sin_cache，shape 为 [max_position_embeddings, rotary_dim]。 RoPE kernel 运行时按 positions 索引出对应的 cos/sin 行，与 Q/K 做逐元素乘加即可。本质是用一份小表（典型大小几 MB 到几十 MB）换掉每次 forward 几百万次的 sin/cos 调用——经典的空间换时间 /访存换算力。\nAttention (FlashAttention, Scaled Dot-Product Attention)\n读取请求对应 KV Cache 进行 FlashAttention 计算。\nSoftmax 的核心原理可以用一句话概括：将一组任意的实数（通常称为 Logits），转化为一套总和为 1 的概率分布，同时放大差异。ps: 这里的\n为head_dim。\n感觉Attention的逻辑是整个LLM推理最复杂的地方了：\nAttention 的数学逻辑并不复杂，但是为了提升计算强度，打破内存墙，业界在这里做了非常多的优化，比如FlashAttention；\n其他阶段基本都是Token维度打平的，而Attention计算必须要在请求维度进行运算。\n特别注意: 在进入Attention kernel之前，需要从全局Flattened视角\n[num_sched_tokens, ...]\n切换到请求维度视角\n[batch_size, ...]\n。这是因为Attention计算本质上是请求内部的操作，不同请求的KV Cache不能交叉。vLLM/FlashAttention通过\ncu_seqlens\n（累积序列长度）数组来实现这种变长序列的请求级隔离，而无需真正Reshape为\n[batch_size, ...]\n的规整张量。 这里的K和V Shape算子逻辑上为\n[batch_size, num_kv_heads, seq_len, head_dim]\n，而不同请求的seq_len肯定不一致。实际上在cuda算子层已经确保了不同请求不会分配到同一个 thread block，即保证这里的运算是请求维度隔离的。\nK的Shape为\n[seq_lens, num_kv_heads, head_dim]\n，包含当前请求所有历史的KCache，seq_lens是所有历史KV对应的Token长度，但物理上，由于Paged Attention机制，这些历史K Cache并非连续存储，而是离散分布在HBM的物理块中（即底层实际Shape为[num_blocks, block_size, num_kv_heads, head_dim]）。Kernel在执行时，会通过 block_table 动态间接寻址，在片上SRAM中将其拼凑为逻辑上的连续序列参与计算。\nV的Shape为\n[seq_lens, num_kv_heads, head_dim]\n，包含当前请求所有历史的VCache\nQ的Shape为\n[query_lens, num_heads, head_dim]\n，query_lens是本次Q对应的Token长度\n操作名称\n数学公式\n逻辑说明 / 目的\nGQA分组共享\n1 KV Head 映射给 4 Q Head\n把KV的Shape从\n[seq_lens, num_kv_heads, head_dim]\n变为\n[seq_lens, num_heads, head_dim]\n逻辑上等价于将1个KV Head的数据广播给4个Q Head；物理实现中通过索引映射kv_head_idx = q_head_idx // (num_heads // num_kv_heads)避免显存复制。\nQ-K Dot Product\n查询Query和该请求所有Key的点积，注意力原始分数。->\n[query_lens, num_heads, seq_lens]\nScale\n对原始分数进行数值缩放（\n为向量维度），防止 Softmax 函数进入梯度极小的区域。\nMask\n注入因果逻辑，通过加上掩码矩阵\n（通常将未来位置设为\n），阻止模型“看到”未来的信息。\nSoftmax\n将处理后的分数转化为总和为 1 的注意力权重（概率）。->\n[query_lens, num_heads, seq_lens]\nMatMul\n根据注意力权重\n对值向量（Value）进行加权求和，得到最终的\n输出特征表示\n。\nV的Shape为\n[seq_lens, num_heads, head_dim]\n->\n[query_lens, num_heads, head_dim]\nAttention 的数学逻辑非常清晰，但在大模型推理（尤其是长文本 Prefill 阶段）中，如果严格按照数学公式分步执行，会在 GPU 的 HBM（全局显存）中产生庞大的中间矩阵\n（注意力分数）和\n（Softmax概率），其\n的内存访问量会严重影响性能，即所谓的内存墙问题。\n为了打破这个瓶颈，vLLM 默认采用 FlashAttention 及其变体（如 Flash-Decoding）。FlashAttention 的核心思想是 Kernel 融合 (Kernel Fusion) 与 分块计算 (Tiling)。但分块计算面临一个致命的数学障碍：Softmax 操作需要知道全局的最大值和指数和才能计算，这通常要求完整的中间矩阵驻留在显存中。FlashAttention 巧妙地引入了\nOnline Softmax\n算法，通过维护局部的当前最大值（Running Max）和当前指数和（Running Sum），并在读入新块时利用动态缩放因子（Rescaling Factor）对旧结果进行修正。\n正是凭借 Online Softmax，FlashAttention 成功解除了全局数据依赖，将从 Q-K 点积、Softmax 到乘 V 的整个逻辑步骤，融合成了一个单一的 CUDA Kernel。在物理执行上，它一块一块地在 SRAM 中完成计算，彻底避免了将庞大的中间矩阵\n和\n读写 HBM，从而大幅打破了内存墙限制。\nPrefill 阶段，seq_lens 和 query_lens 都是num_prompt_tokens。当前 Prompt 计算出的 KV 向量先被 reshape_and_cache_flash 按 slot_mapping 写入 Paged KV Cache，随后 attention kernel 通过block_table 从 cache 中读取 K/V 完成本层 attention 计算；这份写入同时也作为该序列的 KV Cache，供后续 decode 步骤复用。\nvLLM v0中prefill和decode 走两条独立分支：prefill 通过\nattn_metadata.is_prompt == True\n调\nflash_attn_varlen_func\n，kernel直接读临时的物理上连续的HBM buffer 里的 K/V，不读 cache；decode 走\npaged_attention_v1/v2\n，K/V 全部从 cache 读。v1 把两路统一成一次\nflash_attn_varlen_func\n调用，K/V 全部走 paged cache + block_table，代价是 prefill 多一次\"写 cache → 读 cache\"的间接寻址，换来对 prefix cache / chunked prefill 的天然支持。\n只有v0版本 FlashAttention不读KV Cache，因为 v0 没有 prefix cache / chunked prefill。\nV1中即便某些 backend（如 FlashInfer、MLA-sparse）把混合 batch 物理拆分成prefill / decode 两个独立 kernel 调用,prefill 仍然从 paged cache 读 K/V - 因为 v1 需要支持 prefix cache 和 chunked prefill 。\nDecode阶段，seq_lens为已计算的历史 token 总数， query_lens为1。\n对比Prefill和Decode，可以发现：\nPrefill阶段：QKV_Proj、Attention、O_Proj、MLP 本质上都是稠密矩阵乘法（GEMM），其实就是通过请求内token-level计算复用模型权重，因此算术强度极高，使得 GPU 在 Prefill 阶段主要受限于 Tensor Cores 的物理算力峰值，属于计算密集型（Compute-bound）。\nDecode阶段：由于自回归特性，每次只处理一个 Token（\nquery_lens = 1\n），若无优化，此时QKV_Proj、Attention、O_Proj、MLP全都退化为矩阵向量乘法（GEMV）。虽然计算量不大，但需要把巨大的 KV Cache和模型权重 从 HBM 搬运到 SRAM，非常吃显存带宽，因此Decode阶段是典型的访存密集型（Memory-bound）。\n而 Continuous Batching 的价值在于在Prefill实现请求内复用模型权重的基础上，进一步通过token-level的调度让多个请求复用模型权重，将 QKV_Proj、O_Proj、MLP 重新变回矩阵乘法，极大地摊薄了读取权重的显存开销。\n但是Attention则比较特殊，由于每个请求必须读取自己独占的 KV Cache（无法跨请求共享），而且Decode每次只处理一个 Token，Attention 计算始终无法均摊访存开销。此外，由于当前 Query 必须与所有历史 Key/Value 交互，哪怕有KVCache的存在，其计算与访存量也是随着上下文长度\n呈\n线性膨胀。这里特别注意其实Prefill阶段每次处理num_prompt_tokens个Token，Attention 计算是可以均摊访存开销的。\nps: 所以其实我们日常所说的Prefill是Compute-bound，Decode是Memory-bound，主要是基于 1. 从 HBM 读取模型权重的访存摊销， 2. 从 HBM 读取模型KV的访存摊销。\nMulti-Head Concatenation\n操作名称\n逻辑说明\nvLLM 输入维度\n输出结果维度\n备注\nConcat / Flatten\n消除多头维度，恢复隐藏层维度\n[num_sched_tokens, num_heads, head_dim]\n[num_sched_tokens, hidden_size]\n物理内存通常已经是连续的，这里本质上是一个改变 Tensor View 的操作。 (hidden_size = num_heads * head_dim)\nO_Proj - 线性融合 (Output Projection)\n目标矩阵\n计算公式\n输入\n维度\n权重矩阵\n维度\n输出结果维度\n备注\nO_Proj\n[num_sched_tokens, hidden_size]\n[hidden_size, hidden_size]\n[num_sched_tokens, hidden_size]\n跨 Head 的信息交互与融合。这也是一次标准的稠密矩阵乘法（GEMM / GEMV）。\nResidual Connection\n不要推翻重来，而是在原有的基础上学习“修正值”（Delta）。如果没有 ResNet 证明网络可以堆到 100 层以上且不梯度消失，后来的 BERT (24层) 和 GPT (96层+) 根本不敢设计得那么深。\n它是“Scaling Law”在架构上的物理基础。\n目标矩阵\n计算公式\n输入\n维度\n输入\n维度\n输出结果维度\n备注\nResidual Add\n[num_sched_tokens, hidden_size]\n[num_sched_tokens, hidden_size]\n[num_sched_tokens, hidden_size]\n是\n进入这一层 RMSNorm 之前\n的原始输入。将注意力机制提取的新特征“加回”主干数据流中。\n实际vLLM中，Residual Add会和下一步的RMSNorm融合成一个 CUDA kernel。\nFFN\nRMSNorm\n对\n再进行一次归一化。在 vLLM 中，通常与上一层残差相加（Residual Add）融合，减少 HBM 读写。\nGate_Proj & Up_Proj\n通常 intermediate_size 是 hidden_size 的 4 倍左右 (或 8/3 倍)。\n目标矩阵\n计算公式\n输入 X 维度\n权重 W 维度\n输出维度\nGate Proj\n[num_sched_tokens, hidden_size]\n[hidden_size, intermediate_size]\n[num_sched_tokens, intermediate_size]\nUp Proj\n[num_sched_tokens, hidden_size]\n[hidden_size, intermediate_size]\n[num_sched_tokens, intermediate_size]\nvLLM 工程实现（Fused Gate/Up）\n为了减少 GPU 核函数启动（Kernel Launch）次数并充分利用内存带宽，vLLM 在加载模型时会将\n和\n按列拼接。这样原本两次中等规模的矩阵乘法，就变成了一次宽矩阵 GEMM。\n目标矩阵\n计算公式\n输入 X 维度\n权重 Wgate_up 维度\n输出维度\nFused Gate/Up\n[num_sched_tokens, hidden_size]\n[hidden_size, 2*intermediate_size]\n[num_sched_tokens, 2*intermediate_size]\nActivation\nSiLU(Gate) * Up\n。vLLM 使用\nsilu_and_mul\nkernel 在片上（SRAM）直接输出点乘结果，极大节省了显存带宽。\n操作名称\n数学公式\n物理实现说明\nSlice & Act\n为\n前一半，\n为后一半。\nDown_Proj\n目标矩阵\n计算公式\n输入\n维度\n权重\n维度\n输出结果维度\nDown Proj\n[num_sched_tokens, intermediate_size]\n[intermediate_size, hidden_size]\n[num_sched_tokens, hidden_size]\nResidual Connection\nx = x + FFN_Output\nclass\nLlamaMLP\n(nn.Module)\n:\ndef\n__init__\n(self, config)\n:\nsuper().__init__()\n# 通常 intermediate_size 是 hidden_size 的 4 倍左右 (或 8/3 倍)\nself.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=\nFalse\n)\nself.up_proj   = nn.Linear(self.hidden_size, self.intermediate_size, bias=\nFalse\n)\nself.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=\nFalse\n)\nself.act_fn = nn.SiLU()\ndef\nforward\n(self, x)\n:\n# 1. Gate 和 Up 分别进行 Linear 变换\n# 2. Gate 经过 SiLU 激活\n# 3. 两者相乘 (Element-wise multiplication) -> 这就是 GLU (Gated Linear Unit)\n# 4. 最后经过 Down 投影回原维度\nreturn\nself.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))\nLM Head\n将隐藏层特征映射到整个词表空间，输出未归一化的原始得分，即\nLogits\n。\n在前面的 Transformer Block 中，Prefill 阶段的\nnum_sched_tokens\n是所有 Prompt 长度的总和。但实际上vLLM LM Head只需要每个请求序列的最后一个 Token 的特征用来预测下一个词，因此进入LM Head前会执行一次 Gather 操作。（Speculative Decoding、prompt_logprobs除外）\n更近一步，Prefill阶段Transformer Block的最后一层，attention 输出是 [num_sched_tokens, hidden_dim]，但实际上只需要最后一个 token 的 hidden_state 来做 logits 计算（因为之后没有更多的 layer 需要完整的 hidden_states 了）。所以理论上最后一层的MLP（以及 LayerNorm）可以只对需要采样的 token 计算，节省大量计算。\n如果只需要最后一个 token 的生成结果，那么在最后一层（Last Layer）：\n必须要算的部分：所有 token 的\n和\n（因为这层的 KV cache 要存下来，供后续 Decode 阶段使用）。\n理论上可以只算最后一个 token：\n的投影、Attention 的计算（其实退化成了 Decode 阶段的 Flash-Decoding 计算）、LayerNorm、以及庞大的 MLP。\n但是vLLM中最后一层还是老老实实把所有 query_lens 都算了一遍，本质上是工程与物理极限的 Trade-off。\nRMSNorm\n最后再来一次归一化（防止数值过大）。\nLinear (LM Head)\n目标矩阵\n计算公式\n输入\n维度\n权重矩阵\n维度\n输出结果维度\n备注\nLM Head\n[num_reqs, hidden_size]\n[hidden_size, vocab_size]\n[num_reqs, vocab_size]\nnum_reqs\n即当前 Batch 中的请求数量。\n以 Llama-3-8B 为例，\nvocab_size\n高达 128256，这是一个极庞大的矩阵，vLLM 通常会使用张量并行（TP）按列切分该权重以加速计算。\nSampling\n保存原始 Logprobs\n如果用户请求了 logprobs（对数概率），Sampler 会在任何处理之前，先对原始 logits 做一次\nlog_softmax\n快照保存。这样返回给用户的概率分布反映的是模型的真实输出，不受后续 penalties / temperature 等采样参数的干扰。\n{\n\"token\"\n:\n\"Hello\"\n,          // 实际被选中的 token\n\"logprob\"\n: -0.01523,       // 该 token 的对数概率 (log_softmax 的结果)\n\"bytes\"\n: [72, 101, ...],   // token 的 UTF-8 字节表示\n\"top_logprobs\"\n: [          // 概率最高的前 N 个 token (用户通过 logprobs=N 指定)\n{\n\"token\"\n:\n\"Hello\"\n,\n\"logprob\"\n: -0.01523    // ln(0.985) ≈ -0.015, 即 98.5% 概率\n},\n{\n\"token\"\n:\n\"Hi\"\n,\n\"logprob\"\n: -4.32185    // ln(0.013) ≈ -4.32, 即 1.3% 概率\n}\n]\n}\nLogits Process\n在得到原始 Logits 后、进行 Softmax 概率转化前，会经过一系列后处理操作，用于干预最终的生成结果：\n白名单过滤\n结构化输出（JSON schema）：配合 grammar bitmask，每一步动态计算当前合法的 token 集合。\n情感分类：只允许输出\n\"positive\"\n/\n\"negative\"\n/\n\"neutral\"\n对应的 token。\n多选题：只允许输出\nA\nB\nC\nD\n。\n黑名单过滤\nNon-argmax-invariant Logit Processors\nRepetition Penalty (重复惩罚): 根据历史 Token，对已生成过的词汇扣除分数，防止模型变成“复读机”。\n采样\n每个请求的采样策略可以是Greedy或Random，由用户设置的\ntemperature\n决定\n@cached_property\ndef\nsampling_type\n(self)\n-> SamplingType:\nif\nself.temperature <\n1e-5\n:\n# < 0.00001 就是 greedy\nreturn\nSamplingType.GREEDY\nreturn\nSamplingType.RANDOM\nGreedy 先行：在 temperature 缩放之前，先对当前 logits 执行一次\nargmax\n，保存为\ngreedy_sampled\n。\n如果整个 batch\n全是 greedy\n（所有请求的\n），到这里就直接返回，后续步骤全部跳过。\n这一步必须在 temperature 之前做，否则 greedy 请求的 logits 会被不必要地除以 temperature 导致精度损失。\nTemperature Scaling：\nLogits = Logits / Temperature\n。\n: 拉大分数差距。高分越明显，低分被压得更低。模型变得\n保守、确定\n。\n: 缩小分数差距。分布趋向均匀。模型变得\n随机、有创造力\n（但也容易胡说八道）。\n对于\n的 greedy 请求，此处会用\n跳过除法（避免除以零），它们的最终结果由 Step 1 的\ngreedy_sampled\n决定。\nArgmax-invariant Processors（如 min_p）：\nmin_p是目前唯一的 argmax-invariant 处理器。其规则为：概率不到token最高概率的 min_p倍的 token，全部淘汰。>公式：阈值 =\n，低于阈值的 token 得分设为\n。\n示例（\nmin_p = 0.1\n，\n，阈值 = 0.04）：\nmin_p 的核心价值在于\n自适应\n：\n最高概率的 token 自身永远不会被砍（因为\n），所以 argmax 结果不变。\n模型很确定时（\n）：阈值 = 0.09，砍得多，几乎只剩最优解。\n模型不确定时（\n）：阈值 = 0.008，砍得少，保留充分的探索空间。\nTop-K 截断：只保留分数最高的\n个 Token，其余得分全部设为\n。\nTop-P  Masking：按分数从高到低排序并累加 softmax 概率，保留累积概率刚好超过\n的前若干 Token，尾部 Token 得分设为\n。\nSoftmax + Gumbel-Max 采样  确保结果的随机性         公式：\n，其中\nGumbel-Max 用加噪求最大值替代了传统的轮盘赌算法。它将原本需要串行计算前缀和的采样过程，转化为完全独立的 element-wise 并行运算，打破了超大词表下的全局数据依赖。\nprobs = logits.softmax(dim=\n-1\n)\nq.exponential_()\nprobs.div_(q).argmax(dim=\n-1\n)\n最终选择：逐请求按 temperature 决定使用哪个结果\nfinal = where(temperature <\n1e-5\n,\ngreedy_sampled,\n# 该请求用贪心结果\nrandom_sampled)\n# 该请求用随机结果\noutput得到\nNext Token ID\n，并将其追加到 Input 序列中，进入下一轮循环。\n总结\n是的，戛然而至。本文主要讲述了经典的大模型推理的全流程，想要真正理解大模型的推理流程理解shape的变化真的很重要。笔者有意克制发散的思维，专注整个推理流程，很多的原理和概念都没有提。后续可以围绕这个基础展开，\n比如数学基础：Softmax、RMSNorm原理、RoPE\n比如Attention计算遇到了内存墙问题\n导致了 DeepSeek MLA/DSA、线性注意力等的产生，本质是减少KVCache的读取；\n导致了FlashAttention的产生的，本质上是利用IO Aware、重计算提升计算强度；\n比如为什么要MoE  scaling law模型不断增大，计算量随参数线性增大，而参数占比的大头又在MLP层，那就把MLP层拆分，美其名曰不同专家，每次执行仅激活部分参数, 其本质就是将现有FFN层拆分成多个，然后增加路由，每次可以激活不同专家组。\n比如模型太大了，TP、PP、DP、EP、SP、CP，了解了本文的数据流shape变化，TP理解就变的相当容易。\nColumn Parallelism (列切分)：\nFused QKV 和 FFN 的 Fused Gate/Up 都是列切分。例如 QKV 的权重维度在单卡上会变成\n[hidden_size, qkv_proj_size / TP_size]\n，输出也相应变成\n[num_sched_tokens, qkv_proj_size / TP_size]\n。\nRow Parallelism (行切分)：\nO_Proj 和 FFN 的 Down_Proj 是行切分。权重变为\n[hidden_size / TP_size, hidden_size]\n。计算完成后，通过\nAllReduce\n算子来聚合跨卡结果。\n比如长上下文时， chunked prefill 到 Flash-Decoding 到 SP 本质是不同维度的prompt的拆分，不过是在解决不同问题，chunked prefill 避免超长 Prompt的新请求影响其他请求，无论是正在处理的 decode 请求还是待处理的其他 prefill 请求， Flash-Decoding 通过 KV 维度的切块（Split-K）提升了 Decode 阶段的 SM（流处理器）利用率，SP (Sequence Parallelism) 则是解决单卡显存塞不下超长上下文的问题。（Flash-Decoding，Sequence Parallelism靠Log-Sum-Exp实现跨 SM或者跨卡的归一化）\n再来感叹一句，单从推理来看，大模型的原理其实真没那么高深莫测，最难的数学公式怕是要数RoPE了。但是AI Infra的东西真的多～～ 根本学不完，不像agent方向整天重命名上下文工程🐶。（提示词工程、function calling、 rag、mcp、memory、agent开发、skills、openclaw、上下文工程、harness工程、hermes）\n附1：模型配置参数\n标准变量名\n数值 (Llama-3-8B)\n物理含义说明\nhidden_size\n4096\n隐藏层总维度，也是 Q 向量的总宽度。\nnum_heads/num_q_heads\n32\nQuery 的头数。决定了注意力机制的并行度。\nnum_kv_heads\n8\nKey/Value 的头数。GQA 架构中用于压缩缓存。\nhead_dim/head_size\n128\n单个头的维度。公式\n中的\n。\nkv_channels/kv_dim\n1024\n单侧（K 或 V）矩阵的总宽度 (\nnum_kv_heads*head_dim\n)。\nqkv_proj_size\n6144\nFused QKV 层的输出总宽度 (\nhidden_size + kv_channels*2\n)。\nintermediate_size\n14336\nFFN 内部升维后的维度（通常为\n）。\nfused_ffn_size/gate_up_proj_size\n28672\nFused Gate/Up 层的输出总宽度 (\nintermediate_size*2\n)。\nvocab_size\n128256\n词表大小。决定了 LM Head 的输出矩阵尺寸。\nnum_hidden_layers\n32\nTransformer Block 的层数。\nrope_theta\n500000.0\nRoPE 旋转位置编码的 base theta 值。\n附2：推理运行时变量\n标准变量名\n数值 (Llama-3-8B)\n物理含义说明\nnum_prompt_tokens\n100\nprompt 长度\nnum_tokens\n105\nprompt + 已生成 output\nnum_computed_tokens\n105\n已计算的历史 token 总数\nnum_sched_tokens\n1\n本次要计算 1 个新 token（decode），其实就是flatten的query_lens\nseq_lens\n106\nKV Cache 总长度 = 105 + 1\nquery_lens\n1\n本次 Q 的长度\n附3：推理运行时变量\nLLM是有多层的，以\nLlama3 8B\n为例模型的权重组成如下：\n组件\n权重名称\n参数量维度\n占比\n本质与说明\nEmbedding\nembed_tokens.weight\n[128256, 4096]\n~6.5%\n查表矩阵\nAttention\nq_proj\n[4096, 4096]\n(×32层)\n~15.9%\n4 个 Linear 矩阵，无 bias\n。 由于 GQA，K/V 矩阵比 Q 小很多。\nk_proj, v_proj\n[1024, 4096]\n(×32层)\no_proj\n[4096, 4096]\n(×32层)\nMLP\ngate_proj, up_proj\n[14336, 4096]\n(×32层)\n~70.1%\n3 个 Linear 矩阵，无 bias\n，SwiGLU 激活。\n这是模型计算和参数量的绝对大头\n。\ndown_proj\n[4096, 14336]\n(×32层)\nInput Norm\ninput_layernorm.weight\n[4096]\n(×32层)\n< 0.01%\nRMSNorm 缩放一维向量。\nPost-Attn Norm\npost_attention_layernorm.weight\n[4096]\n(×32层)\n< 0.01%\nRMSNorm 缩放一维向量。\nFinal Norm\nnorm.weight\n[4096]\n(×1)\n< 0.01%\n最终进入 LM Head 前的 RMSNorm 向量。\nLM Head\nlm_head.weight\n[128256, 4096]\n~6.5%\n与 Embedding 维度一致，但\n独立存在不共享\n。\nMLP 层\n：参数占比 70%，FLOPs 占比也约 70%，是绝对的计算大头。\nAttention 层\n：参数占比仅 16%，但由于需要读取动态生长的 KV Cache，它是\n访存带宽\n的绝对大头。\n附4：vLLM调度详细流程\n抢占（Preemption)\n当 KV Cache blocks 不够分配时，调度器会\n抢占最低优先级的 RUNNING 请求\n——释放其全部 KV Cache、将\nnum_computed_tokens\n重置为 0、放回 WAITING 队列。被抢占的请求下次被调度时需要\n重新从头 Prefill\n。\nv0 时代，vLLM 有两种 preemption 策略：\nSWAP\n：把被抢占请求的 KV blocks 从 GPU HBM 搬到 host RAM 暂存，资源宽裕时再 swap in 回 GPU。\nRECOMPUTE\n：直接释放 GPU blocks，重新加入 waiting 队列走prefill 重算一遍。\nv1 把 SWAP 路径完全砍掉（\nLLM(swap_space=...)\n已废弃并 warn），\nScheduler._preempt_request\n只保留 RECOMPUTE 一条路。原因：\nPCIe 双向搬运 + host RAM 占用的开销，在 FA + 大 batch 下常常比重算一次 prefill 还贵\nchunked prefill 让重算可以分多步\"追上来\"，摊平开销\n架构上少一条路径，prefix caching / chunked prefill /continuous batching 的交互更干净\ndef\n_preempt_request\n(self, request, ...)\n:\nself.kv_cache_manager.free(request)\n# 释放 KV Cache\nrequest.status = RequestStatus.PREEMPTED\nrequest.num_computed_tokens =\n0\n# 重置，下次需要重新计算\nself.waiting.prepend_request(request)\n# 放回等待队列\n为什么 RUNNING 阶段分配失败会抢占，而 WAITING 阶段直接终止？\n这体现了调度器的核心原则：\n已在运行的请求优先级高于等待中的请求。\nRUNNING 请求\n：已经占用了 KV Cache、消耗了计算资源。如果因为内存不足无法继续，调度器会牺牲优先级最低的 RUNNING 请求（释放其 KV Cache）来保证其他请求能继续推进。这是值得的，因为放弃一个已运行的请求代价很高。\nWAITING 请求\n：还没开始计算，没有沉没成本。如果内存不足，直接停止调度即可，下一个 step 再尝试。\n为什么抢占后跳过 WAITING 调度？\n发生抢占意味着 KV Cache 已经非常紧张。此时不应该再引入新的 WAITING 请求，因为那会进一步加剧内存压力，可能触发更多抢占，形成恶性循环。\nReference\nAttention Is All You Need\nEfficient Memory Management for Large Language Model Serving with PagedAttention\nOrca: A Distributed Serving System for Transformer-Based Generative Models\nFlash-Decoding for long-context inference\nSARATHI: Efficient LLM Inference by Piggybacking Decodes with Chunked Prefills\nFlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness\nFlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning\nFlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision\nFlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling\nAI and Memory Wall\nHow GPU Computing Works | GTC 2021\nRoofline: an insightful visual performance model for multicore architectures\nKV Caching in LLMs, explained visually\n彻底搞懂KV缓存\nKV Caching in LLMs, Clearly Explained\nNeural Machine Translation of Rare Words with Subword Units\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.02,
+        "direct_local": 0,
+        "irrelevant": 0.77,
+        "peripheral": 0.21
+      }
+    },
+    "relevance": {
+      "score": 1.37,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.39,
+        "2": 0.49,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.08,
+      "probabilities": {
+        "0": 0.96,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.07,
+      "probabilities": {
+        "0": 0.9299999999999999,
+        "1": 0.06,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.61,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.01,
+        "2": 0.23,
+        "3": 0.71,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.25,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.16,
+        "2": 0.04,
+        "3": 0.08,
+        "4": 0.44,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.14,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.22,
+        "2": 0.13,
+        "3": 0.54,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 13676,
+    "outputTokens": 173,
+    "totalTokens": 13849
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.7,
+        "relevance": 0.58,
+        "grounding": 0.95,
+        "decision_action": 0.95,
+        "evidence": 0.73,
+        "actionability": 0,
+        "anti_hype": 0.41
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179967850,
+                "endTime": 1791179968037,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000574392",
+      "marketCost": "0.000574392",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000574392",
+      "inferenceCost": "0.000574392",
+      "inputInferenceCost": "0.000574392",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAKAQA7JN1XMVX8XMQRT1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:28 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::mznf4-1791179967484-3eef377839cd"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.02,
+            "direct_local": 0,
+            "irrelevant": 0.77,
+            "peripheral": 0.21
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.37,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.39,
+            "2": 0.49,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.08,
+          "probabilities": {
+            "0": 0.96,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.07,
+          "probabilities": {
+            "0": 0.9299999999999999,
+            "1": 0.06,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.61,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.01,
+            "2": 0.23,
+            "3": 0.71,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.25,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.16,
+            "2": 0.04,
+            "3": 0.08,
+            "4": 0.44,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.14,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.22,
+            "2": 0.13,
+            "3": 0.54,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 13676,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.7,
+            "relevance": 0.58,
+            "grounding": 0.95,
+            "decision_action": 0.95,
+            "evidence": 0.73,
+            "actionability": 0,
+            "anti_hype": 0.41
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179967850,
+                    "endTime": 1791179968037,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000574392",
+          "marketCost": "0.000574392",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000574392",
+          "inferenceCost": "0.000574392",
+          "inputInferenceCost": "0.000574392",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAKAQA7JN1XMVX8XMQRT1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:27.295Z"
+  }
+}

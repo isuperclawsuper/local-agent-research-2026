@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1241760314538627072",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "3万字长文带你WorkBuddy 从入门到精通",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803569&idx=1&sn=325170a0e2bd7117d51dfabbbd79539b",
+      "date": "2026-08-12T10:24:00.712Z",
+      "chars": 6500,
+      "text": "后你跟它交流时，它就会自动带入这个专业角色的知识和思维方式来帮你工作。\n截至目前，WorkBuddy 已包含31个专家团、213位专家，覆盖产品设计、技术工程、金融投资、游戏空间、数据智能、营销增长等14大品类，足以辅助绝大多数人的日常工作。\n技能\nVS 专家 VS 专家团\n维度 | 技能 | 专家（Agent型） | 专家团（Team型）\n组成关系 | 工具能力：让AI能做某件事 | AI顾问：懂某个领域的AI角色 | AI协作团队：自动拆解、并行执行、完整交付\n怎么选 | 需要AI具备某种工具能力 | 有一个明确的单点问题 | 任务复杂，需要多角色配合\n什么时候用专家\n/专家团\n，什么时候用普通对话？\n如果你的任务比较综合、没有特定领域倾向（比如\"帮我整理一下桌面的文件\"），直接用普通对话就够了。\n如果你的任务属于某个专业领域（比如\"帮我分析这份销售数据并给出运营建议\"），召唤一个对口的专家/专家团会得到更专业、更有针对性的结果。\n** 一句话总结：**专家中心就是一个\"AI 人才市场\"。按行业分类浏览，看中谁就召唤谁。同一个 AI，换上不同的专业身份，给你更专业的帮助。\n2.7 自动化：让 AI 每天按时帮你干活\n前面介绍的功能，都是你主动给 AI 下指令，它才开始干活。但有些事情是\n每天都要做、而且每次做的内容差不多的\n——比如每天早上整理行业新闻、每周五生成周报、每天下班前汇总当日数据。这些重复性的工作，何必每次都手动交代一遍呢？\nWorkBuddy 的\n自动化功能\n就是帮你解决这个问题的。\n你只需要设置一次，告诉它\"做什么\"和\"什么时候做\"，之后它就会像一个准时打卡的员工，到点自动开工，做完把成果放到指定的文件夹里，等你查看。\n2.7.1 如何设置一个自动化任务？\n打开自动化页面，点击“定时任务”可以看到已经安排的自动化任务，点击“运行记录”可以看到已完成的历史任务。\n点击右上角“添加”，你会看到一个配置表单，需要填的内容很直观：\n任务名称：给这个任务起个名字，方便你区分。比如\"每日行业新闻\"、\"周五周报汇总\"。\n提示词示例：告诉 AI 具体要做什么。就是你平时在对话框里输入的那种指令，比如\"帮我调研今天的 AI 行业新闻，整理成一份简报\"。\n工作空间：指定 AI 在哪个文件夹里干活，生成的文件也会保存在这里。比如你指定了\"每日新闻\"这个文件夹，那每天生成的简报都会自动存到这个文件夹下。\n定时规则：设定什么时间执行。可以按照每天或者间隔一定时间再执行来设定。\n选择模型和技能：指定模型和技能来执行这个任务，与前面介绍的模型选择和技能选择一样。\n推送到小程序：开启后，推送会把文件同步到云端，这样在微信小程序能接收到数据。\n举个例子\n假设你想让 AI 每天早上 8 点帮你整理行业新闻：\n任务名称填\"每日行业新闻简报\"。\n提示词写\"调研今天的 AI 行业最新动态，整理成一份简报，包含标题、摘要和来源链接\"。\n工作目录选择你电脑上的\"行业新闻\"文件夹。\n定时规则设为每天早上 8 点。\n选一个你常用的模型，打开推送到微信小程序的开关。\n设好之后，每天早上你打开电脑，\"行业新闻\"文件夹里就已经躺着一份新鲜出炉的简报了，就像有人每天给你送早报一样。\n2.7.2 预设模板：一键导入，开箱即用\n如果你不知道该怎么给 AI 下指令，或者懒得每次都从头写提示词，WorkBuddy 提供了\n预设模板功能\n。\n你可以把模板理解为别人\n帮你写好的\"任务说明书\"\n。比如\"竞品分析报告\"、\"周报生成\"、\"会议纪要整理\"这些常见的办公场景，都有对应的模板。你只需要选一个模板，点击一键导入，相关的提示词、工作流程就自动配置好了，你稍微改改里面的具体内容（比如把公司名换成你自己的），就可以直接用。\n譬如选择“每日 AI 新闻推送”模版，选择工作空间，切换模型即可直接上手使用。\n2.7.3 进阶玩法：干完活直接把结果发到你邮箱\n前面我们介绍了自动化功能——AI 按时干活，把成果存在指定文件夹里。但有时候你不方便打开电脑去翻文件夹，或者你就想第一时间看到结果。这时候可以用一个进阶玩法：打通邮件，让 AI 干完活直接把结果发到你邮箱。（详细配置见实践篇）\n配置好邮件之后，WorkBuddy 完成任务会自动把生成的文件通过邮件发送给你。无论你在哪里，打开手机邮箱就能收到。\n把它和自动化功能结合起来，效果就更强了。比如：\n你设了一个自动化任务：每天早上 8 点调研行业新闻。\n同时配好了邮件通知。\n那么每天早上你还没到公司，手机邮箱里就已经收到了一份整理好的行业简报。到了办公室打开电脑，文件夹里也有一份备份。你什么都不用做，AI 已经帮你把活干了，并且把结果送到了手边。\n一句话总结：\n预设模板让你不用从零开始写指令，一键导入就能用。邮件打通之后，AI 不光帮你干活，还会主动把成果\"送上门\"。\n2.7.4 进阶玩法：干完活直接把结果推送到WorkBuddy小程序\n还有另外一个进阶玩法：打通WorkBuddy小程序，让 AI 干完活直接把结果发到小程序上。（详细配置见3.2.2.6）\n打开配置后，WorkBuddy 可在任务执行完成后自动将结果发送至\nWorkBuddy小程序\n，便于第一时间查看。\n在小程序中查看推送结果\n2.7 我的文件\n点击更多、我的文件\n可以查看对话生成的文件\n点击后方的...可以根据自己的需求保存、分享、收藏对应文件\n不同类型的对话文件存在于不同分组\n点击全部类型，可以根据文件类型检索相应文件\n点击“云端网盘”，选择“上传文件”，可上传电脑文件至云端。\n在云端网盘的文件可以实现跨端同步\n2.8 资料库：借助 资料库，打造无缝衔接工作台\n2.8.1 资料库是什么\n资料库\n，简单说就是：把你的云端文档直接接到 AI 工作台里，\n让 AI 能直接看到、处理、甚至帮你写回文档\n，全程不用下载文件、不用上传文件、不用来回切换应用。\n用一个比喻来理解：你现在有一堆资料锁在腾讯文档里，以前要让 AI 帮忙，你得先下载 → 发给 AI → AI 处理完 → 你再手动把结果存回去。资料库就是给 AI 一把钥匙，让它直接走进你的资料库，\n自己拿、自己看、自己用、自己存回去\n。\n它能做什么？\n搜索即找到\n— 不用翻文件夹，用自然语言描述你想要什么文档（比如\"找到上个月的财务报表\"），AI 就能帮你定位。\n点击即预览\n— 找到文档后直接在 WorkBuddy 里预览，不用跳转到腾讯文档。\n一键开工\n— 选中文件后添加到任务，告诉 AI 你想干嘛（总结、改写、分析……），它直接基于文件内容干活。\n产物存回云端\n— AI 处理完的结果，可以一键存回你的腾讯文档，形成\"取资料 → AI 加工 → 存回去\"的完整闭环。\n2.8.2 如何连接腾讯文档\n在左侧边栏点击\n资料库\n，选择\n腾讯文档\n。\n点击\n立即前往授权\n后 WorkBuddy 将能读取您的文档内容，为您提供总结提炼、智能问答，以及自动化文档创作与管理。\n支持\n微信/QQ扫码登录\n对应文档账户。\n其他授权信息如下图，\n同意\n后即可使用。\n如果需要换绑资料库账号或关闭连接，可以点击对应文档，在右上角点击\n解除绑定\n。\n资料库完整操作流程其实就是三步：\n找到文件 → 交给 AI 干活 → 结果存回去\n。\n第一步：搜索文件\n资料库提供 两种搜索方式，看你的需求选：\n方式一：语义搜索（让 AI 帮你找）\n新建一个任务，直接用大白话描述你要什么。AI 会理解你的意图，自动从资料库里匹配对应的文档。比如：\n\"帮我找到腾讯文档上周写的那份季度汇报 PPT\"\n\"帮我找一下腾讯文档终端旅游助手文件\"\n方式二：关键词搜索（自己精准搜）\n打开资料库页面，在右上方搜索框输入关键词后回车。\n系统会按文档标题和文档所有者两个维度帮你筛选。\n如果你知道文件名大概叫什么，用关键词搜索更快；如果只知道\"大概是什么内容\"，用语义搜索更省心。\n第二步：在任务中引用指定文件\n找到文件后，怎么让 AI 基于它干活？\n在资料库列表里 选中你要用的文件（可以多选），点击 \"添加到任务\" 按钮（或者鼠标悬停在文件上，点击出现的添加图标），文件就出现在当前任务里了。\n不仅支持选择在线文档，腾讯文档可以上传Word、Excel、PPT、PDF等本地文件，也可以在资料库中勾选，并添加到任务中。\n添加文件后，AI 就能直接读取文件内容来帮你处理了。在输入框里告诉 AI 你想干什么，比如：\n\"把这份 Word 文档总结成一页 PPT\"\n\"分析这个 Excel 里的数据，帮我画个趋势图\"\n\"根据这份 PDF 的内容，写一段 200 字的摘要\"\n第三步：产物存回资料库\nAI 干完活后，结果怎么保存？\n在右侧 产物区域 找到 AI 生成的文件，点击文件上的 \"上传到云端\" 按钮，选择要存到的位置（对应的资料库）。\n存储成功后，直接在腾讯文档的 \"我的文档\" 里就能找到。\n一句话总结： 资料库 = 你的云端文档 + AI 的直接通道，省去了下载/上传/切换应用的繁琐步骤。\n2.8.3 如何连接ima知识库\n在左侧边栏点击\n资料库\n，选择ima\n文档\n。\n点击\n立即前往授权\n后 WorkBuddy 将能读取您的文档内容，为您提供总结提炼、智能问答，以及自动化文档创作与管理。\n使用\n微信扫码\n授权访问\n。\n其他授权信息如下图，\n同意\n后即可使用。\n如果需要换绑资料库账号或关闭连接，可以点击对应文档，在右上角点击\n解除绑定\n。\n资料库完整操作流程其实就是三步：\n找到文件 → 交给 AI 干活 → 结果存回去\n。\n第一步：搜索文件\n资料库提供 两种搜索方式，看你的需求选：\n方式一：语义搜索（让 AI 帮你找）\n新建一个任务，直接用大白话描述你要什么。AI 会理解你的意图，自动从资料库里匹配对应的文档。比如：\n\"帮我找到ima知识库上周写的那份季度汇报 PPT\"\n\"帮我找一下ima知识库终端旅游助手文件\n\"\n方式二：关键词搜索（自己精准搜）\n打开资料库页面，在右上方搜索框输入关键词后回车。\n第二步：在任务中引用指定文件\n找到文件后，怎么让 AI 基于它干活？\n在资料库列表里 选中你要用的文件（可以多选），点击 \"添加到任务\" 按钮（或者鼠标悬停在文件上，点击出现的添加图标），文件就出现在当前任务里了。\n不仅支持选择在线文档，腾讯文档可以上传Word、Excel、PPT、PDF等本地文件，也可以在资料库中勾选，并添加到任务中。\n添加文件后，AI 就能直接读取文件内容来帮你处理了。在输入框里告诉 AI 你想干什么，比如：\n\"把这份 Word 文档总结成一页 PPT\"\n\"分析这个 Excel 里的数据，帮我画个趋势图\"\n\"根据这份 PDF 的内容，写一段 200 字的摘要\"\n第三步：产物存回资料库\nAI 干完活后，结果怎么保存？\n在右侧 产物区域 找到 AI 生成的文件，点击文件上的 \"上传到云端\" 按钮，选择要存到的位置（对应的资料库）。\n一句话总结： 资料库 = 你的云端文档 + AI 的直接通道，省去了下载/上传/切换应用的繁琐步骤。\n2.8.4 如何连接乐享知识库\n在左侧边栏点击\n资料库\n，选择乐享知识库。\n点击\n立即前往授权\n后 WorkBuddy 将能读取您的文档内容，为您提供总结提炼、智能问答，以及自动化文档创作与管理。\n点击继续\n授权成功\n如果需要换绑资料库账号或关闭连接，可以点击对应文档，在右上角点击\n解除绑定\n。\n资料库完整操作流程其实就是三步：\n找到文件 → 交给 AI 干活 → 结果存回去\n。\n第一步：搜索文件\n资料库提供 两种搜索方式，看你的需求选：\n方式一：语义搜索（让 AI 帮你找）\n新建一个任务，直接用大白话描述你要什么。AI 会理解你的意图，自动从资料库里匹配对应的文档。比如：\n\"帮我找到ima知识库上周写的那份季度汇报 PPT\"\n\"帮我找一下ima知识库终端旅游助手文件\"\n方式二：\n前往乐享知识库\n打开资料库页面，在右上方点击“前往乐享知识库”。\n第二步：在任务中引用指定文件\n找到文件后，怎么让 AI 基于它干活？\n在资料库列表里 选中你要用的文件（可以多选），点击 \"添加到任务\" 按钮（或者鼠标悬停在文件上，点击出现的添加图标），文件就出现在当前任务里了。\n不仅支持选择在线文档，腾讯文档可以上传Word、Excel、PPT、PDF等本地文件，也可以在资料库中勾选，并添加到任务中。\n添加文件后，AI 就能直接读取文件内容来帮你处理了。在输入框里告诉 AI 你想干什么，比如：\n\"把这份 Word 文档总结成一页 PPT\"\n\"分析这个 Excel 里的数据，帮我画个趋势图\"\n\"根据这份 PDF 的内容，写一段 200 字的摘要\"\n第三步：产物存回资料库\nAI 干完活后，结果怎么保存？\n在右侧 产物区域 找到 AI 生成的文件，点击文件上的 \"上传到云端\" 按钮，选择要存到的位置（对应的资料库）。\n一句话总结： 资料库 = 你的云端文档 + AI 的直接通道，省去了下载/上传/切换应用的繁琐步骤。\n2.9 灵感：零配置直接生成属于你的成品\n2.9.1 灵感是什么\n灵感\n功能，一句话说清楚：它就是一个\n预装好的\"场景模板库\"\n，里面已经帮你配好了各种常用场景，你不用懂技术，点一下就能直接用。\n用一个比喻来理解：\n还记得美图秀秀的滤镜吗？你不需要懂色彩原理、不用学调参，看到哪个好看，点一下，照片就变美了。\n探索就是 WorkBuddy 版的\"滤镜库\"\n，只不过美化的是你的工作任务：\n你不需要知道什么是 Prompt 工程（怎么跟 AI 说话）；\n你不需要了解有哪些 Skill（技能）；\n你不需要研究该选什么专家。\n看到哪个场景符合需求，点一下就开干。\n不知道从哪开始？打开\n探索\n，浏览大家做出的 WorkBuddy 精选成品。\n看中哪个，\n点击制作我的版本\n，即可实现Prompt、Skill、专家全部自动就位，\n零配置直接生成属于你的版本\n。\n它里面有什么？\n目前内置了 11 个预置场景模板，每个模板都帮你配好了：\n适合这个场景的提示词（告诉 AI 该怎么做）\n对应的 Skill 配置（调用什么技能来完成）\n适配的专家\n你只需要选一个模板，然后把你的具体需求填进去就行。\n适合谁？\n特别适合\n刚接触 AI 工具的新手\n。如果你不知道 WorkBuddy 能干嘛、不知道怎么写提示词、不知道该用什么技能，打开\"探索\"逛一圈就能找到灵感，而且点一下就能上手，零门槛。\n当然，老用户也可以用它来快速启动常见任务，省去重复配置的时间。\n2.9.2 如何使用\n探索功能整个操作流程就是四步：\n逛案例 → 看详情 → 一键开做 → 查成果\n。\n第一步：打开探索\n在 WorkBuddy 左侧边栏，找到并点击 \"探索\"，就进入了案例库页面。进入后你会看到：\n精选板块 — 系统推荐的热门案例，随机展示，像刷朋友圈一样浏览。\n场景分类 — 按不同的使用场景分类，可以按需筛选。\n搜索功能 — 如果你有明确需求，可以直接搜索关键词找到对应案例。\n就像逛淘宝首页：有推荐爆款，有分类导航，还有搜索框，三种方式都能找到你想要的。\n第二步：选择案例\n浏览时看到感兴趣的案例，点击它进入详情页，你会看到：\n预览效果 — 这个案例做出来长什么样\n使用的工具集 — 它调用了哪些 Skill 和专家配置\n详情介绍 — 这个案例是干嘛的、适合什么场景\n觉得不错？还可以点 红心收藏，把它存起来，方便下次找。\n就像在短视频平台刷到一个好的教程视频：看看封面预览、了解视频内容，喜欢就收藏。\n第三步：开始制作\n这是最关键也最省心的一步：\n在案例详情页点击 \"做同款\"，系统会自动帮你搞定所有配置：\n✅ 自动预填好 Prompt（提示词）\n✅ 自动加载关联的 ",
+      "fulltext_obtained": true,
+      "chunk_index": 4,
+      "chunk_count": 7
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.29,
+        "direct_local": 0,
+        "irrelevant": 0.38,
+        "peripheral": 0.33
+      }
+    },
+    "relevance": {
+      "score": 1.37,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.55,
+        "2": 0.34,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.62,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.29,
+        "2": 0.48,
+        "3": 0.12,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.24,
+      "probabilities": {
+        "0": 0.43,
+        "1": 0.25,
+        "2": 0.07,
+        "3": 0.17,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.3,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.67,
+        "2": 0.31,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.75,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.06,
+        "2": 0.09,
+        "3": 0.15,
+        "4": 0.52,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.18,
+      "probabilities": {
+        "0": 0.83,
+        "1": 0.16,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.63,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8044,
+    "outputTokens": 173,
+    "totalTokens": 8217
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.23,
+        "relevance": 0.67,
+        "grounding": 0.57,
+        "decision_action": 0.18,
+        "evidence": 0.78,
+        "actionability": 0.17,
+        "anti_hype": 0.88
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180430758,
+                "endTime": 1791180430945,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000337848",
+      "marketCost": "0.000337848",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000337848",
+      "inferenceCost": "0.000337848",
+      "inputInferenceCost": "0.000337848",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARQC7XATEG84YGTF80Q70"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:10 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::hnl7q-1791180430571-57f6f93c6223"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.29,
+            "direct_local": 0,
+            "irrelevant": 0.38,
+            "peripheral": 0.33
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.37,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.55,
+            "2": 0.34,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.62,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.29,
+            "2": 0.48,
+            "3": 0.12,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.24,
+          "probabilities": {
+            "0": 0.43,
+            "1": 0.25,
+            "2": 0.07,
+            "3": 0.17,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.3,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.67,
+            "2": 0.31,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.75,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.06,
+            "2": 0.09,
+            "3": 0.15,
+            "4": 0.52,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.18,
+          "probabilities": {
+            "0": 0.83,
+            "1": 0.16,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.63
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8044,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.23,
+            "relevance": 0.67,
+            "grounding": 0.57,
+            "decision_action": 0.18,
+            "evidence": 0.78,
+            "actionability": 0.17,
+            "anti_hype": 0.88
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180430758,
+                    "endTime": 1791180430945,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000337848",
+          "marketCost": "0.000337848",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000337848",
+          "inferenceCost": "0.000337848",
+          "inputInferenceCost": "0.000337848",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARQC7XATEG84YGTF80Q70"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:10.166Z"
+  }
+}

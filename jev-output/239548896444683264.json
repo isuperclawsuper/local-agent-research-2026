@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "239548896444683264",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里重磅开源！OpenSandbox：专为 AI Agent 打造的下一代沙箱",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509113&idx=1&sn=a8caab8fdc270626c1e3e56a0813d20f",
+      "date": "2026-01-29T00:31:00.391Z",
+      "chars": 4276,
+      "text": "原创\n宇拓\n2026-01-29 08:31\n浙江\n这是\n2025\n年的第\n134\n篇文章\n（ 本文阅读时间：15分钟 ）\n01\n当 AI 需要执行代码时，我们该怎么办？\n想象这样一个日常开发场景： 你正在使用 Claude Code 帮你重构一段清理逻辑，或者让 Gemini 写个自动化脚本处理数据，甚至是一个 LangGraph 驱动的 Agent 正在你的指令下调用系统 API。\n你满怀期待地按下运行键，但危险往往就在这一刻： 如果 AI 在处理路径时产生了一个逻辑偏移，将清理范围锁定在了根目录；或者它引入的一个第三方库，在安装瞬间静默扫描了你的\n.ssh\n目录。\nAI 生成的代码是一把双刃剑。\n直接在宿主机“裸奔”，无异于将系统权限交给一个可能随时“幻觉”的黑盒。资源隔离、环境依赖、权限越权 —— 这些都是 AI 能力落地到真实环境时绕不开的挑战。\n今天，我们正式开源 OpenSandbox —— 一个面向 AI 应用场景设计的「通用沙箱平台」，为大模型相关的能力提供安全、可靠的执行环境。\n02\n什么是 OpenSandbox？\nOpenSandbox 是阿里巴巴开源的通用沙箱基础设施，专门为 AI 应用场景设计。它为大模型相关的能力 —— 命令执行、文件操作、代码执行、浏览器操作、Agent 运行等提供：\n多语言 SDK\n：Python、Java/Kotlin、JavaScript/TypeScript；\n企业级并发调度能力\n：\n基于 Kubernetes 的池化加速方案；\n统一沙箱协议\n：基于 OpenAPI 的标准化接口；\n灵活运行时\n：Docker 和 Kubernetes 双支持；\n丰富沙箱环境\n：代码解释器、浏览器自动化、远程开发环境。\n03\n六大核心亮点\n3.1 多语言 SDK，开发者友好\n无论你使用 Python、Java、Kotlin 还是 JavaScript/TypeScript，OpenSandbox 都提供了统一的 API 设计，跨语言一致性让你无缝切换。\n以下为Python SDK示例，更多语言SDK示例请参考github项目空间。\nimport\nasyncio\nfrom\ndatetime\nimport\ntimedelta\nfrom\ncode_interpreter\nimport\nCodeInterpreter, SupportedLanguage\nfrom\nopensandbox\nimport\nSandbox\nfrom\nopensandbox.models\nimport\nWriteEntry\nasync\ndef\nmain\n() ->\nNone\n:\n# 1. Create a sandbox\nsandbox =\nawait\nSandbox.create(\n\"sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:latest\"\n,\nentrypoint= [\n\"/opt/opensandbox/code-interpreter.sh\"\n],\nenv={\n\"PYTHON_VERSION\"\n:\n\"3.11\"\n},\ntimeout=timedelta(minutes=\n10\n),\n)\nasync\nwith\nsandbox:\n# 2. Execute a shell command\nexecution =\nawait\nsandbox.commands.run(\n\"echo 'Hello OpenSandbox!'\"\n)\nprint\n(execution.logs.stdout[\n0\n].text)\n# 3. Write a file\nawait\nsandbox.files.write_files([\nWriteEntry(path=\n\"/tmp/hello.txt\"\n, data=\n\"Hello World\"\n, mode=\n644\n)\n])\n# 4. Read a file\ncontent =\nawait\nsandbox.files.read_file(\n\"/tmp/hello.txt\"\n)\nprint\n(\nf\"Content:\n{content}\n\"\n)\n# Content: Hello World\n# 5. Create a code interpreter\ninterpreter =\nawait\nCodeInterpreter.create(sandbox)\n# 6. 执行 Python 代码（单次执行：直接传 language）\nresult =\nawait\ninterpreter.codes.run(\n\"\"\"\nimport sys\nprint(sys.version)\nresult = 2 + 2\nresult\n\"\"\",\nlanguage=SupportedLanguage.PYTHON,\n)\nprint\n(result.result[\n0\n].text)\n# 4\nprint\n(result.logs.stdout[\n0\n].text)\n# 3.11.14\n# 7. Cleanup the sandbox\nawait\nsandbox.kill()\nif\n__name__ ==\n\"__main__\"\n:\nasyncio.run(main())\n3.2 统一沙箱协议，开放可扩展\nOpenSandbox 采用协议优先（Protocol-First）设计，所有交互都通过 OpenAPI 规范定义。这意味着：\n你可以基于规范实现自己的运行时\n不同语言 SDK 之间完全兼容\n社区可以共建扩展能力\n3.3 双运行时支持，灵活部署\n自研的高性能 Kubernetes 沙箱调度器，支持大规模并发场景。\n批量沙箱支持：通过 Kubernetes Operator 实现批量沙箱生命周期管理；\n高性能调度：优化的调度算法，支持大规模并发创建和销毁。\n3.4 沙箱粒度网络控制策略\n{\n\"defaultAction\"\n:\n\"deny\"\n,\n\"egress\"\n:\n[\n{\n\"action\"\n:\n\"allow\"\n,\n\"target\"\n:\n\"api.openai.com\"\n},\n{\n\"action\"\n:\n\"allow\"\n,\n\"target\"\n:\n\"*.pypi.org\"\n},\n{\n\"action\"\n:\n\"allow\"\n,\n\"target\"\n:\n\"*.npmjs.org\"\n}\n]\n}\n3.5 开箱即用的沙箱流量入口代理\n3.6 丰富的沙箱使用案例助你快速上手\n04\n典型企业应用场景\n4.1 Alibaba Coding Agent\n阿里巴巴内部的 Coding Agent 是 OpenSandbox 的核心应用场景之一。\n作为企业级 AI 编程助手，它不仅需要高度隔离的独立沙箱，也对环境的拉起效率与\n会话恢复能力\n有着极致追求。\nOpenSandbox 提供的 Code Interpreter 能力完美契合这些需求，让 Coding Agent 能够安全、高效地“动手”编写并验证代码。\n4.2 Coding 产品评测环境\n针对 Coding 产品的评测与验证，社区贡献了 Harbor 这一卓越的环境驱动框架。它通过对评测环境的高度\n封装\n，确保了测试过程的\n一致性与可复现性\n。针对复杂 Agent 评测中单机效率低下的痛点，Harbor 凭借出色的\n工程化弹性伸缩能力\n，能够调度成千上万个环境进行大规模并行测试。而 OpenSandbox 则作为\n底层基础设施\n，为这一高效评测流程提供了理想的沙箱环境与性能支撑。\n4.3 Agentic RL 训练环境\n强化学习（RL）训练 Agent 依赖高频的环境交互与海量的样本数据采集。\nOpenSandbox 为\nAgentic RL\n构建了高性能的基础设施支撑：\n极致并发与秒级响应\n：通过资源池化与预创建机制，支持数千个沙箱并发运行，实现环境的秒级分配。\n高效任务编排\n：\n内置任务执行引擎，支持异构任务的灵活分发，确保每个沙箱可独立承担不同的训练指令。\n强力状态隔离\n：\n各训练环境互不干扰，确保样本数据的独立性与实验结果的可复现性。\n弹性资源管理\n：\n根据训练负载动态分配与回收资源，极大优化了集群整体的资源利用率。\n目前，OpenSandbox 已在阿里巴巴大规模 Agentic RL 训练场景中得到实证，显著缩短了训练周期并提升了算力效率。\n4.4 Remote Agent Sandbox\nOpenSandbox 支持将 Claude Code、Gemini CLI 等 Agent 实例封装在远程沙箱中，通过将 Agent 行为“远程化”，解决本地环境配置复杂与安全合规问题：\n环境隔离与沙箱化\n：\n通过远程部署实现 Agent 执行环境与宿主机的完全解耦，消除环境污染风险。\n灵活的运行时预设\n：\n支持针对异构 Agent 定制专属运行时（Runtime），包括特定版本的编程语言环境与依赖包。\n计算下沉与远程执行\n：\n核心代码执行逻辑下沉至云端沙箱，本地仅承载交互指令与结果渲染，实现轻量化办公。\n05\n开源与社区\nOpenSandbox 遵循 Apache 2.0 开源协议，你可以自由地将其用于个人或商业项目。\n我们正在积极建设社区，欢迎你：\n🌟\n给项目点个 Star\n🐛\n提交 Issue 反馈问题\n💡\n参与 Feature 讨论\n🤝\n贡献代码完善功能\nGitHub 地址：\nhttps://github.com/alibaba/OpenSandbox\n微信扫码加入交流群\n06\n写在最后\nAI 正在重塑软件开发的方式，而 OpenSandbox 致力于成为 AI 应用场景下最可靠的通用沙箱基础设施。\n无论你是正在构建内部 AI 平台的企业技术团队，还是需要大规模沙箱调度能力的 SaaS 服务商，OpenSandbox 都能为你提供：\n安全可靠的隔离环境；\n灵活多变的部署方式；\n完整的企业级能力；\n开放可扩展的架构。\n但我们深知，一个优秀的开源项目离不开社区的共建。\nOpenSandbox 的未来，期待你的加入，让我们一起打造 AI 场景下的通用沙箱基础设施！\n欢迎关注我们的 GitHub，获取最新动态！\n欢迎留言一起参与讨论~\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.26,
+        "transfer_business": 0,
+        "direct_local": 0,
+        "irrelevant": 0.52,
+        "peripheral": 0.22
+      }
+    },
+    "relevance": {
+      "score": 1.88,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.1,
+        "2": 0.89,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.33,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.43,
+        "2": 0.34,
+        "3": 0.07,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.46,
+      "probabilities": {
+        "0": 0.8,
+        "1": 0.08,
+        "2": 0.04,
+        "3": 0.04,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0,
+        "1": 0.1,
+        "2": 0.9,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.38,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.04,
+        "2": 0.06,
+        "3": 0.17,
+        "4": 0.67,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.44,
+      "probabilities": {
+        "0": 0.66,
+        "1": 0.26,
+        "2": 0.08,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4628,
+    "outputTokens": 173,
+    "totalTokens": 4801
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.39,
+        "relevance": 0.91,
+        "grounding": 0.56,
+        "decision_action": 0.7,
+        "evidence": 0.93,
+        "actionability": 0.58,
+        "anti_hype": 0.71
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179810732,
+                "endTime": 1791179810883,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000194376",
+      "marketCost": "0.000194376",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000194376",
+      "inferenceCost": "0.000194376",
+      "inputInferenceCost": "0.000194376",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5SWK259398SCQBCB2K72"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:50 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::pkzxc-1791179810696-68237d0b9bc3"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.26,
+            "transfer_business": 0,
+            "direct_local": 0,
+            "irrelevant": 0.52,
+            "peripheral": 0.22
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.88,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.1,
+            "2": 0.89,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.33,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.43,
+            "2": 0.34,
+            "3": 0.07,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.46,
+          "probabilities": {
+            "0": 0.8,
+            "1": 0.08,
+            "2": 0.04,
+            "3": 0.04,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0,
+            "1": 0.1,
+            "2": 0.9,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.38,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.04,
+            "2": 0.06,
+            "3": 0.17,
+            "4": 0.67,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.44,
+          "probabilities": {
+            "0": 0.66,
+            "1": 0.26,
+            "2": 0.08,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4628,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.39,
+            "relevance": 0.91,
+            "grounding": 0.56,
+            "decision_action": 0.7,
+            "evidence": 0.93,
+            "actionability": 0.58,
+            "anti_hype": 0.71
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179810732,
+                    "endTime": 1791179810883,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000194376",
+          "marketCost": "0.000194376",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000194376",
+          "inferenceCost": "0.000194376",
+          "inputInferenceCost": "0.000194376",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5SWK259398SCQBCB2K72"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:50.101Z"
+  }
+}

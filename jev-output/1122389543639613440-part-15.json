@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "exc}\n\"\n)\n异常自动修复\n工具参数 JSON 修复\nLLM 返回的工具参数经常有格式问题——缺失右括号、surrogate 字符、尾随逗号。\nrepair_tool_arguments\n尝试多种策略修复：\n# agent/tool_dispatcher.py — 参数 JSON 修复\ndef\nrepair_tool_arguments\n(\nraw_arguments:\nstr\n) ->\ndict\n:\n\"\"\"修复 LLM 返回的工具调用参数 JSON。\"\"\"\nif\nnot\nraw_arguments\nor\nnot\nraw_arguments.strip():\nreturn\n{}\n# 策略 1: 清理 surrogate 字符（LLM 有时生成无效 Unicode）\ncleaned = raw_arguments.encode(\n\"utf-8\"\n, errors=\n\"replace\"\n).decode(\n\"utf-8\"\n)\ntry\n:\nreturn\njson.loads(cleaned)\nexcept\njson.JSONDecodeError:\npass\n# 策略 2: 补全缺失的右括号\nstripped = cleaned.strip()\nopen_braces = stripped.count(\n\"{\"\n) - stripped.count(\n\"}\"\n)\nopen_brackets = stripped.count(\n\"[\"\n) - stripped.count(\n\"]\"\n)\nif\nopen_braces >\n0\n:\nstripped +=\n\"}\"\n* open_braces\nif\nopen_brackets >\n0\n:\nstripped +=\n\"]\"\n* open_brackets\ntry\n:\nreturn\njson.loads(stripped)\nexcept\njson.JSONDecodeError:\npass\n# 策略 3: 删除尾随逗号\n# {\"key\": \"value\",} ← 删掉最后的逗号\nlast_comma = stripped.rfind(\n\",\"\n)\nif\nlast_comma >\n0\n:\ncandidate = stripped[:last_comma]\nopen_b = candidate.count(\n\"{\"\n) - candidate.count(\n\"}\"\n)\nif\nopen_b >\n0\n:\ncandidate +=\n\"}\"\n* open_b\ntry\n:\nreturn\njson.loads(candidate)\nexcept\njson.JSONDecodeError:\npass\n# 全部失败：返回原始字符串供 LLM 查看\nreturn\n{\n\"raw_input\"\n: raw_arguments}\n部分 MCP 工具的 inputSchema 有嵌套包装（如\n{request: {query: ...}}\n），LLM 常常展平为\n{query: ...}\n。系统自动检测并包装：\n# tools/mcp_service.py — 检测展平参数，自动包装\ndef\n_normalize_mcp_arguments\n(\narguments:\ndict\n, input_schema:\ndict\n) ->\ndict\n:\nproperties = input_schema.get(\n\"properties\"\n, {})\nif\nlen\n(properties) !=\n1\n:\nreturn\narguments\nwrapper_key =\nnext\n(\niter\n(properties))\nif\nproperties[wrapper_key].get(\n\"type\"\n) !=\n\"object\"\n:\nreturn\narguments\ninner_props = properties[wrapper_key].get(\n\"properties\"\n, {})\nif\nany\n(k\nin\ninner_props\nfor\nk\nin\narguments):\nreturn\n{wrapper_key: arguments}\n# 自动包装\nreturn\narguments\nLLM 返回的工具名可能拼错（大小写、camelCase/snake_case 混用、多余后缀）。系统尝试多种变换后做模糊匹配：\n# agent/tool_dispatcher.py — 多策略工具名修复\ndef\n_repair_tool_name\n(\nself, tool_name:\nstr\n) ->\nOptional\n[\nstr\n]:\n\"\"\"尝试修复 LLM 返回的异常工具名称。\"\"\"\nvalid_names = registry.list_tools()\ndef\n_normalize\n(\nname\n):\nreturn\nname.lower().replace(\n\"-\"\n,\n\"_\"\n).replace(\n\" \"\n,\n\"_\"\n)\ndef\n_camel_to_snake\n(\nname\n):\nreturn\nre.sub(\nr\"(?<!^)(?=[A-Z])\"\n,\n\"_\"\n, name).lower()\ndef\n_strip_tool_suffix\n(\nname\n):\nlower = name.lower()\nfor\nsuffix\nin\n(\n\"_tool\"\n,\n\"-tool\"\n,\n\"tool\"\n):\nif\nlower.endswith(suffix):\nreturn\nname[:-\nlen\n(suffix)].rstrip(\n\"_-\"\n)\nreturn\nNone\n# 策略 1: 直接小写匹配\nlowered = tool_name.lower()\nif\nlowered\nin\nvalid_names:\nreturn\nlowered\n# 策略 2: 标准化（替换 - 和空格为 _）\nnormalized = _normalize(tool_name)\nif\nnormalized\nin\nvalid_names:\nreturn\nnormalized\n# 策略 3: 生成候选集（交叉组合所有变换）\ncandidates = {tool_name, lowered, normalized, _camel_to_snake(tool_name)}\nfor\n_\nin\nrange\n(\n2\n):\n# 两轮扩展\nextra =\nset\n()\nfor\ncandidate\nin\ncandidates:\nstripped = _strip_tool_suffix(candidate)\nif\nstripped:\nextra.add(stripped)\nextra.add(_normalize(stripped))\nextra.add(_camel_to_snake(stripped))\ncandidates |= extra\nfor\ncandidate\nin\ncandidates:\nif\ncandidate\nand\ncandidate\nin\nvalid_names:\nreturn\ncandidate\n# 策略 4 兜底: difflib 模糊匹配（相似度 ≥ 70%）\nmatches = get_close_matches(lowered, valid_names, n=\n1\n, cutoff=\n0.7\n)\nreturn\nmatches[\n0\n]\nif\nmatches\nelse\nNone\n实际修复案例\n：\nLLM 返回\n实际工具名\n修复策略\nQueryWeather\nquery_weather\ncamelToSnake\nQUERY_WEATHER\nquery_weather\n小写\nquery_weather_tool\nquery_weather\nstrip_tool_suffix\nqeury_weather\nquery_weather\ndifflib 模糊匹配\n工具执行过程中，ToolDispatcher 会生成\n可读的进度预览\n，通过 callback 推送到前端，让用户\n感知\n到调用什么工具。\n# agent/tool_dispatcher.py — 工具进度预览\ndef\n_build_tool_preview\n(\nself, tool_name:\nstr\n, arguments:\nDict\n) ->\nstr\n:\nif\ntool_name ==\n\"delegate_task\"\n:\ngoal = arguments.get(\n\"goal\"\n,\n\"\"\n)[:\n40\n]\nreturn\nf\"正在委托子代理执行 —\n{goal}\n\"\nif\ntool_name ==\n\"memory\"\n:\naction_desc = {\n\"add\"\n:\n\"正在写入\"\n,\n\"replace\"\n:\n\"正在更新\"\n}.get(\narguments.get(\n\"action\"\n,\n\"\"\n),\n\"正在操作\"\n)\nreturn\nf\"\n{action_desc}\n记忆\n{arguments.get(\n'target'\n,\n''\n)}\n\"\nif\ntool_name ==\n\"todo\"\n:\ntodos = arguments.get(\n\"todos\"\n)\nreturn\nf\"正在更新\n{\nlen\n(todos)}\n个任务\"\nif\ntodos\nelse\n\"正在读取任务列表\"\n# 搜索类工具：展示搜索关键词\nsearch_tools = {\n\"searchDocChunk\"\n: (\n\"query\"\n,\n\"正在搜索文档\"\n),\n\"web_search\"\n: (\n\"query\"\n,\n\"正在搜索网页\"\n),\n}\nif\ntool_name\nin\nsearch_tools:\nkey, desc = search_tools[tool_name]\nvalue =\nstr\n(arguments.get(key,\n\"\"\n))[:\n30\n]\nreturn\nf\"\n{desc}\n—\n{value}\n\"\nif\nvalue\nelse\ndesc\n# 通用兜底\nreturn\nf\"正在调用\n{tool_name}\n\"\n04 SubAgent 设计\n设计目标\n：让复杂任务可以被拆解并行执行，同时确保子任务不会失控。以下为流程示意。\n主 Agent 调用 delegate_task(goal, context, role)\n│\n▼\n┌─────────────────────────────────────────────────────────────┐\n│ delegate_task                                              │\n│                                                              │\n│\n1\n. 深度检查 → 超限则降级为 leaf（禁止递归委托）               │\n│\n2\n. 并发检查 → 活跃子 agent ≥\n3\n时等待                       │\n│\n3\n. 提交到 ThreadPoolExecutor（延迟创建）                     │\n│\n4\n. 带超时等待 Future 结果                                    │\n│                                                              │\n│     ┌───────────────────┐  ┌───────────────────┐            │\n│     │ 子 Agent\nA\n(leaf)  │  │ 子 Agent\nB\n(leaf)  │  并行执行  │\n│     │ 独立 IdleAgent 实例 │  │ 独立 IdleAgent 实例 │           │\n│     │ 独立 messages 历史  │  │ 独立 messages 历史  │           │\n│     │ 独立迭代预算 (\n50\n)   │  │ 独立迭代预算 (\n50\n)   │           │\n│     │ 独立 TodoStore      │  │ 独立 TodoStore      │          │\n│     │ 受限工具权限        │  │ 受限工具权限        │           │\n│     └────────┬──────────┘  └────────┬──────────┘            │\n│              │                      │                        │\n│              ▼                      ▼                        │\n│     DelegateResult             DelegateResult                │\n│     {goal, success,            {goal, success,               │\n│      final_answer,              final_answer,                │\n│      tool_calls_count,          tool_calls_count,            │\n│      iterations_used,           iterations_used,             │\n│      tokens_used,               tokens_used,                 │\n│      duration_seconds}          duration_seconds}            │\n└──────────────────────┬──────────────────────────────────────┘\n│\n▼\n主 Agent 汇总子任务结果，继续处理\n子 agent 其实也是一个工具，只是这个工具背后会调用 agent 去执行具体的任务。\n# agent/delegate.py — 工具定义\ndef\ncreate_delegate_tool_schema\n() ->\nDict\n[\nstr\n,\nAny\n]:\nreturn\n{\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"delegate_task\"\n,\n\"description\"\n: (\n\"将子任务委托给独立的子代理执行。\"\n\"适用于可并行、相互独立的子任务。\"\n\"子代理有独立的迭代预算和工具集。\"\n),\n\"parameters\"\n: {\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"goal\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"子任务的目标描述，需清晰具体\"\n,\n},\n\"context\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"提供给子代理的上下文信息\"\n,\n},\n\"role\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"enum\"\n: [\n\"leaf\"\n,\n\"orchestrator\"\n],\n\"",
+      "fulltext_obtained": true,
+      "chunk_index": 15,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.95,
+        "irrelevant": 0.05
+      }
+    },
+    "relevance": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.08,
+        "2": 0.91,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.84,
+      "probabilities": {
+        "0": 0.61,
+        "1": 0.11,
+        "2": 0.15,
+        "3": 0.08,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.79,
+      "probabilities": {
+        "0": 0.39999999999999997,
+        "1": 0.11,
+        "2": 0.02,
+        "3": 0.23,
+        "4": 0.24,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.52,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.48,
+        "3": 0.52,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.77,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.08,
+        "4": 0.85,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 1.89,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.33,
+        "2": 0.21,
+        "3": 0.37,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.65,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5037,
+    "outputTokens": 172,
+    "totalTokens": 5209
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "anti_hype": 0.25,
+        "category": 0.93,
+        "relevance": 0.93,
+        "grounding": 0.44,
+        "decision_action": 0,
+        "evidence": 0.68,
+        "actionability": 0.82
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180421067,
+                "endTime": 1791180421277,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000211554",
+      "marketCost": "0.000211554",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000211554",
+      "inferenceCost": "0.000211554",
+      "inputInferenceCost": "0.000211554",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARDX7GY4P5NSGJMBV2PHY"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:01 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::989tv-1791180421019-28a71cadb4aa"
+    },
+    "body": {
+      "answers": {
+        "anti_hype": {
+          "type": "score",
+          "score": 1.89,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.33,
+            "2": 0.21,
+            "3": 0.37,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.65
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.95,
+            "irrelevant": 0.05
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.08,
+            "2": 0.91,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.84,
+          "probabilities": {
+            "0": 0.61,
+            "1": 0.11,
+            "2": 0.15,
+            "3": 0.08,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.79,
+          "probabilities": {
+            "0": 0.39999999999999997,
+            "1": 0.11,
+            "2": 0.02,
+            "3": 0.23,
+            "4": 0.24,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.52,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.48,
+            "3": 0.52,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.77,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.08,
+            "4": 0.85,
+            "5": 0.02
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5037,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "anti_hype": 0.25,
+            "category": 0.93,
+            "relevance": 0.93,
+            "grounding": 0.44,
+            "decision_action": 0,
+            "evidence": 0.68,
+            "actionability": 0.82
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180421067,
+                    "endTime": 1791180421277,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000211554",
+          "marketCost": "0.000211554",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000211554",
+          "inferenceCost": "0.000211554",
+          "inputInferenceCost": "0.000211554",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARDX7GY4P5NSGJMBV2PHY"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:00.499Z"
+  }
+}

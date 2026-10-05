@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1239908065784864768",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "AI 视频降本的三种做法，只有一种不牺牲画质",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247521222&idx=1&sn=27759804c7e3d4d635d31ee9f1f70232",
+      "date": "2026-08-11T10:00:00.455Z",
+      "chars": 2268,
+      "text": "视频与边缘\n2026-08-11 18:00\n北京\n随着 AI 视频进入生产阶段，生产成本开始成为越来越多团队绕不开的问题。\n旗舰模型不断提升画质上限，更轻量的模型不断推出。很多人曾以为，“视频生成成本”这道题，会随着算力效率提升和模型能力演进被自然解开。但真正把 AI 视频推进到规模化生产的团队很快发现：生成门槛在降低，账单却并没有随之变薄。\n因此围绕着 AI 视频生产降本这一话题，行业里已经出现了多种探索。\n一、降本，行业正在尝试的三种路径\n第一种，是选择更低价的生成模型。\n这是最直接的方式。用更便宜、更轻量的模型替代旗舰模型，单次生成成本会立刻下降。对于一些对画质要求不高、只需要快速出内容的场景，这条路确实有吸引力。\n但它的问题也很明显：更低的生成成本，往往伴随着画面细节、动态稳定性、纹理质感和整体表现力的下降。低价模型直出的画面如果达不到最终交付标准，后续就需要更多修复、重做和人工处理。看似省下了生成费用，最后可能又在返工里花了回去。\n第二种，是优化提示词与生成流程。\n通过更精准的提示词、更成熟的工作流、更标准化的生成模板，减少无效生成和重复试错。这种方式不需要额外增加算力，也能在一定程度上提升产出效率。\n但它解决的是“少浪费”的问题，而不是“重构成本”的问题。提示词优化可以减少失败次数，却很难改变一个事实：只要每一次生成都按高清规格来跑，试错阶段依然会持续消耗高成本资源。它能让生产更顺，却很难从根本上改变成本结构。\n第三种，是把高清投入后移：先低成本生成，再做后处理画质增强。\n这条路径的思路，不再是单纯压低“生成”这一环节的价格，而是重新分配高清资源的使用时机。\n在创意探索和版本筛选阶段，先用较低分辨率、较低成本完成生成；等到方向确定、素材被选中之后，再通过画质增强把最终版本提升到交付标准。这样一来，昂贵的高清算力不必花在每一次尝试上，而是集中用在真正进入交付链路的成片上。\n这也是\n火山引擎 AI MediaKit 画质增强\n提供的新解法：它的价值不只是降低单次处理成本，而是通过 “低清生成 + 后期增强” 改变高清资源的使用方式。高清投入不再默认发生在每一次生成尝试中，而是集中作用于最终确定要交付的版本。\n这种生产链路的变化，最直接地体现在成本结构上。\n二、综合成本最高可降 80%\n如果把“低清生成 + 后期画质增强”放到真实生产账单里，差异会非常直观。\n以单条 5 秒视频、最终交付 1080P 为例，如果直接生成 1080P，单条成本约为 12.39 元；\n如果先生成 480P，再通过 AI MediaKit 画质增强至 1080P，综合成本约为 2.44 元，整体成本可降低约 80%。\n三、降本的底线：不以大幅牺牲画质为代价\n任何降本方式都要先回答一个问题：成本下降之后，最终画质是否仍能满足真实观看和业务交付的要求？\n如果为了压低成本，让画质下降到观众能够明显感知的程度，节省下来的费用很可能会以完播率下降、品牌质感受损、二次返工等形式重新出现。对生产团队而言，降本的目标从来不是单纯追求更低价格，而是在合理投入下获得稳定可交付的画面结果。\n也正是基于这样的判断，\n火山引擎在 AI 视频生产上，并没有将画质和成本割裂讨论，而是根据不同业务目标提供相应的解决方案：追求极致画质的场景，可以选择 Seedance 4K 高清直出；关注成本但又不想牺牲画质的场景，则更适合通过低清生成 + AI MediaKit 画质增强，在最终画质和综合成本之间取得平衡\n。\n四、懂生成的画质增强，才是降本不掉画质的关键\n低清生成能否支撑最终交付，关键在于后期增强能否把画面提升到业务可用的标准。\nAI MediaKit 画质增强的优势，正在于它懂生成。它更理解生成视频里的失真特征和内容结构\n；同时依托火山引擎 Agentic 画质增强系统，按照“理解、感知、调度、执行、反馈”的闭环，自动判断画质问题并调度合适的增强链路。\n在具体增强能力上，\nAI MediaKit 画质增强依托 GenVR 等生成式算子，可以在合理范围内补出低清阶段丢失的纹理和细节，并通过图片 + 视频双模态能力和跨帧一致性算法，保证动态画面的稳定与连贯，支持同分辨率增强、任意倍率超分等多类视觉处理需求\n。\n凭借对 Seedance 生成内容的理解，以及生成式细节重建能力，AI MediaKit 画质增强可以在降低成本的同时，让最终观感经得起真实业务场景检验。\n💡 AI MediaKit 画质增强实测效果：\nBEFORE\nAFTER\n左右滑动查看增强后效果\n五、真正的降本，是让每一分投入都用在会被看见的版本上\n回到规模化生产的那笔账，成本之所以难以下降，很多时候并不是因为单次生成价格始终居高不下，而是因为高清资源被平均消耗在大量试错和筛选环节中。\n真正有效的降本，不应停留在压低生成单价上，而应回到生产链路本身：让低成本生成承担前期探索，让高质量增强服务最终交付。这样，预算才能从无效消耗中释放出来，集中投入到真正产生价值的内容上。\n这也正是火山引擎对 AI 视频生产的思路：不是提供一个笼统的 “降本方案”，而是让不同业务目标找到更匹配的生产方式 —— 追求极致画质，有原生 4K 的高清直出；追求画质与成本平衡，有懂生成的 AI MediaKit 画质增强。\n当高清资源从大规模试错中释放出来，并服务于真正产生价值的内容，AI 视频生产的降本不只是单价下降，而是生产效率和交付质量的共同提升。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.52,
+        "transfer_agent": 0.03,
+        "peripheral": 0.45,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.04,
+      "probabilities": {
+        "0": 0.3,
+        "1": 0.37,
+        "2": 0.32,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.7,
+      "probabilities": {
+        "0": 0.22,
+        "1": 0.16,
+        "2": 0.34,
+        "3": 0.25,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.57,
+      "probabilities": {
+        "0": 0.7,
+        "1": 0.1,
+        "2": 0.15,
+        "3": 0.04,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.08,
+      "probabilities": {
+        "0": 0,
+        "1": 0.23,
+        "2": 0.59,
+        "3": 0.05,
+        "4": 0.13,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.34,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.12,
+        "2": 0.37,
+        "3": 0.31,
+        "4": 0.13,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.36,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.04,
+        "2": 0.28,
+        "3": 0.47000000000000003,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4015,
+    "outputTokens": 173,
+    "totalTokens": 4188
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.39,
+        "relevance": 0.57,
+        "grounding": 0.39,
+        "decision_action": 0.62,
+        "evidence": 0.63,
+        "actionability": 0.44,
+        "anti_hype": 0.45
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179918470,
+                "endTime": 1791179918658,
+                "providerRequestId": "a003ea97-42aa-4fb7-b2ef-a96a9720b3b7",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179918782,
+                "endTime": 1791179919250,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.00016863",
+      "marketCost": "0.00016863",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00016863",
+      "inferenceCost": "0.00016863",
+      "inputInferenceCost": "0.00016863",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A92MAV9W4MDT9DTKWTQN6"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:39 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::wtq8l-1791179913400-228b31fa7272"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.52,
+            "transfer_agent": 0.03,
+            "peripheral": 0.45,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.04,
+          "probabilities": {
+            "0": 0.3,
+            "1": 0.37,
+            "2": 0.32,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.7,
+          "probabilities": {
+            "0": 0.22,
+            "1": 0.16,
+            "2": 0.34,
+            "3": 0.25,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.57,
+          "probabilities": {
+            "0": 0.7,
+            "1": 0.1,
+            "2": 0.15,
+            "3": 0.04,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.08,
+          "probabilities": {
+            "0": 0,
+            "1": 0.23,
+            "2": 0.59,
+            "3": 0.05,
+            "4": 0.13,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.34,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.12,
+            "2": 0.37,
+            "3": 0.31,
+            "4": 0.13,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.36,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.04,
+            "2": 0.28,
+            "3": 0.47000000000000003,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4015,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.39,
+            "relevance": 0.57,
+            "grounding": 0.39,
+            "decision_action": 0.62,
+            "evidence": 0.63,
+            "actionability": 0.44,
+            "anti_hype": 0.45
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179918470,
+                    "endTime": 1791179918658,
+                    "providerRequestId": "a003ea97-42aa-4fb7-b2ef-a96a9720b3b7",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179918782,
+                    "endTime": 1791179919250,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.00016863",
+          "marketCost": "0.00016863",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00016863",
+          "inferenceCost": "0.00016863",
+          "inputInferenceCost": "0.00016863",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A92MAV9W4MDT9DTKWTQN6"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:38.479Z"
+  }
+}

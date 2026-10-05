@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "241116174148262912",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "OpenViking：面向 Agent 的上下文数据库",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518398&idx=1&sn=2ab5285d4fd04d77905ae027e393849f",
+      "date": "2026-02-02T10:04:00.406Z",
+      "chars": 7151,
+      "text": "Viking\n2026-02-02 18:04\n北京\n挣脱上下文的枷锁：OpenViking，为 AI Agent 而生的开源上下文数据库\n“We are swimming in a sea of information, and we need to learn to navigate.” — Norbert Wiener\n“我们正畅游在信息的海洋中，我们需要学会航行。” — 诺伯特·维纳\nAI Agent 的浪潮已至，它正从简单的任务执行者，演变为能够感知环境、自主规划、并调用工具完成复杂目标的智能实体。然而，在这片充满无限可能的机遇之海中，开发者们却普遍遭遇了一座难以逾越的冰山——\n上下文管理\n。\n随着模型能力飞速提升，Agent 不再满足于处理单轮对话或短文本，而是开始面对长周期任务、海量多模态数据和复杂的协同需求。记忆、资源、技能……这些原本分散各处的上下文，管理起来愈发混乱。然而，如何高效管理和利用这些上下文，已成为开发者们普遍遭遇的瓶颈：\n上下文无序且割裂\n：记忆在代码中，资源在向量库，技能分散在各个角落，关联和维护成本极高。\n长程任务需要更多上下文\n：Agent 逐渐从处理单轮对话转向执行长周期任务，会涉及多工具、多 Agent 间的复杂协同。每一轮任务执行都会给上下文窗口和模型理解带来压力，如果简单的截断或压缩，本质上是“丢卒保帅”，会带来不可逆的信息损失和高昂的模型成本。\n朴素 RAG 检索效果局限\n：朴素 RAG 的数据切片是平铺式存储，缺乏全局视野，面对海量、多模态且有信息组织的数据越来越力不从心，可能回去错失关键信息。同时，它过于关注语义相关性，在需要兴趣泛化和探索的开放式场景中表现不佳。\n上下文缺乏观测和调试\n：从 DeepSeek 和 Manus 的爆火能发现，在 AI 越来越强大时，用户更渴望白盒化的体验，能看到其思考与决策的轨迹。而传统 RAG 隐式的检索链路如同黑箱，出错时难以归因和调试，改进门槛高。\n记忆成为核心资产\n：模型本身是通用的，大家越发意识到沉淀的记忆才是 Agent 的核心资产，但这不止包括使用用户的记忆，还包括 Agent 自身的经验和偏好记忆。记忆需要在开发初期就建设起来，这样才能形成使用时间越长，体验越好的\n复利效果\n。\n而近年来，业界也关于 Context Engineering 有一些探索实践：\nManus\n提出文件系统是上下文的终极形态；\nClaude Code\n的成功验证了文件系统 + Bash 的简洁方案在特定场景下超越复杂向量索引的潜力；而\nAnthropic 的 Skills 系统\n也巧妙地以文件夹来组织能力模块。这些实践给了我们启发，但也反映了一个问题：文件系统是上下文一种很好的组织方式，但并没有一个类似数据库能有效管理Agent所需所有上下文并解决上述问题。\n为此，我们正式开源\nOpenViking\n——专为 AI Agent 设计的上下文数据库。\n我们旨在为\nAgent 定义一套极简的上下文交互范式，让开发者彻底告别上下文管理的烦恼。\nOpenViking 摒弃了传统 RAG 的碎片化向量存储模式，创新性地采用“文件系统范式”，将 Agent 所需的记忆、资源和技能进行统一的结构化组织。\nMemory, Resource, Skill. Everything is a File.\n记忆、资源、技能，皆为文件。\nOpenViking\n信息图，由 vaka 知识助手\n生成(\nhttps://aisearch.volcengine.com/)\n借助 OpenViking，上下文不再是散落一地的拼图，而是一个层次分明、井然有序的认知系统。它能够实现上下文的\n分层供给\n，在保障信息完整性的前提下，将 Token 成本降至最低；它提供\n协同写入\n与\n自我迭代\n机制，让 Agent 的“知识”与“经验”在与世界的交互中持续成长，开发者可以像管理本地文件一样构建 Agent 的大脑：\n文件系统管理范式 → 解决碎片化问题\n：基于文件系统范式，将记忆、资源、技能进行统一上下文管理\n分层上下文按需加载 → 降低 Token 消耗\n：L0/L1/L2 三层结构，按需加载，大幅节省成本\n目录递归检索 → 提升检索效果\n：支持原生文件系统检索方式，融合目录定位与语义搜索，实现递归式精准上下文获取\n可视化检索轨迹 → 上下文可观测\n：支持可视化目录检索轨迹，让用户能够清晰观测问题根源并指导检索逻辑优化\n会话自动管理 → 上下文自迭代\n：自动压缩对话中的内容、资源引用、工具调用等信息，提取长期记忆，让 Agent 越用越聪明\n现在，让我们一起深入了解 OpenViking，看看它如何挣脱上下文的枷锁，助您在 AI Agent 的浪潮中扬帆远航。\nOpenViking 核心理念\nOpenViking 的设计哲学围绕四大核心理念构建，旨在将复杂的上下文管理流程化繁为简，让开发者能将宝贵的精力聚焦于业务创新。\n文件系统管理范式\n我们不再将上下文视为扁平的文本切片，而是将其统一抽象并组织于一个\n虚拟文件系统\n中。无论是记忆、资源还是能力，都会被映射到\nviking://\n协议下的虚拟目录，拥有唯一的 URI。这种范式赋予了 Agent 前所未有的上下文操控能力，使其能像开发者一样，通过\nlist\n、\nfind\n等标准指令来精确、确定性地定位、浏览和操作信息，让上下文的管理从模糊的语义匹配演变为直观、可追溯的“文件操作”。\n文件系统管理范式\n分层上下文按需加载\n将海量上下文一次性塞入提示词，不仅成本高昂，更容易超出模型窗口并引入噪声。OpenViking 借鉴业界前沿实践，在上下文写入时便自动将其处理为三个层级：\nL0 (摘要)：\n一句话概括，用于快速判断。\nL1 (概述)：\n包含核心信息和使用场景，供 Agent 在规划阶段进行决策。\nL2 (详情)：\n完整的原始数据，供 Agent 在确有必要时深入读取。\nOpenViking 的设计使其能够灵活适配各类 AI Agent 的开发场景。无论是简单的问答机器人，还是复杂的自动化工作流，它都能作为坚实的上下文底座，提供稳定、高效的支撑。\n分层上下文按需加载\n目录递归检索\n单一的向量检索难以应对复杂的查询意图。OpenViking 设计了一套创新的\n目录递归检索\n策略，它深度融合了多种检索方式的优点：首先，通过\n意图分析生成多个检索条件\n；然后，利用向量检索快速定位初始切片所在的\n高分目录\n；接着，在该目录下进行\n二次检索\n，并将高分结果更新至候选集合；若目录下仍存在子目录，则\n逐层递归\n重复上述二次检索步骤；最终，拿到最相关上下文返回。这种 “先锁定高分目录、再精细探索内容” 的策略，不仅能找到语义最匹配的片段，更能理解信息所在的完整语境，从而提升检索的全局性与准确性。\n目录递归检索\n可观测与自迭代\nOpenViking 的组织方式采用层次化虚拟文件系统结构，所有上下文均以统一格式整合且每个条目对应唯一 URI（如 viking:// 路径），打破传统扁平黑箱式管理模式，层次分明易于理解；同时检索过程采用目录递归策略，每次检索的目录浏览、文件定位轨迹均被完整留存，能够清晰观测问题根源并指导检索逻辑优化。\n此外，OpenViking 内置了记忆自迭代闭环。在每次会话结束时，通过\nsession.commit()\n主动触发，系统会异步分析任务执行结果与用户反馈，并自动更新至 User 和 Agent 的 /memory 目录下。既能更新用户偏好相关记忆，使 Agent 回应更贴合用户需求，又能从任务执行经验中提取操作技巧、工具使用经验等核心内容，助力后续任务高效决策实现自我进化，让 Agent 在与世界的交互中“越用越聪明”。\n可观测与自迭代\n快速上手：三分钟运行 OpenViking\nOpenViking 的一大核心优势是其极简的集成方式。我们深知开发者的宝贵时间不应浪费在繁琐的配置上。您无需部署复杂的服务或学习新的 DSL，只需通过几行 Python 代码，即可为您的 Agent 装上强大的“上下文大脑”。\n以下示例是以OpenViking的Readme英文版作为文件进行写入，展示处理后的上下文目录结构，以及对应文档的分层信息，并进行简单问题的回复。\n第一步：安装 OpenViking\npip install openviking\n第二步：获取模型服务\nOpenViking 需要VLM模型（用于多模态内容理解）和Embedding 模型（用于向量化）能力的API Key：\n我们支持多种模型服务：\nOpenAI 模型：支持 GPT-4V 等 VLM 模型和 OpenAI Embedding 模型\n火山引擎（豆包模型）：推荐使用，成本低、性能好，新用户有免费额度。如需购买和开通，请参考：\n火山引擎购买指南\nhttps://github.com/volcengine/OpenViking/blob/main/docs/zh/configuration/volcengine-purchase-guide.md\n其他自定义模型服务：支持兼容 OpenAI API 格式的模型服务\n第三步：配置环境\n创建配置文件\nov.conf\n：\n⚠️ 重要提示：请将下方配置中的 <your-volcengine-api-key> 替换为你在第二步获取的真实 API Key！\n{\n\"vlm\"\n: {\n\"api_key\"\n:\n\"<your-api-key>\"\n,\n// 模型服务的 API 密钥\n\"model\"\n:\n\"<model-name>\"\n,\n// VLM 模型名称（如 doubao-seed-1-8-251228 或 gpt-4-vision-preview）\n\"api_base\"\n:\n\"<api-endpoint>\"\n,\n// API 服务端点地址（如volcengine api：\nhttps://ark.cn-beijing.volces.com/api/v3）\n\"backend\"\n:\n\"<backend-type>\"\n// 后端类型（volcengine 或 openai）\n},\n\"embedding\"\n: {\n\"dense\"\n: {\n\"backend\"\n:\n\"<backend-type>\"\n,\n// 后端类型（volcengine 或 openai）\n\"api_key\"\n:\n\"<your-api-key>\"\n,\n// 模型服务的 API 密钥\n\"model\"\n:\n\"<model-name>\"\n,\n// Embedding 模型名称（如 doubao-embedding-vision-250615 或 text-embedding-3-large）\n\"api_base\"\n:\n\"<api-endpoint>\"\n,\n// API 服务端点地址（如volcengine api：\nhttps://ark.cn-beijing.volces.com/api/v3）\n\"dimension\"\n:\n1024\n// 向量维度\n}\n}\n}\n并设置环境变量：\nexport\nOPENVIKING_CONFIG_FILE=ov.conf\n第四步：运行体验\n创建简单的 Python 脚本\nexample.py\n并运行，通过写入 OpenViking README 文档来体验写入-检索-读取的全过程：\nimport\nopenviking\nas\nov\n# Initialize OpenViking client with data directory\nclient = ov.SyncOpenViking(path=\n\"./data\"\n)\ntry\n:\n# Initialize the client\nclient.initialize()\n# Add resource (supports URL, file, or directory)\nadd_result = client.add_resource(\npath=\n\"\nhttps://raw.githubusercontent.com/volcengine/OpenViking/refs/heads/main/README.md\n\"\n)\nroot_uri = add_result[\n'root_uri'\n]\n# Explore the resource tree structure\nls_result = client.ls(root_uri)\nprint(\nf\"Directory structure:\\n\n{ls_result}\n\\n\"\n)\n# Use glob to find markdown files\nglob_result = client.glob(pattern=\n\"**/*.md\"\n, uri=root_uri)\nif\nglob_result[\n'matches'\n]:\ncontent = client.read(glob_result[\n'matches'\n][\n0\n])\nprint(\nf\"Content preview:\n{content[:\n200\n]}\n...\\n\"\n)\n# Wait for semantic processing to complete\nprint(\n\"Wait for semantic processing...\"\n)\nclient.wait_processed()\n# Get abstract and overview of the resource\nabstract = client.abstract(root_uri)\noverview = client.overview(root_uri)\nprint(\nf\"Abstract:\\n\n{abstract}\n\\n\\nOverview:\\n\n{overview}\n\\n\"\n)\n# Perform semantic search\nresults = client.find(\n\"what is openviking\"\n, target_uri=root_uri)\n# Input query\nprint(\n\"Search results:\"\n)\nfor\nr\nin\nresults.resources:\nprint(\nf\"\n{r.uri}\n(score:\n{r.score:\n.4\nf}\n)\"\n)\n# Close the client\nclient.close()\nexcept\nException\nas\ne:\nprint(\nf\"Error:\n{e}\n\"\n)\n运行脚本：\npython example.py\n若您得到检索结果，恭喜！你已成功运行 OpenViking 🎉\n开源共建，定义下一代 Agent 上下文标准\n我们坚信，开放与协作是推动技术创新的核心动力。将 OpenViking 开源，是我们回馈社区、并与全球开发者共同探索 AI Agent 未来的第一步。\n这不仅仅是一次代码的分享，更是一次理念的传播。我们希望通过 OpenViking，能够为业界提供一个关于 Agent 上下文管理的全新范式，一个能够有效降低开发门槛、激发业务创新的坚实底座。\n我们深知，OpenViking 目前还处于早期阶段，有许多需要完善和探索的地方。但这正是开源的魅力所在——它允许我们汇聚最广泛的智慧，应对最前沿的挑战。\n在此，我们诚挚地邀请每一位对 AI Agent 技术充满热情的开发者：\n访问我们的 GitHub 仓库\nhttps://github.com/volcengine/OpenViking\n，为我们点亮一颗宝贵的 Star，给予我们前行的动力。\n访问我们的网站\nhttps://openviking.ai\n（点击\n阅读原文\n可跳转）\n，了解我们传递的理念，并通过文档使用它，在您的项目中感受它带来的改变，并向我们反馈最真实的体验。\n扫描下方二维码加入我们的社区\n，分享您的洞见，帮助解答他人的疑问，共同营造一个开放、互助的技术氛围。\n飞书群\n微信群\n成为我们的贡献者\n，无论是提交一个 Bug 修复，还是贡献一个新功能，您的每一行代码都将是 OpenViking 成长的重要基石。\n让我们一起，共同定义和构建 AI Agent 上下文管理的未来。旅程已经开始，期待您的加入\n！\n关于我们：字节跳动 Viking 团队\n我们用 C 端产品的体验标准打造能够重塑企业生产力的产品和技术。在上下文工程领域具有深厚的技术积累与商业化实践，我们的愿景是提供用户友好的上下文工程产品矩阵。\n我们的产品历程\n2019 年\n：VikingDB 向量数据库支撑字节内部全业务大规模使用\n2023 年\n：VikingDB 在火山引擎公有云售卖\n2024 年\n：推出面向开发者的产品矩阵：VikingDB 向量数据库、Viking 知识库、Viking 记忆库\n2025 年\n：打造 AI 搜索、vaka 知识助手等上层应用产品\n2025 年 10 月\n：开源 MineContext\nhttps://github.com/volcengine/MineContext\n，主动式 AI 应用探索\n2026 年 1 月\n：开源\nOpenViking\n，为 AI Agent 提供底层上下文数据库支撑\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.92,
+        "transfer_business": 0,
+        "peripheral": 0.02,
+        "irrelevant": 0.06,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.09,
+        "2": 0.89,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1,
+      "probabilities": {
+        "0": 0.22,
+        "1": 0.58,
+        "2": 0.18,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.75,
+      "probabilities": {
+        "0": 0.59,
+        "1": 0.18,
+        "2": 0.15,
+        "3": 0.06,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.94,
+      "probabilities": {
+        "0": 0,
+        "1": 0.06,
+        "2": 0.9400000000000001,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.79,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.91,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.17,
+      "probabilities": {
+        "0": 0.24,
+        "1": 0.35,
+        "2": 0.41000000000000003,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6829,
+    "outputTokens": 172,
+    "totalTokens": 7001
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "relevance": 0.93,
+        "grounding": 0.7,
+        "decision_action": 0.5,
+        "evidence": 0.96,
+        "actionability": 0.86,
+        "anti_hype": 0.44,
+        "category": 0.9
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179937579,
+                "endTime": 1791179937786,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000286818",
+      "marketCost": "0.000286818",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000286818",
+      "inferenceCost": "0.000286818",
+      "inputInferenceCost": "0.000286818",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9NRSRQR8P0FKGPS8TTHV"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:57 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::vnkg9-1791179937552-0ff2ecfc3015"
+    },
+    "body": {
+      "answers": {
+        "relevance": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.09,
+            "2": 0.89,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1,
+          "probabilities": {
+            "0": 0.22,
+            "1": 0.58,
+            "2": 0.18,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.75,
+          "probabilities": {
+            "0": 0.59,
+            "1": 0.18,
+            "2": 0.15,
+            "3": 0.06,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.94,
+          "probabilities": {
+            "0": 0,
+            "1": 0.06,
+            "2": 0.9400000000000001,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.79,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.91,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.17,
+          "probabilities": {
+            "0": 0.24,
+            "1": 0.35,
+            "2": 0.41000000000000003,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.92,
+            "transfer_business": 0,
+            "peripheral": 0.02,
+            "irrelevant": 0.06,
+            "direct_local": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6829,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "relevance": 0.93,
+            "grounding": 0.7,
+            "decision_action": 0.5,
+            "evidence": 0.96,
+            "actionability": 0.86,
+            "anti_hype": 0.44,
+            "category": 0.9
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179937579,
+                    "endTime": 1791179937786,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000286818",
+          "marketCost": "0.000286818",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000286818",
+          "inferenceCost": "0.000286818",
+          "inputInferenceCost": "0.000286818",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9NRSRQR8P0FKGPS8TTHV"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:57.017Z"
+  }
+}

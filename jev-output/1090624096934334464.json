@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1090624096934334464",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯员工公寓曝光，竟是这样的布置！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801473&idx=1&sn=b8ede18d708d1fdbee4df09a48e660f1",
+      "date": "2026-04-29T12:42:00.945Z",
+      "chars": 4146,
+      "text": "原创\n腾讯程序员\n2026-04-29 20:42\n广东\n海景房、森林房、游戏房？\n马上要放假了，来给各位看点有意思的，大家口中的——“腾讯企鹅岛”\n旁边的员工工公寓都长什么样~\n即使是同样的户型、面积、配置，但经过每位员工的装饰布置后，就变得完全不一样了。\n我们随机去探访了些鹅厂人的公寓，一起来看看吧~\nleii\n毕业于南京理工大学，腾讯工作5年\n1、自己的企鹅公寓为什么布置成这样？\n整体我都按照自然松弛、舒适治愈的风格来布置。因为一直很喜欢自然和大海，所以家里摆放了很多植物，也充分利用海景视野。周末不用忙碌的时候，安静坐在这里，面朝大海、伴着绿植，能很好地放松身心、舒缓压力。\n2、都说鹅厂福利多，哪个是感到很特别的？\n应该就是企鹅公寓，在生活节奏很快、压力很大的深圳，能拥有一间属于自己、面朝大海的温馨小窝，幸福感和归属感都特别强。\n3、平时有什么兴趣爱好？\n我的爱好是摄影，同时也是小小的摄影博主。只要一有空余时间，就会带着相机出门旅行，走遍不同自然风景。\n4、人生至今，有没有过很大胆的一次自我尝试或者突破？\n我大学原本是理科生，一直偏爱传媒与内容相关领域，后来遵从内心热爱，大胆跨专业转到传媒方向，这是我人生中一次非常重要、也很勇敢的自我突破。\n5、对于【青年】这个词的看法是什么样的？\n青年代表着无限可能。正值青年就应该敢于试错、敢于冒险、用心体验生活，不必畏手畏脚，有足够的底气和机会，去奔赴热爱、做自己真正想做的事。\nyeley\n毕业于英国威斯敏斯\n特大学，腾讯工作2年\n1、自己的企鹅公寓为什么布置成这样？\n其实很多小设计出发点并不是美观第一位，而是适我化第一位，优先好住好用。直接买成品可能很难买到真正适合我的，或者实际效果可能跟想象的会不太一样。所以最开始是在酷家乐上面去设计摆放模型看装修效果，然后一点点去增添布置，就成了现在这个样子。\n（Yeley的企鹅公寓改造效果图）\n房间特色可能是进门的架子，最开始是想在床和门之间做一个视线遮挡，保留隐私。然后发现它可以隔出两个区域，这个地毯懒人沙发区域是我的老废物乐园，平时出完门回来其实很难立刻就洗澡换衣服，所以留一个可以躺的地方，让我可以穿着外面的脏衣服在这里瘫着刷会儿手机做洗澡的心理准备。隔板里面的就是只能穿家里的衣服待的干净区域。\n地毯上的叶子是个猫抓板，我回家的时候核桃会很开心地跑过来迎接我，所以这里放个猫抓板给她过来的时候顺便抓一抓释放情绪。\n这个隔板的铝型材本身也有一定承载能力，很多东西不太好打钉子上墙的，可以用螺丝固定在架子上。比如灯选了个可以左右移动的，它就可以穿过架子照到老废物乐园或者床头，取决于我在哪瘫着。投影仪也是螺丝固定在空中的，比放在地面桌面会更省空间，角度也很好调。还有一些小设计是发挥了点想象力，在满足生活需求的同时尽可能好看。\n2、都说鹅厂福利多，哪个是感到很特别的？\n晚上可以夜宵券刷麦当劳，我已经连吃一个月了lol\n3、平时有什么兴趣爱好？\n这两年开始喜欢徒步，趁着周末假期想要多亲近大自然。\n4、人生至今，有没有过很大胆的一次自我尝试或者突破？\n其实来做游戏策划这件事本身就还挺大胆的。我本科读的工程力学，后面实习一开始是内容运营，然后还做了市场品牌，产品运营，后面参加腾讯游戏策划公开课做minigame拿了金奖，然后来腾讯做游戏没想到做了当时了解最少的数值方向，后面自己做主数值完整own一个项目的产耗框架和经济体系，到现在做这个项目的主策，一直都在自我尝试自我突破吧~\n5、对于【青年】这个词的看法是什么样的？\n听起来很有劲，应该是人类最有创造力的阶段吧。\nlion\n毕业\n于邵阳职业技\n术学院，腾讯工作近9年\n1、自己的企鹅公寓为什么布置成这样？\n我的公寓布置很简单，因为我不是特别会收纳的人，所以怎么简单怎么来，只要不脏就行，图省事。\n2、都说鹅厂福利多，哪个是感到很特别的？\n鹅厂的福利，那肯定企鹅公寓了。便宜的价格就能住上看海景房子，然后周围还有公司配套的设施，比如我最喜欢的健身房。\n3、平时有什么兴趣爱好？\n运动健身，骑行跑步，网球拳击，户外溜达。\n4、人生至今，有没有过很大胆的一次自我尝试或者突破？\n我感觉我一直都在自我尝试，我对很多我感兴趣都充满了好奇，想去尝试或者突破自已能不能做到。比如曾一个人自驾青海8天开了3100公里。\n5、对于【青年】这个词的看法是什么样的？\n我觉得青年代表的是朝气，是有锐气的去大胆尝试和突破自已。不甘心平庸但又想着改变世界。\njon\n毕业于武汉工程大学，腾讯工作6年\n1、自己的企鹅公寓为什么布置成这样？\n我希望打造一个舒服又治愈的独处空间，既能安静放松，也能兼顾听歌、看电影、喝茶、喝酒这些小惬意，整体偏温馨实用，舒适性为主。\n2、都说鹅厂福利多，哪个是感到很特别的？\n鹅厂的福利很细腻，是那种润物细无声的贴心。最让我觉得贴心的，是配套的健身房以及多种多样的健身场馆，对我们这种爱运动的人特别友好。\n3、平时有什么兴趣爱好？\n平时比较喜欢健身，既能释放压力，也能让自己保持好状态。\n4、人生至今，有没有过很大胆的一次自我尝试或者突破？\n人生里每隔几年都会给自己一次突破，从学生到职场，从埋头做事到主动挑战新方向，每一步都在跳出舒适区。非要说一件特别的，那就是大三的时候做软件培训创业的经历。\n5、对于【青年】这个词的看法是什么样的？\n我觉得青年意味着有冲劲、有热爱，也有敢试错的勇气。不被定义，保持清醒，在自己喜欢的领域里认真发光，就是很珍贵的状态。\nmittens\n毕业于美国\n埃默里\n大学，腾讯工作2年\n1、自己的企鹅公寓为什么布置成这样？\n我其实是一个极繁主义者加之兴趣爱好也比较多，所以其实对收纳空间的需求会比较高，但同时又有点强迫症，所以在收纳上就要做到尽可能利用有限的空间。特色可能是我的沙发床吧，很多人看到我房间第一反应都是“哎，你睡哪”。当时规划的时候我第一个想到的就是需要一个大的书桌，其次是收纳柜来放我的东西，那么取舍之下感觉能压缩的只有床了，所以最后选择了一个0.8m的沙发床，这样我一个人睡得时候其实是足够的，万一有朋友来访，它也可以拉成一个1.6m的大床，非常实用~\n2、都说鹅厂福利多，哪个是感到很特别的？\n鹅民公社给到一个夯，里面有非常多实用的小物件还有礼品卡还有萌萌的qq企鹅，每次刷本月上新都充满期待！\n3、平时有什么兴趣爱好？\n目前是写手账，记录一下生活。\n4、人生至今，有没有过很大胆的一次自我尝试或者突破？\n大概就是放弃了原本专业去尝试完全大相径庭的工作方向吧，大学的时候我也没想过会成为一名游戏美术，但目前还是非常喜欢现在的工作的，完全不后悔。\n5、对于【青年】这个词的看法是什么样的？\n青年在我看来就是有着无限的可能性，是人生最适合勇于探索和尝试的阶段。\nzhanlin\n毕业于重庆邮电大学，腾讯工作1年\n1、自己的企鹅公寓为什么布置成这样？\n主要是因为小时候就一直很喜欢打游戏，以前网上看见别人的电竞屋也很炫，就像自己搞一个，下班看见这个暖色的小地方，心情也能放松，特色主要是搞了这个灯带和一个小爱控制吧，家里面基本很多操作都可以通过这个音响来实现。\n2、都说鹅厂福利多，哪个是感到很特别的？\n企鹅岛现在食堂周末晚餐也免费，选择多还好吃。\n3、平时有什么兴趣爱好？\n看这个布置肯定就主要是打游戏了，和朋友打大乱斗、杀戮尖塔什么的，最近自己一个人玩的话就是三十三号远征队和终末地这些。\n4、人生至今，有没有过很大胆的一次自我尝试或者突破？\n大概就是和朋友一起去爬学川西的冷嘎措，4000多米海拔，然后我也是第一次硬爬，然后高反的反应很大 确实平时因为打游戏比较宅，锻炼比较少，但是和朋友一起最后也看到了很漂亮的日照金山，现在有时候也会和朋友一起再去户外。\n5、对于【青年】这个词的看法是什么样的？\n感觉就是可以有更多机会去尝试新东西，特别是AI的快速发展，让我们尝试的成本也拉低了。\nquella\n毕业于西安美术学院，腾讯工作1年\n1、自己的企鹅公寓为什么布置成这样？\n因为新人工作压力比较大，所以希望房间能温馨一些，毕竟上床就睡觉下床就上班哈哈哈，我个人比较文艺一点，热爱音乐，就买了黑胶唱片机和花花布置一下，光是看到都会心情很好，修剪枝叶也很减压，强迫症狂喜！亮点就是能放花的地方都放上，拥有很多温馨小角落，摆拍也很好看很有氛围感~\n2、都说鹅厂福利多，哪个是感到很特别的？\n公寓入住时候送了水果、雨伞、冰箱贴等等，甚至有床褥！！瞬间被暖到。\n3、平时有什么兴趣爱好？\n吉他弹唱。\n4、人生至今，有没有过很大胆的一次自我尝试或者突破？\n大学时独自去日本，第一次出国，去看了最欣赏的歌手的livehouse，提前规划好行程，遇到很多困难但是整体还是比较顺利的。\n5、对于【青年】这个词的看法是什么样的？\n青年不只是年龄，更是一种精神状态：有棱角、有热血、有无限可能，始终心怀热忱、勇敢向前。不怕犯错也不怕重来，只要保持好奇与真诚，心中便永远有青年。\nharwin\n毕业于复旦大学，腾讯工作2年\n1、自己的企鹅公寓为什么布置成这样？\n布置成现在这样单纯是因为情怀和爱好吧，谁不希望自己每天回家都能看到能给予自己激励还有无穷美好回忆的东西呢？\n2、都说鹅厂福利多，哪个是感到很特别的？\n企鹅岛的班车，风雨无阻助力每一个远在科兴的通勤人平安到家。\n3、平时有什么兴趣爱好？\n涉猎各种各样的游戏&五月天。\n4、人生至今，有没有过很大胆的一次自我尝试或者突破？\n研究生读的是经济，也拿到了海外院校的专业 offer，最后却选择了看起来毫不相关的游戏行业。刚来时心里很不安，但腾讯的环境和团队真的让我特别踏实。在专业的项目里、前辈的点拨中、一次次的创新碰撞下，我学到了很多、也成长了很多。很感谢当初勇敢做决定的自己。\n5、对于【青年】这个词的看法是什么样的？\n青年这个词就不应该被定义，它应该是生机勃勃，敢想敢做，不断试错不断成长的一个状态。只要大家有这样的精神就都应该是最如朝阳一般的青年~\n评论区欢迎分享\n大家自己住的小窝有什么特点？\n企鹅岛视频版请查看⬇️\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "direct_local": 0,
+        "transfer_agent": 0,
+        "peripheral": 0.02,
+        "irrelevant": 0.98
+      }
+    },
+    "relevance": {
+      "score": 0.01,
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.08,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.03,
+        "2": 0.01,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.01,
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.36,
+      "probabilities": {
+        "0": 0.65,
+        "1": 0.35,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 0.02,
+      "probabilities": {
+        "0": 0.99,
+        "1": 0.01,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.01,
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.61,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5961,
+    "outputTokens": 173,
+    "totalTokens": 6134
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.98,
+        "relevance": 1,
+        "grounding": 0.95,
+        "decision_action": 0.99,
+        "evidence": 0.76,
+        "actionability": 0.98,
+        "anti_hype": 0.99
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179971715,
+                "endTime": 1791179971904,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000250362",
+      "marketCost": "0.000250362",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000250362",
+      "inferenceCost": "0.000250362",
+      "inputInferenceCost": "0.000250362",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAQ3EAR7Z94ACW4WZWAH0"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:31 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::nqn8n-1791179971685-9b9ad2c0e938"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "direct_local": 0,
+            "transfer_agent": 0,
+            "peripheral": 0.02,
+            "irrelevant": 0.98
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.01,
+          "probabilities": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.08,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.03,
+            "2": 0.01,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.01,
+          "probabilities": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.36,
+          "probabilities": {
+            "0": 0.65,
+            "1": 0.35,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 0.02,
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.01,
+          "probabilities": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.61
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5961,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.98,
+            "relevance": 1,
+            "grounding": 0.95,
+            "decision_action": 0.99,
+            "evidence": 0.76,
+            "actionability": 0.98,
+            "anti_hype": 0.99
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179971715,
+                    "endTime": 1791179971904,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000250362",
+          "marketCost": "0.000250362",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000250362",
+          "inferenceCost": "0.000250362",
+          "inputInferenceCost": "0.000250362",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAQ3EAR7Z94ACW4WZWAH0"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:31.156Z"
+  }
+}

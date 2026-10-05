@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1122424470967881728",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "浏览器自动化：从GUI到OpenCLI",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543582&idx=1&sn=f026752f04c72b5ab91102d6ecc8f478",
+      "date": "2026-05-22T09:13:00.920Z",
+      "chars": 5644,
+      "text": "明径\n2026-05-22 17:13\n浙江\n文章讲述放弃不稳定的前端UI自动化操作，采用解析并复现底层API请求的方式，来解决浏览器自动化的效率与稳定性难题。（文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。）\n为什么我们需要浏览器自动化\n如今大量业务系统都跑在浏览器里——运营配置后台、工单处理系统、发布运维平台。如果能让这些系统自动运转，对提效和智能化运营的价值不言而喻。\n但现实是，Agent 想操控浏览器，路并不好走。\n现有方案的困境\nOpenCLI 的思路\n核心想法很简单：不跟网页界面较劲，直接抓它背后的 API。\n浏览器里看到的数据，本质上都是前端从某个接口拿回来的。把这个接口找出来、把请求复现出来，比点按钮靠谱得多。\n▐\n快速上手\nnpm install -\ng\n@jackwener\n/opencli\n直接使用：\nopencli list\n# 查看所有命令\nopencli list\n-f\nyaml\n# 以 YAML 列出所有命令\nopencli hackernews top\n--limit\n5\n# 公共 API，无需浏览器\nopencli bilibili hot\n--limit\n5\n# 浏览器命令\nopencli zhihu hot\n-f\njson\n# JSON 输出\nopencli zhihu hot\n-f\nyaml\n# YAML 输出\n▐\n原理分析\nAI Agent 探索工作流\n步骤\n工具\n做什么\n0. 打开浏览器\nbrowser_navigate\n导航到目标页面\n1. 观察页面\nbrowser_snapshot\n观察可交互元素（按钮/标签/链接）\n2. 首次抓包\nbrowser_network_requests\n筛选 JSON API 端点，记录 URL pattern\n3. 模拟交互\nbrowser_click\n+\nbrowser_wait_for\n点击\"字幕\"\"评论\"\"关注\"等按钮\n4. 二次抓包\nbrowser_network_requests\n对比步骤 2，找出新触发的 API\n5. 验证 API\nbrowser_evaluate\nfetch(url, {credentials:'include'})\n测试返回结构\n6. 写代码\n—\n基于确认的 API 写适配器\n懒加载机制\n> [!CAUTION]\n>\n**你（AI Agent）必须通过浏览器打开目标网站去探索！**\n> 不要只靠 `opencli explore` 命令或静态分析来发现 API。\n> 你拥有浏览器工具，必须主动用它们浏览网页、观察网络请求、模拟用户交互。\n### 为什么？\n很多 API 是\n**懒加载**\n的（用户必须点击某个按钮/标签才会触发网络请求）。字幕、评论、关注列表等深层数据不会在页面首次加载时出现在 Network 面板中。\n**如果你不主动去浏览和交互页面，你永远发现不了这些 API。**\n五级认证策略\nOpenCLI 提供 5 级认证策略。使用\ncascade\n命令自动探测：\nopencli cascade\nhttps\n:\n//api.example.com/hot\n策略决策树：\n直接 fetch(url) 能拿到数据？\n→ ✅ Tier\n1\n: public（公开 API，不需要浏览器）\n→ ❌\nfetch\n(url, {credentials:\n'include'\n}) 带 Cookie 能拿到？\n→ ✅ Tier\n2\n: cookie（最常见，evaluate 步骤内 fetch）\n→ ❌ → 加上 Bearer / CSRF header 后能拿到？\n→ ✅ Tier\n3\n: header（如 Twitter ct0 + Bearer）\n→ ❌ → 网站有 Pinia/Vuex Store？\n→ ✅ Tier\n4\n: intercept（Store Action + XHR 拦截）\n→ ❌ Tier\n5\n: ui（UI 自动化，最后手段）\n适配器\n你的 pipeline 里有 evaluate 步骤（内嵌 JS 代码）？\n→ ✅ 用 TypeScript (src/clis/\n<\nsite\n>\n/\n<\nname\n>\n.ts)，保存即自动动态注册\n→ ❌ 纯声明式（navigate + tap + map + limit）？\n→ ✅ 用 YAML (src/clis/\n<\nsite\n>\n/\n<\nname\n>\n.yaml)，保存即自动注册\n外部CLI集成\n也支持现有CLI直接集成到OpenCLI\nCLI执行流程\n下图展示从启动到执行的关键路径：入口加载命令清单，构建注册表；执行阶段根据策略与浏览器需求选择适配器或管道步骤，完成数据采集与输出。\n▐\n自动生成CLI\nAI 原生生成CLI流程\n探索与分析：explore 深度抓取页面、自动滚动、拦截网络请求、识别框架与状态管理、推断能力与推荐参数。\n策略选择：根据鉴权头/签名等特征自动选择策略（public/cookie/header/intercept/store-action）。\n适配器合成：synthesize 基于探索产物生成候选 YAML，自动模板化 URL、字段映射与参数默认值。\n测试与验证：generate 串联探索→合成→注册→验证，支持目标化选择与回退策略。\nRecord操作录制\nopencli record 采用“浏览器录制 - 智能回放”模式：启动浏览器后，捕获用户在目标 URL 上的交互行为及产生的网络请求。系统通过对请求序列进行评分排序与语义分析，自动生成可复用的 CLI 命令。\n执行流程如下图所示：\n当前局限性：\n请求体（Payload）缺失：目前的录制引擎仅捕获请求元数据（url, method, body: responseBody），未能完整提取 POST/PUT 等写操作中的 Request Body。\n生成能力受限：由于缺乏关键参数载荷，自动化脚本生成逻辑目前仅能覆盖只读类接口（如列表查询、详情获取并输出 YAML），无法有效支撑写操作类接口（如创建、更新、删除）的命令生成，导致自动化闭环在“写入场景”中断。\nQoderWork自动生成CLI\n为了方便自动生成CLI命令，我整理了如下的Skill，其中CLI-ONESHOT.md和CLI-EXPLORER.md可在开源项目中自行下载。\nSKILL.md\n---\nname: opencli\ndescription: \"Generate CLI adapter files (YAML/TypeScript) for the opencli framework. Use when the user wants to create CLI commands, build adapters for websites or APIs, or interact with the opencli tool. Covers browser-based API discovery, authentication strategy selection, and adapter generation workflows.\"\n---\n# OpenCLI Adapter Generator\n## Overview\nOpenCLI is a CLI framework that wraps website APIs into local command-line tools. This skill guides the agent through discovering APIs via browser exploration, selecting authentication strategies, and generating adapter files (YAML or TypeScript) placed in\n`~/.opencli/clis/{site}/{command}.yaml|.ts`\n.\n## Workflow Modes\n**Quick mode**\n(single command): Follow [\nCLI-ONESHOT.md\n](\n./references/CLI-ONESHOT.md\n) — just a URL + description, 4 steps.\n**Full mode**\n(complex adapters): Read [\nCLI-EXPLORER.md\n](\n./references/CLI-EXPLORER.md\n) before writing any code. It covers: browser exploration workflow, auth strategy decision tree, platform SDKs (e.g. Bilibili\n`apiGet`\n/\n`fetchJson`\n), YAML vs TS selection,\n`tap`\nstep debugging, cascading request patterns, and common pitfalls.\n## Output Specification\nAll adapter files\n**must**\nbe written to\n`~/.opencli/clis/{site}/{command}.yaml`\nor\n`.ts`\n. No other output locations or file formats (\n`.js`\n,\n`.json`\n,\n`.md`\n,\n`.txt`\n) are permitted.\nCorrect examples:\n-\n`~/.opencli/clis/aem/page-views.ts`\n-\n`~/.opencli/clis/twitter/lists.yaml`\n-\n`~/.opencli/clis/bilibili/favorites.ts`\n## Supported Formats\n| Format | Extension | When to use |\n|--------|-----------|-------------|\n| YAML |\n`.yaml`\n| Simple scenarios (Cookie/Public auth, straightforward flows) |\n| TypeScript |\n`.ts`\n| Complex scenarios (Intercept capture, Header auth, multi-step logic) |\n## Standard Workflow\n1.\n**Create directory**\n:\n`mkdir -p ~/.opencli/clis/{site}`\n2.\n**Generate adapter file**\nat the correct path (YAML or TS)\n3.\n**Verify**\n:\n`opencli list | grep {site}`\nthen\n`opencli {site} {command} {option}`\n## Naming Conventions\n| Element | Rule | Good | Bad |\n|---------|------|------|-----|\n| site | Lowercase, hyphens allowed |\n`aem`\n,\n`my-site`\n|\n`AEM`\n,\n`my_site`\n|\n| command | Lowercase, hyphen-separated |\n`page-views`\n,\n`project-info`\n|\n`pageViews`\n,\n`project_info`\n|\n## Pre-Generation Checklist\n-\n[ ] Output path is\n`~/.opencli/clis/{site}/{command}.yaml`\nor\n`.ts`\n-\n[ ] Site name is lowercase (no uppercase, no underscores)\n-\n[ ] Command name uses hyphens (no spaces, no underscores)\n-\n[ ] File extension is\n`.yaml`\nor\n`.ts`\nonly\n-\n[ ] Directory\n`~/.opencli/clis/{site}/`\nhas been created\n▐\n使用case：\n内部会画平台CLI化\nBOSS招聘自动化案例展示\n1.帮我和候选人沟通\n2.统计招聘数据\n未来软件竞争维度：从界面到可调用性\n未来的软件，不会只服务人，也会服务 Agent。\n以前我们评价一个 SaaS，看的是界面顺不顺、按钮好不好点。但 Agent 不会欣赏你的按钮做得多圆。它只在乎一件事：能不能稳定调用你。\nGUI 是给人用的。API 是能力底座。而 Agent 最喜欢的，其实是更清晰的执行面：命令、参数、返回值、失败原因。\n未来软件可能会多一个新竞争维度：不是谁页面更好看。而是谁更容易被 Agent 理解、调用、验证，再接进工作流。唯有如此，才更有机会成为下一代工作流里的基础节点。\n过去的软件竞争界面，未来的软件竞争可调用性。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.66,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "irrelevant": 0.31,
+        "transfer_business": 0.02
+      }
+    },
+    "relevance": {
+      "score": 1.97,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.96,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.14,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.15,
+        "2": 0.38,
+        "3": 0.27,
+        "4": 0.1,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.98,
+      "probabilities": {
+        "0": 0.47,
+        "1": 0.24,
+        "2": 0.15,
+        "3": 0.13,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.64,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.35,
+        "3": 0.65,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.94,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.89,
+        "5": 0.04
+      }
+    },
+    "anti_hype": {
+      "score": 3.34,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.06,
+        "3": 0.53,
+        "4": 0.41,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4773,
+    "outputTokens": 172,
+    "totalTokens": 4945
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.58,
+        "relevance": 0.97,
+        "grounding": 0.45,
+        "decision_action": 0.35,
+        "evidence": 0.76,
+        "actionability": 0.91,
+        "anti_hype": 0.67
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179889806,
+                "endTime": 1791179889981,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000200466",
+      "marketCost": "0.000200466",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000200466",
+      "inferenceCost": "0.000200466",
+      "inputInferenceCost": "0.000200466",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A873TX8FBNFFY2W8DC4JQ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:09 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::zh2rw-1791179889775-13da00223f79"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.66,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "irrelevant": 0.31,
+            "transfer_business": 0.02
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.97,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.96,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.14,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.15,
+            "2": 0.38,
+            "3": 0.27,
+            "4": 0.1,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.98,
+          "probabilities": {
+            "0": 0.47,
+            "1": 0.24,
+            "2": 0.15,
+            "3": 0.13,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.64,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.35,
+            "3": 0.65,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.94,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.89,
+            "5": 0.04
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.34,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.06,
+            "3": 0.53,
+            "4": 0.41,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4773,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.58,
+            "relevance": 0.97,
+            "grounding": 0.45,
+            "decision_action": 0.35,
+            "evidence": 0.76,
+            "actionability": 0.91,
+            "anti_hype": 0.67
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179889806,
+                    "endTime": 1791179889981,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000200466",
+          "marketCost": "0.000200466",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000200466",
+          "inferenceCost": "0.000200466",
+          "inputInferenceCost": "0.000200466",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A873TX8FBNFFY2W8DC4JQ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:09.209Z"
+  }
+}

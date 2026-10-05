@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "251941229066952704",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "深入解析OpenClaw上下文窗口压缩方案 ：一切都是为了效果与省钱",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694674&idx=1&sn=acae1fec749562f39219e2b13af9f065",
+      "date": "2026-03-04T00:45:00.105Z",
+      "chars": 21621,
+      "text": "原创\n杨柏\n2026-03-04 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n最近很火的 OpenClaw 的出镜率是越来越高了，内外网的技术文章，新产品的问世，Mac Mini 的涨价，自媒体的宣传层出不穷。作者是国外一个叫 Peter Steinberger（现已经被奥特曼高薪挖到 OpenAI ），说是花了一个周末就烹饪完成的“小龙虾”。 随着司内 OpenClaw 也支持了，我也在企微中增加了对应的机器人，给它取名「靓靓蒸虾🦞」，协助处理一些需求管理上的事情。我一直也在做上下文相关的事情，现在我们就拨开虾外壳，看看它内部详细是如何调味的（进行上下文窗口管理的）。\n仓库: github.com/openclaw/openclaw 本文基于该仓库源码进行分析。\n在 AI Agent 的长会话场景中，上下文窗口溢出是一个绕不开的问题。当对话越来越长、工具调用结果越来越多，LLM 的上下文窗口终将被填满。OpenClaw 为此设计了一套\n多层防御系统\n，从\"尽量不溢出\"到\"溢出了也能恢复\"，覆盖了整个上下文生命周期。本文将从架构到实现细节，完整剖析这套方案。\n01\n整体架构\nOpenClaw 的上下文管理分为三个阶段，形成递进的防御纵深：\n┌────────────────────────┐  ┌─────────────────────┐  ┌──────────────────────────┐\n│   LLM 调用前（预防）     │  │  LLM 调用中（自动）   │  │   LLM 调用后（溢出恢复）   │\n│                        │  │                     │  │                          │\n│\n1.\nHistory Turn Limit  │  │\n3.\nSDK 自动          │  │\n5.\nOverflow 错误检测      │\n│\n2.\nContext Pruning     │  │    Compaction        │  │\n6.\n显式 Compaction       │\n│    (Tool\nResult\n裁剪)  │  │                     │  │\n7.\n超大 Tool\nResult\n截断  │\n│                        │  │                     │  │\n8.\n重试\n/\n放弃           │\n└────────────────────────┘  └─────────────────────┘  └──────────────────────────┘\n一个关键的设计原则是\n渐进式降级：\n先做轻量级裁剪（只丢弃冗余数据），再尝试 LLM 摘要（有损但保留语义），最后才是暴力截断（只保留头部内容）。每一层只在前一层不够用时才会介入。\n02\n第一层：预防性裁剪（发送 LLM 之前）\n这一层的目标是：在消息发送给 LLM 之前，尽可能裁剪掉不再需要的冗余内容，避免触发上下文溢出。\n2.1\n会话历史轮次限制（History Turn Limit）\n文件：\nsrc/agents/pi-embedded-runner/history.ts\n这是最简单、最粗粒度的保护——直接限制保留的用户对话轮次数。\n工作原理\nlimitHistoryTurns()\n函数从消息列表的末尾向前遍历，计数\nrole === \"user\"\n的消息。当计数超过\nlimit\n时，丢弃更早的所有消息：\nexport\nfunction\nlimitHistoryTurns(\nmessages: AgentMessage[],\nlimit\n: number | undefined,\n): AgentMessage[] {\nif\n(!\nlimit\n||\nlimit\n<= 0 || messages.length === 0) {\nreturn\nmessages;\n}\nlet\nuserCount = 0;\nlet\nlastUserIndex = messages.length;\nfor\n(\nlet\ni = messages.length - 1; i >= 0; i--) {\nif\n(messages[i].role ===\n\"user\"\n) {\nuserCount++;\nif\n(userCount >\nlimit\n) {\nreturn\nmessages.slice(lastUserIndex);\n}\nlastUserIndex = i;\n}\n}\nreturn\nmessages;\n}\n注意这里的截断边界是\nlastUserIndex\n——即被计数的最后一个 user 消息的位置。这意味着截断点始终在一个完整的 user 轮次边界上，不会把一个 user-assistant-toolResult 的三元组截断成碎片。\n配置解析\n限制数值通过\ngetHistoryLimitFromSessionKey()\n从配置中解析，支持多级覆盖：\nper-DM 用户级别覆盖\n→ channels.*\n.dms\n[userId]\n.historyLimit\nprovider 级别 DM 默认\n→ channels.*\n.dmHistoryLimit\nprovider 级别群组/频道默认\n→ channels.*\n.historyLimit\n这个分层设计使得运营者可以为特定的高频用户设置更严格的限制，同时保持其他用户的默认行为。session key 的\nkind\n字段（\ndm\n/\ndirect\n/\nchannel\n/\ngroup\n）决定走哪条解析路径。\n2.2\nContext Pruning 扩展（渐进式裁剪旧 Tool Results）\n文件：\nsrc/agents/pi-extensions/context-pruning/\n如果说 History Turn Limit 是\"剪头\"，Context Pruning 就是\"瘦身\"。它是一个运行时扩展（extension），注册在\ncontext\n事件上，在每次构造 LLM 请求时拦截消息列表。\n触发机制\n扩展采用\ncache-ttl\n模式运行，默认 TTL 为 5 分钟。这意味着：\n上一次 pruning 之后 5 分钟内，不会再次触发（避免频繁裁剪）\n超过 TTL 后的第一次\ncontext\n事件会触发裁剪评估\n// extension.ts\nif\n(runtime.\nsettings\n.\nmode\n===\n\"cache-ttl\"\n) {\nconst\nttlMs = runtime.\nsettings\n.\nttlMs\n;\nconst\nlastTouch = runtime.\nlastCacheTouchAt\n??\nnull\n;\nif\n(!lastTouch || ttlMs <=\n0\n)\nreturn\nundefined\n;\nif\n(ttlMs >\n0\n&&\nDate\n.\nnow\n() - lastTouch < ttlMs)\nreturn\nundefined\n;\n}\n两级裁剪策略\n核心逻辑在\npruneContextMessages()\n中，使用\n字符占比\n作为触发条件：\n阶段\n触发条件\n行为\n效果\nSoft Trim\ntotalChars / charWindow > 0.3\n对超过 4000 字符的旧 tool result，保留首 1500 + 尾 1500 字符，中间用\n...\n替代\n保留关键信息（开头通常是命令/文件头，结尾通常是结论/错误），丢弃中间冗余\nHard Clear\ntotalChars / charWindow > 0.5\n将整个 tool result 替换为\n\"[Old tool result content cleared]\"\n彻底释放空间，仅保留\"这里曾经有一个工具调用\"的标记\n其中\ncharWindow = contextWindowTokens × 4\n（使用 1 token ≈ 4 字符的粗略估算）。\nSoft Trim 的截断实现很精巧——它不是简单地\nslice\n，而是在文本块（text content block）的层面操作，分别从头部和尾部取字符，保持换行符的完整性：\nfunction\nsoftTrimToolResultMessage\n(\nparams\n) {\nconst\nparts =\ncollectTextSegments\n(msg.\ncontent\n);\nconst\nrawLen =\nestimateJoinedTextLength\n(parts);\nif\n(rawLen <= settings.\nsoftTrim\n.\nmaxChars\n)\nreturn\nnull\n;\nconst\nhead =\ntakeHeadFromJoinedText\n(parts, headChars);\nconst\ntail =\ntakeTailFromJoinedText\n(parts, tailChars);\nconst\ntrimmed =\n`\n${head}\n\\n...\\n\n${tail}\n`\n;\nconst\nnote =\n`\\n\\n[Tool result trimmed: kept first\n${headChars}\nchars and last\n${tailChars}\nchars of\n${rawLen}\nchars.]`\n;\nreturn\n{ ...msg,\ncontent\n: [\nasText\n(trimmed + note)] };\n}\n裁剪范围与保护规则\n并非所有消息都会被裁剪，有几条硬性保护规则：\n第一条 user 消息之前的内容永远不裁剪。\n因为会话开头通常包含身份文件的读取（如\nSOUL.md\n、\nUSER.md\n等），这些 tool result 是 AI 理解用户身份的基础。\n最近 N 条 assistant 消息关联的 tool result 不裁剪\n（默认 N=3）。通过\nfindAssistantCutoffIndex()\n从末尾向前数 3 个 assistant 消息，这些消息之后的 tool result 被标记为受保护区域。\n含图片的 tool result 不裁剪。\n图片无法被部分截断且通常直接与用户需求相关。\n可配置的工具白/黑名单。\n通过\ntools.allow\n/\ntools.deny\n配置，可以精确控制哪些工具的结果可以被裁剪。\nHard Clear 还有一个额外的安全阈值：只有当可裁剪的工具结果总量超过\nminPrunableToolChars\n（默认 50,000 字符）时才会执行，避免对少量工具结果做无意义的清理。\n默认参数一览\n// settings.ts\n{\nmode\n:\n\"cache-ttl\"\n,\nttlMs\n:\n5\n*\n60\n*\n1000\n,\n// 5 分钟缓存 TTL\nkeepLastAssistants\n:\n3\n,\n// 保护最近 3 条 assistant 消息的 tool results\nsoftTrimRatio\n:\n0.3\n,\n// 总字符占比 > 30% 时触发 soft trim\nhardClearRatio\n:\n0.5\n,\n// 总字符占比 > 50% 时触发 hard clear\nminPrunableToolChars\n:\n50_000\n,\n// hard clear 前需要可裁剪 tool result ≥ 50K 字符\nsoftTrim\n: {\nmaxChars\n:\n4_000\n,\n// tool result 超过 4K 字符才触发 soft trim\nheadChars\n:\n1_500\n,\n// 保留首 1500 字符\ntailChars\n:\n1_500\n,\n// 保留尾 1500 字符\n},\nhardClear\n: {\nenabled\n:\ntrue\n,\nplaceholder\n:\n\"[Old tool result content cleared]\"\n,\n},\n}\n2.3\n单条 Tool Result 截断\n文件：\nsrc/agents/pi-embedded-runner/tool-result-truncation.ts\nContext Pruning 处理的是\"很多旧的 tool result 累加起来太大\"的情况，而单条截断处理的是另一种场景——\n单条工具返回了巨量内容\n（比如读取了一个大文件或执行了一个产生大量输出的命令）。\n大小限制\nMAX_TOOL_RESULT_CONTEXT_SHARE\n=\n0\n.\n3\n// 单条 tool result 最多占上下文窗口的\n30\n%\nHARD_MAX_TOOL_RESULT_CHARS\n=\n400\n_000  // 绝对上限\n400\nK 字符（约\n100\nK tokens）\nMIN_KEEP_CHARS\n=\n2\n_000                // 截断时至少保留前\n2000\n字符\n最终限制取两者中的较小值：\nexport\nfunction\ncalculateMaxToolResultChars\n(\ncontextWindowTokens\n:\nnumber\n):\nnumber\n{\nconst\nmaxTokens =\nMath\n.\nfloor\n(contextWindowTokens *\nMAX_TOOL_RESULT_CONTEXT_SHARE\n);\nconst\nmaxChars = maxTokens *\n4\n;\n// 1 token ≈ 4 chars 估算\nreturn\nMath\n.\nmin\n(maxChars,\nHARD_MAX_TOOL_RESULT_CHARS\n);\n}\n对于一个 200K token 上下文窗口的模型，单条 tool result 最大约为\n200K × 0.3 × 4 = 240K\n字符。对于 2M 上下文的模型，理论值 2.4M 会被\nHARD_MAX_TOOL_RESULT_CHARS\n限制到 400K。\n截断策略\n截断时保留内容的头部（开头通常包含最重要的信息），并尽量在换行符处断开以避免切断行中间：\nexport\nfunction\ntruncateToolResultText\n(\ntext, maxChars, options\n) {\nconst\nkeepChars =\nMath\n.\nmax\n(minKeepChars, maxChars - suffix.\nlength\n);\nlet\ncutPoint = keepChars;\n// 尝试在 80% 范围内找到最近的换行符\nconst\nlastNewline = text.\nlastIndexOf\n(\n\"\\n\"\n, keepChars);\nif\n(lastNewline > keepChars *\n0.8\n) {\ncutPoint = lastNewline;\n}\nreturn\ntext.\nslice\n(\n0\n, cutPoint) + suffix;\n}\n截断后追加一段提示信息，引导模型通过 offset/limit 等参数获取更多内容：\n⚠️ [Content truncated — original was too\nlarge\nfor\nthe model\n's context window.\nThe content above is a partial view. If you need more, request specific sections\nor use offset/limit parameters to read smaller chunks.]\n多文本块的比例分配\n一个 tool result 可能包含多个 text content block。此时截断预算会按各 block 的原始长度比例分配：\n// truncateToolResultMessage() 中\nconst\nblockShare = textBlock.\ntext\n.\nlength\n/ totalTextChars;\nconst\nblockBudget =\nMath\n.\nmax\n(\nminKeepChars + suffix.\nlength\n,\nMath\n.\nfloor\n(maxChars * blockShare),\n);\n两种截断模式\n模式\n函数\n场景\n持久化\n内存级\ntruncateOversizedToolResultsInMessages()\nLLM 调用前的预防性守卫\n不修改 session 文件\n持久级\ntruncateOversizedToolResultsInSession()\n溢出恢复时的最后手段\n修改 session 文件（通过分支重写）\n持久级截断的实现很有意思——它通过 Session Manager 的分支机制（branching）来修改历史：\n找到第一个超大 tool result 的 entry\n从该 entry 的父节点处创建新分支\n从该位置开始，依次重新追加所有后续 entry，对超大 tool result 做截断处理\n新分支成为当前活动分支\n这种方式避免了直接修改已有的 entry，保持了 session 文件的 append-only 语义。\n03\n第二层：Compaction（基于 LLM 的主动压缩）\n这是 OpenClaw 最核心的上下文压缩机制——用另一次 LLM 调用来生成对话历史的摘要，用摘要替代原始消息。\n核心文件：\nsrc/agents/compaction.ts\n— 摘要算法\nsrc/agents/pi-extensions/compaction-safeguard.ts\n— compaction 协调扩展\nsrc/agents/pi-embedded-runner/compact.ts\n— compaction 入口\n3.1 触发时机\nCompaction 在两种场景下触发：\nSDK 自动触发：\n当 pi-coding-agent SDK 检测到上下文接近窗口上限时，自动触发\nsession_before_compact\n事件\n溢出后显式触发：\nLLM 返回上下文溢出错误后，以\ntrigger: \"overflow\"\n强制执行\n3.2\nCompaction Safeguard 协调流程\ncompaction-safeguard\n扩展监听\nsession_before_compact\n事件，协调整个 compaction 流程。它不只是简单地做摘要，而是一个完整的信息保留+压缩 pipeline：\nsession_before_compact 事件触发\n│\n├── 1. 前置检查\n│     ├── 解析 model（ctx.model → fallback runtime.model）\n│     └── 获取 API key → 任一缺失则 cancel，保留原始历史\n│\n├── 2. 收集元数据\n│     ├── 文件操作记录：\nread\n/edited/written → readFiles + modifiedFiles\n│     └── 工具失败记录：最多 8 条，每条 ≤ 240 字符\n│\n├── 3. 历史预裁剪（可选）\n│     └── 当新内容 > maxHistoryShare(50%) 的上下文窗口时\n│           ├── 丢弃最老的 chunk\n│           ├── 修复 tool_use/tool_result 配对\n│           └── 对被丢弃消息单独做摘要 → droppedSummary\n│\n├── 4. 分段摘要（summarizeInStages）\n│     └── messagesToSummarize → chunks → per-chunk 摘要 → 合并\n│\n├── 5. Split Turn 处理（可选）\n│     └── 如果是分裂轮次，额外摘要 turnPrefixMessages\n│\n└── 6. 组装最终 summary\n├── 对话摘要文本\n├── Tool Failures 列表\n├── <read-files> / <modified-files> 文件操作\n└── <workspace-critical-rules> AGENTS.md 关键规则\n摘要失败保护\n整个流程用 try-catch 包裹，\n任何异常都会导致\n{ cancel: true }\n——取消 compaction，保留原始历史。这是一个重要的设计决策：宁可让上下文溢出（进入溢出恢复流程），也不要因为摘要失败而丢失历史。\n3.3\n摘要生成算法详解\n分段摘要（summarizeInStages）\n当消息量较大时，不能一次性把所有消息送给 LLM 做摘要（摘要请求自身也有上下文窗口限制）。\nsummarizeInStages\n采用分而治之的策略：\n消息列表\n→ splitMessagesByTokenShare (按 token 均分为 N 个 chunk)\n→ 逐 chunk 调用 summarizeWithFallback 生成摘要\n→ 如果产生多个\npartial\nsummaries\n→ 将各摘要作为 user 消息送入 LLM 做合并摘要\n→ 使用 MERGE_SUMMARIES_INSTRUCTIONS 指导合并\n关键参数：\nconst\nDEFAULT_PARTS =\n2\n;                     // 默认分\n2\n段\nconst\nBASE_CHUNK_RATIO =\n0\n.\n4\n;               // 每个 chunk 最多占上下文窗口的\n40\n%\nconst\nMIN_CHUNK_RATIO =\n0\n.\n15\n;               // 最小\n15\n%\nconst\nSAFETY_MARGIN =\n1\n.\n2\n;                  //\n20\n% 安全裕量\nconst\nSUMMARIZATION_OVERHEAD_TOKENS =\n4096\n;  // 预留\n4096\ntokens 给摘要 prompt 本身\nsplitMessagesByTokenShare\n的分割算法按 token 总量均分，确保每个 chunk 的 token 数接近\ntotalTokens / parts\n。分割点在消息边界上，不会切断单条消息。\n自适应 chunk 大小\n如果消息平均体积很大（比如用户频繁读取大文件），固定的 chunk 比例可能仍然导致单个 chunk 溢出摘要模型。\ncomputeAdaptiveChunkRatio\n会动态缩小 chunk 比例：\nexport\nfunction\ncomputeAdaptiveChunkRatio\n(\nmessages, contextWindow\n) {\nconst\navgTokens = totalTokens / messages.\nlength\n;\nconst\nsafeAvgTokens = avgTokens *\nSAFETY_MARGIN\n;\n// 乘以 1.2 安全系数\nconst\navgRatio = safeAvgTokens / contextWindow;\n// 当平均消息大小 > 上下文窗口的 10% 时，开始缩小\nif\n(avgRatio >\n0.1\n) {\nconst\nreduction =\nMath\n.\nmin\n(avgRatio *\n2\n,\nBASE_CHUNK_RATIO\n-\nMIN_CHUNK_RATIO\n);\nreturn\nMath\n.\nmax\n(\nMIN_CHUNK_RATIO\n,\nBASE_CHUNK_RATIO\n- reduction);\n}\nreturn\nBASE_CHUNK_RATIO\n;\n// 默认 0.4\n}\n举例：如果平均消息占上下文窗口的 20%（\navgRatio = 0.2\n），那么\nreduction = 0.4\n，chunk ratio 被缩小到\nMIN_CHUNK_RATIO = 0.15\n。每个 chunk 只会放 15% 上下文窗口大小的内容。\n超大消息的三级降级（summarizeWithFallback）\n对于包含极大单条消息的情况，摘要可能直接失败。\nsummarizeWithFallback\n实现了三级降级：\nLevel\n1\n: 尝试全量摘要\n↓ 失败（超时/溢出/API 错误）\nLevel\n2\n: 剔除超大消息（单条 >\n50\n% 上下文窗口），只摘要剩余小消息\n+ 追加\n\"[Large assistant (~150K tokens) omitted from summary]\"\n标注\n↓ 仍然失败\nLevel\n3\n: 返回兜底文本\n\"Context contained N messages (M oversized). Summary unavailable due to size limits.\"\n每一级都能产出一个结果，不会让 compaction 因为单条超大消息而完全中断。\n摘要调用的容错\n每个 chunk 的摘要调用通过\nretryAsync\n封装，具有内建重试机制：\nsummary =\nawait\nretryAsync\n(\n() =>\ngenerateSummary\n(chunk, model, reserveTokens, apiKey, signal, customInstructions, summary),\n{\nattempts\n:\n3\n,\nminDelayMs\n:\n500\n,\nmaxDelayMs\n:\n5000\n,\njitter\n:\n0.2\n,\nlabel\n:\n\"compaction/generateSummary\"\n,\nshouldRetry\n:\n(\nerr\n) =>\n!(err\ninstanceof\nError\n&& err.\nname\n===\n\"AbortError\"\n),\n},\n);\n最多重试 3 次，退避延迟从 500ms 到 5000ms，附加 20% 的抖动避免雷同重试。只有\nAbortError\n（用户主动取消）不重试。\n3.4\n历史裁剪预处理（pruneHistoryForContextShare）\n在开始摘要之前，如果待摘要的消息总量太大，需要先做一轮预裁剪。这发生在新内容（摘要后需要保留的部分）已经占用了超过\nmaxHistoryShare\n（默认 50%）的上下文窗口时。\n裁剪算法：\n1.\n计算 budgetTokens = contextWindowTokens × maxHistoryShare\n2.\nwhile (消息总 token > budgetTokens):\na. 将消息按 token 均分为 N 段（默认 2）\nb. 丢弃第一个（最老的）chunk\nc. 调用 repairToolUseResultPairing 修复孤立的 tool\n_result\nd. 统计丢弃量\n3. 对所有被丢弃的消息做单独摘要 → droppedSummary\n4. droppedSummary 作为 previousSummary 传递给后续的主摘要流程\n这里的\nrepairToolUseResultPairing\n至关重要——丢弃消息后，可能出现\ntool_result\n的对应\ntool_use\n（在 assistant 消息中）已被丢弃的情况。Anthropic 的 API 会严格检查配对关系，孤立的\ntool_result\n会导致\n\"unexpected tool_use_id\"\n错误。修复函数会：\n将匹配的\ntool_result\n移动到紧跟其对应\ntool_use\n之后\n丢弃孤立的\ntool_result\n（对应\ntool_use\n不存在）\n为缺失结果的\ntool_use\n插入合成的错误\ntool_result\n去除重复的\ntool_result\n3.5\nCompaction Summary 的结构化输出\n最终生成的 summary 不仅仅是对话摘要。OpenClaw 在摘要文本后附加了结构化信息，确保 compaction 后 AI 仍然知道\"自己做过什么\"：\n[对话摘要文本]\n## Tool Failures                          ← 工具失败记录（最多 8 条）\n- bash (exitCode=1):\ncommand\nnot found...\n- read_file (status=error): file too large\n<read-files>                              ← 已读文件列表\nsrc/foo.ts\nsrc/bar.ts\n</read-files>\n<modified-files>                          ← 已修改文件列表\nsrc/baz.ts\n</modified-files>\n<workspace-critical-rules>                ← AGENTS.md 中的关键规则\n...Session Startup / Red Lines 内容...     （限制 ≤ 2000 字符）\n</workspace-critical-rules>\n这些附加信息的意义：\nTool Failures：\n让 AI 知道之前哪些工具调用失败了，避免重蹈覆辙\nFile Lists：\n让 AI 知道自己读过和修改过哪些文件，维持工作上下文的连续性\nWorkspace Rules：\n将 AGENTS.md 中的关键规则注入 summary，确保 compaction 不会导致 AI \"忘记\"项目的核心约束\n3.6\n安全保护机制\nCompaction 涉及将对话历史送入 LLM 处理，有专门的安全考虑：\n保护机制\n说明\nstripToolResultDetails()\n永远不将\ntoolResult.details\n送入 LLM 做摘要。details 可能包含不可信的 payload（如外部 API 返回的原始数据），防止 prompt injection\nrepairToolUseResultPairing()\n丢弃消息后修复孤立/重复的 tool_result，防止 Anthropic API 拒绝请求\nEMBEDDED_COMPACTION_TIMEOUT_MS\nCompaction 超时保护，防止摘要调用无限挂起\n会话写锁\nCompaction 期间通过\nacquireSessionWriteLock()\n获取写锁，防止并发写入导致 session 文件损坏\n摘要失败 → 取消\nAPI key 缺失或摘要过程抛异常时，返回\n{ cancel: true }\n保留原始历史\n04\n第\n三层：溢\n出后恢复\n文件：\nsrc/agents/pi-embedded-runner/run.ts\n即使有了预防性裁剪和主动压缩，仍然可能出现上下文溢出——比如模型的实际 token 计数与估算的\nchars/4\n启发式有较大偏差，或者 SDK 自动 compaction 后上下文仍然超限。\n溢出检测\n通过\nisLikelyContextOverflowError()\n检测 LLM 返回的错误是否为上下文溢出。检测逻辑覆盖两个来源：\npromptError：prompt 提交阶段就被拒绝（provider 的 API 直接返回 413 或类似错误）\nassistantError：LLM 开始生成但在过程中报告上下文溢出（\nstopReason === \"error\"\n）\n恢复决策树\n检测到 context overflow 错误\n│\n├── 分支 A: 本次 attempt 内 SDK 已自动 compaction？\n│     └── 是 → 增加 overflowCompactionAttempts 计数\n│           └── 直接重试 prompt（不再额外 compact，避免重复压缩）\n│\n├── 分支 B: 本次 attempt 内无 auto\n-\ncompact？\n│     └── overflowCompactionAttempts\n<\n3\n？\n│           ├── 是 → 执行显式 compaction（\ntrigger\n: \"overflow\"）\n│           │     ├── 成功 → 重试 prompt\n│           │     └── 失败 → 进入 Fallback\n│           └── 否 → 进入 Fallback\n│\n├── Fallback: 检测是否有超大 tool\nresult\n│     └── sessionLikelyHasOversizedToolResults()\n│           ├── 有 → truncateOversizedToolResultsInSession()\n│           │     ├── 截断成功 → 重试 prompt\n│           │     └── 截断无效 → 放弃\n│           └── 无 → 放弃\n│\n└── 所有手段用尽 → 返回错误：\n\"Context overflow: prompt too large for the model.\nTry /reset (or /new) to start a fresh session,\nor use a larger-context model.\"\n恢复约束\nCompaction 最多 3 次尝试\n（\nMAX_OVERFLOW_COMPACTION_ATTEMPTS = 3\n）。每次 compaction 都涉及额外的 LLM 调用，需要避免无限循环。\nTool Result 截断只尝试一次\n（\ntoolResultTruncationAttempted\n标志位）。因为持久级截断修改了 session 文件，重复执行没有意义。\n全局迭代上限:\n整个 run loop 有 32-160 次的迭代上限（取决于 auth profile 数量），防止各种重试机制叠加导致无限循环。\nCompaction 失败检测:\n如果错误本身就是\ncompactionFailureError\n（说明 compaction 自身因溢出而失败），则直接跳过再次 compaction，进入 fallback。\n05\nToken 估算策略\nOpenClaw 使用\nchars / 4\n的启发式方法估算 token 数量（即 1 token ≈ 4 字符），这是一个有意为之的简化：\n不依赖具体 tokenizer:\n适用于所有 LLM provider（Anthropic、OpenAI、Google 等）\n已知偏差:\n对多字节字符（中文、日文等）会低估，对代码 token 也可能有偏差\n补偿机制:\n通过\nSAFETY_MARGIN = 1.2\n乘以 20% 的安全系数来弥补\n在\nchunkMessagesByMaxTokens\n中：\nconst\neffectiveMax =\nMath\n.\nmax\n(\n1\n,\nMath\n.\nfloor\n(maxTokens /\nSAFETY_MARGIN\n));\n在 compaction-safeguard 中，计算历史裁剪阈值时也会应用安全系数：\nconst\nmaxHistoryTokens =\nMath\n.\nfloor\n(contextWindowTokens * maxHistoryShare *\nSAFETY_MARGIN\n);\n此外，\nstripToolResultDetails()\n在估算前移除\ntoolResult.details\n，避免不可信的大体积附加数据干扰估算和摘要。\n06\n配置项\n汇\n总\n配置路径\n说明\n默认值\nagents.defaults.contextTokens\n上下文窗口上限覆盖\n模型默认值\nagents.defaults.compaction.reserveTokens\ncompaction 后为新回复保留的 token\n20,000\nagents.defaults.compaction.reserveTokensFloor\nreserveTokens 下限\n20,000\nagents.defaults.compaction.keepRecentTokens\n保留最近消息的 token 数\nSDK 默认\nagents.defaults.contextPruning.mode\npruning 模式\n\"cache-ttl\"\nagents.defaults.contextPruning.ttl\n缓存 TTL\n\"5m\"\nagents.defaults.contextPruning.keepLastAssistants\n保护最近 N 条 assistant 消息\n3\nagents.defaults.contextPruning.softTrimRatio\nsoft trim 触发阈值\n0.3\nagents.defaults.contextPruning.hardClearRatio\nhard clear 触发阈值\n0.5\nchannels.*.dmHistoryLimit\nDM 会话历史轮次限制\n无限制\nchannels.*.historyLimit\n群组会话历史轮次限制\n无限制\n07\n全景流程图\n┌─────────────────────────────────┐\n│   用户消息进入会话                 │\n└────────────┬────────────────────┘\n│\n┌────────────▼────────────────────┐\n│  History Turn Limit              │  ← 最简粗粒度截断\n│  (只保留最近 N 轮用户对话)         │\n└────────────┬────────────────────┘\n│\n┌────────────▼────────────────────┐\n│  Context Pruning (soft/hard)     │  ← 渐进式裁剪旧 tool results\n│  - Soft: 保留\nhead\n+\ntail\n│     5 分钟 TTL 节流\n│  - Hard: 替换为占位符             │     ratio 阈值 0.3/0.5\n└────────────┬────────────────────┘\n│\n┌────────────▼────────────────────┐\n│  单条 Tool Result 截断            │  ← 内存级预防守卫\n│  (单条 ≤ 30% 上下文窗口)          │     ≤ 400K 字符硬顶\n└────────────┬────────────────────┘\n│\n┌────────────▼────────────────────┐\n│  发送给 LLM                      │\n└────────────┬────────────────────┘\n│\n成功 ◄──┤──► 溢出错误\n│\n┌────────────▼────────────────────┐\n│  Compaction（LLM 生成摘要）       │\n│  1. 自适应 chunk 大小             │\n│  2. 分段摘要 + 摘要合并           │\n│  3. 超大消息三级降级              │\n│  4. 附加文件操作 + 工具失败信息    │\n│  5. 附加工作区关键规则             │\n│  6. 修复 tool_use/result 配对    │\n└────────────┬────────────────────┘\n│\n成功 ◄──┤──► 仍然溢出？\n│\n┌────────────▼────────────────────┐\n│  截断超大 Tool Results            │  ← 最后手段\n│  (持久级修改 session 文件)         │     通过 branching 重写\n└────────────┬────────────────────┘\n│\n成功 ◄─┤─► 放弃（提示用户 /reset）\n08\n核心设计思路\n渐进式降级:\n从轻量裁剪 → LLM 摘要 → 暴力截断 → 放弃，逐级升级。每一层都是对前一层不够用时的兜底，避免\"一刀切\"导致信息过度损失。\n保护关键信息:\n在每一个环节都有明确的保护规则——最近的对话不动、身份文件不动、文件操作记录注入摘要、工具失败信息随 summary 传递、workspace 规则注入 summary。即使经过 compaction，AI 仍然知道\"我是谁、我做了什么、有哪些规则要遵守\"。\n自适应:\nchunk 大小根据消息平均体积动态调整，token 估算乘以安全系数，pruning 阈值基于比例而非绝对值。这使得同一套逻辑能适应从 8K 到 2M 各种大小的上下文窗口。\n安全优先:\n不可信数据（\ntoolResult.details\n）永远不进入摘要 prompt，防止 prompt injection；tool_use/result 配对修复防止 API 报错；摘要失败时取消而不是丢弃历史。\n可恢复性:\n溢出不是终点——自动重试、显式 compaction、tool result 截断，多种手段递进尝试。只有在所有手段都用尽后，才给用户一个明确的恢复建议（\n/reset\n）。\n最小侵入:\nsession 文件修改通过 branching 实现（append-only），内存级操作不持久化，写操作有排他锁保护。整个系统对 session 数据的修改是谨慎且可追溯的。\n09\n附录：上下文管理对 Provider KV Cache 的影响分析\n上下文管理方案不可避免地会改变发送给 LLM 的消息序列。而主流 LLM Provider（Anthropic、OpenAI、Google 等）都提供了\nPrompt Caching\n机制——如果新请求的 prompt 前缀与前一次请求相同，Provider 可以复用已有的 KV Cache，大幅降低延迟和计费。\n以 Anthropic 为例：cache read 价格仅为普通 input 的 10%，cache write 则为 125%。一次 cache miss 可能导致成本翻倍。\n9.1\nOpenClaw 对 Provider Cache 的感知\nOpenClaw 明确知晓并利用了 Provider 的 Prompt Caching 能力：\nCache Retention 配置:\n通过\ncacheRetention\n参数（\n\"short\"\n= 5 min /\n\"long\"\n= 1 hour）向 Anthropic 声明缓存保留策略。直接 Anthropic 调用默认为\n\"short\"\n。\nSystem Prompt Cache Control:\n对 OpenRouter 的 Anthropic 模型，通过\ncreateOpenRouterSystemCacheWrapper\n主动在 system message 上注入\ncache_control: { type: \"ephemeral\" }\n，确保系统提示被缓存。\nUsage 追踪:\nUsageAccumulator\n明确追踪\ncacheRead\ncacheWrite\nlastCacheRead\n/\nlastCacheWrite\n，可以观察每次调用的 cache 命中情况。\nCache TTL 感知的 Pruning:\nContext Pruning 扩展通过\nisCacheTtlEligibleProvider()\n检查 Provider 是否支持 cache TTL，\n仅对支持的 Provider（Anthropic、Moonshot、ZAI 等）启用 pruning。\n9.2\n各层操作对 KV Cache 的影响\n1. History Turn Limit — 对 cache 无直接影响\n这个操作只会在\n首次构建消息列表时\n截断最老的轮次。由于每次 LLM 调用的消息列表都是从 session 文件重建的，截断行为在每次请求间是一致的。\n只要 limit 不变，每次调用的 prompt 前缀是稳定的\n，不会导致 cache miss。\n但如果 limit 触发了截断（消息数超过限制），被截断的那一次请求的 prompt 前缀会与前一次完全不同——这一次一定是 cache miss。不过这通常只发生在长时间运行的会话中。\n2. Context Pruning — 会导致 cache 失效，但有刻意的缓解设计\n这是\ncache 影响最大的操作\n。Soft Trim 和 Hard Clear 会修改旧 tool result 的内容，改变 prompt 中间的文本。由于 KV Cache 是严格前缀匹配的，一旦修改了 prompt 中间的某条消息内容，从修改点到末尾的所有 token 都会 cache miss。\nOpenClaw 的缓解设计——Cache TTL 对齐:\nContext Pruning 的 5 分钟 TTL 不是随意选择的。它与 Anthropic 的\n\"short\"\ncache retention（也是 5 分钟）精确对齐：\n// Context Pruning 默认 TTL\nttlMs\n:\n5\n*\n60\n*\n1000\n// 5 分钟\n// Anthropic cache retention 默认\ncacheRetention\n:\n\"short\"\n// 5 分钟\n设计意图是：\n在 cache 存活期间，不进行 pruning。\n因为 Provider 的 cache 还在，任何修改都会浪费已缓存的 KV。\n当 cache 自然过期后，再做 pruning。\n此时 cache 已经失效，pruning 不会造成额外的 cache miss 成本。\nPruning 完成后更新\nlastCacheTouchAt\n，重新开始 TTL 计时，确保下一次 pruning 至少间隔一个 cache 周期。\n此外，\nisCacheTtlEligibleProvider()\n确保只有支持 cache 的 Provider 才启用这个基于 TTL 的 pruning 模式。不支持 cache 的 Provider（如 OpenAI、DeepSeek）不会使用\ncache-ttl\n模式，因此不受 TTL 约束。\nCache 失效时的成本影响：\n当 pruning 确实执行时：\nSoft Trim\n修改了 prompt 中间的内容 → 从修改点往后全部 cache miss\nHard Clear\n更彻底——将整条工具结果替换为占位符\n但由于 pruning 只在 cache 已过期时执行，这次 miss 的额外成本仅是\"cache write\"（比普通 input 贵 25%），而不是\"本可以 cache read 却 miss 了\"（cache read 便宜 90%）。\n3. 单条 Tool Result 截断 — 内存级无影响，持久级会 cache miss\n内存级截断\n（\ntruncateOversizedToolResultsInMessages\n）：只在内存中修改，不影响 session 文件。但由于修改了发送给 LLM 的 prompt，会导致一次 cache miss。不过这通常发生在超大 tool result 刚产生时（第一次发送），cache 尚未建立。\n持久级截断\n（\ntruncateOversizedToolResultsInSession\n）：通过 branching 重写 session 文件，会永久改变后续所有请求的 prompt 序列。必然导致一次完整的 cache miss。但这是溢出恢复的最后手段，能正常工作比 cache 命中更重要。\n4. Compaction — 完全重建 prompt，cache 完全失效\nCompaction 是最极端的操作——用一段摘要替代了大量历史消息。compaction 后的 prompt 与之前完全不同，\nKV Cache 必然 100% miss。\n这是一个有意接受的 trade-off：\nCompaction 本身就是\"不得不做\"的操作（上下文已经快溢出了）\nCompaction 后 prompt 通常显著缩短，后续请求的 input token 总量大幅减少\nCache write 成本是一次性的，后续请求立即开始构建新的 cache\n9.3\n成本影响量化估算\n以 Anthropic Claude 的定价为例（\nclaude-opus-4-6\n）：\n场景\ninput 单价\ncache read 单价\ncache write 单价\n正常（cache hit）\n$5/M\n$0.5/M\n—\nCache miss（新内容）\n$5/M\n—\n$6.25/M\n假设一次 100K token 的请求：\n操作\nCache Hit 率\n成本估算\n正常对话（无 pruning/compaction）\n~90%+\n~$0.10（90K cache read + 10K input）\nPruning 执行后的第一次请求\n0%（全量 write）\n~$0.63（100K cache write）\nCompaction 后（prompt 缩至 30K）\n0%（全量 write）\n~$0.19（30K cache write）\n关键观察：\nCompaction 虽然导致 cache 完全失效，但由于 prompt 大幅缩短，即使全量 cache write 的成本也远低于溢出前每次请求的成本。\n9.4 总结\n操作\nCache 影响\n缓解措施\n成本评估\nHistory Turn Limit\n低（一致性截断）\n无需特殊处理\n几乎无额外成本\nContext Pruning\n中等\n（修改中间内容）\nTTL 对齐 Provider cache 周期\n仅在 cache 过期后触发\nTool Result 截断\n中等（单次 miss）\n只在溢出恢复时使用\n一次性成本，可接受\nCompaction\n高\n（完全重建）\nprompt 大幅缩短补偿\n长期看反而降低总成本\nOpenClaw 的设计在\ncache 效率\n和\n上下文管理\n之间取得了合理的平衡。最关键的缓解机制是 Context Pruning 的\nTTL 与 Provider Cache 周期对齐\n——这确保了最频繁的上下文修改操作不会浪费有效的 cache。而 Compaction 虽然代价最大，但它本身就是一个\"救命\"操作，执行后 prompt 缩短带来的长期成本节约远超一次 cache miss 的损失。\n猜你所想彩蛋时刻\n目前，腾讯轻量云 Lighthouse 已支持秒速部署 OpenClaw，可快速接入企业微信、QQ、钉钉、飞书等国内主流 IM 软件，7X24小时在线、随时响应，轻松定制您的私人AI助理！\n优惠活动直达码\nOpenClaw 社群交流码\n-End-\n原创作者｜\n杨柏\n感谢你读到这里，不如关注一下？\n👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。3月11日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.9,
+        "peripheral": 0,
+        "irrelevant": 0.1
+      }
+    },
+    "relevance": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.1,
+        "2": 0.88,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.7,
+        "1": 0.11,
+        "2": 0.07,
+        "3": 0.07,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.48,
+      "probabilities": {
+        "0": 0.78,
+        "1": 0.06,
+        "2": 0.09,
+        "3": 0.04,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.07,
+        "3": 0.86,
+        "4": 0.07,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.79,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.81,
+        "5": 0.08
+      }
+    },
+    "anti_hype": {
+      "score": 2.88,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.02,
+        "2": 0.04,
+        "3": 0.8,
+        "4": 0.1,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 14981,
+    "outputTokens": 172,
+    "totalTokens": 15153
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.87,
+        "relevance": 0.9,
+        "grounding": 0.55,
+        "decision_action": 0.68,
+        "evidence": 0.9,
+        "actionability": 0.75,
+        "anti_hype": 0.78
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180031632,
+                "endTime": 1791180031984,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000629202",
+      "marketCost": "0.000629202",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000629202",
+      "inferenceCost": "0.000629202",
+      "inputInferenceCost": "0.000629202",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACHJSZ4BTPBD36VSN5HC3"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:31 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::x55pz-1791180030415-74c26ddf3522"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.9,
+            "peripheral": 0,
+            "irrelevant": 0.1
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.1,
+            "2": 0.88,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.7,
+            "1": 0.11,
+            "2": 0.07,
+            "3": 0.07,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.48,
+          "probabilities": {
+            "0": 0.78,
+            "1": 0.06,
+            "2": 0.09,
+            "3": 0.04,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.07,
+            "3": 0.86,
+            "4": 0.07,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.79,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.81,
+            "5": 0.08
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.88,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.02,
+            "2": 0.04,
+            "3": 0.8,
+            "4": 0.1,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 14981,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.87,
+            "relevance": 0.9,
+            "grounding": 0.55,
+            "decision_action": 0.68,
+            "evidence": 0.9,
+            "actionability": 0.75,
+            "anti_hype": 0.78
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180031632,
+                    "endTime": 1791180031984,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000629202",
+          "marketCost": "0.000629202",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000629202",
+          "inferenceCost": "0.000629202",
+          "inputInferenceCost": "0.000629202",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACHJSZ4BTPBD36VSN5HC3"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:31.212Z"
+  }
+}

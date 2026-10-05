@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "251012936859885568",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI 工程化落地实践：推翻\"完美架构\"，回归提示词本质",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694655&idx=1&sn=63bbdd3d44df9dd42dc283f8c749d077",
+      "date": "2026-02-27T00:46:00.485Z",
+      "chars": 15504,
+      "text": "原创\n侯迎圣\n2026-02-27 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n01\n一个\"完美\"架构的诞生与死亡\n1.1 我们最初的野心\n故事要从几周前说起。\n那时候，团队刚开始系统性地探索 AI 辅助开发。我们读了大量论文和博客，看到业界在讨论\"多智能体协作\"、\"Agent 编排\"、\"知识图谱\"……我们想：既然要做，就做一套\"正经\"的架构。\n于是我们设计了这样一套系统：\n用户需求\n↓\n┌───────────────────────────────────────────────────────┐\n│  Command 层（入口）                                     │\n│  /req-dev（启动研发流程）                               │\n└───────────────────────────────────────────────────────┘\n↓\n┌───────────────────────────────────────────────────────┐\n│  Agent 层（决策）                                       │\n│  phase-router → 意图识别 → 路由到专业 Agent             │\n│  ├── design-manager（设计管理）                        │\n│  ├── impl-coordinator（实现协调）                      │\n│  └── experience-depositor（经验沉淀）                  │\n└───────────────────────────────────────────────────────┘\n↓\n┌───────────────────────────────────────────────────────┐\n│  Skill 层（执行）                                       │\n│  req-create, workspace-setup, meta-maintainer...      │\n└───────────────────────────────────────────────────────┘\n我们还定义了严格的\"九步工作流\"：需求录入 → 上下文准备 → 方案设计 → 设计评审 → 代码实现 → 代码审查 → 测试验证 → 经验沉淀 → 需求关闭。\n每一步都有专门的 Agent，每个 Agent 都有专门的 Skill，一切井井有条。\n我们甚至为 Agent 之间的通信设计了标准的 JSON 协议，为元信息管理写了专门的维护脚本。\n1.2\n第一个裂缝\n架构设计完成后，我们试着在脑子里“走一遍流程”。\n假设我想改一个配置文件里的默认值。按照我们的设计，我应该：\n创建一个“微需求”\n等待\nphase-router\n识别意图\n被路由到\nimpl-coordinator\n初始化标准的工作空间\n然后才能改那一行代码\n想象中，我将花 15 分钟走完流程，只为改 1 秒钟的代码。\n我当时想：可能是因为这个需求太小了，不适合用完整流程。于是我又试想了一个“正经”的需求——给服务加一个新接口。\n这次流程在脑子里走得更顺畅了。但我开始担忧一些问题：\n如果真的实现这套架构，我花在“让 AI 理解流程”上的精力，会不会比花在“让 AI 理解业务”上的还多？\nphase-router\n可能会误判意图，需要手动纠正。Agent 之间的上下文传递可能会丢失关键信息。元数据维护也可能出问题。\n1.3\n一个诚实的问题\n就在我们讨论架构设计的间隙，我需要完成一个小任务。我直接在聊天框里写：\n“帮我在\nuser\n表加一个 last_login_at 字段，datetime 类型，默认\nnull\n，然后在登录接口里更新它。”\nAI 直接帮我完成了。没有走任何流程，没有创建需求 ID，没有初始化工作空间。\n5 分钟，完事。\n那一刻我问自己一个问题：\n如果按照我们设计的架构来做这个任务，效率会更高还是更低？\n这个问题让我很不舒服。因为它意味着我们过去几天的设计工作可能是无效的。\n1.4\n回到原点的勇气\n我把这个困惑分享给团队。讨论了很久之后，我们决定做一件需要勇气的事：\n暂停所有架构开发，重新思考 AI 工程化到底应该是什么。\n我们问自己三个问题：\n我们到底在解决什么问题？\n—— AI 辅助开发的效率和质量\n现有架构解决了吗？\n—— 没有，反而增加了认知负担\n有没有更简单的方案？\n—— 不知道，需要重新调研\n带着这三个问题，我们开始了新一轮的探索。\n02\n两个产品的启发\n转折点来自两个看似不相关的产品：Google 的 NotebookLM 和 Anthropic 的 Claude Code。\n2.1\nNotebookLM：简单到让人惭愧\n在准备团队分享时，我用 NotebookLM 整理资料。把几篇论文和博客丢进去，它就能帮我总结要点、回答问题、生成播客。\n然后我注意到这个产品的界面——简单到让人惭愧。\n┌──────────────────────────────────────────────────────────────────────────┐\n│  NotebookLM                                                               │\n│                                                                           │\n│  左栏：来源            │  中栏：对话            │  右栏：输出              │\n│  ─────────────         │  ─────────────         │  ─────────────          │\n│  + 添加来源            │\n[AI 自动总结]\n│  思维导图                │\n│  ☐ PDF                 │  推荐问题：            │  播客                    │\n│  ☐ 网页                │  • ...                 │  报告                    │\n│  ☐ 视频                │  • ...                 │  ...                     │\n│  ☐ 笔记                │                        │                          │\n│                        │\n[输入框]\n│                          │\n└──────────────────────────────────────────────────────────────────────────┘\n就这？就这！\n没有\"智能路由\"，没有\"多 Agent 协作\"，没有\"知识图谱\"。就是\n来源 + 对话 + 输出\n，三栏设计。\n但它解决了一个核心问题：\n让人能快速消化大量信息。\n我开始思考：NotebookLM 的设计逻辑是什么？\n输出 = f(来源, 输出格式)\n其中：\n- 来源：你丢进去的材料\n- 输出格式：播客、报告、思维导图...\n- f：LLM 的理解和生成能力\n这个公式简单到不需要任何架构。\n你只需要：\n把材料组织好\n告诉 AI 你想要什么格式的输出\n我们的三层架构、九步工作流，本质上是在\nf\n这个函数上做文章，试图让它更\"智能\"。但 NotebookLM 告诉我们：\nf\n已经够强了，问题在于如何组织好输入。\n2.2\nClaude Code：反直觉的极简主义\n如果说 NotebookLM 是一个启发，Claude Code 就是一记重锤。\nAnthropic 发布 Claude Code 时，我花了一整个周末研究它的设计理念。有几点让我印象深刻：\n第一，他们也曾想做复杂架构，然后放弃了。\n“一开始 Claude Code 就能给自己创建和使用工具。我们试图在后台创建一个复杂的工具图……我们做的越多，它就变得越不可靠。”\n听起来熟悉吗？我们也在做\"复杂的工具图\"。\n第二，他们选择了最小化工具数量。\n“你给模型的工具越少，每次调用的效率就越高……与其创造很多小的、精确的工具，不如创造大的、表达力强的工具，然后信任模型。”\n我们的做法正好相反——我们设计了\nreq-create\n、\nworkspace-setup\n、\nmeta-maintainer\n等一堆精细的 Skill。\n第三，Claude Code 创作者的实际工作方式印证了这一点。\nClaude Code 创作者分享过他的使用经验：他几乎不做复杂的定制，而是依靠最基本的能力——\n同时运行 10-15 个 Claude 实例\n，每个处理一个独立任务，每周产出\n50-100 个 PR\n。\n这个数字让我们反思：我们花那么多时间设计\"完美架构\"，是不是本末倒置了？\n第四，他们强调\"完全的能力对等\"。\n“你能做的事情，Claude 都能做。”\n我们的九步工作流实际上是在\n限制\nAI 的能力——它必须按照我们规定的路径走。\n第五，最让我震撼的一句话：\n“最好的工具是你不知道它存在的工具。”\n我们的架构不是在创造\"工具\"，而是在创造\"流程\"。用户每次使用都能感受到流程的存在，这本身就是失败。\n2.3\n核心洞察：文本是通用接口\n两个产品给我们的共同启发是：\nLLM 本身就是最好的解释器，它不需要复杂的\"协议\"。\nNotebookLM 直接读 PDF 和网页。Claude Code 直接操作文件系统。它们都没有中间层的\"意图识别\"或\"路由调度\"。\n回到我们的场景——代码开发，本质上也是信息处理：\n代码 = LLM(业务需求 + 技术规范 + 项目约定 + 历史经验)\n既然如此，\n我们需要做的不是设计复杂的 Agent 编排，而是把\"业务需求\"、\"技术规范\"、\"项目约定\"、\"历史经验\"组织成 LLM 能理解的格式。\n什么格式？\nMarkdown\n。 最朴素的文本格式。\n03\n认知转变：从代码到文本\n这次探索带来了一个根本性的认知转变。\n3.1 旧思维 vs 新思维\n维度\n旧思维\n新思维\n如何让 AI 遵循规范\n开发工具强制执行\n写成提示词让 AI 理解\n如何管理 AI 状态\n设计元数据系统\n保存到文件，下次读取\n如何沉淀经验\n开发\"经验管理 Agent\"\n写文档，放到 context 目录\n如何路由意图\n开发\"路由 Agent\"\n在提示词里写清楚决策逻辑\n核心观点：你不需要为 AI 开发复杂的工具，你只需要把知识结构化地写下来。\n3.2\n一个具体的例子\n假设我们有一个规范：提交代码前必须运行 lint 检查。\n旧做法：\n开发一个 pre\n-\ncommit\nSkill\n→ 在 impl\n-\ncoordinator Agent 里调用\n→ 检查失败时返回特定错误码\n→ Agent 根据错误码决定下一步\n新做法：\n# AGENTS.md\n## 代码提交规范\n-\n提交前必须运行\n`make lint`\n-\nlint 不通过不要提交，先修复问题\n就这样。AI 会自己读这段话，自己执行 lint，自己修复问题。不需要任何代码。\n3.\n3 这不是偷懒，这是更高效的工程\n有人可能会说：这不就是把复杂度藏到提示词里了吗？\n不是的。\n提示词和代码的本质区别在于：提示词是声明式的，代码是命令式的。\n声明式：告诉 AI \"应该是什么样\"\n命令式：告诉 AI \"应该怎么做\"\n当你用代码实现一个流程，你需要考虑所有边界情况、错误处理、状态管理。当你用提示词描述一个规范，AI 会自己处理这些细节。\n这不是偷懒，这是利用 LLM 的能力来降低工程复杂度。\n04\n落地哲学：三个核心原则\n基于上述反思，我们提炼出三个落地原则。\n原则一：文档即记忆（Dual Use）\nAGENTS.md\n既是新人的入职手册，也是 AI 的核心记忆。\n这个原则的精妙之处在于：\n同一份文档，人类和 AI 都能读懂、都能用。\n你不需要维护两套知识体系——一套给人看，一套给 AI 用。\n当你写文档时，想象你在给一个聪明但对项目一无所知的新同事讲解。这个新同事可能是人类，也可能是 AI。\n原则二：先跑起来\n从最简单的提示词开始，让 AI 辅助工作能用。不要追求完美设计，先让流程转起来。\n一个能用的简单系统，好过一个完美但用不起来的复杂系统。\n我们的错误正是在系统\"能用\"之前就开始追求\"完美\"。\nClaude Code 创作者的计划模式工作流\n印证了这一点：\n“大多数会话都从计划模式开始。与 Claude 来回讨论直到满意其计划，然后切换到自动接受编辑模式。Claude 通常可以一次完成。一个好的计划非常重要。”\n注意这里的关键：不是设计复杂的\"计划 Agent\"，而是用对话的方式讨论计划，确认后再执行。\n简单、直接、有效。\n原则三：自然演进\n观察团队如何使用（甚至\"滥用\"）工具，将高频模式固化为能力。不预设复杂架构，让需求驱动演进。\nClaude Code 团队有一句话说得很好：\n\"构建一个足够开放的产品，观察人们如何'滥用'它，然后为此而构建。\"\n不要试图预测用户需要什么。先给他们一个简单的工具，看他们怎么用，再决定要不要封装。\n05\n最简起点：一个文件搞定\n5.1\n只需一个文件\n忘掉复杂的架构。在项目根目录创建\nAGENTS.md\n：\n#\nAGENTS.md\n#\n# 项目背景\n这是 xxx 项目，使用 Go + MySQL，核心服务包括用户服务和订单服务。\n#\n# 工作规范\n- 先读代码再改，不要猜测未检查的代码\n- 代码注释用中文，变量命名用英文\n- 不确定的地方问我，不要自己瞎猜\n#\n# 常见坑点\n（遇到问题再补充）\n这就是全部起点。\n启动 AI 工具，它会自动读取这个文件，开始工作。\n5.2\n提示词的自然演进\n随着使用，提示词会自然生长。以下是一个典型的演进路径：\n起步阶段：\n基础背景\n#\n# 项目背景\n微服务架构，Go 语言，核心服务有用户服务、订单服务。\n积累阶段\n：\n补充踩过的坑\n## 常见坑点\n-\nApollo 配置格式：key 必须是 xxx.yyy.zzz 三段式\n-\n数据库连接：测试环境 IP 是 10.0.0.1，不是 localhost\n-\n商品发放：虚拟商品发到虚拟钱包，实物商品发到实体钱包\n成熟阶段\n：\n形成知识索引\n## 关键知识\n详细的技术背景见 context/ 目录：\n- 服务架构：context/tech/services/\n- 业务逻辑：context/business/\n- 历史经验：context/experience/\n关键：不要一开始就设计完美的知识结构。遇到什么记什么，自然演进。\n5.3\n提示词设计的实用技巧\n技巧 1：用 XML 标签隔离不同类型的指令\n<\ncoding_style\n>\n<\ndos\n>\n- 错误处理必须包装：fmt.Errorf(\"failed to x: %w\", err)\n- 日志必须带 traceId\n</\ndos\n>\n<\ndonts\n>\n- 禁止使用 panic\n- 禁止在循环中调用数据库\n</\ndonts\n>\n</\ncoding_style\n>\n技巧 2：写决策逻辑而不是散乱的规则\n## 遇到不确定的业务逻辑时\n1.\n先搜索 context/business/ 下的相关文档\n2.\n如果文档没写，搜索相关代码实现\n3.\n如果代码也不明确，再问我\n技巧 3：记录 AI 容易犯的错\n每次 AI 犯错后，把纠正内容加入 AGENTS.md：\n## AI 注意事项\n-\n【重要】修改 config 后要重启服务才能生效\n-\n【重要】用户表的 status 字段：0=未激活，1=正常，2=封禁（不是布尔值！）\n这是最低成本的\"模型微调\"——记一次，终身受益。\n技巧 4：简单的自然语言指令比复杂工具更有效\n你想要的效果\n直接说\nAI 不确定时问你\n\"有不清楚的就问我\"\nAI 先想清楚再动手\n\"先想想方案再动手\"\n简化冗长的代码\n\"简化一下\"\n深度思考复杂问题\n\"Think\" 或 \"仔细想想\"\n5.4\n何时需要封装成工具？\n判断标准：\n如果在 AGENTS.md 里写几句话就能达到同样效果，那就不需要封装。\n场景\n是否需要封装\n需要特定领域知识（如服务代码分析框架）\n✅ 是\n流程复杂且固定（如发布流程、安全检查）\n✅ 是\n自然对话能完成（需求澄清、方案讨论）\n❌ 否\n只是提示词优化\n❌ 否\nClaude Code 创作者的经验：只为\"内部循环\"封装工具\n\"我为每天多次执行的'内部循环'工作流使用斜杠命令。避免重复提示，Claude 也可以使用这些工作流。\"\n他的\n/commit-push-pr\n命令每天使用数十次，这种高频操作才值得封装。而且命令使用内联 bash 预计算 git status 等信息，\"使命令运行快速，避免与模型来回交互\"。\n另一个实用技巧：用 Hook 处理格式化\n\"我们使用 PostToolUse hook 格式化 Claude 的代码。Claude 通常开箱即用生成格式良好的代码，Hook 处理最后 10% 的格式化，避免后续 CI 中的格式化错误。\"\n这是\"把复杂度交给自动化\"的好例子——不需要在提示词里反复强调格式规范，用 Hook 自动处理。\n06\n解决 AI \"失忆\"问题\n6.1\n核心问题：AI是无状态的\nAI 的记忆只存在于当前对话窗口。会话结束，记忆清空。这就是为什么：\n昨天告诉它的注意事项，今天又忘了\n做到一半的任务，换个会话就不知道进度了\n这是 LLM 的本质特性，而不是产品缺陷。\n理解这一点很重要。\n大模型本质上是一个\n无状态的纯函数\n。它随时可以处理任何需求，前提是你必须恢复它的\"内存\"（上下文）。\n解决方案：把\"记忆\"保存到文件，新会话时从文件恢复。\n会话内存（易失）          文件系统（持久）\n↓                        ↓\n当前思维状态  ──保存──→  process.txt\n↑                        ↓\n新会话开始   ←──恢复──  process.txt\n6.2\n保存与恢复进度\n在会话结束前，让 AI 把当前状态保存到文件：\n# process.txt\n## 当前状态\n正在开发用户认证功能，API 已完成，下一步是写单元测试。\n## 已完成\n-\n[x] 设计 JWT Token 结构\n-\n[x] 实现登录接口\n-\n[x] 实现 Token 校验中间件\n## 待完成\n-\n[ ] 编写单元测试\n-\n[ ] 处理 Token 刷新逻辑\n## 注意事项\n-\nToken 过期时间配置在 config/auth.yaml\n-\n测试时需要先启动 Redis\n新会话开始时，让 AI 读取这个文件，它就能恢复上下文：\n已读取过程文件。上次停在\n\"编写单元测试\"\n。\n当前环境已检查：\n-\nGit\n状态：干净，最后提交是\n\"feat: 实现 Token 校验中间件\"\n-\nRedis\n：需要启动\n是否继续编写单元测试？\n就像游戏的存档/读档机制——会话切换变得无缝。\n6.3\n长期任务的最佳实践\nAnthropic 的研究指出了两种常见的失败模式：\n失败模式\n症状\n解决方案\n一次性完成\n试图一口气完成所有功能，上下文耗尽后留下半成品\n一次只做一个功能，做完就提交\n过早宣布胜利\n看到部分功能完成就认为任务结束\n用功能清单跟踪，全部完成才算完成\n功能清单的关键作用：\n对于复杂任务，创建\nfeatures.json\n：\n{\n\"requirement_id\"\n:\n\"example-requirement\"\n,\n\"features\"\n:\n[\n{\n\"id\"\n:\n\"F001\"\n,\n\"name\"\n:\n\"用户登录\"\n,\n\"description\"\n:\n\"实现用户登录功能\"\n,\n\"priority\"\n:\n1\n,\n\"status\"\n:\n\"done\"\n,\n\"estimated_effort\"\n:\n\"2h\"\n,\n\"actual_effort\"\n:\n\"2h\"\n,\n\"dependencies\"\n:\n[],\n\"acceptance_criteria\"\n:\n[\n\"AC-001\"\n],\n\"related_files\"\n:\n[\n\"src/login.ts\"\n],\n\"review_status\"\n:\n\"approved\"\n},\n{\n\"id\"\n:\n\"F002\"\n,\n\"name\"\n:\n\"Token 刷新\"\n,\n\"description\"\n:\n\"实现 Token 刷新能力\"\n,\n\"priority\"\n:\n2\n,\n\"status\"\n:\n\"in_progress\"\n,\n\"estimated_effort\"\n:\n\"2h\"\n,\n\"actual_effort\"\n:\nnull\n,\n\"dependencies\"\n:\n[\n\"F001\"\n],\n\"acceptance_criteria\"\n:\n[\n\"AC-002\"\n],\n\"related_files\"\n:\n[\n\"src/refresh.ts\"\n],\n\"review_status\"\n:\nnull\n}\n],\n\"summary\"\n:\n{\n\"total\"\n:\n2\n,\n\"done\"\n:\n1\n,\n\"in_progress\"\n:\n1\n,\n\"pending\"\n:\n0\n}\n}\n关键约束\n：AI 只能修改执行态字段（\nstatus/actual_effort/review_status/summary/last_updated\n等），禁止删改功能点定义性字段；以\ncontext/project/AgenticMetaEngineering/design/元工程规范/资源/结构示例/features.json.example\n为唯一口径，避免口径漂移与“偷懒跳过功能”。\n6.4\n高级技巧：利用\"独立上下文\"进行自我审查\nClaude Code 团队发现了一个反直觉的现象：\n“价值往往不在于角色扮演，而在于不相关的上下文窗口。”\n当你完成一段复杂的代码后，不要在同一个会话中让 AI review。因为此时的上下文已经\"被污染\"了——它包含了之前的试错、假设和偏见。\n最佳实践：\n提交代码，保存进度\n开启一个全新的会话\n让新会话的 AI 对刚才的改动进行审查\n两个互不知道对方上下文的窗口，往往能发现明显的逻辑漏洞。\n这就像找了另一个同事来做 Code Review。\n6.5\n最重要的技巧：给 AI 一个验证其工作的方式\nClaude Code 创作者在分享他的经验时特别强调：\n“这可能是从 Claude Code 获得出色结果的\n最重要的事情\n——给 Claude 一种\n验证其工作的方式\n。如果 Claude 有这个反馈循环，它会将最终结果的质量提高 2-3 倍。”\n不同场景的验证方式：\n开发场景\n验证方式\n后端 API\n运行测试套件、curl 调用接口\n前端 UI\n浏览器预览、截图对比\n配置变更\n重启服务验证配置生效\n移动应用\niOS/Android 模拟器测试\n关键洞察：\n“实际上非常简单，我认为人们有时会把它过度复杂化。给 Claude 一个查看代码输出的工具，告诉 Claude 关于这个工具。就是这样。Claude 会自己弄清楚其余的部分。”\n这印证了我们的核心观点：\n不需要复杂的架构，只需要给 AI 正确的能力和明确的指引。\n07\n团队共享：单仓库模式\n7.1\n为什么用单仓库？\n既然大模型是无状态函数，那么团队其实不需要\"50 个 Agent 实例\"，只需要\n\"1 个 Agent 工程 + 50 个独立的上下文空间\"。\n这里说的\"单仓库\"有两层含义：\n第一层：团队共享同一套 AI 配置（知识层面）\n传统做法是每个人各自维护自己的 AI 配置——你的 CLAUDE.md 和我的 CLAUDE.md 完全不同。问题是：\n你踩过的坑，我不知道\n好的提示词技巧无法共享\n团队知识变成孤岛\n单仓库的解法：\n把 CLAUDE.md、context/、.codebuddy/ 等 AI 配置文件\n统一放在一个 Git 仓库里\n，团队成员通过 clone 这个仓库获得完全一致的 AI \"记忆\"。\n第二层：并行工作时的隔离（执行层面）\nClaude Code 创作者的实践验证了这一点：\n“我在终端中并行运行 5 个 Claude。我使用同一仓库的\n5 个独立 git checkout。\n”\n关键在于：每个 checkout 都包含\n相同的 CLAUDE.md 和团队知识\n（因为都是从同一个仓库 clone 的），但各自在\n独立的分支\n上工作，互不干扰。\n团队共享仓库（master）\n├── CLAUDE.md          ← 所有人共用的 AI 记忆\n├── context/           ← 所有人共用的知识库\n└── .codebuddy/        ← 所有人共用的工具\n开发者 A 的 checkout     开发者 B 的 checkout     开发者 C 的 checkout\n├── (继承 master)        ├── (继承 master)        ├── (继承 master)\n├── feature/auth         ├── feature/payment      ├── bugfix/login\n└── 独立的工作空间        └── 独立的工作空间        └── 独立的工作空间\n这样实现了：\n知识共享（大家的 AI 都知道同样的事情）+ 工作隔离（各自的代码改动不会冲突）。\n总结——传统模式 vs 单仓库模式：\n维度\n传统模式\n单仓库模式\nAI 配置\n每人各自维护 → 知识孤岛\n统一工程，所有人共用一套 AGENTS.md\n踩坑经验\n你踩过的坑，同事不知道 → 重复踩坑\n记录到 context/，通过 PR 共享给所有人\n好的实践\n只能口头传授\nGit 版本管理，合并到 master 瞬间分发\n并行工作\n容易冲突\n独立分支隔离，互不干扰\n7.2 目录结构\nAgenticMetaEngineering/\n├── AGENTS.md\n# AI 的\"入职手册\"（最重要）\n├── context/\n# 团队知识库\n│   ├── team/\n# 团队通用知识\n│   └── project/\n# 项目特定知识\n├── requirements/\n# 需求记录（Git 管理）\n│   └── {requirement-\nid\n}/\n├── workspace/\n# [废弃] 占位目录（实际工作区迁移至 ../workspace/）\n│   └── {requirement-\nid\n}/\n└── .codebuddy/\n└── commands/\n# 自定义命令\n7.3\n分支策略\nmaster（模板，保持干净）\n├── AGENTS.md\n# 团队共享的提示词\n├── context/\n# 团队共享的知识库\n└── .codebuddy/\n# 团队共享的工具\nfeature/your-work（你的工作分支）\n├── 继承 master 全部内容\n├── requirements/\n# 你的需求记录\n└── ../workspace/\n# 你的代码（与本仓库同级）\n核心原则：\nmaster 是模板，不直接在上面工作\n创建分支开始需求开发\n好的实践通过 PR 合并回 master，所有人受益\n7.4\n上下文检索：为什么不需要 RAG\n很多人第一反应是\"要不要用向量数据库做 RAG？\"——答案是：\n不需要。\nClaude Code 团队最初也尝试过向量 embeddings，但发现了问题：\n维护成本高：\n需要持续重建索引，本地文件修改后难以实时同步\n安全风险：\n独立的向量数据库增加了攻击表面积\n检索准确率：\n对于代码库这种结构化数据，简单的语义搜索往往不如 Agent 主动探索精准\n我们的方案：\n直接给 AI 赋予\ngrep\n、\nfind\n、\nls\n能力。它能像资深工程师一样，通过文件结构和关键词自己找到答案。\n组织原则：\n按领域分文件夹：\ntech/\n、\nbusiness/\n、\nexperience/\n文件名要清晰：让\nls\n出来的列表就有语义\n内容是 Markdown：最自然的文本格式\n7.5\n知识路由表\n信息类型\n放哪里\n示例\n新人必读的项目背景\nAGENTS.md\n\"本项目使用 DDD 架构\"\n踩坑经验\ncontext/experience/\n\"Apollo 配置本地需要加 -Denv=dev\"\n业务逻辑规则\ncontext/business/\n\"VIP 用户提现额度计算规则\"\n整体计划\nplan.md\n\"designing 完成后进入 developing\"\n当前任务进度\nprocess.txt\n\"API 完成，下一步写测试\"\n已确认关键发现\nnotes.md\n\"JWT exp 使用 UTC 时区，需要注意转换\"\n未确认临时记录\nprocess.txt\n\"发现 User 表有个字段没用，待确认\"\n决策口诀：\n是整体计划？→\nplan.md\n是当前进度？→\nprocess.txt\n是长期知识？\n所有人都得知道？→\nAGENTS.md\n特定领域？→\ncontext/\n目录\n08\n复合工程：让每次实践产生复利\n8.1\n复合工程的核心理念\n回到文章开头的问题：我们走了那么多弯路，有什么价值？\n价值在于：这些弯路本身可以被记录下来，成为团队的共享知识。\n这就是\"复合工程\"的核心理念：\n让每一单元的工程工作使后续工作变得更容易，而非更难。\nClaude Code 创作者的团队正是这样做的：\n“我们团队为 Claude Code 仓库共享单个 CLAUDE.md。将它检入 git，整个团队每周贡献多次。\n每当看到 Claude 做错什么，就添加到 CLAUDE.md，这样 Claude 下次就知道不要那样做了。”\n这是最朴素但最有效的复合工程——\n把纠错变成资产。\n第 1 次做支付需求：45 分钟 → 记录坑点\n第 2 次做支付需求：20 分钟 → AI 自动提醒\n第 n 次做支付需求：5 分钟 → 知识已编码进系统\n8.2\n最简的复合工程实践\n记录即工程。\n不需要复杂的架构，只需要一个习惯：\n每次遇到问题解决后 → 花 2 分钟记录\n记录到哪里？→ AGENTS.md 或 context/\n记录什么？→ 问题、原因、解决方案\n示例：\n#\ncontext/experience/商品发放-钱包问题.md\n#\n# 问题\n商品发放到错误的钱包类型\n#\n# 原因\n虚拟商品和实物商品的钱包不一样\n#\n# 解决方案\n根据 goods_type 判断：\n- virtual → virtual_wallet\n- physical → physical_wallet\n8.3\n三层迭代循环\n第一层：日常开发循环（每天）\n遇到问题 → 解决 → 记录到 AGENTS.md 或 context/\n第二层：周期整理循环（每周）\nReview\n本周记录 → 整理归类 → 提交 PR → 团队 Review → 合并到 master\n第三层：能力固化循环（每月）\n识别高频模式 → 讨论是否封装 → 创建 Command/Skill → 团队共享\n8.4\n通过 PR 共享经验\n好的实践不要藏着，通过 PR 合并到 master，全团队受益。\nClaude Code 创作者的团队更进一步：\n他们在代码审查期间直接通过\n@.claude\n标记，让 AI 作为 PR 的一部分向 CLAUDE.md 添加内容。这是用 CI 自动化\"经验沉淀\"的绝佳示例。\n示例 PR：\n#\n# PR 标题\nadd: 商品发放钱包选择经验\n#\n# 变更内容\n- 新增 context/experience/商品发放-钱包问题.md\n#\n# 背景\n开发 xxx 需求时发现虚拟商品和实物商品的钱包配置不同，\n多次踩坑后整理成文档。\n09\n团队推广\n9.1\n不要强推，用效果说话\n错误做法：\n开会宣布\"以后大家都要用 AI 工程化\"\n正确做法：\n先自己用起来\n展示实际效果：\"这个需求我只花了 10 分钟，因为 AI 帮我避开了 3 个坑\"\n分享你的配置\n让感兴趣的同事也试试\n9.2\n分级推进\n阶段\n参与者\n目标\n试点\n1-2 个种子用户\n验证流程可行，积累初始 context\n扩展\n感兴趣的同事\n补充更多经验，形成正反馈\n全员\n整个团队\n成为日常工作方式\n9.3 避免常见陷阱\n陷阱\n症状\n解决方案\n过度流程化\nPR 审核变成形式主义\n简化 Review 标准，快速合并\n只有少数人参与\n大部分人从不提 PR\n降低门槛，鼓励\"小\"贡献\ncontext 膨胀失控\n文件太多找不到\n定期清理过时文档\n知识过时不更新\n老文档误导人\n遇到问题时顺手更新\n10\n回顾与反思\n10.1 我们学到了什么\n关于架构：\n复杂的 Agent 编排不是必需的，简单的提示词往往更有效\n不要预设架构，让需求驱动演进\n文本是最好的接口，LLM 能直接理解 Markdown\n关于产品思维：\n最好的工具是你感觉不到它存在的工具\n先让系统\"能用\"，再让它\"好用\"\n观察用户如何\"滥用\"你的产品，那里有真正的需求\n关于团队协作：\n知识要流动，孤岛是效率的敌人\n每次踩坑都是沉淀经验的机会\n用效果说话，不要强推\n10.2\nWorkflow vs Agent：再次辨析\n回顾 Anthropic 的\nBuilding Effective AI Agents\n，我们对 Workflow 和 Agent 的边界有了更清晰的理解：\n概念\n定义\n适用场景\nWorkflow\n预定义的代码路径\n确定性任务，步骤固定\nAgent\nLLM 动态决策的过程\n开放性任务，需要灵活判断\n判断是否需要 Agent 的三个问题：\n问题\n答案 → 方案\n任务步骤是否可预先定义？\n是 → 用 Workflow\n是否需要根据中间结果灵活调整？\n是 → 用 Agent\n能否用单次 LLM 调用解决？\n是 → 先优化 Prompt\n我们最初的错误是：用僵化的 Workflow（九步工作流）来约束本应灵活的 Agent。\n10.3\n还有什么没想清楚\n诚实地说，有些问题我们还没有答案：\n如何衡量 AI 工程化的 ROI？\n我们能感觉到效率提升，但很难量化\ncontext 的最佳组织方式是什么？\n目前是按领域分，但可能有更好的方式\n团队规模增大后，如何避免 context 混乱？\n我们还在探索\n如果你有好的想法，欢迎讨论。\n11\n总结\n我们的核心认知转变：\n从\"精密设计\"到\"最简起点\"\n从\"代码实现\"到\"文本描述\"\n从\"个人使用\"到\"团队共享\"\nAI 工程化的本质：\n把 AI 当成团队的新成员来培养——给它入职手册（AGENTS.md），教它项目知识（context/），让它记住经验（process.txt），最终成为团队的共享能力。\n落地三原则：\n文档即记忆\n—— AGENTS.md 是人机共用的入职手册\n先跑起来\n—— 从最简单的提示词开始\n自然演进\n—— 观察使用模式，让需求驱动演进\n最后想说的是：\nAI 工程化没有银弹。这篇文章记录的是我们的探索路径，不是唯一正确的答案。你的团队、你的项目、你的场景可能完全不同。\n但有一点是通用的：\n先让它跑起来，在实践中迭代。\n如果你也在探索 AI 工程化，希望我们的弯路能给你一些参考。也欢迎分享你的经验——这正是\"复合工程\"的精神：\n让每个人的实践，成为所有人的财富。\n参考资料\nClaude Code 创作者的 Claude Code 使用经验：13 个核心实践，本文多处引用了这些来自一线的经验为我们的理论提供了有力佐证（\nhttps://x.com/bcherny/status/2007179832300581177\n）\nAnthropic: Building Effective AI Agents，关于 Workflow 与 Agent 边界的深入分析（\nhttps://www.anthropic.com/engineering/building-effective-agents\n）\nGoogle: NotebookLM，简单到让人惭愧的产品设计（\nhttps://notebooklm.google/\n）\nAnthropic: Claude Code 文档（\nhttps://code.claude.com/docs\n）\n-End-\n原创作者\n｜\n侯迎圣\n感谢你读到这里，不如关注一下？\n👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。3月6日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.1,
+        "transfer_business": 0,
+        "peripheral": 0,
+        "transfer_agent": 0.9,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.07,
+        "2": 0.91,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.77,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.07,
+        "2": 0.19,
+        "3": 0.18,
+        "4": 0.39,
+        "5": 0.05
+      }
+    },
+    "decision_action": {
+      "score": 1.36,
+      "probabilities": {
+        "0": 0.45,
+        "1": 0.05,
+        "2": 0.24,
+        "3": 0.22,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.86,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.15,
+        "3": 0.84,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.01,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.02,
+        "4": 0.92,
+        "5": 0.06
+      }
+    },
+    "anti_hype": {
+      "score": 4.36,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.08,
+        "4": 0.44,
+        "5": 0.47
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.97,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 14106,
+    "outputTokens": 172,
+    "totalTokens": 14278
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.86,
+        "relevance": 0.93,
+        "grounding": 0.12,
+        "decision_action": 0.1,
+        "evidence": 0.89,
+        "actionability": 0.93,
+        "anti_hype": 0.58
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180031620,
+                "endTime": 1791180031820,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000592452",
+      "marketCost": "0.000592452",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000592452",
+      "inferenceCost": "0.000592452",
+      "inputInferenceCost": "0.000592452",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACHK8TH8PH0C5VQV4WQEG"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:31 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::p2kdn-1791180030608-a5f78a8ba214"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.1,
+            "transfer_business": 0,
+            "peripheral": 0,
+            "transfer_agent": 0.9,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.07,
+            "2": 0.91,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.77,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.07,
+            "2": 0.19,
+            "3": 0.18,
+            "4": 0.39,
+            "5": 0.05
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.36,
+          "probabilities": {
+            "0": 0.45,
+            "1": 0.05,
+            "2": 0.24,
+            "3": 0.22,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.86,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.15,
+            "3": 0.84,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.01,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.02,
+            "4": 0.92,
+            "5": 0.06
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 4.36,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.08,
+            "4": 0.44,
+            "5": 0.47
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.97
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 14106,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.86,
+            "relevance": 0.93,
+            "grounding": 0.12,
+            "decision_action": 0.1,
+            "evidence": 0.89,
+            "actionability": 0.93,
+            "anti_hype": 0.58
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180031620,
+                    "endTime": 1791180031820,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000592452",
+          "marketCost": "0.000592452",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000592452",
+          "inferenceCost": "0.000592452",
+          "inputInferenceCost": "0.000592452",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACHK8TH8PH0C5VQV4WQEG"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:31.056Z"
+  }
+}

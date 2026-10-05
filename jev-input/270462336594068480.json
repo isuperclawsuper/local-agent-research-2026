@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "270462336594068480",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "800行代码实现 Open Claw 的 Tool、消息总线、子Agent管理架构",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543287&idx=1&sn=a871de8246ffbb5733259e5434958404",
+      "date": "2026-04-24T08:29:00.530Z",
+      "chars": 13608,
+      "text": "原创\n会员技术团队\n2026-04-24 16:29\n浙江\n本文介绍了一个基于 Anthropic Claude API、用 TypeScript 编写的轻量级单进程 Agent 框架。全文强调“零框架依赖、最小中间层、精确控制 API 行为”的设计哲学，并坦诚说明了在参数校验、cron 精度、沙箱安全、持久化等方面的有意取舍与适用边界。\n这篇文章记录对 Open Claw 中 Tool、消息总线和子 Agent 管理架构的研究学习，以及一个最小可运行实现。\n本文想说明的技术观点是对于 Tool 调用、消息分发、子 Agent 管理这三类 Agent 系统里的核心组件，优先采用薄抽象、显式控制流和贴近模型 API 的实现方式，往往比引入多层中间件更容易获得工程上的确定性。系统边界更清晰，运行路径更容易追踪，问题更容易定位，也更适合作为后续扩展 Memory、调度和持久化能力的基础。\n引言\n这是一个基于 Anthropic Claude API 的 Agent 框架，用 TypeScript 编写，运行在单进程 Node.js 环境中。\n本文记录其中四个核心模块的实现：工具系统（Tool layer）、消息总线（MessageBus）、子 Agent 管理（SubagentManager）、REPL 主循环。不涉及上层 Bot 接入层、持久化、Context / Memory 系统。\n框架不依赖 LangChain 或其他 Agent 框架，直接基于 Anthropic SDK 构建。选择这条路的原因很简单：中间层越薄，调试越容易，对 API 行为的控制越精确。\n基础设施：Tool 抽象与 ToolRegistry\n▐\nTool 抽象类\n一个工具由四个要素组成：\nname\n、\ndescription\n、\ninput_schema\n、\nexecute\n。\nexport\nabstract\nclass\nTool\n{\nabstract\nreadonly\nname\n:\nstring\n;\nabstract\nreadonly\ndescription\n:\nstring\n;\nabstract\nreadonly\ninput_schema\n:\nAnthropicTool\n[\n\"input_schema\"\n];\nabstract\nexecute\n(\nargs\n:\nRecord\n<\nstring\n,\nunknown\n>):\nPromise\n<\nunknown\n>;\ntoSchema\n():\nAnthropicTool\n{\nreturn\n{\nname\n:\nthis\n.\nname\n,\ndescription\n:\nthis\n.\ndescription\n,\ninput_schema\n:\nthis\n.\ninput_schema\n,\n};\n}\n}\ninput_schema\n的类型直接取自\n@anthropic-ai/sdk\n的\nTool\n类型定义。\ntoSchema()\n将实例转换为 Anthropic API 要求的 function calling schema。没有中间层转换，SDK 类型就是唯一的 schema 定义。\n这里有一个刻意的取舍：schema 使\n用运行时普通对象定义，而非 Zod 等库。好处是零额外依赖、直接对齐 SDK 类型。代价是没有运行时参数校验——LLM 传入的参数如果类型不对，只能靠\nexecute\n内部的\nas\n断言和实际调用时的错误来\n兜底。对于当前规模，这个取舍可以接受。\n▐\nToolRegistry\n注册表本身是一个\nMap<string, Tool>\n：\nexport\nclass\nToolRegistry\n{\nprivate\ntools =\nnew\nMap\n<\nstring\n,\nTool\n>();\nregister\n(\ntool\n:\nTool\n) {\nthis\n.\ntools\n.\nset\n(tool.\nname\n, tool);\n}\nasync\nexecute\n(\nname\n:\nstring\n,\nargs\n:\nRecord\n<\nstring\n,\nunknown\n>\n) {\nconst\ntool =\nthis\n.\ntools\n.\nget\n(name);\nif\n(!tool)\nthrow\nnew\nError\n(\n`Tool \"\n${name}\n\" not found`\n);\nreturn\ntool.\nexecute\n(args);\n}\ngetToolDefinition\n():\nAnthropicTool\n[] {\nreturn\nArray\n.\nfrom\n(\nthis\n.\ntools\n.\nvalues\n()).\nmap\n(\n(\ntool\n) =>\ntool.\ntoSchema\n());\n}\nexclude\n(\nnames\n:\nstring\n[]):\nToolRegistry\n{\nconst\nexcludeSet =\nnew\nSet\n(names);\nconst\nfiltered =\nnew\nToolRegistry\n();\nfor\n(\nconst\n[name, tool]\nof\nthis\n.\ntools\n) {\nif\n(!excludeSet.\nhas\n(name)) {\nfiltered.\nregister\n(tool);\n}\n}\nreturn\nfiltered;\n}\n}\nexclude()\n是为子 Agent 设计的。子 Agent 不应该持有\nspawn\n（避免递归创建子 Agent）、\nmessage\n（避免直接向用户发消息）等工具，所以需要从主 Agent 的工具集中排除特定工具，生成一个受限子集。\nexclude()\n返回新的\nToolRegistry\n实例，\n不修改原注册表。\n内置工具一览\n▐\n文件操作\nReadFileTool\n— 读取文件内容\n，\n动态\nimport(\"node:fs/promises\")\n加载模块。\nWriteFileTool\n— 写入文件。写入前调用\nmkdir(dirname(path), { recursive: true })\n自动创建父目录，避免因目录不存在而失败。\nEditFileTool\n—\n精确文本替换。核心逻辑：\nconst\noccurrences = content.\nsplit\n(oldText).\nlength\n-\n1\n;\nif\n(occurrences ===\n0\n) {\nreturn\n`Error: old_text not found in\n${filePath}\n`\n;\n}\nif\n(occurrences >\n1\n) {\nreturn\n`Warning: old_text found\n${occurrences}\ntimes in\n${filePath}\n. Please provide a more unique text snippet. No changes made.`\n;\n}\nconst\nupdated = content.\nreplace\n(oldText, newText);\n强制唯一匹配：出现 0 次报错，超过 1 次拒绝写入并要求提供更精确的文本片段。这个设计是为了防止 LLM 给出模糊的替换目标，导致意外修改多处代码。\nListDirTool\n— 列出目录内容，对每个条目做\nstat\n，用\n[folder]\n和\n[file]\n前缀区分\n类型。\n▐\n命令执行\nExecTool\n— 执行 shell 命令。三层防护：\n第一层，危险命令正则黑名单：\nconst\nDANGEROUS_PATTERNS\n:\nRegExp\n[] = [\n/rm\\s+(-[a-zA-Z]*f[a-zA-Z]*\\s+)?(-[a-zA-Z]*r[a-zA-Z]*\\s+)?\\/($|\\s)/\n,\n/rm\\s+-[a-zA-Z]*rf?\\s+~($|\\/|\\s)/\n,\n/mkfs\\b/\n,\n/dd\\s+if=/\n,\n/:\\(\\)\\s*\\{\\s*:\\|:\\s*&\\s*\\}\\s*;/\n,\n// fork bomb\n/>\\s*\\/dev\\/[sh]d[a-z]/\n,\n// 写入裸设备\n/chmod\\s+-R\\s+777\\s+\\//\n,\n];\n覆盖\nrm -rf /\n、fork bomb、写裸设备等高危模式。需要说明的是，正则黑名单是最低限度的防线，不能替代沙箱隔离。\n第二层，资源限制：默认30 秒超时，2MB\nmaxBuffer\n。超时后进程被 kill，返回超时提示。\n第三层，输出截断。超过 10,000 字符时取首尾各 5,000 字符，中间用截断标记连接：\nfunction\ntruncateOutput\n(\ntext\n:\nstring\n):\nstring\n{\nif\n(text.\nlength\n<=\nMAX_OUTPUT_LENGTH\n)\nreturn\ntext;\nconst\nhalf =\nMath\n.\nfloor\n(\nMAX_OUTPUT_LENGTH\n/\n2\n);\nreturn\n(\ntext.\nslice\n(\n0\n, half) +\n`\\n\\n--- truncated (\n${text.length}\nchars total) ---\\n\\n`\n+\ntext.\nslice\n(-half)\n);\n}\n保留首尾而非只取前 N 字符，是因为命令输出的末尾通常包含最有价值的信息（错误信息、统计摘要等）。\n▐\nWeb 能力\nWebSearchTool\n— 封装 Brave Search API，返回结构化搜索结果。参数\ncount\n可选，默认 5 条，上限 10 条。\nWebFetchTool\n— 抓取 URL 内容。针对 HTML 页面内置了纯正则实现的\nhtmlToText\n转换：\nfunction\nhtmlToText(html: string): string {\nreturn\nhtml\n.replace(/<script[\\s\\S]*?<\\/script>/gi,\n\"\"\n)\n.replace(/<style[\\s\\S]*?<\\/style>/gi,\n\"\"\n)\n.replace(/<(br|\\/p|\\/div|\\/li|\\/tr|\\/h[1-6])[^>]*>/gi,\n\"\\n\"\n)\n.replace(/<[^>]+>/g,\n\"\"\n)\n// HTML 实体解码...\n.replace(/[ \\t]+/g,\n\" \"\n)\n.replace(/\\n{3,}/g,\n\"\\n\\n\"\n)\n.trim();\n}\n没有使用 DOM 解析库（如 cheerio、jsdom），纯正则处理。对于大多数常规网页足够用，但对复杂嵌套结构可能丢失语义。内容超过 20,000 字符时截断。\n▐\n通信与调度\nMessageTool\n— 出站方向的消息通道。通过构造时注入的\nsendCallback\n向外部发送消息：\nexport\nclass\nMessageTool\nextends\nTool\n{\nconstructor\n(\nprivate\nsendCallback\n:\nSendCallback\n) {\nsuper\n();\n}\nasync\nexecute\n(\nargs\n:\nRecord\n<\nstring\n,\nunknown\n>):\nPromise\n<\nstring\n> {\nconst\ncontent = args.\ncontent\nas\nstring\n;\nconst\nchannel = (args.\nchannel\nas\nstring\n) ??\n\"repl\"\n;\nconst\nchatId = (args.\nchat_id\nas\nstring\n) ??\n\"default\"\n;\nawait\nthis\n.\nsendCallback\n({ channel, chatId, content });\nreturn\n`Message sent to\n${channel}\n:\n${chatId}\n`\n;\n}\n}\nREPL 场景下\nsendCallback\n就是\nconsole.log\n；Bot 场景下替换为向 Telegram、\nDiscord 等平台发送消息的函数。工具本身不关心消息最终去向。\nCronTool + CronService\n— 定时任务管理，分为服务层和工具层。\nCronService 基于\nsetInterval\n实现，支持两种定时方式：\nevery_seconds\n（直接转换为毫秒间隔）和\ncron_expr\n（解析 cron 表达式为近似间隔）。\ncron 表达式的解析是简化版本：\nprivate\nparseCronInterval\n(\nexpr\n:\nstring\n):\nnumber\n{\nconst\nparts = expr.\ntrim\n().\nsplit\n(\n/\\s+/\n);\nif\n(parts.\nlength\n!==\n5\n)\nreturn\n60_000\n;\nconst\n[minute, hour] = parts;\n// */N * * * * → 每 N 分钟\nif\n(minute?.\nstartsWith\n(\n\"*/\"\n) && hour ===\n\"*\"\n) {\nconst\nn =\nparseInt\n(minute.\nslice\n(\n2\n),\n10\n);\nif\n(!\nisNaN\n(n) && n >\n0\n)\nreturn\nn *\n60_000\n;\n}\n// 0 */N * * * → 每 N 小时\nif\n(minute ===\n\"0\"\n&& hour?.\nstartsWith\n(\n\"*/\"\n)) {\nconst\nn =\nparseInt\n(hour.\nslice\n(\n2\n),\n10\n);\nif\n(!\nisNaN\n(n) && n >\n0\n)\nreturn\nn *\n3600_000\n;\n}\nif\n(minute ===\n\"*\"\n&& hour ===\n\"*\"\n)\nreturn\n60_000\n;\n// 每分钟\nif\n(minute ===\n\"0\"\n&& hour ===\n\"*\"\n)\nreturn\n3600_000\n;\n// 每小时\nif\n(minute ===\n\"0\"\n&& hour ===\n\"0\"\n)\nreturn\n86400_000\n;\n// 每天\nreturn\n60_000\n;\n// 复杂表达式降级为每分钟\n}\n只处理\n*/N\n、每小时、每天等常见模式。不支持\"每周三 14:30\"这类精确时间点的\ncron 语义——\nsetInterval\n本身也做不到这件事。复杂表达式静默降级为每分钟执行一次，这是一个已知的精度妥协。\nCronTool 对外暴露\nadd\n、\nlist\n、\nremove\n三个 action，作为 CronService 的 function calling 接口。\nMessageBus：入站消息总线\nMessageBus 处理入站方向的消息流——从子系统或外部流向主 Agent。\nexport\nclass\nMessageBus\n{\nprivate\nlisteners = new Map<string, Set<MessageHandler>>();\nprivate\nqueue: InboundMessage[] = [];\nsubscribe(channel: string, handler: MessageHandler): () => void {\nif\n(!\nthis\n.listeners.has(channel)) {\nthis\n.listeners.\nset\n(channel, new Set());\n}\nthis\n.listeners.\nget\n(channel)!.add(handler);\nreturn\n() => {\nthis\n.listeners.\nget\n(channel)?.delete(handler); };\n}\nasync publish(message: InboundMessage): Promise<void> {\nconst\nhandlers =\nthis\n.listeners.\nget\n(message.channel);\nif\n(handlers && handlers.size >\n0\n) {\nfor\n(\nconst\nhandler of handlers) {\nawait handler(message);\n}\n}\nelse\n{\nthis\n.queue.push(message);\n}\n}\ndrain(channel?: string): InboundMessage[] {\nif\n(!channel) {\nconst\nmsgs = [...\nthis\n.queue];\nthis\n.queue = [];\nreturn\nmsgs;\n}\nconst\nmatched =\nthis\n.queue.filter((m) => m.channel === channel);\nthis\n.queue =\nthis\n.queue.filter((m) => m.channel !== channel);\nreturn\nmatched;\n}\n}\n数据结构\nInboundMessage\n包含四个字段：\nchannel\n（消息通道）、\nsenderId\n（发送者标识）、\nchatId\n（关联会话，格式为\noriginChannel:originChatId\n）、\ncontent\n（消息内容）。\n两种消费模式：\nsubscribe\n— 注册实时回调。消息到达时立即调用 handler。适合常驻服务场景。\ndrain\n— 从队列中取出并清空消息。适合轮询式的同步消费场景。\n路由规则：有订阅者走回调，无订阅者入队列。消息只走一条路径，不会同时触发回调和入队。\n与 MessageTool 的关系需要明确：MessageTool 负责出站（Agent → 外部），MessageBus 负责入站（外部/子系统 → Agent）。两者没有直接的代码耦合，方\n向相反。\nSubagentManager：后台子 Agent\n▐\n架构\n单进程并发模型。每个子 Agent 是一个 Promise，共享同一个 Node.js 事件循环。没有多进程、没有 Worker。\n每个子 Agent 拥有独立的\nAgentLoop\n实例，有自己的 ReAct 循环，没有历史上下文——每次从零开始，处理完一个任务就结束。\n子 Agent 的工具集是主 Agent 的受限子集。在\nindex.ts\n中通过\nexclude\n排除了\nspawn\n、\nmessage\n、\nedit_file\n、\ncron\n：\nconst\nsubagentTools = tools.\nexclude\n([\n\"spawn\"\n,\n\"message\"\n,\n\"edit_file\"\n,\n\"cron\"\n]);\n排除\nspawn\n防止子 Agent 递归创建子 Agent；排除\nmessage\n防止子 Agent 直接向用户发消息（应该通过 MessageBus 回传给主 Agent 处理）；排除\nedit_file\n限制子 Agent 的写入能力；排除\ncron\n避免子 Agent 创建定时任务。\n▐\n生命周期\nspawn(\nparams\n: { task:\nstring\n; label?:\nstring\n; ... }):\nstring\n{\nconst\nid = `subagent-${++\nthis\n.counter}`;\nconst\nlabel =\nparams\n.label ?? `Task ${\nthis\n.counter}`;\nconst\npromise =\nthis\n.runSubagent(id,\nparams\n.task, label, ...);\npromise.\nfinally\n(() => {\nthis\n.runningTasks.delete(id);\n});\nthis\n.runningTasks.\nset\n(id, { id, label, promise });\nreturn\nid;\n}\n流程：\nspawn( )\n分配自增 ID → 启动\nrunSubagent()\n返回 Promise → 立即返回 ID。调用方不需要等待子 Agent 完成。\nrunSubagent\n创建一个独立的\nAgentLoop\n，\nbuildMessages\n只传入当前任务，不带历史：\nbuildMessages\n:\n(\n_history, userMessage\n) =>\n[\n{\nrole\n:\n\"user\"\nas\nconst\n,\ncontent\n: userMessage },\n],\n子 Agent 最大迭代 15 次（主 Agent 是 10 次）。完成后通过\nbus.publish( )\n将结果发送到\nsystem\nchannel：\nawait\nthis\n.\nbus\n.\npublish\n({\nchannel\n:\n\"system\"\n,\nsenderId\n:\n\"subagent\"\n,\nchatId\n:\n`\n${originChannel}\n:\n${originChatId}\n`\n,\ncontent\n:\n`[Subagent \"\n${label}\n\" (\n${id}\n) completed]\\n\\n\n${result}\n`\n,\n});\n成功和失败都走这条路径，只是 content 不同。\npromise.finally()\n负责从\nrunningTasks\nMap 中自动清理已完成的任务。\n▐\nSpawnTool\nSpawnTool 是主 Agent 触发子 Agent 的接口。LLM 通过 function calling 调用它，传入\ntask\n（任务描述）和可选的\nlabel\n。返回值包含子 Agent ID 和当前运行中的子 Agent 数量，让 LLM 对并发状态有感知。\nREPL：入口与主循环\nREPL（Read-Eval-Print Loop）是整个 Agent 的终端交互入口。用户在终端输入文本，Agent 处理后输出回复，循环往复。\n▐\n启动流程\nindex.ts\n的初始化按以下顺序执行：\n创建 Anthropic 客户端和 MessageBus 实例。\n注册所有工具到 ToolRegistry，区分主 Agent 工具集和子 Agent 受限工具集。\n初始化 CronService，触发回调通过\nbus.publish()\n写入 system channel。\n创建 SubagentManager，注册 SpawnTool（最后注册，因为依赖 SubagentManager 实例）。\n构建 ContextBuilder，加载 skills 和 memory。\n创建 AgentLoop 实例，使用\nreadline/promises\n启动交互循环。\n▐\n并发控制\n核心问题：用户输入和子 Agent 回传结果都会触发\nagent.run()\n，但\nhistory\n数组是共享的，不能并发修改。\n解决方式——布尔互斥锁 + 暂存队列：\nlet\nprocessing =\nfalse\n;\nconst\npendingSubagentResults\n:\nInboundMessage\n[] = [];\nasync\nfunction\ndrainPendingResults\n():\nPromise\n<\nvoid\n> {\nwhile\n(pendingSubagentResults.\nlength\n>\n0\n) {\nconst\nmsg = pendingSubagentResults.\nshift\n()!;\nconst\nsystemContent = [\n\"[SYSTEM NOTIFICATION - Subagent Result]\"\n,\nmsg.\ncontent\n,\n\"Please summarize the above subagent result for the user.\"\n,\n].\njoin\n(\n\"\\n\\n\"\n);\nconst\nreply =\nawait\nagent.\nrun\n(systemContent, history);\nhistory.\npush\n({\nrole\n:\n\"user\"\n,\ncontent\n: systemContent });\nhistory.\npush\n({\nrole\n:\n\"assistant\"\n,\ncontent\n: reply });\nconsole\n.\nlog\n(\n`\\nBot >\n${reply}\n\\n`\n);\n}\n}\nasync\nfunction\ntryDrainPending\n():\nPromise\n<\nvoid\n> {\nif\n(processing)\nreturn\n;\nprocessing =\ntrue\n;\ntry\n{\nawait\ndrainPendingResults\n();\n}\nfinally\n{\nprocessing =\nfalse\n;\n}\nrl.\nprompt\n();\n}\nprocessing\n布尔标志充当互斥锁。同一时刻只有一个\nagent.run()\n在执行。子 Agent 结果到达时先 push 到\npendingSubagentResults\n数组。\ntryDrainPending\n只在\n!processing\n时进入，避免并发写入 history。\n用户输入的处理流程：\nrl.\non\n(\n\"line\"\n,\nasync\n(input) => {\n// ...\nprocessing =\ntrue\n;\ntry\n{\nconst\nreply =\nawait\nagent.run(trimmed, history);\nhistory.push({ role:\n\"user\"\n, content: trimmed });\nhistory.push({ role:\n\"assistant\"\n, content: reply });\nawait\ndrainPendingResults();\n}\nfinally\n{\nprocessing =\nfalse\n;\n}\nrl.prompt();\n});\n用户交互完成后，在\nfinally\n释放锁之前，先调用\ndrainPendingResults()\n处理期间积攒的子 Agent 结果。这保证了子 Agent 结果不会无限滞后。\n▐\n消息订阅\nbus.\nsubscribe\n(\n\"system\"\n,\n(\nmsg\n) =>\n{\npendingSubagentResults.\npush\n(msg);\nvoid\ntryDrainPending\n().\ncatch\n(\nconsole\n.\nerror\n);\n});\nsystem\nch\nannel 是内部消息的统一入口。子 Agent 完成、CronService 触发，\n都通过\nbus.publish()\n发送到\n这个 channel。handler 只做两件事：入队、尝试消费。\n每条子 Agent 结果被包装为\n[SYSTEM NOTIFICATION]\n格式注入 history，由主 Agent 总结后输出给用户。\n▐\nMessageTool 的接线\nREPL 场景下，\nsendCallback\n直接输出到终端：\ntools.\nregister\n(\nnew\nMessageTool\n(\n(\nmsg\n) =>\n{\nconsole\n.\nlog\n(\n`\\n[Message →\n${msg.channel}\n:\n${msg.chatId}\n]\n${msg.content}\n\\n`\n);\n}),\n);\n如果切换到 Bot 场景，只需要替换这个回调为向 Telegram、Discord 等平台发送消息的函数。工具系统和 Agent 逻辑不需要任何改动。\n模块协作全景\n终端 stdin\n│\n▼\nREPL\n主循环 (index.\nts\n)\n│  ┌────────────────────────\nhistory\n(共享，互斥访问)\n│  │\n▼  ▼\nAgentLoop\n.\nrun\n() ──→\nTool\n调用\n│                  ├── 文件/命令/网络工具 → 直接返回结果\n│                  ├──\nSpawnTool\n→\nSubagentManager\n.\nspawn\n()\n│                  │                  └── 子\nAgentLoop\n(独立\nReAct\n)\n│                  │                        └── bus.\npublish\n(\n\"system\"\n, 结果)\n│                  ├──\nMessageTool\n→ sendCallback → stdout\n│                  └──\nCronTool\n→\nCronService\n│                                    └──\nsetInterval\n→ bus.\npublish\n(\n\"system\"\n, 触发通知)\n│\n│  ◄── bus.\nsubscribe\n(\n\"system\"\n) ◄── pendingSubagentResults 队列\n│\n▼\nstdout 输出\n数据流有两条主线：\n同步路径\n：\n用户输入 → REPL →\nagent.run()\n→ 工具调用 → 结果回传模型 → 最\n终回复 → stdout。这是标准的 ReAct 循环。\n异步路径\n：\nSpawnTool / CronService →\nbus.publish(\"system\")\n→ handler 入\n队 →\ntryDrainPending()\n→\nagent.run()\n处理系统通知 → stdout。异步结果通过 MessageBus 汇入主循环，由互斥锁保证不与同步路径冲突。\n设计选择与局限\n零框架依赖\n。\n不依赖 LangChain 等 Agent 框架，直接基于 Anthropic SDK 构建。好处是完全控制 API 交互细节，调试时不需要穿透框架抽象层。代价是部分基础能力需要自己实现。\nschema 定义方式\n。\n运行时对象而非 Zod / JSON Schema 库。降低了复杂度和依赖数量，但缺乏运行时校验。如果 LLM 传入了格式错误的参数，错误只能在执行阶段暴露。\n子 Agent 无持久记忆\n。\n每次 spawn 从零开始，适合一次性的并行任务（搜索、分析、计算）。不适合需要跨任务积累上下文的场景。\nCronService 的 cron 表达式\n。\n近似实现，只支持常见的等间隔模式。复杂表达式会静默降级为每分钟执行，不会报错。如果需要精确的 cron 语义，应该引入 cron 解析库。\nMessageBus 无持久化\n。\n纯内存队列，进程重启后队列消息丢失。对于 REPL 场景足够，Bot 场景如果需要消息可靠性，需要接入持久化存储。\nExecTool 安全边界\n。\n正则黑名单只是最低防线。LLM 可以通过变量展开、别名、管道组合等方式绕过正则检测。生产环境应该使用容器沙箱或受限用户执行。\nREPL 并发模型\n。\n布尔锁在单用户场景下足够。Node.js 的单线程模型保证\n了\nprocessing\n标志不会出现竞态。但如果扩展到多用户（如 Bot 同时处理多个\n会话），需要每个会话独立的 history 和更完整的队列/锁机制。\n总结\n这个框架的核心设计可以概括为四个部分：\nTool 抽象 + Registry 模式\n— 统一的工具注册和调用接口，通过\nexclude()\n实现能力隔离。\n双通道消息机制\n— 出站走\nsendCallback\n（MessageTool），入站走 MessageBus，方向明确，互不耦合。\nPromise 并发的子 Agent\n— 共享事件循环，独立 ReAct 循环，通过 MessageBus 回传结果。\n互斥锁驱动的 REPL 主循环\n— 布尔标志 + 暂存队列，保证 history 的一致性。\n这些模块组合成一个可扩展的 Agent 运行时。扩展新工具只需继承\nTool\n并注册。切换接入层（REPL → Bot）只需替换\nsendCallback\n和输入源。子 Agent 的能力边界通过\nexclude()\n控制。\n团队介绍\n本文作者\n苏雄\n，来自\n淘天集团-会员技术团队。业务上，我们负责 88VIP、天猫积分、省钱卡、大会员、消费券等淘宝核心业务，同时支撑淘宝、千问、闪购等阿里业务的账号互联互通。技术上，我们深耕 AI 与业务融合，为消费者带来全新体验，为业务创造新增量。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

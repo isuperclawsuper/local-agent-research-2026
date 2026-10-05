@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1132571790866845696",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "从定制Workflow到AI自主决策的架构演进——以TMIC AI小新为例",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543765&idx=1&sn=4961784aef454d7fc2bf45e57a901431",
+      "date": "2026-05-29T09:09:00.071Z",
+      "chars": 3910,
+      "text": "类，为后续的工具加载和Skills加载提供参考。\n所需的数据字段\n：解决该问题需要获取的数据字段列表，为DeepAgent Planning提供数据需求参考，帮助Planning明确需要获取哪些数据。数据字段信息能够帮助Planning在规划数据获取路径时获得参考，确保获取的数据完整且准确。\n分析思路\n：该问题的分析思路和执行步骤，为DeepAgent Planning提供任务规划参考，帮助Planning按照业务定制的步骤进行分析。分析思路是RAG的核心内容，通过提供业务定制的分析思路，RAG能够确保Planning按照业务预期的步骤进行分析，而不是依赖AI的自主发挥。\nRAG示例：\nRAG的使用方式\nRAG在AI小新系统中的使用方式如下：\n在业务模块识别处使用\n：在加载上下文模块的业务模块识别阶段，RAG中的业务模块信息可以作为参考，帮助系统更准确地识别用户问题涉及的业务模块。通过RAG提供的业务模块参考，系统能够将用户问题与历史案例进行对比，提高业务模块识别的准确性。\n在Planning处使用\n：Planning根据RAG提供的参考信息，结合用户问题，规划执行路径。RAG为Planning提供了功能模块识别、数据需求、分析思路等全流程参考，帮助Planning明确应该按照什么方向去规划。通过RAG的参考，Planning能够更准确地规划数据获取路径、设计分析步骤，确保按照业务定制的分析思路进行规划。\n在Analysis处使用\n：在Analysis阶段，RAG中的分析思路可以作为参考，帮助Analysis理解如何组织分析内容、如何表达分析结果。通过RAG提供的参考示例，Analysis能够按照业务规范的分析思路生成报告，确保分析结果符合业务预期。RAG中的分析思路为Analysis提供了结构化的参考，帮助Analysis生成逻辑清晰、有数据支撑的分析报告。\n效果评估\n▐\n评估指标\n过程指标\n过程指标用于评估DeepAgent执行过程中各个环节的质量，确保每个环节都能正确执行。\n整体指标\n整体指标用于评估最终输出的整体质量，包括逻辑一致性、相关性、深度、可行性和安全性等方面。\n性能指标\n性能指标用于评估系统的响应速度和执行效率，确保系统能够及时响应用户请求。\n▐\n效果对比\n测试集构建\n为了全面评估DeepAgent模式的执行效果，我们构建了测试用例集。测试来源主要来自三个方面：\n线上收集\n：从线上实际用户问题中收集典型问题，确保测试用例贴近真实业务场景\n测试构造\n：根据业务需求和分析场景，人工构造测试用例，覆盖关键业务模块和分析类型\nRAG\n：从RAG库中筛选典型问题，确保测试用例覆盖历史案例中的关键场景\n目前第一批共收集150个典型问题，涵盖了不同业务模块、不同问题类型、不同复杂度的场景，为效果评估提供了全面的测试基础。\n定制版Workflow和DeepAgent模式各指标对比：\n执行速度对比\n其中DeepAgent模式执行速度的优化主要依赖于：Tree Action模式、SubAgent提速、异步Summary\n▐\n自动化评估流程\n自动化评估流程旨在通过系统化的方式，对DeepAgent模式的执行效果进行全面、客观的评估。该流程包括用例收集、批量执行、模型评测、人工复核和数据回流等环节，形成完整的评估闭环。\n1. 用例收集\n用例收集是评估流程的基础，需要构建高质量的评估用例集。用例来源主要包括：\n线上收集\n：从线上实际用户问题中收集真实用例，这些用例能够反映实际业务场景和用户需求，具有较高的代表性\n自己构造\n：根据业务场景和评估需求，人工构造针对性的测试用例，覆盖边界情况、复杂场景等\n大模型扩写\n：基于已有用例，通过大模型进行扩写和变体生成，快速扩充用例集，增加用例的多样性和覆盖面\n2. 批量执行/收集线上数据结果\n批量执行评估用例，或收集线上实际执行的数据结果：\n批量执行\n：对于收集的评估用例，批量调用DeepAgent模式进行问答，记录完整的执行过程\n收集线上数据\n：从线上实际执行中收集数据结果，包括用户问题、系统回答、执行过程等\n数据记录\n：记录执行过程中的关键信息，包括业务模块识别结果、Planning思路、工具调用记录、执行结果、性能数据等\n3. 评测模型进行评测\n基于评测指标，通过规则或模型自动进行评测：\n过程指标评测\n：基于执行过程中的中间结果，自动评测过程指标（业务模块定位准确率、RAG召回率、分析思路准确性、Execute Action执行准确率、Analysis输出完整性）\n整体指标评测\n：基于最终回答，通过规则或大模型自动评测整体指标（逻辑一致性、数据支撑、相关性、洞察深度、可行性、安全风险等）\n性能指标评测\n：基于执行日志，自动计算性能指标（思考RT、生成报告RT、总RT等）\n4. 人工复核\n对于关键用例或异常情况，进行人工复核：\n关键用例复核\n：对于重要业务场景或高价值用例，进行人工复核，确保评估结果的准确性\n异常情况复核\n：对于评测模型识别出的异常情况或边界案例，进行人工复核和确认\n质量校准\n：通过人工复核，校准评测模型的准确性，持续优化评测规则\n5. 筛选有价值数据回流到RAG中\n将评估过程中发现的高质量数据回流到RAG库中：\n数据筛选\n：从评估结果中筛选出高质量的问题案例，包括问题、业务模块、功能模块、所需数据字段、分析思路等\n质量校验\n：对筛选出的数据进行质量校验，确保数据的准确性和完整性\nRAG入库\n：将经过校验的高质量数据回流到RAG库中，持续丰富RAG库，提升系统的整体能力\n评估闭环\n自动化评估流程形成一个完整的评估闭环：\n通过用例收集和批量执行，持续积累评估数据\n通过模型评测和人工复核，确保评估结果的准确性\n通过数据回流，将评估中发现的高质量数据转化为系统能力提升\n通过持续优化，不断提升系统的整体质量\n总结与展望\n▐\n核心成果\n借鉴DeepAgent的设计思路\n从定制化workflow到DeepAgent模式的架构改版，我们借鉴了DeepAgent的核心设计思路，采用了以下关键组件：\nTodoList机制\n：让AI具备自主规划能力，能够自主规划任务分解和执行路径，解决了标准ReAct模式缺乏规划能力的问题\nSubAgent机制\n：通过上下文隔离和任务分解，实现复杂任务的分解和并行执行，解决了标准ReAct模式无法处理任务分解的问题\nSummary机制\n：通过自动监控和压缩历史消息，有效解决上下文窗口溢出问题，解决了标准ReAct模式上下文窗口溢出的问题\n这些核心组件的引入，使得系统从\"预设流程\"转变为\"AI自主决策\"，实现了跨模块协作、灵活参数识别、自主规划等核心能力。\n创新性的优化\n在借鉴DeepAgent设计思路的基础上，我们针对业务场景做了创新性的优化：\nTree Action模式\n：通过混合执行模式，在单个Planning周期内执行多个依赖动作，将Planning次数从3.20次优化到2.44次，显著提升了执行效率\nSubAgent提速优化\n：通过优化SubAgent的执行机制，提升SubAgent的执行效率，缩短整体响应时间\n异步Summary优化\n：Summary与Planning并行执行，避免阻塞主流程，缩短整体响应时间\n这些创新性的优化措施，在保持DeepAgent核心能力的基础上，进一步提升了系统的性能和效率。\n▐\n未来展望\n回顾这次架构改版的历程，我们深刻感受到大模型基模能力提升带来的巨大变化。从复杂的定制workflow到轻便的DeepAgent模式成为可能性，这种转变不仅仅是技术架构的升级，更是设计理念的根本性转变。我们不再需要为每个业务场景编写大量的定制代码，而是相信AI的能力，将复杂的规划、决策、执行交给AI去完成，我们只需要专注于解决上下文工程问题。\n在这个过程中，我们发现很多看似简单的优化手段，却能带来显著的提升。例如TodoList机制让AI具备了自主规划能力，SubAgent实现了任务分解和上下文隔离，自动Summary有效解决了上下文窗口溢出问题。这些小的优化手段，每一个都有针对性地解决了一个具体问题，组合起来就形成了强大的系统能力。\n随着大模型基模能力的持续提升，我们相信会有更多可能性被解锁。未来，我们可以进一步简化架构，减少对RAG的依赖，提升工具的泛化性，优化上下文管理机制。同时，我们也需要持续探索AI能力的边界，识别哪些场景适合AI处理，哪些场景需要人工介入，在确定性和灵活性之间找到最佳平衡点。\n致谢\n感谢团队每一位成员的辛勤付出与不懈努力。在业务快速迭代和技术持续更新的过程中，我们经历了多次架构重构，一路摸爬滚打，积累了宝贵的实践经验。虽然过程充满挑战，但总体而言，开发AI项目是一件令人快乐的事情——它让我们能够充分发挥创造性和灵感，在探索未知领域的过程中不断突破自我。\n团队介绍\n本文作者帆华，来自淘天集团-天猫新品营销技术团队。我们致力通过大数据、人工智能打造领先的数字化新品营销平台，服务于天猫新品全链路增长，面向品牌商家构建从新品研发、新品孵\n化到新品上新的一体化解决方案，负责「天猫小黑盒」/「天猫U先」/「TMIC」（天猫新品创新中心）/「淘系新品运营平台」等淘系核心的新品与新客业务，帮助商家连接淘系站内外流量、营销资源与数据，做规模化新品经营与确定性增长。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true,
+      "chunk_index": 6,
+      "chunk_count": 6
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.06,
+        "peripheral": 0,
+        "transfer_agent": 0.51,
+        "transfer_business": 0.43,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 2.57,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.39,
+        "3": 0.58,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.6,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.39,
+        "2": 0.28,
+        "3": 0.19,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.38,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.04,
+        "2": 0.12,
+        "3": 0.55,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.14,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.36,
+        "3": 0.08,
+        "4": 0.54,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.47,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.02,
+        "2": 0.06,
+        "3": 0.37,
+        "4": 0.48,
+        "5": 0.06
+      }
+    },
+    "anti_hype": {
+      "score": 2.01,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.16,
+        "2": 0.65,
+        "3": 0.14,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.82,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5437,
+    "outputTokens": 172,
+    "totalTokens": 5609
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.39,
+        "relevance": 0.71,
+        "grounding": 0.44,
+        "decision_action": 0.43,
+        "evidence": 0.43,
+        "actionability": 0.57,
+        "anti_hype": 0.73
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180426322,
+                "endTime": 1791180426504,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000228354",
+      "marketCost": "0.000228354",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000228354",
+      "inferenceCost": "0.000228354",
+      "inputInferenceCost": "0.000228354",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARK1XGK14KKF8BKBJQ0J1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:06 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::gh8nl-1791180426279-273c04f2de81"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.06,
+            "peripheral": 0,
+            "transfer_agent": 0.51,
+            "transfer_business": 0.43,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.57,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.39,
+            "3": 0.58,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.6,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.39,
+            "2": 0.28,
+            "3": 0.19,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.38,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.04,
+            "2": 0.12,
+            "3": 0.55,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.14,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.36,
+            "3": 0.08,
+            "4": 0.54,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.47,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.02,
+            "2": 0.06,
+            "3": 0.37,
+            "4": 0.48,
+            "5": 0.06
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.01,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.16,
+            "2": 0.65,
+            "3": 0.14,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.82
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5437,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.39,
+            "relevance": 0.71,
+            "grounding": 0.44,
+            "decision_action": 0.43,
+            "evidence": 0.43,
+            "actionability": 0.57,
+            "anti_hype": 0.73
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180426322,
+                    "endTime": 1791180426504,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000228354",
+          "marketCost": "0.000228354",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000228354",
+          "inferenceCost": "0.000228354",
+          "inputInferenceCost": "0.000228354",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARK1XGK14KKF8BKBJQ0J1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:05.728Z"
+  }
+}

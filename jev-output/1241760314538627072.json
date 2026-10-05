@@ -1,0 +1,34 @@
+{
+  "answers": {
+    "category": {
+      "choice": "irrelevant"
+    },
+    "relevance": {
+      "score": 1.3076
+    },
+    "grounding": {
+      "score": 1.7992
+    },
+    "decision_action": {
+      "score": 1.1683
+    },
+    "evidence": {
+      "score": 1.4363
+    },
+    "actionability": {
+      "score": 2.8399
+    },
+    "anti_hype": {
+      "score": 1.2192
+    },
+    "fulltext_usable": {
+      "value": true
+    }
+  },
+  "assessment_method": "full_text_chunked_length_weighted_mean",
+  "parts": 7,
+  "aggregation_note": "连续6500字符无遗漏分段；评分按段长加权均值，分类按多数段。局部证据可能被稀释，不能等同整体判断。",
+  "usage": {
+    "totalTokens": 52790
+  }
+}

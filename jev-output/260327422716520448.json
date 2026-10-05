@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "260327422716520448",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "OpenSearchCon China 2026：字节跳动在 OpenSearch 上的技术实践与前沿探索",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247519046&idx=1&sn=45613e8c1ed787026f52292ded0e5acc",
+      "date": "2026-03-27T09:37:00.524Z",
+      "chars": 7596,
+      "text": "原创\n字节跳动数据库\n2026-03-27 17:37\n北京\nOpenSearchCon 是由 Linux 软件基金会旗下的 OpenSearch 软件基金会主办的\n年度技术大会\n，2026年首次\n来到中国！作为开源搜索与分析领域的一场“华山论剑”，从底层引擎\nApache Lucene\n的最新黑科技，到上层应用\nOpenSearch\n在向量检索、AIOps、安全分析等前沿阵地的实战，全球的顶尖开发者、架构师和社区领袖齐聚一堂，探讨技术的下一个浪潮。作为\nOpenSearch\n社区的核心成员和重量级玩家，字节跳动这次也带着满满的干货登场，分享了我们是如何在数百万 CPU Core、数百 PB 数据的庞大规模下，将 OpenSearch 的潜力挖掘到极致的。\n“激发创造，丰富生活”是字节跳动的使命，而 OpenSearch 正是支撑其全球150多个市场、35种语言产品矩阵背后海量数据实时检索与分析的关键引擎之一。从抖音、今日头条到 TikTok、Lark，OpenSearch 在字节跳动内部被广泛应用于全文搜索、可观测性分析、向量检索等核心场景。\n核心数据摘要（字节跳动内部应用规模）：\nCPU 核心数：\n超过\n200 万\n数据存储量：\n超过\n300 PB\n集群总数：\n超过\n9,000\n个\n节点总数：\n超过\n12 万\n个\n总文档数：\n超过\n210 万亿\n最大单向量集群规模：\n超过\n1000 亿（条）\n作为字节跳动数据库团队云搜索服务负责人、OpenSearch 基金会管理委员会（Govering Board）成员与技术委员会（TSC）成员，李亚坤发表了题为《OpenSearch at ByteDance》的主题演讲，系统分享了字节跳动内部 OpenSearch 的工程实践与技术创新，并首次披露了其基于 OpenSearch 社区在实时搜索、存算分离、向量检索等前沿领域的最新成果与未来规划。\n深耕社区，引领开源技术演进\n字节跳动不仅是 OpenSearch 的重度用户，更是 OpenSearch 基金会的会员单位和核心贡献者。一直致力于推动开源搜索引擎技术的发展。团队不仅向 OpenSearch 和 Lucene 社区累计贡献了超过\n200\n个重要 PR，更在\n2025年 Lucene Nightly Benchmark 榜单中贡献了50%的性能改进\n。这背后，是团队对开源的持续投入和对技术极限的不懈追求。\n机制：\n我们的贡献并非零敲碎打，而是体系化的深度参与。\n对 Lucene 社区贡献：\n拥抱现代 Java 特性：\n我们率先在 Lucene 中引入并深度应用了\nJava Vector API\n和\nForeign Memory API （FFI）\n，将 SIMD 指令的威力带入搜索引擎，大幅提升了向量计算和数据处理效率。\n优化核心数据结构与算法：\n重构了倒排索引的\n编解码器 （Codec）\n，引入了\nTrie 字典树\n和\nBitset\n等高效数据结构，显著提升了索引效率和查询性能。\n培养核心人才\n：团队中拥有\n2 位 Committer 和 1 位 PMC 成员\n，深度参与社区的决策和方向制定。\n对 OpenSearch 社区贡献：\n向量搜索（k-NN）的早期开拓者：\n从 2020 年起，我们就深度参与了 OpenSearch 的向量搜索能力建设，并完成了对业界顶级向量引擎\nFaiss\n的集成工作，为 OpenSearch 在 AI 时代的崛起奠定了基础。\n核心功能的设计与优化：\n深度参与了\nSegment Replication、Derived Source、Flat Object\n等关键特性的设计与性能优化，这些都是存算分离、降本增效的核心基石。\n社区中坚力量：\n团队拥有\n3 位 OpenSearch 内核仓库的维护者（Core Maintainer）\n和多位在特定领域的专家，持续为社区的健康发展贡献力量。\n由此可见，我们不是单纯地“用”开源，而是在“共建”一个更强大、更普惠的开源生态。通过将内部海量业务场景的严苛挑战转化为对社区的技术反哺，字节跳动正与全球开发者一起，推动着搜索技术的边界不断外延。\n攻坚核心挑战，释放数据价值\n面对字节跳动内部\nPB 级数据、百万亿级文档、毫秒级延迟\n的极致挑战，我们必须对 OpenSearch 进行深度定制和架构演进，才能满足业务的苛刻要求。下面，我们就来逐一拆解字节在五大核心领域的攻坚实践。\n创新领域一：极致的实时搜索\n在很多场景下，比如电商库存更新、社交动态发布，用户期望的是“写入即可见、可见即可搜”。传统的 OpenSearch 基于\nrefresh\n机制实现的“近实时”搜索，存在分钟级的延迟，无法满足要求。同时主副本数据完全独立，如何在高并发写入下，保证主副分片的数据强一致性，也是一大难题。\n解决方案：\n针对未执行\nrefresh\n的实时增量数据，在内存中构建轻量级实时索引结构，供实时搜索。\n引入堆外内存（Off-Heap Memory）解决资源占用问题：\n问题：\nES JVM 内存本来就紧张，若将实时数据放入 jvm， 将会严重占用有限资源，影响读写性能。\n机制：\n借鉴了\nApache Arrow\n的设计理念，将新写入的未 refresh 数据暂存在\n堆外内存\n。这块内存由 Opensearch 直接管理，写入速度极快。数据在堆外内存中就可以被检索，从而实现了“真实时”。\n乐观锁提升性能：\n问题：\n并发读写访问时，内存数据写&读频繁，竞争激烈，需要通过锁来保证一致性。\n机制：\n引入了\n乐观锁\n机制。每次对数据进行访问时，先获取数据状态，读写完成后，再检查数据状态是否发生改变，若改变了再升级成读写锁重新操作，从根本上保证了内存数据的强一致性，且对性能影响较小。\n效果：\n实现写后立即可查&主副本数据实时一致性。\n创新领域二：下一代存算分离架构\n传统的 OpenSearch 存算一体架构，计算资源和存储资源强绑定。当存储空间不足时，必须连同 CPU 和内存一起扩容，导致计算资源大量浪费。反之，计算高峰期也无法独立扩容计算节点。这种架构弹性差、成本高，已成为云时代最大的痛点。\n解决方案：\n字节跳动自研并落地了业界领先的\n新一代存算分离架构\n，其核心是基于\nSegment Replication（段复制） 机制\n的深度改造和自研高性能分布式存储。\n我们将“计算”和“存储”两个环节彻底分开从根本上解决了数据冗余和资源绑定的问题。该方案可以为业务带来\n全场景的数据支持、近乎零感知的运维体验，以及显著的成本与性能优势\n。\n架构原理：\n计算层（Compute Layer）：\n无状态的 OpenSearch 节点，负责查询处理、计算和索引构建。\n存储层（Storage Layer）：\n基于字节自研的\n分布式存储系统\n，负责存储 Lucene 的索引段文件（Segment Files），只存一份逻辑数据，并通过纠删码保证可靠性。\n工作流程：\n索引写入时，新生成的 Segment 文件被直接上传到远端分布式存储。计算节点只需从远端拉取所需 Segment 的元数据和少量热数据到本地缓存，即可提供查询服务。\n成果：\n总成本降低：\n通过存储与计算的独立扩展和资源池化，总体拥有成本（TCO）降低了\n50%\n以上。\n扩容时间缩短：\n扩容计算节点只需秒级拉起新容器，无需漫长的数据迁移，扩容时间从小时级缩短至分钟级，效率提升\n50倍\n。\n创新领域三：聚焦可观测性与日志场景的极致性价比\n核心挑战：\n字节跳动每天产生海量的日志数据，极高的并发洪峰对写入吞吐提出了严苛要求。团队从“写入、查询与存储”三个维度进行了深度重构与极致优化：\n解决方案：\n写入吞吐的突破：\n针对海量并发造成的集群资源竞争，我们实现了\n单分片批量摄入（Single-Shard Bulk Ingestion）\n与自适应分片选择（Adaptive Shard Selection）\n。通过智能路由与批处理，极大降低了节点间的请求交互损耗，使引擎能够更平滑地吸收流量洪峰。\n查询规划与剪枝优化：\n利用日志具备极强时间属性的特点，团队在查询规划器中引入了\n基于时间范围的索引剪枝（Time-range-based Index Pruning）\n，直接在协调节点裁剪无关索引数据。同时，结合 Lucene 底层提供的基于\nDocValuesSkipper 的稀疏索引（Sparse Index）\n，实现块级别的数据裁剪能力，极大降低了磁盘 I/O。\n存储效率的极致压榨：\n存储成本是日志场景的极大挑战。传统方案往往冗余存储完整的 JSON 原文，我们则大胆引入了\nDerived Source（派生 Source）\n技术，彻底抛弃了原生\n_source\n的冗余存储，改为在查询时动态生成。此外，我们针对列存数据引入了\n高阶编码与压缩优化\n，根据数据分布特征自适应采用最优编码方式。\n成果：\n通过写入吞吐优化、查询剪枝和存储效率的全方位优化，达成写入吞吐量提升3倍，存储空间减少54%。\n创新领域四：向量检索场景——打破“高精度、高性能与低成本”的不可能三角\n随着 RAG（检索增强生成）等大模型应用的爆发，向量搜索已成为核心基础设施。挑战在于，如何在\n百亿、千亿乃至万亿级别\n的向量规模下，实现\n低成本、高性能、高精度\n的检索？传统的基于内存的向量索引（如 Faiss、HNSWlib）成本高昂，难以为继。\n解决方案：\n为了在这个技术深水区取得突破，我们从底层存储、核心算法到检索能力，进行了一套自下而上的全栈式重构，字节跳动云搜索团队工程师、OpenSearch KNN Maintainer 鲁蕴铖分享了 解决方案。\n双模索引与高阶量化算法（Dual-Mode Index & Advanced Quantization）：\n在算法层，我们引入了业界顶尖的 DiskANN Vamana 图索引算法，并创新性地打造了“双模索引”——既有主打低成本的磁盘 Vamana 索引，也有主打极致性能的内存 Vamana 索引。与此同时，我们在 Vamana 中支持了扩展的 RaBitQ 量化算法，并自研优化出了\nSymRaBitQ 算法\n，在保证召回精度的同时，将内存足迹压缩到了极致。\n多级存储与架构解耦（Storage Optimizations）：\n在存储层，我们彻底打破了以往单一介质的局限，构建了支持纯内存（In-Memory）、纯磁盘（On-Disk）及混合存储的架构。更关键的是，我们深度优化了磁盘文件布局，并率先在\n存算分离架构上实现了 k-NN 向量检索（k-NN on Disaggregated Storage）\n，使得计算与存储能够按需独立扩缩容，为极致降本打下了物理底座。\n精准高效的检索能力层（k-NN Search Capabilities）：\n在上层执行阶段，团队实现了\n基于 RaBitQ 的径向过滤（Radial Filtering）\n，这不仅带来了高效的前置剪枝能力，还能完美应对带复杂标量过滤的混合检索场景。同时，针对数据量较小的数据段（Small Segments），系统会自动切换为精确的 k-NN 查找，以此死死守住“高精度”这条业务底线。\n成果：\n性能狂飙：\n系统的吞吐量\n（QPS）直接飙升了5.5倍\n。\n体验跃升：\n代表长尾体验的\nP99 Latency 延迟被成功斩断，降低了70%\n，响应更加极速平滑。\n成本骤降：\n在性能与精度双重提升的背景下，总成本\n直接砍掉了80%以上\n。\n创新领域五：突破跨索引 Join 难题，重塑新一代分析体验\n在 OpenSearch 的分析型工作负载中，跨索引 Join 长期以来是一个具有挑战性的需求。用户希望能够在不同索引、不同数据源之间进行高效关联查询，以满足复杂的分析场景。\n解决方案：\n针对这一问题，云搜索团队在 OpenSearch 的基础上进行了架构演进，实现具备独立分析节点形态的 SQL 插件，通过该 SQL 插件提供完备的分析能力。数据节点和分析节点之间则通过优化后的数据传输协议进行交互，这样的架构实现了项目存储与计算资源的高度隔离。\n在分析节点侧，\n我们提供了完整的 SQL 语法支持与查询计划优化器，不仅定制了更适合 OpenSearch 的算子下推策略和 Runtime Filter，还借助流水线加向量化执行引擎，大幅提升了计算效率。\n数据节点侧\n则以 Arrow 格式按 block 流式向外传输数据，保障了节点间的高效交换。\n分析节点\n不仅能够对接 OpenSearch 自身的数据节点，还可以无缝连接 Hive、Hudi/Iceberg、MySQL、PostgreSQL 等外部数据源，真正实现跨数据源的统一关联查询。\n成果：\n这一演进使 OpenSearch 在处理分析型工作负载时具备了更强的跨索引和跨数据源 Join 能力，为构建统一查询平台和实时湖仓分析提供了技术基础。\n社区贡献案例：Apache Lucene 最新性能优化实践\nApache Lucene 是 Opensearch 的核心底层依赖，随着硬件架构的演进与现代编程语言特性的增强，如何进一步挖掘检索引擎的性能极限，成为了核心话题，字节云搜索团队深入参与其中。\n在此次大会中，云搜索团队工程师、Lucene PMC 成员郭峰分享了 Lucene 近来在性能优化方面的深度实践。此次分享重点介绍了 Lucene 如何通过底层 Codec 重构、向量化（SIMD）、无分支编程（Branchless）以及减少虚函数调用等手段，在查询性能上实现的显著进步。\n性能的基准与社区的协同\n在开源社区中，性能对比往往是推动技术进步的动力。根据 Search Benchmark Game 的数据，Lucene 的性能轨迹展现了清晰的上升曲线：在最新的 10.3 版本中，通过一系列底层优化，Lucene 在 TopN 和 Count 等核心任务的平均性能上已经追上了 Tantivy 并取得了一些优势。\n值得一提的是，Lucene 与 Tantivy 之间并非单纯的竞争关系，更多是“兄弟社区”式的互促共进。Lucene 从 Tantivy 的设计中借鉴了许多优秀的工程实践，同时也向 Tantivy 回馈了诸多优化思路。这种良性的技术交流，共同提升了全文检索技术的整体上限。\n核心优化路径解析\n此次优化的核心逻辑在于“深入底层”，从数据结构到 CPU 执行指令，进行全方位的打磨。\n索引结构与编解码（Codec）的演进：\n在倒排字典部分，Lucene 引入了全新的 Trie 字典索引来替代原有的 FST 结构，给主键查找的带来了30%左右的性能收益。对于倒排链，Lucene 引入了 Bitset 编码技术以存储稠密文档块，节省存储的同时，通过新接口的设计将其暴露给上层，从而加速交并集查询评估以及 Count 的性能。\n榨干硬件潜力：\n向量化与 SIMD 随着\nJava Vector API 的日益成熟，Lucene 开始深度集成 SIMD 技术。通过向量化指令，原本需要多次循环处理的数据，现在可以在单次指令周期内完成并行计算，这在“寻找块内首个大于目标值的文档”等热点路径上，带来了直接的性能增益。\n优化指令流水线：\n无分支与减少虚函数\n现代 CPU 的性能极大程度上取决于指令流水线的效率。针对这一点，Lucene 进行了针对性优化：\n无分支编程（Branchless）：\n通过代码重构，使编译器能够生成\ncmov\n等非跳转指令，避免分支预测失败导致的流水线停顿。部分热点函数在无分支化后获得了数倍的提速，从而提升端到端性能10%。\n减少虚函数调用（Less Virtual Call）：\n通过将虚函数调用提取到循环外部，减少了高频循环中的 vtable 查找开销，让 CPU 能够更专注地执行核心计算。\n在新的 Lucene 10.4 版本中，社区计划将倒排块大小从128扩展至256。这一变化将进一步放大上述向量化与无分支编程的收益，预示着 Lucene 的性能表现将迎来更大幅度的飞跃。\n面向未来：现代化、可扩展、智能化、可观测的搜索新范式\n技术演进的脚步永不停歇。展望未来，字节跳动将继续围绕\n现代化、可扩展、可观测、智能化\n三大方向，与社区共同探索搜索技术的下一代范式。\n持续推进搜索能力的现代化：\n一方面，继续打磨基于 Vamana 与 RaBitQ 的向量检索方案并充分利用 GPU 算力，另一方面在产品形态上做好原生多租户向量搜索支持，把同一集群里的不同业务隔离又可统一运营，同时在架构上向万亿级向量规模演进，让更多复杂 AI 场景都能在一套搜索底座上稳定运行 ；\n围绕可观察性与分析，\n我们会在底层引入更先进的列式存储与计算技术，进一步优化 OpenSearch/Lucene 在复杂查询、聚合分析场景下的性能，同时在数据湖侧原生支持日志和向量这两类核心数据形态，使检索、分析和模型训练都能在同一数据底座上顺畅打通；\n在可扩展性与弹性方面，\n我们计划建设基于大数据引擎的外部索引服务，将大规模索引构建与更新能力从在线集群中剥离出来，降低线上压力；同时通过并发 translog 快照回放、搜索与索引职能分离、远程 translog 与远程集群状态等一系列存算分离架构优化，让集群在高并发、故障恢复和跨地域部署场景下都能更平稳、更具弹性；\n在社区与生态上，\n我们会更加开放地拥抱行业社区，一方面深度参与并回馈 OpenSearch 与 Lucene 社区，共建底层能力，另一方面积极对接 LangChain、OpenClaw 等主流 AI 生态，打通上层应用框架与底层检索引擎，让更多内部外部开发者可以直接在这一套搜索底座之上，快速搭建自己的 AI 应用。\n总结\n从深入 Lucene 内核的指令级优化，到重塑 OpenSearch 的存算分离架构；从引领向量搜索的工程落地，到构建强大的跨索引分析引擎，字节跳动在开源搜索领域的每一步探索，都源于对技术本质的尊重和对业务场景的深刻理解。\n李亚坤在演讲的最后表示：“我们坚信开源的力量，字节跳动将持续深化与\nOpenSearch、Lucene\n社区的合作，共同构建一个更强大、更高效、更智能的搜索生态。” 这不仅是一句宣言，更是我们持续投入、与全球开发者并肩前行的承诺，共同推动数据与 AI 的深度融合，为全球用户创造更丰富的价值。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "peripheral": 0.08,
+        "irrelevant": 0.8,
+        "transfer_agent": 0.12,
+        "transfer_business": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.65,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.07,
+        "2": 0.78,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.41,
+      "probabilities": {
+        "0": 0.74,
+        "1": 0.16,
+        "2": 0.06,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.12,
+      "probabilities": {
+        "0": 0.94,
+        "1": 0.03,
+        "2": 0.02,
+        "3": 0,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.67,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.56,
+        "3": 0.12,
+        "4": 0.29,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.35,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.11,
+        "2": 0.26,
+        "3": 0.26,
+        "4": 0.23,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 0.46,
+      "probabilities": {
+        "0": 0.66,
+        "1": 0.26,
+        "2": 0.06,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8370,
+    "outputTokens": 173,
+    "totalTokens": 8543
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.74,
+        "relevance": 0.75,
+        "grounding": 0.73,
+        "decision_action": 0.92,
+        "evidence": 0.52,
+        "actionability": 0.25,
+        "anti_hype": 0.69
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179929554,
+                "endTime": 1791179929721,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00035154",
+      "marketCost": "0.00035154",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00035154",
+      "inferenceCost": "0.00035154",
+      "inputInferenceCost": "0.00035154",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9DXZX128JRPKWVQHA3XN"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:49 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::xm9xr-1791179929418-9fdb22cb1d8a"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "peripheral": 0.08,
+            "irrelevant": 0.8,
+            "transfer_agent": 0.12,
+            "transfer_business": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.65,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.07,
+            "2": 0.78,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.41,
+          "probabilities": {
+            "0": 0.74,
+            "1": 0.16,
+            "2": 0.06,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.12,
+          "probabilities": {
+            "0": 0.94,
+            "1": 0.03,
+            "2": 0.02,
+            "3": 0,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.67,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.56,
+            "3": 0.12,
+            "4": 0.29,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.35,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.11,
+            "2": 0.26,
+            "3": 0.26,
+            "4": 0.23,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.46,
+          "probabilities": {
+            "0": 0.66,
+            "1": 0.26,
+            "2": 0.06,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8370,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.74,
+            "relevance": 0.75,
+            "grounding": 0.73,
+            "decision_action": 0.92,
+            "evidence": 0.52,
+            "actionability": 0.25,
+            "anti_hype": 0.69
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179929554,
+                    "endTime": 1791179929721,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00035154",
+          "marketCost": "0.00035154",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00035154",
+          "inferenceCost": "0.00035154",
+          "inputInferenceCost": "0.00035154",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9DXZX128JRPKWVQHA3XN"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:48.951Z"
+  }
+}

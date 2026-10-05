@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1234262770652839936",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "参数化 Memory 漫谈（纯干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511041&idx=1&sn=037ffb3529df30ea5b8b30b966a526bf",
+      "date": "2026-08-07T10:18:00.229Z",
+      "chars": 6500,
+      "text": "进 prompt 做 few-shot 的是同一批演示——第 6 章里这批数据走前向传播、被隐式消费，这里它们走反向传播、被显式消费。显然后者的效果更好。\n结果上，相对微调基线最高 6 倍准确率；8B 模型在 ARC 公开验证集拿到 53.0%，把纯神经公开方法的 SOTA 提高近 25%；与程序合成集成后 61.9%，追平人类平均分；ICML 版补测 BBH，10-shot 设置从 50.5% 提到 57.8%。以下是一些其他的结果的截图，大概明白这个趋势就行。\n回头看作者他们提到的三种方案，它们其实借用了类似的洞察：监督信号藏在输入自身的结构里，区别只在从哪层结构里挖——dynamic evaluation 挖序列的自回归结构，TTT-2020 挖图像的几何结构，ARC-TTT 挖演示对的可拆分结构。它们残留下来的问题也因此一致：（1）学习器与架构是分离的外挂过程，（2）任务（挑什么自监督目标）和更新规则（学习率、步数、时机）全靠手工配置。把学习器做进架构、把任务交给训练去学，以及把更新规则也变成可学习的量，是接下来两节的事。\n9.2 TTT Layers：隐藏状态本身也是一个模型（Learning to (Learn at Test Time): RNNs with Expressive Hidden States, 2024）\n这篇论文把序列建模层拆成三件东西：隐藏状态、更新规则、输出规则。RNN 的隐藏状态是定长向量，更新规则是固定函数；attention 的隐藏状态是不断增长的 KV cache，更新规则是追加。TTT layer 提出了第三条路线：隐藏状态是一个内层模型的权重\n，更新规则是一步自监督学习。\nTTT Layer 会替换掉 attention 机制。每个 token 会经过两个流程，先训后测。训练 step：内层模型\n从低维投影\n出发重构另一个投影\n，\n学\n不\n好\n的\n部\n分\n变\n成\n梯\n度\n，\n把\nW_{t-1}\n改\n写\n为\nW_t\n当\n前\n的\n信\n息\n以\n权\n重\n增\n量\n的\n形\n式\n留\n存\n。\n预\n测\n：\n拿\n\\theta_Q x_t\n去\n查\n询\n刚\n更\n新\n过\n的\nW_t\n，\n得\n到\n本\n层\n输\n出\nz_t\n。\n取线性模型就是 TTT-Linear，取两层 MLP 就是 TTT-MLP。\nTTT-Layer 如图所示，\n是残差流输入，顶部直连是恒等映射，本层学的是加在它上面的残差项，\n；\n蓝\n色\n是\n，\n才是本层的工作对象。图只画了 Transformer 块的前半——TTT layer 顶替 attention 的那个子层，后半的 MLP 子层照旧，图中省去。往下两条支路正好对应上面的两步：下路是训练路，投影\n承担\n的角色，\n是把内层输出映回\n空间的重构解码头；上路是预测路，投影\n承担\n的角色，\n是输出头。\n到\n的虚线即内循环那一步梯度，图中\n，每个 token 只走一步；加大\n用算力换精度，前身论文测到\n仍在涨。一处对齐说明：图中重构标签直接取\n自身，相当于公式里\n取恒等的特例。\n红色 LN 是这张图专门要讲的知识点。重构标签\n是蓝色 LN 的输出，均值和尺度都被归一过；解码头\n的原始输出\n没有这个约束。让一个无约束向量去逼近一个归一化向量，损失里混进了永远追不平的均值与尺度差——论文称之为类型不匹配（type mismatch）。修法花费一个 LN：给\n也过一次归一化（作者自述承 MAE 的做法），\n与\n同为 LN 输出，比较回到同一类型，消融里这一项对性能的贡献排得很靠前。内环是一个货真价实的优化问题，目标两端分布不对齐，学习信号就自带系统偏差；8.1 的 PKM 给 query 加 batchnorm，此处给重构端加 LN，记忆机制的训练修理两次都体现在归一化上，可见归一化的贡献。\n图是个老图，与正式版有点出入。第一，2024 版把解码头\n砍掉了：论文脚注说加\n的重型设计略有提升，但训练更不稳、算力开销显著，最终取 encoder-only，重构由\n独自完成——图里的\n在正式论文中不存在。第二，前身论文的内循环学习率\n固定为 1，由与线性注意力的等价关系推出，且\n时两者严格等价；正式版把\n和\n都放开给外环去学。这两处放开正是下一段等价关系讨论的伏笔。\n从图中可以获得这样的要点：历史 token 对本层输出的影响，全部压缩在\n里——这就是\"隐藏状态是权重\"的字面含义。当前 token 走两条通道进入输出：作为训练样本，经虚线改写\n；作为查询，经上路读取改写后的\n。先写后读，一个 token 一轮（开销也是非常巨大）。\n相比于 9.1 残留的两个人工配置的环节，TTT Layers 的优势在于——\n解决的更新规则的 Learning Issue：这三个投影由外环训练学得，也就是说，\n内层学习器该解什么自监督任务，本身是被学出来的\n（后面会讲怎么更新规则的手工配置）。对照第 2 章，这是 MAML 双层结构的逐 token 版——外环压缩任务分布的共性，内环用少量新证据快速适应——区别在内环步进频率提到了每个 token 一次，且适应对象从整个网络缩小到一层的隐藏状态。对照第 6 章，von Oswald 证明线性注意力的前向传播隐式等价于一步 GD；TTT 把这层等价关系从解释翻转成设计原则：先选定内层学习器，再让架构显式执行它的更新。\n工程上，逐 token 的串行梯度步无法并行，论文用 mini-batch TTT（\n，批内 token 共用同一起点算梯度）加对偶形式把计算改写成矩阵乘。实验规模 125M–1.3B 参数，TTT-Linear 与 TTT-MLP 的困惑度追平或超过 Transformer 和 Mamba；Books 数据上，Mamba 的困惑度在上下文超过 16k 后停止下降，TTT 持续受益于更长的上下文；8k 上下文处 TTT-Linear 的 wall-clock 已快于 Transformer，与 Mamba 相当。定长状态里装一个会学习的模型，长上下文的信息就有了持续压入的通道——这正是第 7 章那批压缩工作想要而没有得到的性质：压缩器在线运行，压缩目标由外环从数据里学出。\n此外，补充一点不同架构之间的对比（关于架构消融，论文写了很多思考和对比实验，感兴趣可以阅读原文）：\n9.3 Titans：给写入配上动量和遗忘（Learning to Memorize at Test Time, Google, arXiv:2501.00663）\nTTT 的内环（学习器）对每个 token 无差别执行一步 GD，没有轻重，也没有遗忘。序列一长，这两个问题就都显现出来了：不重要的 token 稀释记忆容量，写满之后没有腾退机制。Titans 的神经长期记忆模块（LMM）在更新规则上动刀：\n三行公式表达的含义是不同的。第一行是关联记忆损失，与 7.2 节 Compressive Transformer 的 attention-reconstruction loss 同一个目标——保留未来读取时用得上的映射——从离线蒸馏改成了在线执行。第二行，论文把梯度范数定义为\"惊讶度\"（surprise，论文术语）：违背当前记忆预期的输入产生大梯度，写入力度随之增大；\n是动量项，让惊讶跨 token 延续，\n、\n均为数据依赖的门控。第三行，\n是数据依赖的 weight decay，充当遗忘门，控制旧记忆的腾退比例。回看第 1 章那句\"Memory 是外部 optimizer state\"：\n就是动量，动量就是 optimizer state，这里它被字面地并入了记忆的组成部分。再回看第 3 章 Meta-SGD——历史经验压缩成好的\n加好的更新方向加好的学习率——Titans 把这三样全部做成数据依赖的可学习量，粒度细到每个 token。\n到这里为止的东西，论文统一叫 LMM（Long-term Memory Model）。名字要拆开读：LMM 是模块，Titans 是把模块装进完整架构后得到的模型家族。模块自身还有一处设计：\n取深层 MLP（两层及以上）而非矩阵，论文的论点是矩阵记忆等价于把关联压进线性映射，深度换来了非线性的存取容量（论文做了深度消融（\n=1/2/3/4），可查原文）。它与类似工作的差异在于：对比 TTT，动量与遗忘管住了容量，序列变长性能不掉；对比 Mamba2 ( PMLR )，记忆是深层非线性的，且 Mamba2 无法移除已写入的内容；对比 DeltaNet ( PMLR )，delta rule 能覆盖旧值但没有主动遗忘。\nTitans 包括三个通用件。core 分支是 attention，负责当前窗口内的精确依赖，论文称之为短期记忆；contextual memory 分支就是 LMM，跨窗口的长期部分；persistent memory 是一组与输入无关的可学习 token，拼在序列最前端，存放任务级知识——测试时它冻结，区别于逐 token 更新的 LMM。论文给持久记忆的动机之一直接 callback 了本文第 4.1 节的那条视角：attention 配上数据无关的 KV 对，行为等价于一个 FFN，而 FFN 正是参数化的任务记忆。Titans 探索了三种组装方法——MAC、MAG、MAL，差别主要在 LMM 与 attention 的接线方式上。\n上图，记忆作为上下文（MAC）架构。该架构包含三个分支：（1）核心分支、（2）上下文（长期）记忆分支和（3）持久记忆分支。核心分支将相应的长期记忆和持久记忆与输入序列拼接。随后，注意力机制对序列执行操作，并决定应将信息的哪一部分存储在长期记忆中。在测试时，对应于上下文记忆的参数仍在学习，对应于核心分支的参数负责上下文学习，而对应于持久记忆的参数负责存储任务相关知识，因此是固定的。\n上图，记忆作为门（MAG）架构。该架构同样具有三个分支：（1）核心、（2）上下文记忆和（3）持久记忆。然而，它仅将持久记忆融入上下文，并通过门控机制将记忆与核心分支相结合。测试时，其行为与 MAC 架构相同。\n上图，记忆层架构（MAL）。在该架构中，记忆层负责在注意力模块之前压缩过去和当前的上下文。\n论文实际评测的配置是四个：LMM 单体，加上 MAC、MAG、MAL 三个混合体。LMM 单体入列的用意在隔离——它不带任何 attention，与 Mamba2、DeltaNet、Gated DeltaNet (\narXiv\n) 同属定长状态的复杂度类，单体对单体的比较把架构混合的贡献剥掉；结果是语言建模与常识推理基准上，LMM 单体已超过这批现代线性循环基线（详见下表）。混合体内部另有一层对照：MAL 的接法与现有混合模型的逐层堆叠（Samba (\narXiv\n) 一类）相同，实验里 MAC 与 MAG 整体压过 MAL——同一个模块，接线不同，收益不同，堆叠式接法没吃满记忆模块的价值。长上下文上 MAC 最好，有效上下文扩到 2M 以上，BABILong 上超过所有基线，包括 GPT-4 这类参数量大出若干数量级的模型。消融给出的贡献排序：weight decay 最大，其后依次是 momentum、卷积、persistent memory。\nTitans 各变体的训练参数量与 token 数等数据，前往原文查看。\n实现起来也很难啊。非线性递归更新的并行化靠分块近似，块内并行、块间串行，门控越多越难改写成纯矩阵乘；深层记忆的容量收益与训练稳定性之间的权衡，论文只给了小规模消融；官方代码截至 2025 年 11 月仍未放出，独立复现受限。这三条决定了 Titans 目前是方向证明，还称不上可复用的基础设施。\n9.4 概念一统：高效注意力的另一种读法\n到这一节，你的大脑里应该对这两类东西留有印象：第 6 章把线性注意力理解成一步 GD，9.2 和 9.3 把定长状态直接做成显式学习器。softmax attention 站在两类之外——KV cache 随序列增长、没有任何梯度步，看上去与\"测试时学习\"无关。Test-time regression 统一框架（Wang, Shi, Fox, arXiv:2501.12352）(\narXiv\n)把它也收编了进来，收编的方式值得多花些笔墨。\n框架本体是一个两步分解。关联召回被拆成记忆与检索：记忆侧，对到目前为止的全部键值对解一个加权回归问题：\n检索侧，拿查询过一遍拟合好的回归器，\n。每个序列层由三个设计选择完全刻画：各条关联的相对权重\n（管遗忘）、回归器函数类\n（管容量）、求解该问题的优化算法（管更新规则）。下表的三个中间列就是这三个旋钮；过去五年的\"高效注意力\"变体，各自对应一个经典估计器：\n新加的最后行是这篇论文的 Vignette 4，推导链条完整：核技巧把线性记忆升到核回归，取局部常数近似得到 Nadaraya–Watson 估计器；该估计器要求平滑核是距离\n的单调函数，softmax 用的却是内积的指数——两者本来对不上，但把键和查询归一到\n后，带宽\n的指数平滑核与缩放点积严格相等，softmax attention 被逐字推导出来。副产品是 QKNorm (arXiv) 的理论解释：这个只有经验背书的训练稳定技巧（Dehghani et al. 2023），在回归视角下就是让核回归的局部近似性质成立的预处理。\n这一行入表之后，整张表出现了一条断层线：softmax attention 在非参数一侧，记忆就是样本全集，不压缩、状态随序列长大、检索精确；其余全在参数一侧，样本被拟合进定长权重，有损但恒定开销。Titans 那句\"attention 做短期精确记忆、LMM 做长期有损记忆\"的架构定位，在这里获得了统计语言的表述——精确与有损的差别就是非参数与参数估计的差别。第 7.1 节的压缩公式\n也在此落地：参数一侧的\n是回归求解器，\n是拟合出的权重；非参数一侧压根没有压缩，\n就是\n自身。该回归视角还顺手给了第 6 章一个补充诊断：线性注意力等于忽略键之间相关结构的一步 GD，键不正交时关联互相串扰——论文摘要明说这解释了它丢失 token 间相关性的原因，而 delta rule 与递归最小二乘正是对同一问题的逐级修复。\n关联回忆差距如图所示：根据预测的标记是否为示例上下文中先前见过的二元组，对每种架构类别的 Pile 验证数据进行分层。将验证困惑度与二元组在训练数据中的频率绘制成图。可以清楚地看到，这种差距集中在二元组出现且在训练中极少见到的示例上。\n框架的生成能力怎么样呢？论文自己从局部多项式回归导出了 softmax attention 的高阶推广；2025 年 10 月的 Local Linear Attention（arXiv:2510.01450）(\narXiv\n)沿同一路线取局部线性回归，落成了介于线性与 softmax 之间的新注意力层。这就像是一部\"更新规则考古史\"：从 Hebbian 到 delta rule 到带动量的 GD，优化算法教科书的目录被逐年搬进架构，现在连非参数统计那半本书也被搬了进来。Google 那条线上的后续沿同一逻辑推进：ATLAS（arXiv:2505.23735）(\narXiv\n)把逐 token 更新换成滑动窗口上的最优记忆化目标；Miras（arXiv:2504.13173）(\narXiv\n)把设计空间显式参数化为四元组——记忆架构、注意力偏置（即内环损失）、保留门（即遗忘）、更新算法；Nested Learning（NeurIPS 2025，HOPE 架构）(\nNeurIPS\n)再往上抽一层，让不同组件以不同频率自我更新。这批工作彼此的差异本质上",
+      "fulltext_obtained": true,
+      "chunk_index": 9,
+      "chunk_count": 11
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.61,
+        "transfer_agent": 0.38,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.1,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.59,
+        "2": 0.25,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.02,
+      "probabilities": {
+        "0": 0.99,
+        "1": 0.01,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.09,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.02,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.55,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.09,
+        "4": 0.8,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.38,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.25,
+        "2": 0.1,
+        "3": 0.17,
+        "4": 0.36,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.43,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.16,
+        "2": 0.13,
+        "3": 0.58,
+        "4": 0.07,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.73,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7310,
+    "outputTokens": 173,
+    "totalTokens": 7483
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.51,
+        "relevance": 0.72,
+        "grounding": 0.98,
+        "decision_action": 0.94,
+        "evidence": 0.7,
+        "actionability": 0,
+        "anti_hype": 0.52
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180417123,
+                "endTime": 1791180417273,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00030702",
+      "marketCost": "0.00030702",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00030702",
+      "inferenceCost": "0.00030702",
+      "inputInferenceCost": "0.00030702",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARA2PJN97YB57PFN52ZGR"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:57 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::nrf4n-1791180417047-587c93830ddb"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.61,
+            "transfer_agent": 0.38,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.1,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.59,
+            "2": 0.25,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.02,
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.09,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.02,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.55,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.09,
+            "4": 0.8,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.38,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.25,
+            "2": 0.1,
+            "3": 0.17,
+            "4": 0.36,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.43,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.16,
+            "2": 0.13,
+            "3": 0.58,
+            "4": 0.07,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.73
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7310,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.51,
+            "relevance": 0.72,
+            "grounding": 0.98,
+            "decision_action": 0.94,
+            "evidence": 0.7,
+            "actionability": 0,
+            "anti_hype": 0.52
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180417123,
+                    "endTime": 1791180417273,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00030702",
+          "marketCost": "0.00030702",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00030702",
+          "inferenceCost": "0.00030702",
+          "inputInferenceCost": "0.00030702",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARA2PJN97YB57PFN52ZGR"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:56.796Z"
+  }
+}

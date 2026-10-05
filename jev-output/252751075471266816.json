@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "252751075471266816",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "AI工作流在淘宝交易舆情巡检上的探索与实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650542990&idx=1&sn=c87517f8af9020407cf36f636538fbe3",
+      "date": "2026-03-06T10:25:00.874Z",
+      "chars": 3336,
+      "text": "原创\n交易业务技术团队\n2026-03-06 18:25\n浙江\n本文介绍了交易终端团队基于LLM构建的智能用户反馈舆情巡检系统。\n本文介绍了交易终端团队基于LLM构建的智能用户反馈舆情巡检系统：针对人工巡检效率低、易漏报、难洞察趋势等问题，设计“采集→清洗→AI判断→预警→分发→归因→复盘”工作流；核心采用四步AI能力（识别要素→判定意图情感→知识库语义匹配→闭环学习），强制模型在人工构建的业务问题分类库中匹配，确保可控、一致、可解释；通过新增/激增预警+钉钉推送+可视化看板实现快速响应；历经三阶段迭代，最终确立“预置打标+语义匹配”方案；强调AI是辅助工具，目标是提升业务信任与实际提效。\n前言：为什么要做用户反馈舆情巡检\n过去一年多，交易终端团队始终聚焦于用户体验的持续优化，在交易域性能体验升级\n上持续投入。而用户的真实反馈，一直是我们洞察问题、驱动改进的重要来源。为了不遗漏用户反馈中的技术性问题，各业务线每天都会安排专人进行舆情巡检——逐条查看反馈、识别异常、跟进处理。然而，随着业务体量增长和反馈渠道的多样化，传统人工巡检的局限性日益凸显：\n问题\n具体表现\n效率低下\n人工查看海量反馈，耗时耗力\n漏报风险\n高风险舆情被淹没在信息洪流中\n趋势难察\n难以识别早期问题苗头和趋势变化\n闭环缺失\n问题处理后缺乏追踪和复盘机制\n这些痛点一直困扰着我们：能不能让机器代替人完成\"发现问题\"这件事？\n随着LLM技术的快速发展，我们看到了新的可能——借助 AI 的语义理解和自动化能力，构建一套智能舆情巡检工作流，实现「自动发现问题 → 快速定位归因 → 闭环跟进复盘」的全链路升级。\n本文将分享我们在 AI 舆情巡检领域的探索实践，包括整体方案设计、核心 AI 能力建设、以及落地过程中的经验与踩坑。\n整体方案设计\n通过 AI 工作流，我们期望实现舆情巡检的三大核心能力：\n我们的核心思路\n：\n采集 → 清洗 → AI判断 → 预警 → 分发 → 归因 → 复盘 。现在舆情的采集渠道均是淘内现有的吐槽吧，数据清洗的部分除了依赖魔兔平台的业务初筛以外我们会加相关人工巡检时的关键词再次捞取一遍舆情，避免部分被遗漏的数据。再将相关舆情数据结构化后投喂到AI，最后根据我们自定义的业务规则及波动阈值进行舆情预警并进行消息推送，至此完成巡检部分的工作，当然后续还有舆情归因及复盘反馈的环节，但是这个部分的能力我们还在持续建设中，暂时先不\n进行展开。\n核心 AI 模型与能力模块\n我们通过「识别 → 判定 → 匹配 → 学习」四个步骤，实现用户反馈的自动化分类，并通过闭环学习机制持续优化分类能力。\n第一步：识别核心元素\nLLM 从用户反馈中提取「谁/什么」+「怎么了」，比如「评价页面」+「打不开」。\n第二步：判定意图与情感\n判断用户是在提建议、报故障还是问问题，同时识别情绪是正面还是负面。\n第三步：知识库匹配\n将反馈与人工预先整理的问题分类库进行匹配。知识库来源并非自动生成，而是由人工对各个业务线（如评价、物流、下单、逆向、购物车、订单、支付、问大家等）过去的历史舆情进行梳理和打标，逐步积累形成的标准问题分类体系。每个业务线都有独立的分类体系和典型示例关键词。\n匹配规则：LLM 只能从知识库中已有的类别进行匹配，不可自行创造新类别。\n这确保了分类结果的一致性和可控性。\n第四步：闭环学习 （目前还在持续完善中）\n对于无法匹配现有知识库的反馈，系统不会简单丢弃，而是启动闭环学习机制：\n定期触发：系统按照设定的周期，对未匹配舆情池中的反馈进行批量处理。\nLLM 聚类 + 话题发现：利用大模型对这批未匹配反馈进行语义聚类，自动发现共性话题，提取潜在的新问题类别。\n人工审核确认入库：聚类结果提交给业务人员审核，确认是否为真实的新问题类型、是否需要纳入知识库。\n更新知识库：审核通过后，新的问题类别和关键词被添加到对应业务线的知识库中。\n最终正向循环形成通过第四步的闭环学习，系统实现了自我进化：\n知识库持续丰富 → 匹配率提升 → 未匹配减少 → 分类更精准\n随着知识库的不断扩充，越来越多的用户反馈能够被准确分类，未匹配的比例持续下降，整个舆情分析系统的准确率和覆盖率不断提升。\n预警与分发机制\n在舆情监控环节，我们支持按业务线、问题类型、时间维度灵活配置告警规则：\n新增舆情监控\n当某一问题类型在当日首次出现，或某类问题的绝对数量超过预设阈值时，系统自动触发「新增舆情」告警；\n帮助业务快速感知新出现的问题苗头，避免遗漏早期信号。\n激增舆情监控\n系统持续对比当日数据与历史基线（如过去7天均值），当某一问题类型的增长幅度超过设定比例（如环比增长50%、100%）时，触发「激增预警」。\n钉钉群定时同步\n每日定时将预警信息推送至对应钉钉群，确保一线同学及时感知消息包含：问题类型、当前数量、环比变化、典型反馈摘要、快速跳转链接。\n可视化舆情看板\n搭建了多维度的舆情分析看板，支持按时间趋势、业务模块、问题类型、平台版本等维度进行下钻分析。\n看板涵盖：总量概览、环比对比、问题分布、预警列表、原始反馈明细等模块，业务同学可自助查询历史数据。\n落地过程中的方案迭代\n在舆情归类能力的搭建过程中，我们经历了三个阶段的方案迭代：\n阶段一：批量投喂，让大模型\"自由发挥\"\n最初的想法很直接——把各业务的舆情数据批量丢给大模型，让它直接输出归类结果。数据量少的时候，效果还能接受。但随着数据量增大，问题开始暴露：\n上下文超限\n：大模型的 token 限制导致部分舆情被截断或丢弃；\n结果对不上\n：输出的归类数量和输入的舆情条数经常对不上，排查成本极高。\n阶段二：单条投喂，提升稳定性\n于是我们调整策略，对舆情数据进行结构化精简，仅保留必要字段（如反馈内容、业务模块），然后逐条调用大模型进行归类。这一阶段的准确率明显提升，但新问题随之而来：\n输出不一致：大模型的概率性本质，导致相同语义的反馈可能被归为不同类别。比如「不支持暗黑模式」和「无法使用暗黑模式」，在业务看来是同一类问题，但大模型可能输出不同的分类标签，导致聚类噪音大，后续做问题聚合统计时，这种不一致性带来大量噪音，严重影响数据可用性。\n阶段三：预置打标 + 语义匹配，锁定分类边界\n最终我们确定了当前方案：由业务人工梳理历史舆情，构建标准化的问题分类知识库，大模型的任务从\"自由归类\"变为\"语义匹配\"——只需判断输入的反馈最接近知识库中的哪个类别。\n这一方案的核心优势：\n分类边界可控：所有输出类别都在预设范围内，不会产生意外的新标签。\n结果一致性高：相似语义的反馈会被稳定地匹配到同一类别。\n可解释、可迭代：分类体系由业务定义，便于持续优化和扩展。\n经过验证，这一方案目前在准确率、一致性、可维护性上都达到一定平衡。\n未来展望\nAI 是辅助决策的工具，而不是替代人的黑箱。AI 负责发现问题、聚合信息、提供建议，而最终的判断和决策权，始终交给业务同学。技术落地的最后一公里，往往不是技术问题，而是信任问题。再精准的模型，如果业务不信任、不使用，就只是实验室里的玩具。只有让一线同学切实感受到\"这东西确实能帮我省事、帮我少踩坑\"，系统才能真正融入日常工作流。\n当然，现在的方案还远谈不上完美：分类准确率仍有提升空间、多业务场景的泛化能力需要持续打磨、知识库的维护和迭代机制还需要更加自动化。作为一个刚踏入 AI 应用领域的\"新手玩家\"，我深知这只是一个起点。长路漫漫，但值得走下去——因为每一次优化，都意味着用户的声音能被更快听见、问题能被更早解决。\n团队介绍\n本文作者\n潇沁\n，来自淘天集团-交易业务技术团队，本团队专注于下单、支付、物流、服务、逆向退款等核心交易链路的技术团队，我们面向亿万用户致力于打造极致流畅、安全稳定的购物体验，为用户和商家的每一次交易行为保驾护航。同时我们也在持续推进交易平台架构演进，全程保障每一次大促的平稳运行，在流量洪峰的考验下确保交易链路的丝滑体验。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.01,
+        "transfer_business": 0.19,
+        "transfer_agent": 0.36,
+        "irrelevant": 0.44
+      }
+    },
+    "relevance": {
+      "score": 2.19,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.68,
+        "3": 0.26,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.67,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.11,
+        "4": 0.83,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.37,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.01,
+        "2": 0.15,
+        "3": 0.57,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.88,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.12,
+        "3": 0.88,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.53,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.04,
+        "3": 0.3,
+        "4": 0.62,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 3.71,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.26,
+        "4": 0.73,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5176,
+    "outputTokens": 173,
+    "totalTokens": 5349
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.29,
+        "relevance": 0.78,
+        "grounding": 0.78,
+        "decision_action": 0.46,
+        "evidence": 0.92,
+        "actionability": 0.67,
+        "anti_hype": 0.8
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179899388,
+                "endTime": 1791179899557,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000217392",
+      "marketCost": "0.000217392",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000217392",
+      "inferenceCost": "0.000217392",
+      "inputInferenceCost": "0.000217392",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8GFB7T59X6JZZSCYM6EV"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:19 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::gmtmf-1791179899336-4d63496ad2a5"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.01,
+            "transfer_business": 0.19,
+            "transfer_agent": 0.36,
+            "irrelevant": 0.44
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.19,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.68,
+            "3": 0.26,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.67,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.11,
+            "4": 0.83,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.37,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.01,
+            "2": 0.15,
+            "3": 0.57,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.88,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.12,
+            "3": 0.88,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.53,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.04,
+            "3": 0.3,
+            "4": 0.62,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.71,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.26,
+            "4": 0.73,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5176,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.29,
+            "relevance": 0.78,
+            "grounding": 0.78,
+            "decision_action": 0.46,
+            "evidence": 0.92,
+            "actionability": 0.67,
+            "anti_hype": 0.8
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179899388,
+                    "endTime": 1791179899557,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000217392",
+          "marketCost": "0.000217392",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000217392",
+          "inferenceCost": "0.000217392",
+          "inputInferenceCost": "0.000217392",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8GFB7T59X6JZZSCYM6EV"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:18.813Z"
+  }
+}

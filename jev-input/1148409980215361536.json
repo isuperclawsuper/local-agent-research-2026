@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1148409980215361536",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "4000行代码撑起一个Agent框架？nanobot架构深度解析",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695857&idx=1&sn=7c2f39eed5649d1ef2ddc47fd767b1fe",
+      "date": "2026-06-09T00:45:00.372Z",
+      "chars": 7825,
+      "text": "原创\n俞孟凡\n2026-06-09 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n香港大学数据科学实验室（HKUDS）的 nanobot，2026 年 2 月初开源，30 天内：\n28,500+ GitHub Stars\n8 次大版本发布\n核心代码\n3,935 行\n对比项：LangChain 核心代码 430,000+ 行。\n这个反差值得认真分析。这篇文章拆解 nanobot 的每一个设计决策，包括它的优势、局限，和可以借鉴的架构模式。\n01\n整体架构：控制面集中化\n先看全局结构：\nChat Platforms (13 channels)\n↓\nMessageBus (asyncio.Queue)\ninbound / outbound\n↓\nAgentLoop（核心控制面）\n├── SessionManager  → 历史对话加载\n├── ContextBuilder  → system prompt + messages 组装\n└──\nwhile\nloop: LLM → tool calls → execute → append → LLM...\n↓\n┌──────────────────────────────┐\n│ ToolRegistry   SubagentMgr   │\n│\nexec\n/fs/web    asyncio.Task  │\n│ spawn/mcp/cron               │\n└──────────────────────────────┘\n这个架构的决定性特征：\n控制面完全集中在 AgentLoop。\n没有 LangChain 的 Chain/Runnable/LCEL 等编排层，没有 LangGraph 的节点/边/DAG，没有 AutoGPT 的显式 PLAN 步骤。所有决策路径都穿过同一个 while 循环。\n这是个极强的设计约束：可理解性最大化，但弹性空间也随之缩小（后文展开）。\n02\n核心：ReAct 循环的极简实现\nagent/loop.py\n是整个框架的心脏：\nasync\ndef\n_run_agent_loop\n(\nself, initial_messages, on_progress\n):\nmessages = initial_messages\nwhile\niteration <\nself\n.max_iterations:\n# 默认 40 次\nresponse =\nawait\nself\n.provider.chat(\nmessages=messages,\ntools=\nself\n.tools.get_definitions(),\nmodel=\nself\n.model,\n)\nif\nresponse.has_tool_calls:\nfor\ntool_call\nin\nresponse.tool_calls:\nresult =\nawait\nself\n.tools.execute(tool_call.name, tool_call.arguments)\nmessages = append_tool_result(messages, tool_call.\nid\n, result)\nelse\n:\nfinal_content = response.content\nbreak\nreturn\nfinal_content\n约 20 行，这就是整个 agent 编排逻辑的全部。\n几个关键工程细节值得注意：\n错误响应不持久化到 session history。\n防止\"400 中毒循环\"——如果错误消息存入历史，后续 LLM 调用携带格式错误的 history 会触发 API 400，进而导致更多错误，形成无法自愈的循环。\n工具结果存入 session 时截断为 500 字符。\n当前 turn 内 LLM 能看到完整结果，但历史记录只保存摘要。这控制了上下文增长速率，代价是跨会话的工具结果不可追溯。\n错误处理只有一行：\nif\nresult.startswith(\n\"Error\"\n):\nreturn\nresult\n+\n\"\n\\n\\n\n[Analyze the error above and try a different approach.]\"\n把错误恢复的全部责任交给 LLM。这在 GPT-4 级别的模型上工作，在较弱模型上可能导致无效循环。\n03\nTool 系统：Python 插件的最小接口\nclass\nTool\n(\nABC\n):\n@property\n@abstractmethod\ndef\nname\n(\nself\n) ->\nstr:\n...\n@property\n@abstractmethod\ndef\ndescription\n(\nself\n) ->\nstr:\n...\n@property\n@abstractmethod\ndef\nparameters\n(\nself\n) ->\ndict:\n...\n# JSON Schema\n@abstractmethod\nasync\ndef\nexecute\n(\nself\n, **kwargs\n) ->\nstr:\n...\n# 硬约束：必须返回 str\nexecute\n返回值强制为\nstr\n是个有意思的设计选择。好处是接口统一，LLM 天然消费字符串；代价是结构化数据需要在 execute 内部序列化，丢失了类型信息。\n一个数据库工具示例：\nclass\nMyDatabaseTool\n(\nTool\n):\n@\nproperty\ndef\nname\n(\nself\n):\nreturn\n\"query_database\"\n@\nproperty\ndef\ndescription\n(\nself\n):\nreturn\n\"执行只读 SQL 查询\"\n@\nproperty\ndef\nparameters\n(\nself\n):\nreturn\n{\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"sql\"\n: {\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"sql\"\n]\n}\nasync\ndef\nexecute\n(\nself, sql:\nstr\n, **kwargs\n) ->\nstr\n:\nrows =\nawait\ndb.fetch(sql)\nreturn\n\"\\n\"\n.join(\nstr\n(r)\nfor\nr\nin\nrows)\n然后在初始化时注册：\nself\n.tools.register(MyDatabaseTool(connection_string=\n\"...\"\n))\n没有装饰器、没有注册配置文件、没有元类。代价是 JSON Schema 要手写——LangChain 的\n@tool\n装饰器可以从 docstring 和类型注解自动生成 schema，nanobot 这里需要人工维护。\n04\nSkill 系统：用 Markdown 扩展 LLM 能力\n这是 nanobot 最独特的设计，也是最值得深入分析的部分。\n核心理念：Skills 不是 Python 代码，而是 Markdown 文档，教 LLM 如何使用已有的 CLI 工具。\n一个天气 skill：\n---\nname: weather\ndescription:\nGet current weather\nand\nforecasts\n(\nno API key\nrequired\n).\nmetadata: {\n\"nanobot\"\n:{\n\"emoji\"\n:\n\"🌤️\"\n,\n\"requires\"\n:{\n\"bins\"\n:[\n\"curl\"\n]}}}\n---\n# Weather\n## wttr.in (primary)\n```bash\ncurl -s\n\"wttr.in/London?format=3\"\n系统通过 `shutil.which` 检查 `bins` 里的工具是否存在。如果存在，这个 skill 的 `available` 标记为 `true`。\n### Progressive Loading：用文件系统做懒加载\n关键机制：系统不把所有 skill 内容塞进 system prompt，而是注入一个 XML 索引：\n```xml\n<\nskills\n>\n<\nskill\navailable\n=\n\"true\"\n>\n<\nname\n>\nweather\n</\nname\n>\n<\ndescription\n>\nGet current weather...\n</\ndescription\n>\n<\nlocation\n>\n/path/to/skills/weather/SKILL.md\n</\nlocation\n>\n</\nskill\n>\n<\nskill\navailable\n=\n\"false\"\n>\n<\nname\n>\ngithub\n</\nname\n>\n<\ndescription\n>\nInteract with GitHub via gh CLI\n</\ndescription\n>\n<\nrequires\n>\nBinary: gh\n</\nrequires\n>\n<\nlocation\n>\n/path/to/skills/github/SKILL.md\n</\nlocation\n>\n</\nskill\n>\n</\nskills\n>\nSystem prompt 里明确告诉 LLM：\n需要用某个 skill 时，用\nread_file\n读取它的 SKILL.md。\n这是用文件系统作为懒加载机制。LLM 自主决定何时需要加载哪个 skill，按需加载，不用的 skill 零 token 开销。\n相比向量检索的优势：确定性（没有相似度阈值的不确定性）、可审计（你能直接读 SKILL.md 知道 LLM 在做什么）、零额外成本。\n局限：\n当 skill 数量极大时（比如几百个），XML 索引本身会占满 context window。这个机制在规模上有天花板。\n4.1\nSkill vs Tool 的分工原则\n场景\n用Tool\n用Skill\n需要执行 Python 逻辑\n✓\n包装已有 CLI 工具\n✓\n需要直接调用 API\n✓\n包装有完善文档的服务（gh CLI 等）\n✓\n添加能力但无 Python 经验\n✓\n这个分工使得非工程师也能扩展 agent 能力：只需写 Markdown，描述如何用某个命令行工具完成任务，下次会话自动生效。\n05\n记忆系统：\"grep beats RAG\"\n两个 Markdown 文件，不用向量库：\n文件\n内容\n加载方式\nMEMORY.md\n长期事实、用户偏好\n每次都注入 system prompt\nHISTORY.md\n对话摘要，追加写入\nLLM 用\nexec grep\n按需搜索\n当\nunconsolidated_messages >= 100\n时，异步触发记忆整合：\nasync\ndef\nconsolidate\n(\nself, session, provider, model\n):\nresponse =\nawait\nprovider.chat(\nmessages=[...],\ntools=_SAVE_MEMORY_TOOL,\n# save_memory(history_entry, memory_update)\nmodel=model,\n)\n# LLM 决定写什么进 MEMORY.md 和 HISTORY.md\n整合以独立\nasyncio.Task\n运行，不阻塞主流程。\n作者的设计论据（Discussion #566）：\n\"grep beats RAG for agent memory — deterministic, auditable, zero-cost, composable\"\n这个论断在个人规模（数百条历史）成立。在企业规模（数万条历史、多用户共享知识库、跨语言搜索）时，文件 grep 的局限会暴露出来。\n社区持续有人要求加 Qdrant/LanceDB 向量记忆，作者坚持极简路线。这是个合理的范围决策：nanobot 的定位是个人助手，不是企业知识管理平台。\n06\nSubagent 系统：消息总线重注入\nspawn\n工具允许主 agent 把长任务委托给后台 asyncio.Task：\nasync\ndef\nspawn\n(\nself, task, label, origin_channel, origin_chat_id\n):\ntask_id =\nstr\n(uuid.uuid4())[:\n8\n]\nasyncio.create_task(\nself\n._run_subagent(task_id, task, label, origin)\n)\nreturn\nf\"Subagent [\n{label}\n] started (id:\n{task_id}\n). I'll notify you when done.\"\nSubagent 有明确的能力约束：\n没有\nmessage\n工具（不能直接给用户发消息）\n没有\nspawn\n工具（防止递归生成子 agent）\n最多 15 次迭代（主 agent 40 次）\n无 memory/history（独立的 system prompt）\n结果通知的巧妙设计：\nSubagent 完成后，通过消息总线重新注入一条 InboundMessage：\nasync\ndef\n_announce_result\n(\nself, task_id, label, task, result, origin\n):\nmsg = InboundMessage(\nchannel=\n\"system\"\n,\nchat_id=\nf\"\n{origin[\n'channel'\n]}\n:\n{origin[\n'chat_id'\n]}\n\"\n,\ncontent=\nf\"[Subagent '\n{label}\n' completed]\\nResult:\n{result}\n\"\n,\n)\nawait\nself\n.bus.publish_inbound(msg)\n主 agent 像处理普通用户消息一样处理这条消息，自然地总结给用户。无需特殊的结果传递协议，无需主 agent 轮询子任务状态。\n代价：\nasyncio.Task\n在同一个进程内运行，无法跨进程/机器分布。大规模 agent swarm 场景需要替换这层。（社区正在 RFC 两种方案：软件层角色模拟 vs 原生多进程。）\n07\nMCP 集成：标准协议桥接\nMCP 工具被自动包装为原生 Tool 对象：\nclass\nMCPToolWrapper\n(\nTool\n):\ndef\n__init__\n(\nself, session, server_name, tool_def\n):\nself\n._name =\nf\"mcp_\n{server_name}\n_\n{tool_def.name}\n\"\n# 命名空间隔离\nself\n._description = tool_def.description\nself\n._parameters = tool_def.inputSchema\nasync\ndef\nexecute\n(\nself, **kwargs\n) ->\nstr\n:\nresult =\nawait\nasyncio.wait_for(\nself\n._session.call_tool(\nself\n._original_name, arguments=kwargs),\ntimeout=\nself\n._tool_timeout,\n)\nreturn\n\"\\n\"\n.join(block.text\nfor\nblock\nin\nresult.content)\n支持 stdio（子进程）和 streamable-http 两种 MCP 服务器。配置：\n{\n\"tools\"\n: {\n\"mcp_servers\"\n: {\n\"my_server\"\n: {\n\"command\"\n:\n\"npx\"\n,\n\"args\"\n: [\n\"-y\"\n,\n\"\n@my\n/mcp-server\"\n],\n\"tool_timeout\"\n:\n30\n}\n}\n}\n}\nMCP 工具对 LLM 完全透明，和内置工具无区别，只是名字带\nmcp_{server}_\n前缀做命名空间隔离。\n这个设计的长期价值：随着 MCP 生态扩张，nanobot 可以零成本接入所有 MCP 兼容工具。\n08\n可借鉴的架构模式\n拆解到这里，几个可迁移的设计原则值得单独提炼：\n配置驱动的能力扩展（Markdown-as-Config）\n把 prompt 工程从代码层分离出来，用文件系统管理。能力的添加不需要改代码、不需要重启服务。适用于任何需要给 LLM 注入领域知识的场景。\n懒加载 + 文件系统作为 context 管理策略\n不在 system prompt 里预载所有知识，只放索引。让 LLM 用工具按需加载详细内容。降低常规 token 消耗，代价是加载时有额外的 tool call 延迟。\n消息总线解耦异步任务的结果通知\n子任务完成后不通过回调或轮询通知，而是重新注入到输入流，让主处理逻辑统一处理所有输入来源。消除了\"结果传递协议\"，但耦合了子任务与消息总线格式。\n工具接口的最小公共类型\n所有工具返回\nstr\n，统一接口。放弃结构化返回值，换取接口的绝对一致性。在 LLM 消费所有输出的场景下这个取舍合理。\n错误恢复委托给 LLM\n工具错误不在框架层处理重试或回退，只追加一句引导提示，让 LLM 决定下一步。这在强模型上有效，减少了框架的复杂度，但把系统的健壮性依赖转移到了模型能力上。\n09\n使用建议\n适合的场景：\n个人自托管 AI 助手，想接入多个聊天平台\n需要快速原型，不想被框架概念淹没\n想理解 agent 框架的最小实现，作为学习材料\n不适合的场景：\n需要精确的多 agent 协调（spawn 基于 asyncio.Task，无分布式支持）\n大规模历史记忆（grep 文件有规模上限）\n需要细粒度的 agent 行为控制（控制面集中化意味着定制点有限）\n生产环境安全隔离（exec 工具的黑名单机制不够）\nnanobot 是目前我见过\n最诚实\n的 agent 框架：它的代码量和功能声明是匹配的，没有用复杂的抽象隐藏简单的实现。这本身就值得学习。\n相关链接：\nhttps://github.com/HKUDS/nanobot\nhttps://github.com/HKUDS/nanobot/discussions/431\nhttps://github.com/HKUDS/nanobot/discussions/566\n-End-\n原创作者｜\n俞孟凡\n感谢你读到这里，不如关注一下？👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。6月16日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

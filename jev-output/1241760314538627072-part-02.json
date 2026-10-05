@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1241760314538627072",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "3万字长文带你WorkBuddy 从入门到精通",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803569&idx=1&sn=325170a0e2bd7117d51dfabbbd79539b",
+      "date": "2026-08-12T10:24:00.712Z",
+      "chars": 6500,
+      "text": "，请选择对应的机器人配置Webhook）。\n在回调配置请求地址，粘贴复制上述 Webhook，保存此WebHook。\nhttps://q.qq.com/qqbot/#/developer/webhook-setting\n⚠️注意由于 Claw 中默认带有https ，粘贴的地址需要去掉 https:// 后进行复制到请求地址中。\n确认配置 WebHooks 回调地址。\n在回调配置栏添加所有单聊权限。\n4.开始使用 WorkBuddy Claw\n完成配置后， QQ 扫码进行聊天\nhttps://q.qq.com/qqbot/openclaw/index.html\n首先点击沙箱配置后，点击在消息列表配置处的二维码。\n回到 QQ 中与 WorkBuddy 互动，发送一个需求。\n实时执行效果预览。\n2.2.2.2 接入元宝\n方案一：扫码接入\n在“助理设置”中找到元宝扫码绑定\n打开手机“元宝”APP，选择“我们”，点击“我的Bot”。\n选择“关联已有OpenClaw”，点击“扫描二维码”，扫描桌面端二维码即可\n手机端需点击“授权关联元宝”，即可连接成功\n方案二：配置集成\n在“助理设置”中找到“元宝机器人集成”，点击右侧的“配置”按钮\n打开手机“元宝”APP，选择“我们”，点击“我的Bot”。\n选择“关联已有OpenClaw”，在这里可以看到App Id和App Secret\n回到桌面端，中对应位置输入App Id和App Secret，点击注册\n连接成功\n2.2.2.3 接入企业微信\n前提条件\n在开始之前，请确保您已满足以下条件：\n已在电脑上安装 WorkBuddy，并开启了 Claw 远程控制功能。\n拥有一个可创建智能机器人的企业微信账号。\n提示：\n如您尚未在企业微信中拥有企业，可以参考\n创建&注册企业\n来创建一个新企业。\n使用长连接接入\n推荐优先使用长连接模式。它的配置步骤更少，也不需要回填 Webhook URL。\n打开 WorkBuddy，在「助理设置」里找到「企微助理集成」，点击「配置」。\n在弹窗中选择「WebSocket 长连接」，选择快捷绑定接入。\n使用手机企业微信APP扫描弹出的二维码。\n手机完成授权与确认。\n回到客户端，点击「注册」完成绑定。\n编辑机器人信息\n机器人创建完成后，可按路径「智能机器人」→「管理」→「编辑」修改相关配置项。\n主要配置项 | 说明\n机器人名称 | 建议填写容易识别的名字，如「WorkBuddy 助手」\n可见范围 | 选择哪些员工、部门或标签可以使用这个机器人\n使用 URL 回调接入\n创建企业微信智能机器人\n可根据您的账号角色选择不同入口：\n管理员：\n前往\n企业微信管理后台\n，扫码登录。进入\n「\n安全与管理\n」\n→\n「管理工具」\n→「智能机器人」→「创建机器人」→「手动创建」。\n普通成员：\n在\n企业微信客户端\n依次点击\n「工作台」\n→「智能机器人」→「创建机器人」→「手动创建」。\n填写基本信息\n根据实际情况填写机器人名称，科技范围，简介等。\n在企业微信中生成回调凭据\n随机获取Token 和 Encoding-AESKey并保存，此字段是用户户企微与WorkBuddy 通信时进行加解密密钥。\n重要\n您需要用 Token 和 Encoding-AESKey 在 WorkBuddy 设置页中换取 URL，请务必保存好。\n** WorkBuddy 中生成 Webhook URL\n**。\n打开 WorkBuddy 的 Claw 配置菜单，进入「集成（BETA）」→「企微 AIBot 集成」→「配置」。\n在注册弹窗中切换到「使用 URL 回调」。\n填写c中获取到的 Token 和 Encoding-AESKey。\n注册成功后，复制生成的 Webhook URL。\n回填URL并保存\n回到企业微信机器人创建页面，填入刚才复制的\nWebhook 地址粘贴到 URL 输入框并保存。\n使用企微机器人\n添加完成后，即可在企业微信聊天窗中与机器人直接进行对话。\n发送一条简单消息（例如“你好”）进行联通测试。如果配置正确，WorkBuddy 会接收到消息并在企业微信中返回回复。\n恭喜\n如果机器人能够正常回复，说明您已成功完成 WorkBuddy 与企业微信的对接！\n2.2.2.4 接入微信客服号\n进入助理设置打开微信客服号集成。\n点击右侧的「配置」按钮。\n等待绑定初始化\n点击配置后，WorkBuddy 会先创建一条用于绑定的客服会话，按钮会短暂显示为「绑定中...」。\n使用微信扫描二维码\n初始化完成后，页面会展示一个二维码。使用手机微信扫描该二维码，即可将当前微信账号\n与 WorkBuddy 绑定。\n注意：\n二维码有时效限制。如果二维码过期或扫码失败，请重新点击「配置」生成新的二维码后再试。\n确认绑定成功\n扫码完成后，WorkBuddy 会展示当前已绑定的微信头像和昵称，右侧状态会变为「已绑定」。如果后续需要更换账号，也可以在这里点击「解绑」后重新绑定。\n开始使用\n绑定完成后，您就可以直接在微信里和 WorkBuddy 对话，例如：\n帮我总结今天桌面上最新的会议记录。\n帮我检查这个项目最近改过的接口有没有明显问题。\n帮我生成一个登录页原型。\nWorkBuddy 会在电脑上自动执行任务，并把执行过程和最终结果同步回微信聊天窗口。\n恭喜：如果您已经能在微信里收到 WorkBuddy 的执行结果，说明微信接入已经完成。\n2.2.2.5 接入微信小程序\nWorkBuddy 微信小程序实现把完整的 AI 生产力从桌面解绑，装进移动端：微信。用户在手机上就能用文字，语音、图片以及文件下达任务，\n既支持云端沙箱\n即\n开即用，也能远程操控电脑桌面端的 WorkBuddy\n。\n灵感到，一\"虾\"就办\n。\n进入小程序并登录\n可通过扫码或搜索进入小程序\n扫描WorkBuddy首页展示的或下图中的小程序码进入小程序。\n接入微信小程序\n打开微信，下拉进入「小程序」搜索栏，搜索 腾讯 WorkBuddy，点击进入小程序。\n浏览并勾选《用户协议》和《隐私政策》，然后点击「授权手机号登陆」按钮。\n❗️注意：\n登录微信\n小程序\n需要与电脑端登录的微信账号保持一致，否则无法连接到本机\n。\n登录成功后进入主页面，即可实现WorkBuddy与微信小程序的集成。您可以在微信小程序上给WorkBuddy布置任务啦。\n主页面介绍\n顶部导航：\n点击左侧菜单（≡）打开侧边栏。\n环境切换：在「☁ 云上」和「🖥 电脑」之间切换任务执行环境\n模式 | 解决什么问题 | 典型场景\n☁️ 云上模式 | 彻底摆脱电脑依赖，云端沙箱即开即用 | 通勤、差旅、周末——没带电脑的任何时刻\n🖥 电脑模式 | 远程操控桌面端 WorkBuddy，人走了电脑还能干活 | 已经离开工位，但需要电脑上的 WorkBuddy 执行任务\n快捷入口：常用场景的快捷标签，可点击更多查看全部（仅支持云上模式）\n快捷标签 | 用来干嘛\n幻灯片 | 一句话生成一份 PPT/演示文稿\n视频生成 | 文本即视频，宣传片、解说短片快速产出\n深度研究 | 行业调研、竞品分析、深度报告，自动拆解 N 步执行\n文档处理 | 文档整理、生成、格式转换、批量改写\n... | 横向滑动查看更多场景\n输入栏：消息输入框 + 附件按钮 + 语音按钮 + 切换模型按钮（仅云上模式支持）+发送按钮\n侧边栏介绍\n点击左上角菜单（≡）即可展开侧边栏，包含以下内容：\n用户信息：显示当前登录的微信用户头像与昵称，右侧齿轮图标进入设置 。\n执行环境（电脑/云上）：当前执行环境选中项为白色。\n新建任务：点击新建任务，可以建立一个独立任务。\n自动化和专家功能\n云上模式支持自动化和专家功能，电脑模式仅支持自动化功能。\n🤖自动化功能：\n就像AI助手设置了一个「自动闹钟」\n你可以让AI助手定时自动执行任务，不需要你每次都手动发起对话\n比如：每天早上9点自动检查邮件、每周五下午6点自动生成工作报告\n🧠专家功能：\nWorkBuddy里的「行业老司机」，就像手机里有一堆“行业大咖”随时待命\n默认AI助手是「通才」，什么都知道一点\n专家功能让AI在特定领域变成「专家顾问」\n比如：代码专家、写作专家、数据分析专家等\n❗️注：这两个功能会在3.6和3.7中详细介绍\n任务列表：展示所有历史任务\n每条任务显示\n状态图标\n（已完成/ 进行中）、\n任务名称和时间\n点击右上角「编辑」可对任务进行管理（\n任务名称编辑和任务\n删除\n）\n添加附件、功能与技能\n可添加照片、视频、微信文件/手机本地文件、腾讯文档等附件\n入口 | 功能 | 适用场景\n摄像头 | 调用手机摄像头实时拍照 | 拍摄纸质文档、白板笔记、发票、名片等\n照片/视频 | 从手机相册选择已有图片、视频 | 处理已保存的截图、照片、视频\n微信文件 | 从微信聊天记录选择文件 | 上传 Excel、Word、PDF 等文件\n手机文件 | 从手机本地选择文件 | 支持Word、Excel、PDF、TXT等格式\n腾讯文档 | 选择所绑定的腾讯文档账号下的相应文档 | 上传Word、Excel、收集表等文件\n摄像头：点击\n摄像头\n后，调用手机摄像头进行拍照。\n每次拍摄 1 张照片\n，拍摄完成后自动返回对话界面\n照片会显示在输入框上方，点击 × 可移除\n如需拍摄多张，需再次点击\n+\n→\n摄像头\n重复操作\n照片/视频：点击\n照片\n/视频\n后，进入手机相册选择界面。\n支持一次选择多张图片（最多5 张）\n选中的图片显示在输入框上方，可逐张预览和删除\n支持常见图片格式：JPG、PNG 等\n✅\n推荐做法\n：需要多张图片时，先用手机自带相机拍完，再通过「照片」一次性选择上传。\n微信文件：点击\n微信文件\n后，选择对应聊天框，进入文件选择界面。\n支持一次选择多张文件（最多5个）\n选中的文件显示在输入框上方，可逐个预览和删除\n支持常见文件格式：Excel、Word、PDF 等\n手机本地文件：点击\n手机文件\n后，进入文件选择界面。\n特点同上述微信文件\n腾讯文档：点击\n腾讯文档\n后，进入文件选择界面（首次使用需授权绑定腾讯文档账号）。\n每次只支持上传一个文档\n选中的文件显示在输入框上方，可预览和删除\n支持常见文件格式：Excel、Word、收集表 等\n可添加技能（Skills）\n技能（Skills）就是给 WorkBuddy 配装备，让它能干更多种类的活。选中的技能会在当前对话中生效。\n点击\n添加技能\n后，打开技能选择面板➡️根据自身的需求，选择对应的技能添加到对话框。\n**常用技能示例： **\nxlsx skill\n：处理 Excel 数据、生成图表\npptx skill\n：创建、编辑和分析演示文稿\ndocx skill\n：创建、编辑和分析Word文档\nfind-skills skill\n：帮助用户发现和安装skills\n什么时候需要手动添加技能？\n如果你希望明确指定使用某个技能，或者 AI 没有自动启用你需要的技能，可以通过此入口手动添加。\n如何安装更多技能？\n如果技能列表中没有你需要的技能，可以通过\nSkillHub\n获取更多：\nSkillHub-专为中国用户优化的Skills社区\n，搜索所需 Skill 后复制其\n安装指令\n，将安装指令粘贴至 WorkBuddy 对话框中发送即可\n，安装成功后即可在技能列表中使用。具体步骤如下：\n搜索所需的skill\n点击「安装方式」\n选择「通过对话安装」，复制安装指令后，发送给WorkBuddy让其帮助安装skill，安装成功后即可在技能列表中使用。\n可添加定时任务\n点击\n定时任务\n将其添加到输入框上方，可参照上方的示例在输入框中输入您的定时任务需求。\n可添加专家\n点击\n专家中心\n，在专家或专家中心搜索您需要的专家，点击对应的专家或专家团即可将其添加到输入框上方。\n选择模型（仅云上模式支持）\n点击输入框中的模型名称（如「Hy3 preview▾」），弹出模型选择面板。\n可用模型一览\n模型 | 能力标签 | Credits 消耗 | 推荐场景\nHy3 preview | 推理 + 视觉 | x0.04（限时折扣） | 超低成本的图片相关简单任务\nGLM-5.1 | 推理 | x1.06 | 复杂代码架构设计、高难度数学/逻辑题、需要最强智能的任务\nGLM-5.0 | 推理 | x0.80 | 多步骤复杂任务、长文分析、深度推理链场景\nGLM-4.7 | 推理 | x0.23 | 日常首选——写文案、改代码、问答、通用对话\nKimi-K2.5 | 推理 + 视觉 | x0.45 | 截图分析、图片转文档、OCR 识别、看图说话\nDeepseek-V3.2 | 推理 | x0.29 | 代码编写与调试、数据分析、中英翻译等通用场景\nDeepseek-V4-Flash | 推理 + 视觉 | x0.13 | 最便宜的有视觉能力的模型，快速图片理解、简单 OCR\nDeepseek-V4-Pro | 推理 + 视觉 | x0.25（限时折扣） | 需要理解图片内容的分析任务，兼顾性价比\nHunyuan-2.0-Thinking | 推理 | x0.04 | 最便宜的纯文本模型，适合大批量简单文本处理\n能力标签\n标签 | 含义\n推理 | 支持逻辑推理、任务规划与多步骤执行\n视觉 | 支持图片理解（拍照、截图场景请选择此类模型）\nCredits 消耗\n数字越低消耗越少。例如 x0.18 的模型比 x0.95 的模型便宜约 5 倍。\n任务执行与对话\n云上模式\n适用于周末、旅游等没带电脑的时刻，且无需电脑上的文件即可处理工作的场景。\n以快捷标签「深度研究」为例，任务发送后，WorkBuddy 自动拆解并逐步执行。\n步骤拆解\n「拆解为 N 个步骤」\n：显示该阶段包含的子步骤数量\n「已完成」\n标签\n：该步骤已执行完毕\n点击卡片右侧\n>\n可展开查看详细过程\n继续追问\n任务完成后可在同一对话中继续追问。\nWorkBuddy 会保持上下文，无需重复描述背景。\n中断执行\n任务进行中时，输入栏会显示停止按钮（■），点击可随时中断当前执行。\n中断后仍可继续补充说明或调整需求。\n电脑模式\n适用于已经离开电脑，但需要WorkBuddy利用电脑上存储的文件来处理工作的场景。\n可处理电脑上的文件，并将AI助手返回的结果同步在微信小程序和电脑端Claw页面中\nAI助手的工具调用和思考过程信息仅在电脑端的Claw页面中展示\n对于下图中的任务（无需操作电脑上的文件）可在云上和电脑模式执行\n案例实践\n一拍即得，两个大脑同时在学习（云上模式）\n老师刚讲完一个章节，板书写满了整块黑板。你掏出手机，打开 WorkBuddy 小程序，拍一张照，语音说一句「整理成笔记，保存起来」。就这样，任务交给了云端的 WorkBuddy。手机放回口袋，继续听下一节。\n下课后你还可以继续追问：让它针对这节课的内容出几道练习题，考察你对知识点的掌握程度。\n紧急任务即收即处理（电脑模式）\n产品经理小林正在出差路上，老板发来一条消息，要求今天内在「2025年前AI发展历程研究报告」的基础上加上2026年AI领域最新涌现的关键概念。\n「2025年前AI发展历程研究报告」在公司电脑上。以前只能说\"等我回去看看\"——手机上没法处理电脑里的文件。\n现在小林的电脑上运行着 WorkBuddy，手机上装了 WorkBuddy 小程序，两端直连。\n小林打开微信 WorkBuddy 小程序，然后语音说了一句：「帮我列出2026年AI领域最新涌现的关键概念，并和桌面上的2025年前AI发展历程研究报告合并，整理一份综合研究报告给我。」\n接下来不用管了。电脑端的 WorkBuddy 会调用工具完成2026年AI领域关键概念的深度搜索，并",
+      "fulltext_obtained": true,
+      "chunk_index": 2,
+      "chunk_count": 7
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.1,
+        "transfer_agent": 0.35,
+        "irrelevant": 0.55,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.25,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.38,
+        "2": 0.43,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.61,
+      "probabilities": {
+        "0": 0.21,
+        "1": 0.18,
+        "2": 0.42,
+        "3": 0.18,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.86,
+      "probabilities": {
+        "0": 0.62,
+        "1": 0.18,
+        "2": 0.01,
+        "3": 0.11,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.4,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.5700000000000001,
+        "2": 0.41,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.66,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.03,
+        "2": 0.04,
+        "3": 0.07,
+        "4": 0.58,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.62,
+      "probabilities": {
+        "0": 0.59,
+        "1": 0.23,
+        "2": 0.16,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.52,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7652,
+    "outputTokens": 173,
+    "totalTokens": 7825
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.44,
+        "relevance": 0.49,
+        "grounding": 0.46,
+        "decision_action": 0.42,
+        "evidence": 0.71,
+        "actionability": 0.1,
+        "anti_hype": 0.59
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180430402,
+                "endTime": 1791180430821,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000321384",
+      "marketCost": "0.000321384",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000321384",
+      "inferenceCost": "0.000321384",
+      "inputInferenceCost": "0.000321384",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARQ1KD43D9TCE74G5N2MB"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:10 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::bzhz4-1791180430339-b8c5633031e8"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.1,
+            "transfer_agent": 0.35,
+            "irrelevant": 0.55,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.25,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.38,
+            "2": 0.43,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.61,
+          "probabilities": {
+            "0": 0.21,
+            "1": 0.18,
+            "2": 0.42,
+            "3": 0.18,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.86,
+          "probabilities": {
+            "0": 0.62,
+            "1": 0.18,
+            "2": 0.01,
+            "3": 0.11,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.4,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.5700000000000001,
+            "2": 0.41,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.66,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.03,
+            "2": 0.04,
+            "3": 0.07,
+            "4": 0.58,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.62,
+          "probabilities": {
+            "0": 0.59,
+            "1": 0.23,
+            "2": 0.16,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.52
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7652,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.44,
+            "relevance": 0.49,
+            "grounding": 0.46,
+            "decision_action": 0.42,
+            "evidence": 0.71,
+            "actionability": 0.1,
+            "anti_hype": 0.59
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180430402,
+                    "endTime": 1791180430821,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000321384",
+          "marketCost": "0.000321384",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000321384",
+          "inferenceCost": "0.000321384",
+          "inputInferenceCost": "0.000321384",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARQ1KD43D9TCE74G5N2MB"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:10.059Z"
+  }
+}

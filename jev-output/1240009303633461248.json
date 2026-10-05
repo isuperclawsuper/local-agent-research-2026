@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1240009303633461248",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "连续五天登上 GitHub Trending 首页的思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511052&idx=1&sn=ec738e92d8018fb50fac9fa16e9d54fc",
+      "date": "2026-08-11T10:18:00.825Z",
+      "chars": 7893,
+      "text": "原创\n李峥峰\n2026-08-11 18:18\n浙江\n本文希望沉淀一些可迁移的方法论给想做开源的开发者，同时分享极致 AI Coding 的思路\n这是2026年的第\n49\n篇文章\n（ 本文阅读时间：约 15 分钟 ）\n我们团队在两个月前开源了一个\nAI Code Review\n工具\n，目前\n20k star\n（项目地址：\nhttps://github.com/alibaba/open-code-review）\n。\n100% AI 生成代码、100% AI 评审代码、800 多个 Issue+PR、一百多名外部贡献者、连续 5 天登上 GitHub Trending 首页。\n借着这个机会复盘一下数据的背后，我们做对了什么、做错了什么，希望沉淀一些可迁移的方法论给想做开源的开发者，也顺便分享我们极致 AI Coding 的思路。\n01\n开源之前想清楚核心竞争力和定位\n从真实的业务中生长出来，解决真实的问题，而不是为了开源而开源。\n我们团队做 AI 代码评审快两年了，在阿里内部有 20k 月活用户，采纳率 30%+、误报率不到 5%、合并到基线的有效建议中近 8 成来自 AI。我们不要求用户处理每条 AI 建议，在这么大的用户基数下这个数据还是比较不错的。说实话一开始没想过做开源， 转折点是从 26 年开始，身边越来越多人跟我说同一个问题：代码是 AI 写的，看不过来，不敢合。这个痛点太真实了，我自己也有。\nFaros AI 发布的《The Acceleration Whiplash》报告也印证了这一点。4,000 个团队、22,000 名开发者两年的遥测数据显示：\nAI 编码工具让每个开发者的任务完成度提高了 34%，代码活动激增 210%，但代价是代码重写率飙升 861%、每个 PR 引发的生产事故比率上升 242.7%、PR 平均审查时间延长 441.5%，同时未经审查直接合并的 PR 比例也上升了 31.3%。吞吐量上去了，质量兜不住了。\n然后我们去看了市面上的大部分方案，除了头部几个已经商业化的工具，剩下的就是一堆 demo 级的开源项目，AI 时代做个 0-1 的东西太容易了，几天时间就能搞一个。但真正经过大规模验证的开源方案几乎没有。\n于是我们看到了一个机会。\n我们的定位\n我们不宣称自己是最顶尖，但是我们解决的痛点、面向的受众足够广。\n1.生产环境验证：\n不是嘴上说好用，是有 20k 用户生产环境的真实反馈、有 200 个真实 PR 标注的 benchmark 评测集分数。内外同源，我们每个版本内部外部同步发。\n2.架构具备特点：\n“确定性工程 × Agent 协同”的混合架构，不是套个大模型、也不是写个 skill，对代码审查场景中“不能出错”的环节，由工程逻辑而非语言模型来保证，将 AI 的优势集中发挥在它真正擅长的地方 —— 动态决策、动态召回上下文。\n3.数据不出本地：\n只提供框架，不碰用户数据，LLM 你自己选。这点在企业场景里是硬需求。\n4.便宜：\nToken 消耗是 Claude Code + Skills 方案的 1/9。\n5.接入方式多：\nCLI、IDE 插件、各种 Agent 插件、CI-CD、MCP，你想怎么用都行。\n6.开源、开放、包容：\n免费把框架交给社区开发者，大家不用重复造轮子，共同打造出一个好用的工具。\n还有一点很反直觉：\n主动暴露不足，比营造完美更有效。\n我们在 README 里直接写了很多目前做得还不够好的地方。这样做虽然听起来是给自己减分，但实际效果是：来的人预期对了，用完不会失望，留存反而更高；相反，如果把话说满，用户进来发现不符预期，第一反应就会是“被骗了”，这种负面口碑的传播速度比正面快得多。\n后来复盘为什么能引发 100 多个自媒体自发传播，本质上就是这些东西叠在一起：有背书、有数据、有对比、省钱、安全。\n02\n先完成，再完美\n两个关键：\n1.窗口期有限。\n你打磨三个月，别人可能已经占住用户心智了。\n2.不完美反而是好事。\n什么都做好了，外部贡献者没有参与空间，社区起不来。\n怎么定义完成？\n我们发布的第一个版本只提供了几个内容：\n1）基于 Go 语言从零重写的 CLI 工具。\n2）一条配置自定义模型的命令，以及兼容 OpenAI、Anthropic 协议。\n3）一组评审的命令和一个框架内核。\n4）一个配套的 skill，可直接集成到 Claude Code。\n5）配套的 Github Action，便于用户直接集成到自己的 Github 仓库。\n6）可观测能力，便于用户集成到自己公司内部的系统。\n两个月后的现在\n从 v1.0.0 到 v1.9.0，100 个正式版本、一百多位贡献者、一百多个 feature commit（其中超过 60% 来自外部 PR）。回头来看，“先完成再完美”不只是一个发布策略，它定义了社区的参与方式 —— 你留出空间，别人就会来填。\n内部核心团队搭的是框架骨架：Agent 循环、记忆压缩、Scan 模式、MCP、规则引擎、VSCode 插件、Skill。社区长出来的是血肉：\n接入方式：\n从最初的 CLI + GitHub Action，到 GitLab CI、Gerrit（Jenkins）、Agent Skill、委托模式（复用宿主 Agent 订阅额度）、MCP 客户端。\n模型生态：\n内置 provider 从 3 个扩展到 14 个（含 Ollama 本地、LiteLLM 网关、Eden AI 等），支持 OpenAI、Anthropic、OpenAI Responses 三种协议。\n语言覆盖：\n新增 Python、Rust、Kotlin、C/C++、FreeMarker、GraphQL、Julia、HCL/Terraform、Bicep 等专属评审规则。\n可观测：\n会话查看器（Web UI）、OpenTelemetry 集成优化、W3C traceparent 传播。\n工程完善：\n可恢复会话、token 预算守卫、评论批量分片、Windows 一键安装脚本等。\n如果 v1.0.0 那天就把这些全做了再发，至少要多一个月，而且这些能力中有一半是社区用自己的场景「长」出来的需求 —— 我们很难在一开始预见。\n这里也必须分享一个教训：我们前期太关注核心功能的完备性了，注意力集中在框架的内核上，在最入口的 LLM 配置方式做得不够简单。结果早期来了一波流量，转化率很低 —— 人来了，用不起来，走了。\n后来想明白一件事：\n易用性就是转化率\n。「让用户最快能用起来」这件事，本身就属于「先完成」的范畴，不能拖到后面做。因此我们迅速内置了多家主流的模型厂商与 GUI 交互，让用户只需要配置一个 key 就能使用。\n03\n谨慎增加用户的认知复杂度\n这个意识是慢慢长出来的，不是一开始就有。\n最典型的例子是 README。随着在社区的发展，越来越多开发者参与进来贡献，开发了各种各样的能力，于是 README 变得越来越大：下载方式（3种）、配置方法（3种）、多种接入方式、高级玩法、生态集成、MCP、Web Viewer、可观测接入等，第一次点进来的人根本不知道该看哪里。\n后来我们意识到这个问题，只留：你是谁、为什么选你、怎么快速开始。其他全扔文档站，只留一个标题和跳转链接，将 README 从 1000 行缩短到 200 行。\n另一个容易踩坑的地方是 CLI 参数。每加一个参数，用户打\n--help\n看到的列表就长一行。看起来是“多了个选项”，实际上是多了一层认知负担——用户会想“这个参数我要不要加？不加会怎样？”参数越多，用户越不敢下手。\n但这不意味着什么都不能加，关键在于\n新增的东西是否让同一个用户面对更多选择\n。\n举个反例：同时支持 GitLab CI 和 GitHub Actions 集成，这不算增加复杂度。因为用 GitLab 的人根本不会去看 GitHub Actions 的文档，用 GitHub 的人也不会关心 GitLab CI 怎么配。这两类用户不在同一个平面上，互相看不见对方的东西。\n我们最近遇到一个问题就是，我们设计了\n--max-tools\n参数用于限制子任务的工具调用轮次，以此来控制极端情况下的工具循环和约束成本。后来社区的开发者又提供了\n--max-tool-calls\n参数用于控制整个评审的总工具调用次数，以及\n--max-tokens-budget\n参数用于物理约束 token 成本。我们拒绝了前者，接受了后者。尽量不要让每个用户陷入该用哪个参数，这才是真正在增加复杂度。\n判断标准其实很简单：\n用户进来 -> 5 分钟理解核心价值并且跑起来 -> 有兴趣再看细节\n凡是让这条路径变长、变犹豫的改动，都要三思。\n04\n快速响应：社区活不活就看这个\n这是我觉得整个过程中最关键的一个认知。\n有个现象很有意思：外部贡献者中最活跃的那批人，几乎都和我们工作时区接近。一开始以为是巧合，后来想明白了 —— 时区接近意味着你提了 PR 我马上能回，正反馈循环快，人就留下来了。反过来说，\n响应速度本身就是筛选和留存贡献者的机制\n。\n我们的响应节奏大概是这样的：\n小 bug、小特性：12 小时内发版修复，快的时候 2 小时。\n社区 Issue & Discussion：提交就能被回复。\n社区 PR：提交就能被看到，尽快 review & merge。\n两个月发了 89 个版本，基本上每天一两个。\n怎么做到的？靠人肯定不行\n坦白说，靠人力根本撑不住这个节奏。背后是一整套 AI Coding 工作流：\n内部开发者写的所有代码：100% AI 生成、100% AI 评审。\n外部贡献者提交的代码：100% AI 评审。\n人干嘛？审查 AI 的输出，做最终决策。\n具体来说我们做了这么几个核心 Skill：\n/read-issue\n：快速理解 Issue，自动打标签；\n/mk-issue\n：基于问题背景创建结构化 Issue ；\n/mkpr\n：基于当前改动内容自动创建 PR ；\n/review\n：Claude Code + gh cli 评审代码并自动修复；\n/open-code-review\n：用 OCR 自身评审代码并自动修复；\n/release-eval\n：评估发版改动是否影响核心链路，决定要不要跑评测集（跑一次需要 8 个小时）；\n/tag\n：发布新版本；\n/comment\n：基于人类的意图润色回复内容，保持友好专业的语气。maintainer 的回复质量直接影响社区氛围，但每条都精心措辞太耗时间了，这个 skill 帮我把“想说的意思”变成“得体的表达”。\n工作流的演进也有意思：\n前期：Claude Code 写代码 -> Skills 评审 -> CC 修复\n现在：Claude Code 写代码 -> OCR 作为 pre-commit-hook 自动评审 -> CC 自动修复 -> /mkpr 创建评审 -> Github Actions 触发再次评审以及一些围栏任务 -> CC 修复\n稳定性靠什么保证？自动化代码评审 + 单元测试 + Lint + CI/CD 流水线 + E2E 评测集(200个PR)等。因为迭代快，所以更需要这些网兜着。\nAll in Code\n这套工作流能跑通，有一个容易被忽略的前提：\n一切皆代码\n。\nCI/CD 是 YAML，评审规则是 JSON，发版流程是 Makefile + shell，文档站是 MDX，连 Issue 模板和 PR 模板都是 markdown 文件。没有任何关键流程藏在 GUI 后台、wiki 页面或者某个人的脑子里。\n这意味着 Agent 可以读、可以改、可以跑。你让 AI 帮你发版，它\ncat\n一下 Makefile 就知道该执行什么；你让它帮你写评审规则，它\ngrep\n一下现有的\nrule.json\n就知道格式。如果你的发版流程是「点三个按钮、填两个表单、等审批通过」，Agent 根本插不进去。\nAll in Code 不是什么新理念，DevOps 时代就在喊 Infrastructure as Code。但在 Agent 时代，它的价值被放大了一个数量级——\n代码是 Agent 最容易自主操作、也最不容易出错的介质。\n你的流程越「代码化」，AI 能接管的比例就越高，你留给自己的就只剩真正需要判断力的决策。\n人和 AI 的关系\n这两个月下来，我对「人和 AI 怎么协作」这件事有了比较清晰的认知：\nAI 适合给你提供多个方案，也适合执行具体实现。但\n不要让 AI 自己选方案再执行\n，决策权必须在人手里。\n这个认知是用一次事故换来的。上 HN 头条前两天，我们让 AI 优化工具调用的逻辑。代码本来就是 AI 写的，我们觉得它应该比我们更熟悉自己写的东西，就没规定怎么改，让它自己决定方案。单测过了，跑了几个例子看着没问题，发了。结果它把一个全局搜索的工具改出了 bug。两天后 HN 的流量涌进来，用户第一次用就踩到了这个坑。你知道这意味着什么——很多人对你的第一印象，就是“这东西不好使”，然后关掉，再也不会回来。痛定思痛，我们定了两条规矩：影响核心链路的改动必须跑完 200 个 PR 的评测集才能发版；AI 写代码时必须给明确的方案约束，不能让它自由发挥。\n我的日常时间分配大概是：审查 AI 输出 + 社区互动占 60%，定方向 + 拆 Issue 占 40%。\n05\n核心开发者搭框架，细节交给社区\n一个健康的开源项目需要两种人：稳定的核心贡献者，和源源不断的新人。\n稳定贡献者靠什么留？共同荣誉感。大家一起把项目做好，项目越好越有成就感，这是个飞轮。\n新人靠什么吸引？Good First Issue。\nGood First Issue 的门道\n这不是“造”出来糊弄人的任务，是真的需要做、但门槛不高的工作。关键是要写清楚背景、给明确的验收标准、标合理的难度。核心开发者的日常工作里应该持续产出这些 issue——这不是额外工作，是社区建设的一部分。\n一个教训\n第一次上 GitHub Trending 首页的时候，第二天就没了。复盘下来原因很简单：新人进来没事可做。star 了一下就走了，没有任何后续互动。\n第二次上 Trending 的时候，我们做了两件事\n1.马上创建一批 good first issue，让新来的人有明确的参与入口。\n2.PR 来了就处理，形成“提交就被关注”的体验。\n结果连续 5 天 Trending 首页。\n逻辑其实很朴素：\n新人进来 -> 看到能做的事 -> 提了 PR -> 很快被 review & merge\n-> 有成就感 -> star / 分享 -> 更多人进来 -> 循环起来了\n上 Trending 靠的是产品力，但留在 Trending 靠的是社区活跃度。这俩不是一回事。\n06\n做得易于传播，比自己去传播更重要\n我们主动做的传播只有两次，不过得承认，alibaba 本身就是一个巨大的免费流量入口。我们真正可以分享的经验不是“不做传播也能火”，而是有了起始势能之后，怎么让传播自己滚起来。\n在一个 AI 驱动创新峰会上分享了一下（OpenCodeReview 是内容的一部分）；公众号有很多自发的宣传之后，我们自己也投稿给了集团旗下的公众号。\n后面的事情是自然发生的：\n峰会分享 -> 社区讨论 -> 公众号自发宣传 -> 上 Trending -> HN 社区有人投稿 -> 100+ 自媒体扩散\n6 月 6 日上了 HN 头条，star 从 1.5k 直接飙到 4k。\n为什么能传播？我事后分析了一下：\nAI Code Review 刚好是当下开发者焦虑的出口：代码越来越多是 AI 写的，怎么保证质量？\n有品牌背书，可信度够。\n有 benchmark 数据、有对比图，自媒体可以直接拿去用。\n痛点真实：省 token、数据安全，这俩是普遍诉求。\n本质上，你不需要铺天盖地的营销，只需要吸引更多的潜在传播者以及为你的潜在传播者降低传播门槛。\n07\n开源能不能成，就看这三层\n回过头看，这个项目能走到今天，是三层支撑同时到位了。\n第一层：组织信任\n开源最大的风险不是技术，是组织。代码公开意味着设计水平全部透明，需要管理层有魄力。更现实的是，开源需要持续投入人力，不被当正式目标支持，纯靠业余时间，节奏撑不住。\n两个月 89 个版本，前提是内部把它当正式项目投，不是\"有空搞搞\"。\n第二层：稳定的核心贡献者\n社区来来走走正常，但核心团队不能断。新人提了 PR 谁判断该不该合？合了出 regression 谁修？都得靠对项目有深度理解的人。\n核心贡献者不是招来的，是从社区里\"长\"出来的。转化率取决于你的响应速度和认可力度。PR 提了一周没人看，再热情的人也会走。\n留不住人，不是项目不够好，是反馈不够快。\n第三层：真实用户的持续反馈\n这层最容易被忽略。开源的是框架，但壁垒是背后用户踩过的坑、验证过的决策。我们开源前已有两年、20k 用户的生产验证，没这些，v1.0.0 就只是又一个 demo。\n开源之后，外部用户带来了完全不同的价值：内部环境统一，外部场景千差万别。Gerrit 接入、Ollama 本地模型、Windows 脚本，都是从外部真实场景「长」出来的。\n内部用户验证「路走得通」，外部用户发现「还有哪些路要走」；先有用户再有社区，顺序反了会很痛苦。\n08\n写在最后\n现在是做开源最好的时代。\nAI 把那些原本吃掉维护者大量时间的重复性工作（Issue 分类、代码评审、测试编写、发版……）自动化了。一个小团队甚至一个人，就能撑起过去十人团队的节奏。门槛降低了，但上限没降——省下来的时间用在真正需要判断力的地方：定方向、做决策、经营社区。\n几个我觉得最重要的认知：\n别开源一个 demo。\nAI 时代做 0-1 太容易了，社区不缺 demo，缺的是经过验证的方案。你的“判决书”越硬（生产数据、benchmark、真实用户规模），别人帮你传播的时候底气就越足。\nTrending 不是终点，是起点。\n流量来了如果没有承接，就像开了店门但货架是空的。提前准备好 good first issue，不是作弊，是尊重每一个点进来的人的时间。\nAI 是 10 倍速的手，但脑子得是自己的。\n100% AI 生成代码能成立，前提是人牢牢把住了“做什么”和“做得对不对”。快速响应社区不是因为不睡觉，是因为 AI 工作流把“从 issue 到发版”压缩到了 2 小时。\n关键时间线\n时间\n事件\nStar\n5 月 21 日\nv1.0.0 正式发布\n0\n5 月 28 日\n首次上 Github Trending，第二天掉落\n400\n6 月 5 日\n第二次上 Github Trending\n1.5k\n6 月 6 日\n上 Hacker News 头条\n1.5k -> 4k\n7 月 23 - 28 日\n连续 5 天 Github Trending 首页\n10.5k -> 15.5k\n*项目官网：\nhttps://open-codereview.ai\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "irrelevant": 0.3,
+        "transfer_agent": 0.6900000000000001
+      }
+    },
+    "relevance": {
+      "score": 1.8,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.1,
+        "2": 0.83,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.4,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.06,
+        "4": 0.6,
+        "5": 0.15
+      }
+    },
+    "decision_action": {
+      "score": 2.14,
+      "probabilities": {
+        "0": 0.37,
+        "1": 0.02,
+        "2": 0.06,
+        "3": 0.25,
+        "4": 0.23,
+        "5": 0.07
+      }
+    },
+    "evidence": {
+      "score": 3.68,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.27,
+        "4": 0.71,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.45,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.24,
+        "4": 0.57,
+        "5": 0.07
+      }
+    },
+    "anti_hype": {
+      "score": 3.93,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0,
+        "3": 0.06,
+        "4": 0.89,
+        "5": 0.04
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8532,
+    "outputTokens": 172,
+    "totalTokens": 8704
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.6,
+        "relevance": 0.85,
+        "grounding": 0.4,
+        "decision_action": 0,
+        "evidence": 0.78,
+        "actionability": 0.54,
+        "anti_hype": 0.91
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179791140,
+                "endTime": 1791179791319,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000358344",
+      "marketCost": "0.000358344",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000358344",
+      "inferenceCost": "0.000358344",
+      "inputInferenceCost": "0.000358344",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A56RPX29H1GCGF0RG3VWW"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:31 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::8l789-1791179791081-8e6d68ad8c6a"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "irrelevant": 0.3,
+            "transfer_agent": 0.6900000000000001
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.8,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.1,
+            "2": 0.83,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.4,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.06,
+            "4": 0.6,
+            "5": 0.15
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.14,
+          "probabilities": {
+            "0": 0.37,
+            "1": 0.02,
+            "2": 0.06,
+            "3": 0.25,
+            "4": 0.23,
+            "5": 0.07
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.68,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.27,
+            "4": 0.71,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.45,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.24,
+            "4": 0.57,
+            "5": 0.07
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.93,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0,
+            "3": 0.06,
+            "4": 0.89,
+            "5": 0.04
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8532,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.6,
+            "relevance": 0.85,
+            "grounding": 0.4,
+            "decision_action": 0,
+            "evidence": 0.78,
+            "actionability": 0.54,
+            "anti_hype": 0.91
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179791140,
+                    "endTime": 1791179791319,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000358344",
+          "marketCost": "0.000358344",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000358344",
+          "inferenceCost": "0.000358344",
+          "inputInferenceCost": "0.000358344",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A56RPX29H1GCGF0RG3VWW"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:30.554Z"
+  }
+}

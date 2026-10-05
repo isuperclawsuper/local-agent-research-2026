@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1118877038971691008",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "veRL 推出开源 Uni-Agent：为通用 Agent 训练打造统一框架",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247519822&idx=1&sn=593c83efeaade641f9ab13166dbce953",
+      "date": "2026-05-19T05:10:00.091Z",
+      "chars": 2995,
+      "text": "原创\nveRL&云基础\n2026-05-19 13:10\n江苏\n仓库地址：\nUni-Agent：\nhttps://github.com/verl-project/uni-agent\n最近，OpenClaw 等开源 Agent 项目的爆火，释放出一个很强的信号：\nAgent 正在从“看起来很厉害”，走向“真的开始替人做事”。它不再只是回答问题，而是开始真正执行任务，这也是 Agent 最让人兴奋的地方。\n但在热闹背后，一个关键问题也逐渐浮出水面：\n能够支撑复杂通用场景、规模化运行，并自然衔接训练流程的开源基础设施，仍然十分稀缺。\n今天的大多数开源 Agent 框架，已经在 Benchmark 和单任务验证中展现出不错的效果；但当需求进一步走向真实业务、开放环境以及长期演化时，底层系统能力的重要性会被迅速放大。\n这背后，其实是 Agent 从 Demo 走向真实应用时的一道\n“系统性断层”\n。\n许多现有方案在预设任务中已经足够优秀，但当用户希望 Agent 接入自己的工具链、业务流程和执行环境，去完成例如论文检索、投研分析，甚至更复杂的生产任务时，就会不可避免地对框架提出更高要求：\n开放性\n扩展性\n持续演化能力\n尤其当 Agent 真正进入大规模任务执行阶段，\n安全隔离、高并发调度、多环境适配\n成为核心瓶颈 —— 这也正是我们在 Uni-Agent 的运行层，重点集成火山引擎 veFaaS Sandbox 的原因。\n再换句话说，Agent 的关注点，正在发生转移：从“一个 demo 能不能跑通”，转向：\n“一套框架能否承载真实世界的复杂性，并支持持续探索与进化”；\n“一套框架能否承载真实世界的复杂性、支撑规模化高并发执行，并支持持续探索与进化”。\nUni-Agent：从 Demo 到真实世界的一步\nUni-Agent 是 veRL 开源团队提出的、为\n通用 Agent 打造的统一训练框架\n，其核心目标是构建一个贯通构建、运行与训练完整流程的系统，旨在：\n让开发者可以更轻松地构建自己的 Agent；\n让系统可以稳定地支撑大规模任务运行；\n让交互过程能够自然接入训练闭环，通过强化学习持续进化。\n“Uni”包含两层含义：\nUnified：\n将构建（Build）、运行（Run）、训练（Train）融合在同一框架中，让推理与训练能够自然衔接；\nUniversal：\n框架设计面向更通用、更复杂、更真实的应用场景。\nveRL：字节跳动技术团队发起并维护的一个开源强化学习框架，它旨在通过高效的训练流程和灵活的算法实现，支持多样的强化学习训练需求。仓库地址：\nhttps://github.com/verl-project/verl\n一、Build：面向通用场景的灵活构建\n具备稳定且通用的抽象，是 Agent 从“仅在少数场景可用”走向“在真实世界中可扩展、可复用、可演化”的基础。在 Uni-Agent 中，我们首先通过\n“提取共性，释放变化”\n的设计原则来解决这一基础问题。\n我们将 Agent 的核心能力拆解为三个模块：\nmodel\n：负责推理与决策；\ntool\n：负责感知与行动；\nenv\n：负责执行环境与状态承载。\n在这套抽象下，\nUni-Agent\n在三层都保留了扩展能力：\nmodel\n层既可以灵活对接外部 API 模型服务，也支持接入用户自部署的\nvLLM\n、\nSGLang\n等推理后端；\ntool\n层作为承载特定任务能力的关键抽象，支持围绕不同任务自由扩展；\nenv\n层支持可扩展的执行环境接入。这样一来，用户可以围绕自己的任务去组合和扩展 Agent 能力，以更低成本完成新场景接入。\n例如，在 tutorial（\nhttps://uni-agent.readthedocs.io/en/latest/start/search_agent.html）中，我们实现了一个用于\narXiv 论文搜索与推荐的 Agent，仅通过新增一个\ntool\n就完成了功能扩展，整个 pipeline 无需改动。\n二、Run：支持规模化任务的稳定运行\n在真实场景应用中，处理\n规模\n是一个关键因素。\n无论是大规模任务执行、批量结果验证，还是训练中的 rollout 采样，本质上都依赖于高效、稳定的并行推理和执行能力。相比“单个任务是否能跑通”，\n系统能否稳定地同时运行上千个任务\n，更能真正体现其能力上限。\n在运行层，Uni-Agent 基于火山引擎 veFaaS Sandbox 提供了一套面向规模化的远程沙盒执行方案，从三个维度提供支撑：\n安全性：\n基于 MicroVM 级虚拟化，为每个任务提供隔离环境，安全应对未知代码执行与工具调用；\n性能：\n通过镜像预热、资源池化与调度优化，实现高并发与快速启动，在\n万级并发\n下仍保持稳定；\n场景适配：\n支持 Code、Browser、Computer 等多种执行环境，并允许自定义镜像，方便接入真实工具链与业务系统。\n同时，Uni-Agent 还提供了轻量级的实时仪表盘（Live Dashboard），支持对大规模任务进行实时监控，让每个 Agent 任务的运行状态、日志流和整体进展都清晰可见。\n三、Train：让 Agent 在真实环境中进化\n复杂多变场景下的“skill”固然重要，但真正推动基模能力演进的，是在环境交互的过程中持续学习和进化。对 Agent 来说，每一次 rollout、每一次反馈、每一次结果验证，都是走向更强能力的训练信号。只有把真实交互自然接入训练闭环，Agent 才能在场景中不断进化。\nUni-Agent\n不只负责把 Agent 跑起来，也可以自然接入\nverl\n训练引擎，并支持当下前沿的高效训练技术。同时，\nUni-Agent\n也会随\nverl\n持续进行版本迭代，及时支持最新的训练能力与系统特性。\n我们在现有的 Coding Agent 任务上进行了大规模的验证实验，用开源的 R2E-Gym 数据集（约 4500 条训练数据）训练 Qwen3-Coder-30B 模型，结果如下：\n从这组曲线可以看到，模型在真实交互环境和强化学习的过程中里呈现出相对稳定的能力提升：训练 reward 持续抬升，验证集效果整体向上，并在期间出现了能力的涌现。这说明在\nUni-Agent\n的训练框架下，模型能力可以沿着真实任务持续增长。\n我们进一步观察到一个很关键的现象：Agent 任务天然存在明显的长尾效应，不同样本在交互轮数、环境执行时长和 rollout 长度上差异很大。这使得\nfully async\n、\npartial rollout\n这些技术在 Agent 训练场景中展现出很强的适配价值。我们的实验表明，相比同步训练方案，异步训练效率实现了成倍提升，同时效果基本保持稳定。\n四、长期愿景\n我们希望，未来的 Agent 不只是“会聊天、会调几个工具”，而是真正能够在复杂世界中感知、行动、探索和进化。这也是\nUni-Agent\n的长期愿景。\n如果你也对通用 Agent、规模化推理、Agent 训练感兴趣，欢迎关\n注和 star\nUni-Agent\n，一起交流、共建：\nhttps://github.com/verl-project/uni-agent。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.24,
+        "transfer_agent": 0.7,
+        "peripheral": 0.06,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.89,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.11,
+        "2": 0.87,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.15,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.57,
+        "2": 0.28,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.96,
+      "probabilities": {
+        "0": 0.63,
+        "1": 0.08,
+        "2": 0.06,
+        "3": 0.16,
+        "4": 0.07,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.73,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.54,
+        "3": 0.07,
+        "4": 0.35,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.81,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.09,
+        "2": 0.24,
+        "3": 0.37,
+        "4": 0.28,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.16,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.53,
+        "2": 0.29,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4262,
+    "outputTokens": 172,
+    "totalTokens": 4434
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "anti_hype": 0.67,
+        "category": 0.61,
+        "relevance": 0.92,
+        "grounding": 0.7,
+        "decision_action": 0.36,
+        "evidence": 0.47,
+        "actionability": 0.5
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179923671,
+                "endTime": 1791179923885,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000179004",
+      "marketCost": "0.000179004",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000179004",
+      "inferenceCost": "0.000179004",
+      "inputInferenceCost": "0.000179004",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A986AD4KVDQT6TE80XS6B"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:43 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::hvm9m-1791179923649-ea4a67c9867e"
+    },
+    "body": {
+      "answers": {
+        "anti_hype": {
+          "type": "score",
+          "score": 1.16,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.53,
+            "2": 0.29,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.24,
+            "transfer_agent": 0.7,
+            "peripheral": 0.06,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.89,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.11,
+            "2": 0.87,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.15,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.57,
+            "2": 0.28,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.96,
+          "probabilities": {
+            "0": 0.63,
+            "1": 0.08,
+            "2": 0.06,
+            "3": 0.16,
+            "4": 0.07,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.73,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.54,
+            "3": 0.07,
+            "4": 0.35,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.81,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.09,
+            "2": 0.24,
+            "3": 0.37,
+            "4": 0.28,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4262,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "anti_hype": 0.67,
+            "category": 0.61,
+            "relevance": 0.92,
+            "grounding": 0.7,
+            "decision_action": 0.36,
+            "evidence": 0.47,
+            "actionability": 0.5
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179923671,
+                    "endTime": 1791179923885,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000179004",
+          "marketCost": "0.000179004",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000179004",
+          "inferenceCost": "0.000179004",
+          "inputInferenceCost": "0.000179004",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A986AD4KVDQT6TE80XS6B"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:43.108Z"
+  }
+}

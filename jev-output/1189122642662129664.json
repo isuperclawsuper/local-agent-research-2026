@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1189122642662129664",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "契约化多端架构：基于领域模型的Harness实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696163&idx=1&sn=a06a9d22e50e1c099620a7f41a028ed2",
+      "date": "2026-07-07T00:45:00.427Z",
+      "chars": 14931,
+      "text": "原创\n刘勇刚\n2026-07-07 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n作为一名老登前端开发，这两年深刻感受到大模型时代 AI 对软件工程带来的冲击——也被近年来 AI 各种范式大潮冲击了一遍又一遍。一路从提示词工程，再到上下文工程、Vibe Coding，再到本篇要介绍的 Harness 工程化，一路在思考：什么样的 AI 工程化方案，才是符合 WeTV（腾讯视频海外平台）当下 Web 项目的？这里抛砖引玉，和大家一起来探讨。 【为了将每个细节讲到味，篇幅较长，文章有问题的地方欢迎指出，大佬们不吝点赞+收藏！】\n01\n我们是怎么开始\"吃 AI\"的\n说实话，2025 年初那会儿，AI 热潮铺天盖地——朋友圈、技术社区、各种大会，全是\"不用 AI 就被淘汰\"的论调。作为老登，说实话有点焦虑。\n正好那段时间，我们接连有两个从 0 到 1 的项目：\nLinux TV 改版、Roku TV 立项。\n按以往经验，这种新项目意味着大量重复劳动——搭建项目框架、写基础组件、对接 API、写测试用例... 总得有个起点吧？\n当时就想：\n要不拿 AI 试试？\n1\n.1\nAI 辅助编程的那点历史\n回过头看，这事儿其实折腾了很久。图灵 1950 年的那篇论文，其实不是在讨论\"AI 写代码\"，而是提了个判据：如果机器能通过对话骗过人类，就算有智能——这个设想埋下了后来\"用自然语言编程\"的种子。70 年代有人研究自动编程（Automatic Programming），试图从形式化规约推导程序，当然没成。80 年代专家系统火过一阵，用 IF-THEN 规则做代码审查，但规则维护成本太高，最后也没落地。\n2000 年代统计机器学习入场，但还是没改变开发者的日常。真正的转折是\n2017 年的 Transformer\n（就是那篇 Attention is All You Need），然后 2021 年\nCopilot\n上线，AI 辅助编程才算真正进入主流。\n但\"进入主流\"和\"真正好用\"之间，还有很大的距离——\n这就是为什么我们从提示词工程，一路走到 Harness 工程化。\n1\n.2\n没有 AI 之前：我们其实已经做了很多\"工程化\"\n面对 Web 侧这种\n多平台产品矩阵\n——Linux TV、V 站、M 站、Roku TV——我们为了提升研效，早就开始\"工程化\"了：\n@tencent/wetv-kernel：\n核心逻辑包，平台无关\n上报/账号/播放器 SDK：\n基础能力收敛\n规范检测集、目录范式、单测范式：\n多年踩坑沉淀\n没有 AI 之前，我们靠\"人肉传承\"——\n有了 AI 之后，第一反应是：怎么让 AI 也\"懂这些范式\"？\n1\n.2.1\n上下文腐化：memory 不是万能的\n刚开始用 AI，每次写提示词都想：\n能不能把这些范式和复用场景直接给到 AI？\n但很快发现——\n上下文工程虽然有 memory，但体量一大就会\"腐化\"：\n规范冲突：\nAI 生成的代码，经常忘记我们的特殊规则\n开发范式丢失：\n聊着聊着，AI 就忘了\"Page / Module / API\"这些开发范式\n复用场景不识别：\n明明有现成 SDK，AI 还是给你重新写冗余逻辑\n这时候我们才意识到：memory 不是万能的。\n1\n.2.2\n从\"人肉传承\"到\"契约化规范\"\n意识到 memory 不行之后，我们开始想：\n既然 AI 的上下文会腐化，那就把规范\"外置\"——不让 AI 靠记忆，而是靠\"查契约\"。\n具体来说，就是把我们之前沉淀的那些东西——\n规范检测集、目录范式、单测范式、开发范式模型\n——从\"人读的文档\"变成\n\"机器可读的契约\"\n。\n这一步，其实就是从\n上下文工程\n走向\nHarness 工程化\n的关键转折点。\n02\n我们需要什么样的Harness\n2.1 用\"契约\"代替\"猜\"\n以前让 AI 写代码，它得先把项目扒一遍，然后靠\"猜\"来理解你的意图。项目一大，该读的没读到，不该读的干扰一堆——这就是\"上下文腐化\"。\nHarness 的做法是提前定义好\n领域模型\n——用 JSON 把业务概念写清楚：页面有哪些、组件有哪些、接口有哪些、数据结构是什么。AI 直接读这个就行，不用去扒源码。\n关键是\n这份领域模型跟平台没关系\n，各端共用同一份。\n运行 /project:init 的时候，AI 会根据 _DETECTION_HINTS 自动扫描当前项目，生成 domain-mapping.json 映射文件，把\"通用契约\"映射到\"各端具体实现\"：\n{\n\"HomePage\": {\n\"linux-tv\": { \"\npath\n\":\n\"src/pages/Home.tsx\"\n},\n\"web\": { \"\npath\n\":\n\"pages/index.tsx\"\n}\n}\n}\n通用契约定义\"是什么\"，映射文件定义\"在哪、怎么实现\"。\n2.2\n多端差异用映射解决\n业务逻辑是通的，但各端实现方式不一样——TV 用焦点驱动，Web 用鼠标，移动端用触摸。\nHarness 用 _PLATFORM_SPECIFIC 标注各端差异。AI 生成代码时先读通用契约，再读映射文件，最后结合项目依赖库生成符合该端技术栈的代码。\n2.3\n把整个流程串起来\n完整工作流：\n/project:init → 需求分析 → 红队验证 → 验收标准 → 方案设计 → 需求开发 → 测试验证 → 观测回收\n初始化：\nAI 探测项目结构，生成映射文件和配置\n需求分析：\nAI 读需求，拆成任务清单让你确认——避免理解偏差\n红队验证：\nAI 自己当\"对手\"，找漏洞——没网络怎么办？数据为空怎么展示？\n验收标准：\n生成 TDD 契约文件，开发完了对着验收\n需求开发：\nAI 创建 Team 分工——reader 读代码、planner 做方案、executor 写代码、reviewer 做 Review\nL0-L4 验证：\n五层质量门禁，自动拦截不合格代码\n观测回收：\n记录 Token 消耗、首次通过率、返工次数\n2.4\n用建房子理论类比图\n03\n我们的 harness 如何编排设计\n早期我们让 AI 一口气干完\"读需求 → 拆任务 → 写代码 → 跑测试\"，结果是上下文一多就乱，改一处漏一片。\n后来想通了：\n把开发流程拆成角色，每个人干自己的活，上下文隔离，互不干扰。\nCommand、Skill、Agent 到底啥区别？\n刚接触的人容易搞混，其实很简单：\nCommand\n是\"你跑的那个命令\"。比如 /web-agent-new，它就是个入口，负责解析参数、拉 TAPD、串步骤。它不干活，它是\"调度员\"，类似我们以前开发脚手架 Cli的命令入口。\nSkill\n是\"专项工具\"。比如 requirement-breakdown 专门拆需求，d2c 专门把 Figma 转代码。它被 command 调用，只做一件事，做完就返回。好处是复用方便，换个项目不用改。\nAgent\n是\"带角色的执行者\"。比如 code-analyzer 是代码阅读者，code-planner 是方案设计者。它有角色设定，会在独立上下文里自主决策。\n一句话区分\n：\nCommand 是\"入口\"，Skill 是\"工具\"，Agent 是\"角色\"。\n跟业界比，我们做了哪些优化？\n工具\n怎么干活的\n多角色？\n懂业务？\nCopilot / Cursor\n一个模型聊到底\n❌\n❌\nDevin\n一个\nagent\n自己干\n❌\n❌\nOpenHands\n多\nagent\n协作\n✅\n（得自己配）\n❌\n我们的Harness\nCommand + Skill + Agent Team\n✅\n（流程里固化了）\n✅\n（领域模型注入）\n最大的区别\n：\nCopilot / Cursor\n你得把需求说清楚，它自己去扒代码猜意图。\nHarness\n提前把业务概念结构化（领域模型），\nAI\n直接读，不用猜。\n一个真实踩的坑\n最早设计的时候，我们让主面板把\"需求管理\"也当子 agent 启动——结果\n卡死了\n。\n原因是：子 agent 弹的确认框出现在\"子 agent 面板\"，主面板看不到，就一直等，死锁。\n后来定了一条铁律：\n所有用户交互必须在主面板，子 agent 只执行不交互\n。\n这个坑修了两轮才彻底闭合。现在的流程里，每个检查点都是主面板直接弹\nask_followup_question\n，子\nagent\n返回结果后主面板再决定下一步。\n有了上面的 harness顶层设定，接下来我将核心内容拆开讲，把这套东西的设计细节摊开说。主要分三块：\n先是领域模型。\n这是整套 Harness 的核心——把业务概念结构化，让 AI 能读懂。四个模型文件（pages、ui-modules、api-layer、data-layer）分别管什么、怎么配合，_DETECTION_HINTS 和 _PLATFORM_SPECIFIC 这两个关键设计是怎么工作的，都会说清楚。\n然后是完整工作流。\n从你跑 /project:init  command命令开始，到需求分析、需求开发、L0-L4 验证，再到最后的观测回收，每一步具体做什么、产出什么、怎么保证质量，都会拆开讲。\n最后是管理机制。\n这套东西做好了，得让团队真正用起来。各端项目怎么接入、怎么升级、文件怎么管理、版本怎么迭代，这些是落地时要解决的。\n04\n领域模型设计\n前面说了，领域模型是一份\"业务说明书\"——用 JSON 写清楚业务里有哪些页面、哪些组件、哪些接口、哪些数据。AI 读这份说明书就能理解业务，不用去扒源码。\n4.1\n四层架构\n四层从上到下是依赖关系：\n页面层（pages.json）\n↓ composed of\nUI 模块层（ui-modules.json）\n↓ depends\non\n数据层（data-layer.json）\n↓ fetched\nfrom\n接口层（api-layer.json）\n实际跑起来是这样：用户访问首页 → AI 识别 HomePage（pages.json）→ 分解出需要 HeaderModule + PosterListModule（ui-modules.json）→ 识别数据依赖 ChannelListData（data-layer.json）→ 生成调用 ChannelListAPI（api-layer.json）的代码 → 输出各端实现。\n4.2\n_DETECTION_HINTS：让 AI 自己找文件\n领域模型是通用业务概念，但各端具体实现文件路径不一样。首页在 Web 端是 pages/index.tsx，Linux TV 端是 pages/home.tsx，Roku 端是 components/HomeScene.brs。\n以前的做法是在领域模型里硬编码各端路径，但项目重构后路径变了，模型就错了。\n现在的做法是用 _DETECTION_HINTS 给 AI 提供探测提示，让 AI 在 /project-init 时自动扫描项目，生成 domain-mapping.json 映射文件。\n看实际例子：\n{\n\"HomePage\"\n:\n{\n\"_DETECTION_HINTS\"\n:\n{\n\"purposeKeywords\"\n:\n[\n\"home\"\n,\n\"index\"\n,\n\"main\"\n,\n\"首页\"\n],\n\"commonRoutes\"\n:\n[\n\"/\"\n,\n\"/home\"\n],\n\"commonFilePatterns\"\n:\n[\n\"**/pages/Home.{tsx,jsx}\"\n,\n\"**/pages/index.{tsx,jsx}\"\n]\n},\n\"platforms\"\n:\n{\n\"_PENDING_DETECTION\"\n:\n\"由 /project-init 时 AI 探测生成\"\n}\n}\n}\n跑 /project-init 时 AI 会扫描项目目录，生成：\n{\n\"HomePage\": {\n\"web\": { \"\npath\n\":\n\"pages/index.tsx\"\n,\n\"route\"\n:\n\"/\"\n,\n\"renderMode\"\n:\n\"SSR\"\n},\n\"linux-tv\": { \"\npath\n\":\n\"src/pages/Home.tsx\"\n,\n\"renderMode\"\n:\n\"CSR\"\n}\n}\n}\n4.3\n_PLATFORM_SPECIFIC：处理各端差异\n文件在哪解决了，还有个问题：各端的 props 不一样。\nPosterCard 组件，通用定义里只说\"这是一个可点击的海报卡片\"，但 TV 端需要 focusKey、onFocus（焦点驱动），Web 端需要 onMouseEnter（鼠标悬停）。\n做法是在通用定义里用 _PLATFORM_PROP_VARIATIONS 标注各端差异：\n{\n\"PosterCard\"\n:\n{\n\"props\"\n:\n{\n\"src\"\n:\n{\n\"type\"\n:\n\"string\"\n,\n\"required\"\n:\ntrue\n},\n\"onClick\"\n:\n{\n\"type\"\n:\n\"() => void\"\n,\n\"required\"\n:\ntrue\n}\n},\n\"_PLATFORM_PROP_VARIATIONS\"\n:\n{\n\"tv\"\n:\n\"可能需要 focusKey, onFocus, onBlur, onEnterPress\"\n,\n\"web\"\n:\n\"可能需要 onMouseEnter, onMouseLeave\"\n}\n}\n}\nAI 生成代码时，先读通用契约，再读 domain-mapping.json 里的平台映射，最后结合项目依赖库生成符合该端技术栈的代码。\n4.4\nglossary.json：统一业务语言\n业务里有很多专有名词，不同人叫法不一样。比如\"视频 ID\"，有人叫 vid，有人叫 videoId，有人叫 contentId。AI 读代码的时候就会混乱。\n用\nglossary.json\n统一业务语言：\n{\n\"vid\"\n:\n{\n\"name\"\n:\n\"视频ID\"\n,\n\"definition\"\n:\n\"腾讯视频全局唯一标识符\"\n,\n\"format\"\n:\n\"mzc00200xxx（剧集）, n00xxxx（综艺）\"\n}\n}\nAI\n读领域模型之前先读\nglossary.json\n，建立统一的业务语言理解。\n05\n完整工作流\n说完领域模型，接下来讲完整工作流。\n第一次接入项目时，先跑 /project-init：\n/project-init .\n它会做下面几件事情：\n探测项目类型（Roku / Next.js / Linux TV / ...）\n根据 _DETECTION_HINTS 扫描项目，生成 domain-mapping.json\n从 infrastructure-templates/ 读取对应类型的模板，生成项目专属规范\n跑完这一步，Harness 才算真正\"接入\"了你的项目。\n后续开发新需求\n时，直接从\n\"\n需求输入\n\"\n开始：\n需求输入 → 需求拆分 → 红队验证 → 验收标准 → 初始化存档 → 方案设计 → 编码开发 →  → 观测回收\n5.1\n项目初始化：/project-init 流程\n5.1.1\n接入步骤\n第一次接入项目时跑这个命令，让 AI 把通用领域模型映射到你的项目。\n整个流程 5 步：\n步骤\n干什么\n产出啥\n环境准备\n解析路径、判断单仓\n/Monorepo\n、读项目配置\n项目上下文变量\nMCP\n配置\n问你要不要配\nMCP\n（连\nTAPD\n、企微这些外部工具）\nmcp.json\n（可选）\n项目探测\n扫描项目目录，识别项目类型，问你确认\n项目类型\n+\n特定配置\n领域映射\n逐层确认\nPage / API / UI Module\n的映射关系\n完整映射表（内存中）\n生成文件\n把前面收集的信息写成项目专属配置文件\n.codebuddy/\n目录下的所有文件\n领域映射这一步最关键，分三层确认：\n层\nAI\n干啥\n你要确认啥\nPage\n层\n根据\n_DETECTION_HINTS\n找到每个页面对应的实际文件\n识别对了没？漏了没？\nAPI\n层\n找到项目中实际的\nAPI\n调用代码，跟通用定义做匹配\n接口路径对不对？\nUI Module\n层\n找到项目中实际的\nUI\n组件，跟通用定义做匹配\n组件路径对不对？\n三层都确认完，AI 展示完整映射表，你点头后才进入\"生成文件\"这一步。\n生成的文件清单：\n文件\n内容\nconfig/domain-mapping.json\n领域模型映射表\nrules/domain-mapping.md\n映射文件的可读版\nrules/coding-standards.md\n编码规范（从项目真实配置生成）\nrules/test-standards.md\n测试规范\npatterns/idioms.md\n代码模式库\n如果项目没有 E2E 测试基础设施，还会生成测试骨架。\n关键设计：每一步都要你确认才继续。因为领域模型映射一旦错了，后面所有\nAI\n生成的代码都会跟着错。\n5.1.2\n流程图\n5.2\n需求分析阶段\n需求分析分 5 步：TAPD 拉取 → 需求拆分 → Figma 设计稿处理 → 红队验证 → 验收标准。\n5.2.1\n第一步：TAPD 拉取 + 父需求回溯 + Figma 链接扫描\nAI 从 TAPD 拉取需求详情，如果 description 为空，会自动回溯父需求（tapd有可能是需求下story）\n步骤\nAI\n干啥\n你要确认啥\n解析输入\n识别是\nTAPD\n短\nID /\n完整链接\n/\n自然语言\n-\n拉取需求\n调用\nTAPD MCP\n，获取\nname / description / parent_id\n等字段\n-\n父需求回溯\n如果\ndescription\n为空，且\nparent_id\n存在，自动拉取父需求\n-\nFigma\n链接扫描\n从\ndescription\n中提取\nFigma /\n蓝湖\n/ Axure\n链接\nFigma\n链接对不对？\n人员信息确认\n展示需求详情（名称、描述、处理人、开发人员、测试人员）\n人员信息对不对？\n如果需求信息不足，AI 会问你 3 个问题：\n❓ 需求信息不完整，需要补充几个关键点：\n[\n1\n] 本次开发针对哪个端？（V 站 / M站 / Linux TV / Roku TV）\n[\n2\n] 核心功能变化是什么？（一句话描述用户能看到的变化）\n[\n3\n] 是否有设计稿或交互稿链接？（Figma / 蓝湖 / Axure）\n5.2.2\n第二步：需求拆分\nAI 把需求拆成一级任务、二级子任务，输出 working/breakdown.md。\n步骤\nAI\n干啥\n你要确认啥\n两级拆分\n拆成一级任务（功能模块）\n+\n二级子任务（技术动作）\n拆分结果对不对？\n工时预估\n每个一级任务预估工时（\n0.5h ~ 1\n天）\n工时合理不？\n写入文件\n按标准\nSchema\n写入\nbreakdown.md\n确认无误？\n拆分原则：\n一级任务：用户可感知的完整功能单元（半天 ~ 1 天可完成）\n二级任务：实现一级任务需要的具体代码动作（1 ~ 3 小时可完成）\n5.2.3\n第三步：Figma 设计稿处理（D2C 精简模式）\n如果有 Figma 链接，AI 会调用 D2C Skill（精简模式），生成设计约束文档。\n步骤\nAI\n干啥\n产出啥\n结构梳理\nget_design_context + get_metadata\n获取组件层级\nFigma\n节点映射表\n素材整理\nget_variable_defs\n提取\nToken\n映射表\nToken\n映射表\n存量排查\ncodebase_search\n查已有组件、图标、样式变量\n存量复用清单\n产出格式\n（\n追加到 break\ndown.md 末尾）\n5.2.4\n第四步：红队验证\n拆分完成后，AI 会自己当\"对手\"，找遗漏场景。\n维度\n检验目标\n示例\n数据边界\nAPI\n返回的所有可能数据状态\n空数据、\nnull\n、超大数据、网络超时\n交互边界\n用户可能的所有操作序列\n快速连点、加载中操作、离线操作\n环境边界\n不同运行环境下的兼容性\nSSR\n兼容性、弱网环境、权限缺失\n找完展示给你：【这里是我们linux-tv实际项目的演示图】\n请选择下一步操作：\n[1] 立即修复所有 P0/P1 问题\n[2]\n仅修复 P0 问题，P1/P2 标记为技术债\n[3] 查看详细报告后再决定\n选完后会更新 breakdown.md，把遗漏的场景补进去。\n5.2.5\n第五步：验收标准生成\n拆分确认后，AI 基于 breakdown.md 生成 working/acceptance-criteria.md。\n从三个维度推导用例：\n维度\n来源\n产出\n功能边界\nbreakdown.md\n一级任务\n每个功能\n1\n个\nHappy Path\n用例（\nP0\n）\n数据边界\napi-layer.json\n的\nerrorHandling\n每个错误码\n1\n个异常用例（\nP1\n）\n交互边界\nui-modules.json\n的\ninteractions\n每个关键交互\n1\n个交互用例（\nP0/P1\n）\n生成示例：\n生成后展示给你确认，确认后才继续。\n关键设计\n：\n每一步都要你确认才继续。因为需求拆分一旦错了，后面所有\nAI\n生成的代码都会跟着错。\n5.2.6 流程图\n5.3\n方案设计流程\n方案设计分 2 步：代码分析 → 方案规划。\n5.3.1\n第一步：代码分析（Reader）\n编码前，AI 先让 code-analyzer（reader）上场，做情报收集。\nreader 只干一件事：\n编码前只读情报收集。\n步骤\nAI\n干啥\n产出啥\n领域模型分析\n读\ndomain-mapping.json\n、\npages.json\n、\napi-layer.json\n涉及哪些页面\n/API/\n组件\n代码扫描\n用\ncodebase_search\n找可复用组件、\nhooks\n、工具函数\n可复用资产清单\n惯用法识别\n读\npatterns/idioms.md\n，标注相关条目\n相关惯用法列表\n技术风险识别\n扫描相关文件，找\nSSR\n兼容性陷阱、跨包依赖等\n技术风险清单\n产出格式（通过 send_message 发给 planner）：\n[READER\n_DONE] task_\nid=2.1\n## 可复用资产\n-\n`PosterListModule`\n@\n`src/components/poster/PosterList.tsx`\n：渲染海报列表\n- 签名：\n`PosterListProps { dataSource: Video[]; onItemClick: (id: string) => void; }`\n## 关键文件现状\n-\n`src/pages/ChannelPage.tsx`\n（120 行）：频道页主入口，已引入\n`PosterListModule`\n## 技术风险\n-\n⚠️\n`ChannelPage`\n是 SSR 模式，\n`useEffect`\n里发请求会白屏，需用\n`getServerSideProps`\n关键设计：\nreader 不修改任何源码，只收集情报。情报报告会传给 planner，用来做方案。\n5.3.2\n第二步：方案规划（Planner）\nreader 收集完情报后，AI 让 code-planner（planner）上场，出方案。\nplanner 只干一件事：\n基于情报产出 impl-plan-{taskId}.md，不修改源码\n。\n步骤\nAI\n干啥\n产出啥\n读取基础资料\n读\nbreakdown.md\n、\nsession-state.json\n、\nacceptance-criteria.md\n、\nadversary-report.md\n任务上下文\n加载记忆层\n读\npatterns/anti-patterns.md\n和\npatterns/idioms.md\n禁止事项清单\n+\n惯用法参考\n代码库探查\n用\ncodebase_search\n找可复用组件、\nhooks\n、工具函数\n可复用资产清单\nFigma\n设计约束解析（如有）\n读\nbreakdown.md\n末尾的\n\"\n设计约束\n\"\n章节，调用\nD2C\n精简模式获取详细结构\n附录\nA\n：\nFigma\n设计约束\n起草方案\n按标准\nSchema\n逐节填写\nimpl-plan-{taskId}.md\n完整实现方案\n写入文件\n把方案写成\nworking/impl-plan-{taskId}.md\n方案文件\n展示审批\n展示方案摘要，等你审批\n你的审批结论\n方案文件标准\nSchema\n：\n这里不详细贴了，说白了就是详细描述代码开发的技术方案\n## 元信息\n-\n需求 ID：133916681\n-\n任务 ID：2.1\n-\n渲染模式：SSR\n## 1. 任务目标\n改完之后，频道页会展示推荐视频列表，用户能看到至少 6 个视频海报。\n## 2. 上下文摘要\n-\n相关现有文件：\n`src/pages/ChannelPage.tsx`\n（频道页主入口）\n-\n可复用组件：\n`PosterListModule`\n（已有，直接引入）\n-\n需要避免踩的坑：见 AP-001（useEffect 依赖数组缺失）\n## 3. 文件变更清单\nxxxxxxx\n## 4. 每个文件详细方案\nxxxxxx\n## 5. CSR|SSR模式处理\nxxxxx\n## 6. 测试要点\nxxxxx\n## 7. 风险与开放问题\nxxxxx\n## 8. Executor执行清单检查\nxxxxxx\n**Figma 设计约束（如有）**\n： 如果\n`breakdown.md`\n末尾有\"设计约束\"章节，planner 会调用 D2C 精简模式，获取详细结构，追加\"附录 A：Figma 设计约束\"到方案文件末尾\nplanner\n出完方案后，会展示给你审批。这是\n**\n第一道卡点\n**——\n方案审批通过后，\nexecutor\n才能开始编码。\n[linux-tv项目实际截图]\n5.3.3\n流程图\n5.4\n开发编码阶段\n开发编码分 3 步：编码执行 → 代码审查。\n5.4.1\n第一步：编码执行（Executor）\nPlanne\nr 方案审批\n通过后，AI 让 code-developer（executor）上场，严格按方案落盘。\nexecutor 只干一件事：\n严格按 impl-plan-{taskId}.md 落盘，不自己发挥。\n步骤\nAI\n干啥\n你要确认啥\n读取方案\n读\nimpl-plan-{taskId}.md\n，确认方案完整\n-\n按清单执行\n按第\n3\n节\n\"\n文件变更清单\n\"\n顺序，逐个文件落盘\n落盘前弹窗确认\n质量门禁\n跑\nweb-local-quality-gate skill\n，检查\nlint/\n类型\n/\n测试\n-\n回报完成\n列出实际修改的文件清单，发\n[\nTASK_DONE\n]\n-\n5.4.2\n第二步：代码审查（Reviewer）\nExecutor 落盘后，AI 让 code-reviewer（reviewer）上场，做新鲜视角审查。\nreviewer 只干一件事：\nexecutor 落盘后做新鲜视角审查，产出报告，不修改代码\n。\n审查维度\n检查目标\n示例\nPlan\n忠诚度\n代码是否真的按方案执行了？有没有超纲、偷工、顺手加料？\n方案里没让加\n<Wrapper>\n，实际加了\nIdioms\n合规\n是否踩了项目惯用法？有没有重复造轮子？\n直接\nfetch()\n，没走项目统一的\naxios\n封装\nReact/TS\n反模式\nuseEffect\n依赖遗漏、不必要的\nmemo\n、直接改\nprops\n、\nany\n泛滥、组件过大等\nuseEffect\n的依赖数组缺\nuserId\n，会导致\nstale closure\nCSR/SSR\n兼容性\nSSR\n模式下是否误用了浏览器\nAPI\n、\nHydration\n是否一致、数据获取时机是否正确\n在初始化时用了\nwindow.localStorage\n，\nSSR\n会崩\n产出格式\n（\nreview-report-{taskId}.md\n）：[由于篇幅问题，不详细展开]\n审查结论\n：\n结论\n含义\n下一步\nPASS\n通过，无问题\n进入\nL0-L4\n验证\nPASS_WITH_NITS\n通过，但有\nNIT\n建议修\n你可选择修或不修\nNEEDS_REWORK\n不通过，有\nBlocking\n问题\n打回\nexecutor\n重做\n关键设计\n：\nexecutor\n不能自己拉起\nreviewer\n（避免自审）。必须由\nLead\n触发。\n5.4.3\n流程图\n5.5\n测试验证环节\n3 步：本地质量门禁 → L0-L4 验证 → 效果追踪。\n5.5.1\n第一步：本地质量门禁\n编码完成后，AI 先跑本地质量门禁（web-local-quality-gate skill），检查代码质量。\n检查项\n验证什么\n不通过会咋样\n代码风格检查\nESLint + Prettier\nAI\n自动修复格式问题\nTypeScript\n类型检查\ntsc --noEmit\nAI\n自动修复简单类型错误\n单元测试\nJest\n测试套件\n展示失败用例，询问你是否继续\nCSR\n构建测试\nWebpack/Vite\n构建\n分析错误日志，自动修复常见问题\nSSR\n构建测试\nNext.js\n构建\n+ SSR\n渲染验证\n检查是否使用了浏览器专属\nAPI\nCSR/SSR\n模式验证\n核心逻辑是否与渲染模式耦合\n提示改用适配器模式\n产出格式\n（质量验证报告）：\n5.5.2\n第二步：L0-L4 验证（蓝队防御）\n本地质量门禁通过后，还要跑五层质量门禁：\n层级\n验证什么\n脚本\n不通过会咋样\nL0\n领域模型完整性\nvalidate-domain-model.sh\n检查必需文件是否存在、\nJSON\n格式是否正确、引用是否一致\nL1\n目录与模型对齐\nvalidate-project-structure.sh\n检查目录结构是否符合领域模型定义\nL2\nAPI\n契约\nvalidate-api-contract.sh\n检查\nAPI\n接口是否与契约一致\nL3\n多端对等性\nvalidate-cross-platform.sh\n检查多端实现是否一致\nL4\nE2E\n测试\ngenerate-test-spec.js\n检查\nE2E\n测试是否通过\n评分规则\n：\n层级\n权重\n评分标准\nL0\n20%\n领域模型完整性\nL1\n20%\n目录与模型对齐\nL2\n20%\nAPI\n契约\nL3\n20%\n多端对等性\nL4\n20%\nE2E\n测试\n通过条件\n：\n评分\n≥ 70\n才算通过。不通过的打回重做。\n5.5.3\n第三步：效果追踪\n验证通过后，记录这次开发过程的数据，生成效率报表。\n收集哪些数据\n：\n指标\n说明\n首次通过率\n第一版代码是否通过\nL0-L4\n验证\n返工次数\n因为\nReview\n不通过重做了几轮\n任务完成数\n拆分了多少任务，完成了多少\n红队发现问题数\n需求阶段发现多少遗漏场景\n变异测试安全评分\n代码生成阶段的安全评分\n[linux-tv需求开发完后截图]\n5.5.4\n流程图\n06\n管理机制：怎么让团队真正用起来\n6.1\nwpc 是啥？\nwpc 是我们自己写的一个 CLI 工具，全名 @tencent/wpc-cli，全局安装。\n它干的事很简单：\n把 harness 源仓库的文件同步到目标项目。\n为啥要自己做？因为 Harness 不是个 npm 包——它是 .codebuddy/ 目录下的一堆文件（commands、skills、agents、rules、scripts）。这些文件要\"装到项目里\"，还要能\"升级\"。\n6.2\n新项目怎么接入？\n就两步：\n第一步：全局安装\nwpc\nnpm install -\ng\n@tencent\n/wpc-cli\n只需跑一次，装完就有\nwpc\n命令了。\n第二步：进到你的项目根目录，跑\nwpc harness init\ncd\n/path/to/your-project\nwpc harness init\n这条命令会干什么？\n从远程仓库下载 harness，放到当前项目的 .codebuddy/ 下\n。\n默认是从远程仓库拉最新版本。当然，如果你在本地改\nharness\n源码，想先试试效果，也可以指定本地路径：\nwpc harness init\n--local\n/\npath\n/\nto\n/codebuddy-harness\n6.3\n怎么升级？\nHarness 源仓库改了（比如加了新 command、修了 bug），怎么同步到各项目？\n就一条命令：\nwpc\nharness update\n它会从远程仓库拉最新，同步到当前项目。\n有个坑：孤儿文件\nHarness 源仓库删了某个文件（比如旧命令 bug:fix），目标项目里还留着——这就是\"孤儿文件\"。\n最早我们让 update \"只 add 不 delete\"——源仓库删了文件，目标项目里留着，反正不影响。\n结果是：\n旧命令文件越来越多，AI 有时候会调到旧命令\n（bug:fix 和 bug-fix 同时存在，AI 可能调错的那个）。\n后来改成：\nupdate\n时自动检测孤儿文件，弹三选一：\n6.4\n版本管理：源仓库是\"唯一真相源\"\nHarness 的版本管理靠的是\nGit\n：\n源仓库\n（codebuddy-harness）是\"唯一真相源\"，所有修改都先提交到这里\n目标项目\n的 .codebuddy/ 是\"分发副本\"，不直接改（AI 也被禁止直接改，除非是项目私有配置）\n升级时，wpc harness update 本质上是个\"智能复制\"——只覆盖源仓库有的文件，不碰项目私有配置\n为啥不用 Git Submodule？\n试过，坑太多：\nSubmodule 要求目标项目里有个独立的 Git 仓库——.codebuddy/ 是项目的一部分，不是独立仓库\nSubmodule 的版本锁定在父仓库的 commit 里——想升级得先 cd .codebuddy && git pull，再回父仓库提交，太麻烦\nCI/CD 里处理 Submodule 经常出问题——有的环境没配 SSH key，拉不下来\nwpc harness update\n就是个文件同步工具，不依赖\nGit Submodule\n，简单直接。\n6.5\nAI 改文件时的\"编辑边界\"\nHarness 源仓库和项目分发副本之间，有个\"编辑边界\"问题：AI 改 Harness 流程时，必须清楚\n哪些文件能改，哪些不能改\n。\n规则很简单：\n文件位置\n能改？\n谁改？\ncodebuddy-harness/.codebuddy/\n✅\n只有\nHarness\n维护者\n{\n项目\n}/.codebuddy/commands/\n❌\n禁止直接改（跑\nwpc harness update\n同步）\n{\n项目\n}/.codebuddy/config/\n✅\n项目私有配置，\nAI\n可以改\n{\n项目\n}/.codebuddy/workflows/\n✅\n业务数据，\nAI\n可以改\nAI\n被明确告知：\n改通用流程文件前，先检查路径是否以\ncodebuddy-harness/\n开头。如果不是，立即停止\n。\n6.6\n流程图\n07\n结尾\n写到这里，这篇文章终于要收尾了。能看到这里的朋友，非常感谢你的耐心。\n这篇文章是我们团队一年来在 Web 项目里用 AI 辅助编程的思考和总结。限于篇幅，其实还有很多东西没展开讲：\nD2C（设计稿转代码）、bug-fix 这些核心场景\n，\n这篇文章里只是提了名字，没细说\n像 CMS、H5 项目仓库集、创作者中心这类项目\n——它们不太能抽 4 层业务模型，我们是怎么接入 Harness 的——这块也没展开\n还有一些调优细节\n，比如防止 skill 虹吸、工具链的稳定性、IDE 钩子等等，也没法在文章里一一呈现\n欢迎在评论区交流。\n-End-\n原创作者｜\n刘勇刚\n感谢你读到这里，不如关注一下？👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。7月14日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.77,
+        "irrelevant": 0.23
+      }
+    },
+    "relevance": {
+      "score": 1.88,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.05,
+        "2": 0.9,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.15,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.03,
+        "2": 0.04,
+        "3": 0.1,
+        "4": 0.67,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 1.17,
+      "probabilities": {
+        "0": 0.63,
+        "1": 0.03,
+        "2": 0.02,
+        "3": 0.19,
+        "4": 0.13,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.94,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.07,
+        "3": 0.92,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.34,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.49,
+        "5": 0.47
+      }
+    },
+    "anti_hype": {
+      "score": 3.74,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.19,
+        "4": 0.79,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 12924,
+    "outputTokens": 172,
+    "totalTokens": 13096
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.71,
+        "relevance": 0.91,
+        "grounding": 0.42,
+        "decision_action": 0.22,
+        "evidence": 0.94,
+        "actionability": 0.6,
+        "anti_hype": 0.83
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180004063,
+                "endTime": 1791180004306,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000542808",
+      "marketCost": "0.000542808",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000542808",
+      "inferenceCost": "0.000542808",
+      "inputInferenceCost": "0.000542808",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABPNNWF8MFCA308YS72CE"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:04 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::cz424-1791180003455-55f70d825f52"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.77,
+            "irrelevant": 0.23
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.88,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.05,
+            "2": 0.9,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.15,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.03,
+            "2": 0.04,
+            "3": 0.1,
+            "4": 0.67,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.17,
+          "probabilities": {
+            "0": 0.63,
+            "1": 0.03,
+            "2": 0.02,
+            "3": 0.19,
+            "4": 0.13,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.94,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.07,
+            "3": 0.92,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.34,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.49,
+            "5": 0.47
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.74,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.19,
+            "4": 0.79,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 12924,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.71,
+            "relevance": 0.91,
+            "grounding": 0.42,
+            "decision_action": 0.22,
+            "evidence": 0.94,
+            "actionability": 0.6,
+            "anti_hype": 0.83
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180004063,
+                    "endTime": 1791180004306,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000542808",
+          "marketCost": "0.000542808",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000542808",
+          "inferenceCost": "0.000542808",
+          "inputInferenceCost": "0.000542808",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABPNNWF8MFCA308YS72CE"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:03.534Z"
+  }
+}

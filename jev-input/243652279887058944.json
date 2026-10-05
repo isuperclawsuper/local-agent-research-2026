@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "243652279887058944",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "当 OpenClaw 内置 LanceDB：为个人 AI 智能体打造超强长期记忆",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518417&idx=1&sn=27cf117f0487cff41839aaaaf4de2545",
+      "date": "2026-02-09T06:03:00.182Z",
+      "chars": 6951,
+      "text": "2026-02-09 14:03\n北京\nOpenClaw （原名 Clawdbot/Moltbot）是当下超级火爆的（截止目前Github Star数 161K）、开源、可自托管的个人 AI 智能体（Agent）框架。\n其官方唯一实现的第三方memory plugin就是——LanceDB！\n本文将为你剖析 OpenClaw 的 LanceDB memory plugin 的实现。\nOpenClaw的核心定位是让 AI 成为能实际操作用户设备、拥有持久化记忆并能主动发起任务的“数字助手”，而不只是一个聊天机器人。在过去几周持续爆火：\n架构和核心组件\nOpenClaw的架构图：\n由架构图可以看出 Agent Runner是其中最关键的组件之一。在与 Agent Runner 交互时，高质量的上下文供给是其能否准确理解意图、完成复杂任务的关键。\n广义上，Agent Runner 的上下文主要来自四个方面：\n1. 长期知识 (Durable Knowledge)\n：\n这是 Agent Runner 关于世界、特定领域或用户的持久化事实与偏好，如同其“固定记忆”，例如用户的技术栈偏好或固有的写作风格。\n2. 任务记忆 (Task Memory)\n：\n在执行一个长周期、多步骤任务时，Agent Runner 会产生并记录一系列中间产物、决策和观察，这些构成了任务记忆，确保了复杂工作的连续性。\n3. 会话历史 (Conversational History)\n：\n即与用户的完整对话记录，它不仅包含显式的指令，也蕴含了需要模型理解的隐式意图，是上下文最直接的来源。\n4. 外部资源 (External Resources)\n：\n包括代码库、技术文档、API 规范、网页等 Agent Runner 在执行任务时需要动态查阅的外部资料，为其提供超出自身知识范围的信息。\n这四类上下文通过不同的机制被检索、注入、持久化或更新，共同构成了 Agent Runner 理解和执行任务的基础。下图已包含各类上下文对应的典型目录位置。\n在 OpenClaw 项目中，这四类上下文分别通过不同的文件、目录和代码模块进行管理。\n1. 长期知识（Durable Knowledge）\n目录/文件位置\n：\n- 工作区\n：\n~/.openclaw/workspace\n是核心工作目录。\n- 精选记忆\n：\nMEMORY.md\n文件用于存放精选的长期记忆，仅在私聊时加载。\n- 每日记忆\n：\nmemory/YYYY-MM-DD.md\n文件作为每日记忆日志。\n- 索引\n存储\n：\n~/.openclaw/memory/<agentId>.sqlite\n是内置的 SQLite 索引文件。\n- QMD 备选\n：\n~/.openclaw/agents/<agentId>/qmd/…\n用于存放 QMD 后端的索引与配置。\n2. 任务记忆（Task Memory）\n目录/文件位置\n：\nmemory/YYYY-MM-DD[-slug].md\n文件由钩子生成，作为特定任务或会话的快照。\n3. 会话历史（Conversational History）\n目录/文件位置\n：\n- 状态目录\n：\n~/.openclaw/agents/<agentId>/sessions/\n- sessions.json\n：存储会话元数据，如\nsessionId\n、token 计数、\nmemoryFlush\n状态等。\n- <sessionId>.jsonl\n：以仅追加（Append-only）的 JSONL 格式记录完整的对话树，包括消息、工具调用和压缩摘要。\n4. 外部资源（External Resources）\n配置与\n挂载\n：\n- agents.defaults.memorySearch.extraPaths\n：此配置项允许递归地索引外部的 Markdown 文件夹，将其纳入记忆搜索范围。\n- memory.qmd.paths\n：用于声明 QMD 的集合源，使其可以索引任意位置的文档。\nMemory\n接下来，我们将聚焦于memory模块，解读openclaw在该模块的设计。\n整体上，我们将memory的实现分为两类：\n1. File/backend based：\n基于文件系统上裸存的markdown文件，以及backend充当索引与检索的存储引擎；\n2. LanceDB based：\n基于面向多模的Lance文件格式而构建的轻量级LanceDB数据库一体化实现；\nFile/Backend Based\n定义\nOpenClaw 的\nMemory\n被明确定义为存储在 Agent 工作区（workspace）中的\n纯文本 Markdown 文件\n。\n这些文件是记忆的“真实之源”（Source of Truth），模型仅通过读写这些文件来“记忆”信息。\n其内容来源主要有两种：持久化的 Markdown 文件（\nmemory\n）和临时的会话历史记录（\nsessions\n）。\n说明：\n- memory\n是OpenClaw记忆系统的持久化核心，\n通过本地Markdown文件长期存储用户偏好、关键信息等；\n- session\n是临时会话层，\n用于保存单次交互的上下文历史，支持即时对话连续性。\n两者共同构成OpenClaw的记忆数据来源，分别对应长期记忆与短期会话上下文。\nmemory 不仅仅是原始文本，其在系统中的表示还包含结构化信息。例如，一次搜索结果\nMemorySearchResult\n会包含文件路径、起止行号、相关度分数、文本片段和来源等元数据，这使得 Agent 可以精确地引用和读取记忆内容。\n分层\n当前实现：\n分为两层核心的 Markdown 文件结构：\n1. 日常日志层:\nmemory/YYYY-MM-DD.md\n，用于记录每日的、时序性的信息， bersifat append-only。\n2. 核心记忆层:\nMEMORY.md\n，用于存放经过提炼的、更为稳定和持久的核心事实与偏好。\n~\n/.openclaw/\nworkspace/\nmemory.md\n# small: durable facts + preferences (core-ish)\nmemory/\nYYYY-MM-DD.md\n实验性的研究：扩展出\nbank/\n目录，下设\nworld.md\n（客观事实）、\nexperience.md\n（Agent 自身经历）、\nopinions.md\n（主观判断）以及\nentities/\n（实体信息库）等：\n~\n/.openclaw/\nworkspace/\nmemory.md\n# small: durable facts + preferences (core-ish)\nmemory/\nYYYY-MM-DD.md\n# daily log (append; narrative)\nbank/\n# “typed” memory pages (stable, reviewable)\nworld.md\n# objective facts about the world\nexperience.md\n# what the agent did (first-person)\nopinions.md\n# subjective prefs/judgments + confidence + evidence pointers\nentities/\nPeter.md\nThe-Castle.md\nwarelay.md\n...\nBackend\nBackend\n是指负责处理 Memory 文件\n索引\n、查询和管理\n的底层引擎。\n它的存在是为了解决直接操作大量、分散的 Markdown 文件在检索效率和语义理解上的不足。\n通过 backend，系统能将非结构化的文本转化为可快速、精确、甚至语义化查询的结构化索引，核心是为了提升“召回”（Recall）能力。\nOpenClaw 提供了两种\nbackend\n实现：\n1. builtin\n：\n内置的默认后端。它使用\nSQLite\n作为索引数据库，结合\nfts5\n扩展实现全文检索（BM25 算法），并能通过\nsqlite-vec\n扩展支持向量搜索。\n2. qmd\n(实验性)：\n一个外部的、本地优先的搜索 sidecar 工具。它提供了更高级的混合搜索能力，集成了 BM25、向量搜索和重排序（reranking）。\n索引\n核心流程是：文件扫描与变更检测 → 内容分块（Chunking）→ 文本嵌入（Embedding）→ 数据写入 SQLite。\n它支持对\nmemory\n和\nsessions\n两类源进行索引，通过混合使用向量索引（\nsqlite-vec\n）与关键词索引（FTS5）实现语义加关键词的混合检索。\n索引类别和存储的核心设计：\n1. 基础表\n：\n- files: 存储已索引文件的元数据，如路径、哈希值、修改时间等。\n- chunks\n: 存储文本分块（chunk）的核心信息，包括分块文本内容、来源文件路径、起止行号，以及最重要的\n嵌入\n向量\n（以 JSON 字符串形式存储）。\n2. 关键词\n索引\n：\n- chunks_fts\n：这是一个基于\nchunks\n表创建的 FTS5 (Full-Text Search) 虚拟表，专门用于高效的关键词检索和 BM25 排序。\n3. 向量\n索引\n：\n- chunks_vec\n：这是一个基于\nsqlite-vec\n扩展创建的虚拟表，存储分块的 ID 和其对应的向量数据（通常为\nFLOAT[dims]\n类型），用于快速计算向量间的距离（如余弦相似度）。\n4. 辅助表\n：\n- embedding_cache\n：用于缓存文本哈希到嵌入向量的映射，避免对相同内容重复进行嵌入计算。\n- meta\n：存储索引的元信息，如创建索引时使用的模型、分块参数等，用于判断是否需要全量重建。\nLanceDB Based\nLanceDB memory 是一条完全独立的链路：它取代了文件系统存memory原始文件 + backend 这套体系。形成了一套完全独立的实现（自己存储文本内容以及embedding，并提供索引、检索能力）。\n基于LanceDB实现的memory是以Plugin挂载并让Agent、CLI来识别的。\n接下来我们先介绍一下什么是plugin。\nPlugin\nPlugin的作用：决定是否、以及以什么形态把这种查询能力暴露给 agent 和 CLI。\n目前，提供两个plugin（memory plugin是排他的，当前只能选择一个）：\n1. memory-core：\n是系统内置的基础内存插件。它本身不包含复杂的存储和 embedding 逻辑，而是作为 openclaw 核心内存管理框架的入口，负责将其能力（如基于 SQLite 的搜索）暴露为标准的 Agent 工具和 CLI 命令。\n2. memory-lancedb：\n是一个 可选的、功能完备的第三方长时记忆解决方案。它自带了独立的存储（\nLanceDB\n）、独立的 embedding 能力（OpenAI API）和一套更高级的记忆操作工具（\nmemory_recall\n,\nmemory_store\n,\nmemory_forget\n）。\n它通过钩子实现了记忆的自动捕获（auto-capture）和自动召回（auto-recall），提供了一种“开箱即用”的智能记忆体验。\nLanceDB plugin\n其核心思想是将非结构化的文本信息，转换为高维度的向量，并利用向量间的距离来衡量信息的相似度。整个系统的数据流清晰而高效，涵盖了从信息输入、处理、存储到最终利用的全过程。\nMemory 插件的定义包含如下要素：\n1. Tool：\nmemory_recall：search\nmemory_store：save\nmemory_forget：delete\n2. CLI commands：\nlist\nsearch\nstats\n3. Lifecycle Hooks：\nbefore_agent_start：如果开启自动回忆（autoRecall），在每次对话前自动检索相关记忆，注入到 prompt 上下文；\nagent_end：如果开启自动抽取（autoCapture），会在对话结束后自动从消息中抽取“值得记住”的句子并写入 LanceDB；\n4. Service：\nstart/stop\n该插件的逻辑主要集中在几个关键文件中，各司其职：\nopenclaw/extensions/memory-lancedb/\nindex.ts\n:\n插件主入口\n。定义了整个插件的生命周期、工具、CLI 命令和服务。所有核心逻辑的编排都在这里完成。\nconfig.ts\n:\n配置模型与解析\n。定义了插件所需的配置项（如 OpenAI API Key、数据库路径等）的数据结构、默认值和解析逻辑。\nopenclaw.plugin.json\n:\n插件\n元数据\n。向 OpenClaw 核心系统声明插件的 ID、类型、配置 Schema 以及在 UI 上的显示提示（\nuiHints\n），使得插件可以被正确加载和配置。\nindex.test.ts\n:\n单元与端到端测试\n。确保插件的各个功能模块（配置解析、工具执行、钩子逻辑等）按预期工作。\nLanceDB\nmemories\n表结构\n所有捕获的记忆最终都存储在 LanceDB 的\nmemories\n表中。该表结构为向量化检索和元数据过滤提供了基础。\n记忆类别（MemoryCategory）\nMemoryCategory\n是一个预定义的枚举类型，用于对捕获的记忆进行分类。分类主要依赖于对文本内容的启发式规则匹配，也可以在调用\nmemory_store\n工具时手动指定。\nMemory跟其他组件的交互\n1. Agent 工具 (Tools)\n：\nAgent 在执行任务时，可以主动调用\nmemory_search\n和\nmemory_get\n工具来查询和读取记忆库。这是最直接的使用方式。\n2. CLI\n命令行\n：\n用户可以通过\nopenclaw memory\n系列命令手动管理内存，包括查看状态 (\nstatus\n)、触发索引 (\nindex\n) 和执行搜索 (\nsearch\n)。\n3. 自动同步/\n索引\n(Auto Sync/Indexing)\n：\n系统通过文件监视（\nwatch\n）和定时任务（\ninterval\n）自动检测 Memory 文件的变更，并异步更新索引，确保记忆库的时效性。\n4. 自动内存刷新 (Auto Memory Flush)\n：\n在会话历史过长、即将被压缩（compaction）前，系统会自动触发一个静默的 Agent turn，提示模型将当前重要的上下文信息存入 Memory 文件，以防止关键信息因压缩而丢失。\n5. 钩子 (Hooks)\n：\n通过\nsession-memory\n钩子，在\n/new\n命令执行时，系统会自动将上一个会话的摘要存档到\nmemory/\n目录中，实现会话的自动归档\n总结\nOpenClaw 的\nmemory-lancedb\n插件为我们展示了一个优雅而实用的长时记忆系统设计。\n它不仅提供了强大的基础能力——将文本转化为可检索的向量记忆，更通过巧妙的生命周期钩子设计，实现了记忆的“自动驾驶”，极大地提升了智能体的实用性和用户体验。\n我们相信 OpenClaw 在众多 memory 库的实现中选择了LanceDB，\n源于 LanceDB 的一些非常优秀的特性：\n1. 本地优先（Local-First）：\nLanceDB作为一个极其轻量的嵌入式数据库，无服务，安装即可用；\n2. 多模态存储：\n支持各种类型（图片、文档、音视频）知识的存储；\n3. 多类别索引与混合检索：\n支持标量、向量、全文索引以及多索引混合检索；\n在 Agent 时代，存在海量非结构化的知识需要存储、加工、检索，构建版本管理用于回溯与分析。既可以轻量级本地开发，又可以on cloud无限横向扩展！\n而 LanceDB/Lance 无疑是非常优秀的选择。\n另外，大家也可以关注一下，围绕Lance构建的两个生态项目：\n1. lance-graph\n：Lance Graph 是一个支持 Cypher 的图查询引擎，它采用 Rust 语言构建，并配有 Python 绑定，用于构建高性能、可扩展且无服务器的多模态知识图谱；\nhttps://github.com/lance-format/lance-graph\n2. lance-context：基于Lance构建的用于智能体工作流的多模态、带版本的上下文存储。\nhttps://github.com/lance-format/lance-context\n点击阅读原文，跳转LanceDB GitHub\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

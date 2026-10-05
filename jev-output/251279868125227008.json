@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "251279868125227008",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "3D数字分身的奇幻舞台：火山引擎空间视频技术解密",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518571&idx=1&sn=5f1ad978e5273998c7df19257047a93d",
+      "date": "2026-03-02T09:03:00.152Z",
+      "chars": 1652,
+      "text": "原创\n视频与边缘\n2026-03-02 17:03\n北京\n2026年总台马年春晚，一首歌舞节目中，舞台上“凭空”出现了数位与主演分毫不差的自己——她们立于不同方位，动作各异，光影随行，镜头游走时，侧脸的轮廓、肩线的转折，乃至投在地板上的影子，都与真人同步变幻。\n这不是绿幕抠像，不是预置素材，而是由火山引擎空间视频技术实时驱动的“3D数字克隆”现场！\n虚实无界：当数字分身拥有“物理灵魂”\n与传统的“复制粘贴”式虚拟形象不同，此次春晚呈现的数字分身具备两个颠覆性特征：\n一、透视随镜，立体在场。\n当导播切换机位、推拉摇移，屏幕上的分身视角同步发生符合物理规则的透视变化——镜头扫过侧面，你能清晰看到颧骨的起伏、耳廓的阴影；镜头拉远，分身的空间占位与真实演员分毫不差，是真正拥有三维坐标的数字个体。\n二、光影共生，实时响应。\n舞台追光灯由暖转冷，分身身上的高光与暗部同步迁移；灯光变暗，分身脚下的影子随之虚化。虚实之间的光感一致性，达到了肉眼难以分辨的程度。\n观众的真实反馈是：“舞台上好像站着好几对双胞胎。”\n《梦底》\n技术破局：从采集到渲染的全链路实时化\n如此“活”的数字分身，其技术底座是火山引擎空间视频解决方案，一条从4D资产生成到实时舞台集成的完整管道。\n1. 四维重建：70台相机“冻结”时间与空间\n演员在专业环绕式采集棚中完成表演。\n70台工业级高分辨率相机呈球面分布，以极高帧率同步捕捉每一瞬间的多视角画面。这套系统不只记录动作，更记录光在皮肤、衣物上的反射特性，为后续光影真实渲染埋下伏笔。\n海量多视角视频流被上传至云端，经火山引擎自研4D高斯泼溅（4DGS）重建算法处理，输出为高保真4D数字资产——这是一段“可被实时渲染、可被任意视角观看”的动态三维表演。\n2. 实时渲染引擎：与导播、灯光“对话”\n重建完成的4D资产被导入Unreal Engine / Unity等主流游戏引擎。\n但真正的挑战在于：如何让虚拟世界实时响应真实舞台的变化？\n与导播系统联动：虚拟摄像机实时接收导播台机位参数，实现渲染视角与播出视角的毫秒级对齐。\n与灯光系统联动：舞台灯光控制采用DMX512协议，火山团队搭建实时转译层，将每一路DMX信号映射为虚拟引擎中的光源参数——颜色、强度、位置、光束角。物理灯光一变，虚拟灯光即变，延迟低于人眼感知阈值。\n豆包大模型加持：破解“多人+近景”两大性能困局\n当数字分身从单一个体扩展为“十余个同台”，从远景调度逼近“面部特写”，传统渲染架构面临算力与逼真度的双重瓶颈。\n本次春晚，火山引擎空间视频团队首次引入豆包大模型能力，针对性攻克两大核心难题。\n优化一：影子几何——为十人同台“减负”\n在戏曲节目等高密度场景中，十余个高精度数字人同台表演。\n若每一人都实时计算完整光影与阴影投射，单台渲染服务器的算力将被迅速耗尽。\n解决方案：豆包3D模型为演员每一帧预生成一个极简几何外壳——该外壳不可见，仅用于阴影计算。\n渲染时，系统只需计算这个简化Mesh的投影，而非高精度模型的全部几何细节。阴影质量几乎无损，计算量降低70%以上，多人同台实时渲染成为可能。\n优化二：法线先验——让近景特写“不跳帧”\n舞蹈节目的近景镜头中，演员面部占据大半个屏幕。\n传统光影重建算法在特写下容易产生法线方向抖动，导致光影“跳变”，破坏真实感。\n解决方案：引入豆包DA3（Depth Anything v3）模型，从单帧画面中极稳定地推断深度信息。\n基于深度计算法线，再以此作为先验约束参与光照求解——先有几何确信度，再算光影变化。这一机制彻底消除了近景下的光影闪烁，使皮肤质感的细腻过渡得以完美呈现。\n从早期的动作捕捉，到当下的4D实时重建；从依赖预渲染，到与导播、灯光系统实时对话；从单一个体，到多人同台、近景特写——火山引擎空间视频技术正在将“数字分身”从实验场景推入国家级舞台的核心创作语汇。\n2026年春晚只是一个开始。\n当技术足够隐形，艺术便获得自由。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "peripheral": 0.24,
+        "transfer_agent": 0.01,
+        "transfer_business": 0,
+        "irrelevant": 0.75,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 0.57,
+      "probabilities": {
+        "0": 0.67,
+        "1": 0.1,
+        "2": 0.23,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.2,
+      "probabilities": {
+        "0": 0.9,
+        "1": 0.04,
+        "2": 0.03,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.02,
+      "probabilities": {
+        "0": 0.99,
+        "1": 0.01,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.04,
+      "probabilities": {
+        "0": 0,
+        "1": 0.07,
+        "2": 0.83,
+        "3": 0.09,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.74,
+      "probabilities": {
+        "0": 0.27999999999999997,
+        "1": 0.24,
+        "2": 0.13,
+        "3": 0.15,
+        "4": 0.2,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.52,
+      "probabilities": {
+        "0": 0.71,
+        "1": 0.12,
+        "2": 0.13,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3489,
+    "outputTokens": 173,
+    "totalTokens": 3662
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.69,
+        "relevance": 0.62,
+        "grounding": 0.87,
+        "decision_action": 0.99,
+        "evidence": 0.87,
+        "actionability": 0,
+        "anti_hype": 0.66
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179934479,
+                "endTime": 1791179934629,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000146538",
+      "marketCost": "0.000146538",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000146538",
+      "inferenceCost": "0.000146538",
+      "inputInferenceCost": "0.000146538",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9JQTAQ7YRV0K7YEHVQFH"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:54 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::2q5xl-1791179934448-7b14b0dc527c"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "peripheral": 0.24,
+            "transfer_agent": 0.01,
+            "transfer_business": 0,
+            "irrelevant": 0.75,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.57,
+          "probabilities": {
+            "0": 0.67,
+            "1": 0.1,
+            "2": 0.23,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.2,
+          "probabilities": {
+            "0": 0.9,
+            "1": 0.04,
+            "2": 0.03,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.02,
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.04,
+          "probabilities": {
+            "0": 0,
+            "1": 0.07,
+            "2": 0.83,
+            "3": 0.09,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.74,
+          "probabilities": {
+            "0": 0.27999999999999997,
+            "1": 0.24,
+            "2": 0.13,
+            "3": 0.15,
+            "4": 0.2,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.52,
+          "probabilities": {
+            "0": 0.71,
+            "1": 0.12,
+            "2": 0.13,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3489,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.69,
+            "relevance": 0.62,
+            "grounding": 0.87,
+            "decision_action": 0.99,
+            "evidence": 0.87,
+            "actionability": 0,
+            "anti_hype": 0.66
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179934479,
+                    "endTime": 1791179934629,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000146538",
+          "marketCost": "0.000146538",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000146538",
+          "inferenceCost": "0.000146538",
+          "inputInferenceCost": "0.000146538",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9JQTAQ7YRV0K7YEHVQFH"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:53.859Z"
+  }
+}

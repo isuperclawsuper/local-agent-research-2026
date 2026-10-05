@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1180480558812102657",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "「腾讯云 NoSQL」技术之 Redis 篇：针对集群选举投票冲突的优化方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696073&idx=2&sn=f8de16a6bf962ded8f3f87d4c17ffe82",
+      "date": "2026-07-01T00:45:00.156Z",
+      "chars": 17927,
+      "text": "腾讯云数据库\n2026-07-01 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n在 Redis/Valkey 集群中，\"自动故障转移\"是高可用设计的核心能力之一，也是云服务向客户承诺 SLA 的基础。然而，当集群规模扩大到上百分片、且出现多个主节点同时故障时，传统选举机制会因“选票瓜分\"而陷入恢复困境——实测数据显示，128 分片集群在半数主节点同时宕机时，约 99% 的情况下无法自动恢复。本文以一个 5 分片集群的典型故障场景为切入点，依次梳理 Redis/Valkey Cluster 自动故障转移的判死、选举、切流三个阶段，分\n析 epoch 单票约\n束与 auth_timeout、auth_retry_time、data_age 等参数在多主同时故障下的相互作用，并介绍腾讯云团队在 Valkey PR\n#1018\n中提出的分片排队选举优化方案：通过引入 shard_id 字典序的故障分片排名，使多个故障分片按确定顺序错峰发起选举，从而降低选票冲突概率，提升集群自愈成功率。\n作者：朱彬彬\n01\n无法自动恢复的集群\n作为熟悉 Redis/Valkey 集群的运维或者研发人员，你大概率心里有一个朴素的信念：只要使用了 Redis/Valkey 集群，每个分片配上副本，主节点宕机的时候，集群一定能够自动恢复——这本就是上集群的核心理由之一。\n这个信念在绝大多数日子里都成立。但有一种场景，它会被无情打破。\n设想你维护着一个 Valkey/Redis 集群：5 个分片、每分片一主一从、共 10 个节点。标号为 shard1 ~ shard5，主节点 P1 ~ P5，副本 R1 ~ R5。看上去都符合最佳实践：分片均匀、主从分离、副本就位。\n某天，P1 和 P2 因为各种各样的原因同时宕机了——可能是同一台物理机断电，可能是同一台虚拟机母机故障，也可能是网络分区把这两个节点同时隔离了，也可能是用户慢查将节点打挂。原因不重要，关键是结果：两个分片的主节点在同一时刻被判为 FAIL。\n按 Redis/Valkey Cluster 的设计，这种场景理论上是可以自动恢复的：\n总共 5 个 voting primary，挂掉 2 个，还剩 3 个幸存（P3、P4、P5），刚好等于多数票门槛 ⌊5/2⌋ + 1 = 3；\n故障 shard1 和 shard2 各有 1 个健康 replica（R1、R2）存活，候选人就位；\n所以理论上，shard1 和 shard2 的 replica 应该各自拉票、各自当选、集群自动恢复。\n这里先统一一个术语：voting primary 是指持有 slot(s) 的主节点。在 Redis/Valkey Cluster 里只有这类主节点会参与 cluster_size 和法定人数（quorum）的计算，也只有它们能在 failover 中投票。下文除非特别说明，提到\"主节点投票\"指的都是 voting primary 投票。\n但你打开监控一看，CLUSTER INFO 里的 cluster_state 始终停在 fail 状态——十秒、三十秒、一分钟过去，状态没有任何变化。再翻副本日志，一组熟悉的警告信息在反复打印、循环上演：\n一次选举从延迟开始、发起、等票，最后以 Failover attempt expired 收场；下一个 epoch 又重新走一遍同样的流水线。\n副本不是没在尝试，而是每一次尝试都没能凑齐多数票，全部以失败超时告终。\n那这些选举到底卡在哪一步？把视角切到其它健康的 voting primary 上，日志里能看到这样两类记录交错出现：\n同一个 epoch 内，每个 voter 只能投出一票；一部分 voter 把票投给了副本R1，另一部分投给了副本 R2；当后到的请求再来要票时，得到的就是 already voted 的拒绝。这正是\"选票瓜分\"留在日志里的警告日志：选票没丢，只是被分摊到了多个候选人头上，谁都凑不齐多数。\n又过了一会儿，副本干脆连尝试都不再尝试，shard1 和 shard2 就此永久卡在 fail 状态，不会再自动恢复。副本最后一行日志写得很直白：\n副本与主节点失联的时长越过了 cluster-replica-validity-factor 划定的红线，副本认为它已经不再适合接管数据——自动故障转移到此为止，剩下的事只能交给人。\n你不得不起来执行手动故障转移（manual failover）——集群没能通过自动故障转移自愈，那个朴素信念被打破了。而比起这通深夜电话本身，更难受的是故障窗口里的业务损伤：客户的应用层会看到大量请求超时、缓存命中率骤降、上游服务被连锁拖慢，对在线业务来说，这每一秒都是真金白银的损失。\n明明数学上 3 票门槛也能凑齐绝大多数，为什么实际就是不行？这套在 Redis/Valkey Cluster 中久经考验的自动故障转移机制，为什么会在\"两个主同时挂\"这种并不罕见的场景下哑火？要回答这个问题，得先理解 Redis/Valkey Cluster 的自动故障转移是怎么工作的。\n02\n自动故障转移的整体流程\nRedis/Valkey Cluster 的自动故障转移简单划分的话可以分三个部分：判死 → 选举 → 切流。\n2\n.1\n判死：PFAIL → FAIL 的状态流转\nPFAIL（疑似故障\n，\nPossible failure）\n：\n节点 A 在本地观察到节点 B 心跳超时，仅在 A 自己的视角里把 B 标记为 PFAIL。这是单点判断，不对外承诺。\nFAIL（确认故障\n，\nFailure）\n：\n当某个主节点通过 gossip 汇总到，包含自己在内的多数主节点都已经把 B 视作 PFAIL 时，它就把 B 升级为 FAIL，并向全集群广播这条 FAIL 消息。\n需要强调的是，这里的\"多数\"只对主节点计票——副本既没有判死的投票权，也不参与 PFAIL → FAIL 的认定。这套票源和后面 failover 阶段的投票主体完全重合：\n同一批主节点（voting primary），先后在故障转移的两个关键环节各投一次票\n——先投票确认\"它确实挂了\"，再投票选出\"由谁来接替\"。\n这种两阶段机制是为了避免单点误判：先让每个节点独立观测，再用多数共识托底。一旦共识达成，FAIL 消息会以广播方式扩散到整个集群——目的是让所有节点尽快对同一份故障视图达成一致，给后续的 failover 流程一个\n明确、统一的起跑线\n。\n从协议工程的角度看，这是一个非常合理的设计；但它也带来一个无法回避的副作用：所有相关\n的\nreplica 几乎会\n同时\n收到 FAIL 信号，并\n同时\n进入\"准备选举\"状态。这正是后文要展开的\"惊群\"问题的前置条件。\n2\n.2 选举：副本拉票、主节点投票、多数即胜\n故障 primary 的每个副本都是潜在候选人，\n故障转移开始后\n会向集群里所有 voting primary 发送 FAILOVER_AUTH_REQUEST\n(epoch=N)\n拉票。投票规则非常\n简单\n，但有两条关键约束：\n每个 voting primary 在同一 epoch 内最多只投一票；\n先到先得\n，\n谁的拉票请求先到，这一票就归谁，既不做\"谁更适合\"的比较，也不会回头反悔。\n当某个候选人拿到 ⌊N/2⌋+1 票时胜出\n，\n这里的 N 也就是 CLUSTER INFO 里的 cluster_size 字段——所有持有 slot 的主节点数，无论它们当前是健康还是已经 FAIL。换句话说，主节点挂掉并不会让分母变小，多数门槛也不会随之下调。\n这是经典的 quorum 设计：多数票门槛保证了同一 epoch 内至多有一个候选人能凑够胜出票数，从根上杜绝\"两个副本同时升主\"的脑裂可能。\n2.3 选举：\n切流：新主广播身份，集群路由刷新\n新主当选后会自增 configEpoch 并向集群广播新配置，宣告自己接管原主的所有 slot(s)。其它节点收到这条带更高 configEpoch 的消息后，更新本地的槽归属表，把这些 slot 的所有权\n转移\n到新主名下。\n客户端一侧的路由刷新通常由两件事驱动：\n请求原主失败：原主已经宕机，客户端按旧拓扑打过去只会拿到连接失败或超时，进而触发重连与拓扑刷新逻辑；\n拉取最新拓扑：智能集群客户端会通过 CLUSTER SLOTS / CLUSTER SHARDS（周期性，或在连接异常时主动触发）重新获取拓扑，感知到新主后把后续请求路由过去。\n也就是说，故障场景下客户端是先\"撞\"到原主不可用，再靠拓扑刷新找到新主——这也意味着\n故障转移耗时越长，客户端这段\"找不到主\"的窗口就越久\n。\n整套流程的关键在于第 2 步\"选举\"，下面拆开看副本侧和主节点侧各自的规则。\n03\n副本选举机制：什么时候、按什么节奏拉票\n一个故障 primary 下面\n可能\n挂着多个副本（\n例如\n一主多从）。如果它们一发现主挂了就同时冲上去拉票，\n立刻会撞上一条硬规则\n：\n每个 voting primary 在同一 epoch 内只有一票、且先到先得\n。\n多个副本同时发请求，等于把这有限的选票瓜分到了好几个候选人头上——谁都凑不齐 ⌊N/2⌋+1，选举原地空\n等，最终超时失败。\n这正是前面埋下的\"惊群\"问题。为了避免它，Cluster 在副本侧设计了一套精细的节奏\n控制，核心思路就一句话：\n让副本错开出手，尽量保证同一时刻只有\"最该上\"的那个副本去\n拉\n票\n。\n3.1\n不会立即发起选举：先等一段延迟\n副本检测到主 FAIL 后不会立刻广播拉票，而是计算一个未来的毫秒时间戳 failover_auth_time，等到那个时刻再发：\nfailover_auth_time 是 Cluster 选举里最关键的状态变量，它表示\"这个副本可以发起选举的时间点\"：now < failover_auth_time 就乖乖等着，now ≥ failover_auth_time 才能发起拉票。\n那么问题来了：为什么要先等一段延迟，而不是发现主挂了就立刻拉票？这段看似浪费的等待，其实扛起了两个关键的协议前提。\n第一，让 FAIL 消息扩散到多数主节点\n。\nFAIL 状态要经过 gossip 在集群里传播，\n多数派主节点必须先各自把这个 primary 认定为 FAIL，才会在副本拉票时投出有效票\n——否则它们以为\"主还活着\"，会直接拒绝授权 failover。如果副本太早拉票，请求可能在很多主节点还没收到 FAIL\n消息\n时就到了，那票自然拿不到。\n第二，让副本之间交换\n复制偏移量\nreplication offset\n。\n副本计算自己的 replica_rank 需要知道同 shard 内其它副本的 offset，而这个信息同样靠 gossip 携带传播。多等一会儿，副本才能对\"我在同伴里数据有多新\"形成正确认知，rank 才算得准。算错 rank 的代价不小：一个数据较旧的副本若误算出更\n优\n的 rank，就会过早发起拉票，借着\"先到先得\"抢先上位，导致本可避免的数据丢失。\n简单说，\n固定 500ms\n负责\"准备好选举的前置信息\"（协议正确性），\n随机\n延迟\n负责\"前置信息就绪后避免和同伴撞车\"（工程稳定性）。至于公式里的第三段 replica_rank × 1000ms，解决的是\"谁更有资格先上\"。\n为什么要这么\"克制\"？\n因为一次选举失败的代价非常大\n（后面会详细分析）。以默认 cluster-node-timeout = 15s 为例，单次选举失败要先熬完 30 秒等票超时（auth_timeout = node_timeout × 2），再继续等到 60 秒 时才能进入下一轮重试（auth_retry_time = auth_timeout × 2）——白白搭进去一分钟。相比之下，开头多花几百毫秒等一等，就能把成功率从\"碰运气\"提到\"基本必胜\"，这笔账非常划算。Cluster 选举的所有时间窗口设计，本质都在做同一件事：\n用一点点等待，换几个数量级的成功概率\n。\n至于 replica_rank（源码里由 clusterGetSlaveRank\n或\nclusterGetReplicaRank 计算），它是当前副本在同 shard 所有副本里的排名，规则是：\n数据 offset 越大（数据越新）→ rank 越小 → 延迟越短；\noffset 相同时，node_id 字典序较小的副本 rank 更小（Valkey 8.0 引入）。\n排名的意图很直接：让数据最新的副本最有机会先发起选举并胜出，避免数据较旧的副本\"抢跑\"上位、造成不必要的数据丢失。\n3.2\n选\n举的两个时间窗口：选举超时 + 重试间隔\n副本侧的节奏控制其实由两个独立的计时器组成，理清它们的关系，才能看清\"重试预算\"究竟从何而来。\nauth_timeout：单次选举的超时\n时间\n副本在 failover_auth_time 时刻发出 FAILOVER_AUTH_REQUEST(epoch=N) 后，最多等 auth_timeout 这么久来收集投票\n：\n如果在这个窗口内没拿到多数票，本轮选举（epoch=N）就算超时作废——这就是\"\n选举超时（election timeout）\n\"。注意：它衡量的是\"本\n轮\n拉票\n等待\n多久会超时\"，而不是整\n轮选举\n的总时间。\nauth_retry_time：两次选举之间的重试间隔\n副本一轮拉票超时作废后，并不能\n马上\n重来\n，\n必须先\n等待\n一段\n时间\n，才能发起下一轮选举。这段\n时间\n就是 auth_retry_time：\n需要注意\n它是从上一次的 failover_auth_time 算起，而不是从超时那刻算起：超时发生在第 30s，重试却要等到第 60s\n。\n换句话说，副本在超时之后还得再干等一个 auth_timeout（约 30s），才能用 epoch=N+1 发起新一轮\n选举\n。这就是“\n选举重试（election retry）\n”的节奏限制。\n合在一起：auth_age 这把度量尺\n源码里还有一个非常关键的\n核心\n变量 auth_age：\n它表示\"距离原计划的选举\n开始\n时间点过去了多久\"，是\n选举\n判定状态用的核心度量。\n前面两条\n关键判断\n都依赖\n它：\n有个细节值得记一下：节点启动时 failover_auth_time 被初始化为 0，于是 auth_age 一开始是个巨大的数，自然满足 auth_age > auth_retry_time，触发首次选举。这也是为什么\"把 failover_auth_time 重置为 0\"就能让\n下个\nclusterC\nron 立即触发新选举——这正是 Valkey PR #1009\"快速失败\"的实现机理（详见第九章）。\n把两个计时器叠起来看\n默认配置下，一个副本一生中最多走完三轮选举：\n这条时间线最后为什么停在 t=160s、为什么\"最多三轮\"不是写死的而是被卡出来的——答案都在 data_age 这道检查里，下一节专门拆解。\n整体看：\n3.3\n候选条件：data_age 决定副本\"够不够新\"\n副本每次尝试发起\n或推进\nfailover 前，都要先过一道数据陈旧度检查——data_age。它衡量的是\"副本与主节点上一次有效通信到现在过了多久\"，单位毫秒。\n需要先说清楚 data_age 的局限：它只是\n副本单方视角\n的\"我多久没收到主的消息了\"，并不能区分主到底是真宕机了，还是出现了网络分区。但在没有第三方仲裁的前提下，副本要自己判断\"\n数据够不够新\n\"，几乎只能依赖这个本地指标。\ndata_age 的计算\ndata_age 的计算并不复杂：先按复制链路是否还连着取一个“断连时长”，再扣掉一段“判死基线”\n：\n这个\"减去\ncluster_\nnode_timeout\"的细节很关键：它恰好补偿了判 FAIL 所需的时间，使得 data_age 的起点对齐到\"主该被判 FAIL 的时刻\"\n。\n这条检查的官方文档来自 Redis 7.0 redis.conf 里 cluster-replica-validity-factor 配置项的注释，挑出最核心的几段直接引用：\n简单说，\n数据陈旧度检查\n的计算式\n是：\n关键配置项\n解释\n：\n代入默认配置\n计算 data_age 上限\n：\n也就是说，副本与主断连超过 160 秒，就\n会\n永久失去自动 failover 的资格——再用这么旧的数据上位，\n可能\n会丢掉更多本可保住的写入。而把 cluster-replica-validity-factor 设为 0，就进入\"最大可用性模式\"：哪怕数据再陈旧也允许副本顶上——这是一次典型的可用性 vs 一致性取舍。\n关键洞察：所谓\"3 次重试\"其实是 data_age 自然耗尽的副产物\n回看上一节那条时间线（auth_time 落在 t=0 / 60 / 120s），叠加 data_age 的 160s 上限，\"最多三轮\"就自然浮现了：\n这里有个执行顺序上的关键点：源码里 data_age 检查排在\"是否发起新一轮\"的判断之前。所以一旦 t > 160s，\nclusterCron 副本故障转移检查\n每次进来都先撞上 data_age 这道墙直接返回，压根走不到\"发起第四轮\"那一步\n，\ndata_age 不是\"让第四轮失败\"，而是让第四轮从未开始。\n04\n主节点投票机制：一票一票数\n副本发起拉票后，真正有权投票的只有集群中的 voting primary（持有 slot 的主节点）。每个主节点收到一个拉票请求时会逐项检查，全部通过才会投出这一票\n：\n这五条里，第 2 条正是选票瓜分的根源，下面会重点拆解。\n多说一句第 4 条：源码注释明确写着它\"不是算法正确性所必需的，只是让基本情况更线性\"。但在选票瓜分场景里，它反而帮倒忙——一个 voter 为某个故障主的副本投票后，2 × node_timeout（默认 30s）内就不能再为同一个故障主投票，相当于把这张票\"锁死\"了一段时间。\n更麻烦的是，这条限制会抵消掉各种\"快速\n重试\n\"的努力。设想这样一个链路：第一轮选举因为瓜分失败了，副本（或运维通过手动 failover）想马上发起新一轮重选——可此时那些 voter 还困在 2 × node_timeout\n的限制\n里，对这个故障主一律拒投。于是新一轮拉票即便\n快速\n发起，照样一票难求，只能眼睁睁等满 auth_timeout 再次超时。换句话说，你越想加速恢复，这条限制就越是拦在路上：无论是\nValkey\nPR #1009 的快速失败、还是人工介入的手动\n故障转移\n，只要落在锁定期内，都会被这张\"投不出去的票\"卡死，白白又赔进去一个超时周期。\n正因为它对正确性并非必需、却实打实地拖慢了恢复，Valkey 已在 8.1 版本移除了这条限制（参考\nValkey\nPR\n#1356\n/ #1305）。\nepoch 是什么\nCluster 里其实有两个容易混淆的 epoch\n。\ncurrentEpoch（当前集群任期号）：它是\n整个集群共享\n的一个逻辑时钟。每个节点本地都保存着自己看到的 currentEpoch，并通过 gossip 不断向集群里见过的最大值看齐——正常情况下，所有节点最终会收敛到同一个值。当一个副本决定发起选举时，它会先把 currentEpoch + 1，以这个新值作为本次拉票请求的 epoch——也就是前面日志里反复出现的 epoch N。\nconfigEpoch（节点配置版本号）：和 currentEpoch 的\"全局共享\"不同，\n每个主节点都有一个属于自己、且在集群中唯一\n的 configEpoch，用来标记\"我这份配置有多新\"。当副本赢得选举、升级为新主时，它会把本轮选举的 epoch 取作自己的 configEpoch。由于 epoch 单调递增，configEpoch 越大就代表配置越新——一旦出现 slot 归属冲突（两个节点都声称拥有同一批 slot），集群就以 configEpoch 更大的一方为准。\n为什么\"一 epoch 一票\"不能动\n这是 Redis/Valkey Cluster 防脑裂的最后一道墙。如果同一个 epoch 允许投两次，理论上同一任期就能选出两个新主，集群分裂成两个权威写入源，两边都接受写入，就会导致数据不一致，这是灾难性后果。\n所以哪怕它带来了\"选票被打散\"的副作用，社区也绝不会碰这条铁律。所有优化都必须在不动\"一 epoch 一票\"的前提下去化解冲突——这恰恰也是本文要介绍的优化（\nValkey\nPR\n#1018\n）所守的边界：它不改任何投票规则，只调整副本\"何时发起选举\"的时机。\n05\n多主同时故障：选票瓜分的灾难\n铺垫到这里，回到开头那 5 分片的故事。P1、P2 同时 FAIL，幸存的 voting primary 只剩 3 个：P3、P4、P5（多数票门槛 = 3）。故障 shard1 下面的 R1、shard2 下面的 R2 恰巧同时发起选举——它们都把 currentEpoch + 1，都用同一个 epoch 拉票：\n3 张票被打散为 2-1，谁都过不了 3 票门槛，两场选举同时失败。\n3 个 voter 面对 2 个候选\n人，\n按\"先到先得\"投票，这 3 张票最终怎么分，无非两种结果：\n2-1 分裂：两个候选\n人\n各分到一部分票，谁都够不到 3 票门槛——两场选举双双失败。\n3-0 集中：3 票恰好都投给了同一个候选，它一场胜出，另一个候选颗粒无收——一\n成功\n一\n失败\n。\n而无论哪种结果，只要一场选举失败，落败的副本都得走同一条冷却路径：先等 auth_timeout 满 30s 判本轮作废，再等 auth_retry_time 到点（从本轮 auth_time 起算，合计 60s），才能发起下一轮——每 60s 才换来一次重试机会。区别在于：3-0 至少救回了一个 shard，而 2-1 是\n都\n一起陷进这个 60s 的重试循环。\n重试为什么也救不回来？\n按副本侧的重试规则，每一轮选举从发起到下一轮触发，要走完整整 60 秒（30s 等 auth_timeout 判本轮作废 + 再 30s 等 auth_retry_time 到点）。但问题的关键在于：\n重试并不会改变冲突的结构\n。只要下一轮里两个副本又在相近的时间点进场——比如 gossip 同步的节奏让它们的 failover_auth_time 依旧几乎一致——票就还是按老样子分（3 票分给 2 人），照样没人过线。\n更要命的是，整个流程的健壮性，\n完全押在\"\n延迟\n恰好把两个副本错开\"这一个概率事件上\n：\n延迟\n错开了\n：\n一轮就搞定，秒级自愈；\n延迟\n没错开\n：\n一路失败，直到 shard 彻底失去自动恢复能力。\n而且这条路上\n没有任何\"中途自救\"的机制\n：副本不知道自己\n已经被瓜分（没有 NACK），也没有谁能出来打破僵局，只能眼睁睁看着预算耗光。于是每次故障的恢复结果都不可预测——而对云服务来说，\"不可预测\"几乎是最糟糕的属性：运维无法给出确定性的 SLA 承诺，而 SLA 恰恰是云服务对客户的核心承诺之一。\n小概率事件，乘以巨大基数\n你可能会想：选举既然有 0~500ms 的随机\n延迟\n，两个副本恰好落在同一时间点的概率并不大，是不是大多数情况根本不会瓜分？\n理论上确实如此，而且\n瓜分的触发条件其实相当苛刻\n：它要求两个副本在 0~500ms 的随机\n延迟\n后，恰好命中相近的 failover_auth_time，\n并且在每一轮重试里都重复这个时序巧合\n——只要任何一轮的\n延迟\n把它们错开，僵局当场就解开了。正因如此，大多数情况下瓜分根本触发不了，在自建机房里跑一两套集群，可能很多年都撞不上一次。\n但反过来看，这也意味着：\n一旦每一轮都没能错开\n，这条路就会一直走到黑——3 次重试预算耗尽、data_age 超限、副本\n无法\nfailover，shard 就此失去自动恢复能力，没有任何中途转机。\n把同一套\"小概率\"放到云厂商的尺度上，这份侥幸就站不住了\n。云上同时运行着成千上万套 Redis/Valkey 集群，从几个节点的小集群到几百节点的大集群都有。于是：\n哪怕单个集群每年只有 0.1% 的概率撞上\"两主同时挂 + 瓜分\"，乘以海量基数后，\n几乎每天都会落在某个集群头上\n；\nRedis/Valkey 多被用作\n核心缓存\n，扛着主链路的大部分流量，一旦不可用，业务侧立刻就会感知到延迟飙升、接口超时、上游服务被连锁拖慢；\n哪怕只是 30 秒、1 分钟的不可用，对大型在线应用都可能是\n事故级的损失\n。\n所以团队对每一段不可用时间都极度敏感。这种敏感不只是\"\n少一次人工救火\n\"——\n集群每早一秒自愈，客户业务就少一秒抖动，端到端可用性就多一分保障\n。云上的 Redis\n/Valkey\n不只是\"我们的服务\"，更是\n承载客户业务的关键基础设施\n。\n我们见过太多\"运气差了一点\"的故障：拓扑健康、副本数据新鲜、多数派幸存，仅仅因为几个主节点恰好一起卡进瓜分的死循环，集群最终就是无法自动恢复。每次复盘都指向同一个结论——\n这不是配置问题，也不是部署问题，而是协议本身的缺陷\n。把缺陷从代码层堵上，远比在外面堆监控、写兜底脚本更治本。\n规模放大：当大量主节点一起故障\n5 分片下的\"概率游戏\"，到了大规模集群就不再是游戏，而是必然的灾难。\n腾讯云研发团队在 Valkey Keyspace Beijing 2025 大会上分享过一组实测数据：\nValkey 8.1 之前，128 分片集群杀掉 63 个主节点（\n接近\n一半\n但不到一半\n），在默认配置下，\n99% 的情况集群无法自动恢复\n。\n这不是\"恢复得慢\"，而是真的恢复不了，必须等集群管理员手动介入。原因不难理解：候选副本越多，票被打散得越碎，\"赌赢\"的概率越低；同时集群越大，\"\n多个\n副本恰好同时拉票\"的巧合也越频繁——前面 5 分片场景里那个\"得运气够差才会触发\"的边界条件，到 128 分片这个体量基本就成了日常。\n5 分片下罕见的瓜分死局，在 128 分片上会高频上演\n。\n而\"大量主节点同时故障\"在云上一点都不罕见：\n一个 AZ 的核心交换机故障，可能一次性带走该 AZ 内几十\n个\n主节点；\n一台物理机宕机，会让其上所有主节点同时进入 FAIL；\n网络分区把集群切成两半，每一边都看到大量主节点失联。\n新机制要解决的正是这件事——\n让多主节点同时故障时的恢复过程保持一致、有序，而不再依赖随机抽签\n。\n06\n解决方案：让分片排队选举\n这次优化为什么这么重要\nRedis/Valkey 集群的核心能力之一就是\n自动故障转移\n——节点挂了，集群自己救自己。这个承诺在小集群里很容易兑现；\n但集群越大、运营越久，“同一时刻多个主节点一起挂”就越不是小概率，而是迟早会发生的事\n。\n而老算法在多分片同时故障下会概率性、甚至确定性地失败。99% 无法自动恢复，意味着 99% 的概率要人工介入、99% 的概率业务请求持续受损——这等于把“集群自愈”这条承诺直接打穿了。偏偏集群规模越大，对自愈的依赖越强、人工介入的代价越高。\n所以这次优化的核心目标只有一句话：\n让大规模集群在多分片同时故障时，依然能自动恢复\n。\n这也是为什么 Valkey 8.1 把它写进 release notes、社区后续围绕“千节点集群高可用”做了一系列配套优化、腾讯云也在 Valkey Keyspace Beijing 2025 上专门讲它——\n自愈能力，是大规模集群的生命线\n。\n核心思路：用延迟代替锁，用确定性代替概率\n所有副本同时进场，是问题的根源。反过来，如果能让它们按某种全局一致的顺序错峰进场——每个时间窗口里只有一个 shard 在\n拉\n票，其它 shard 退后等待——epoch 冲突自然就不会发生。\nValkey\nPR #1018 为此引入了“故障分片排名”（failover_failed_primary_rank）：把当前所有故障分片排成一个全局一致的队，每个副本在原有延迟之上，再按自己所属分片的排名追加一段延迟。排在前面的分片先发起选举、先拿票，靠后的分片自动退后\n、\n依次跟上——原本一拥而上的抢票，就变成了一个接一个的排队进场。\n落到公式上，就是在前面介绍过的 failover_auth_time 的计算式后面，再接上第四段：\n这个思路非常简单，但恰好命中要害。说白了，\n用一段适当的延迟时间来避免选票瓜分\n——这正是 Cluster 选举一直以来在 shard 内部对副本做的事，\nValkey\nPR\n#1018\n把它从 shard 内部扩展到了 shard 之间。\n排序键：为什么是 shard_id\n错峰要可靠，排序键必须满足一个硬性要求：\n所有副本在各自视角下算出来的顺序必须完全一致\n——否则各排各的，照样会撞。\nValkey\nPR\n#1018\n选用 shard_id 的字典序。原因很直接：shard_id 是 shard 维度的全局稳定标识，同一 shard 下所有副本看到的值完全相同，既稳定又无歧义，任何副本据此算出的分片排队顺序都一模一样。\n这里藏着一个容易被误解的点：我们要的并不是“谁更该先上”的公平，而是“所有人对顺序达成共识”的确定性。shard_id 的字典序也许对人毫无意义、谁先谁后纯属随机，但只要全局一致，就足以把“同时抢票”拆成“轮流\n拉\n票”——错峰需要的全部，就\n只\n是这份共识。\n两层 rank，各司其职\n至此，副本的选举延迟由两层 rank 共同决定，彼此正交、互不干扰：\n两层叠加，\n一次解决了\n两个正交的问题：\nrepl\nica_rank 管“同一分片里选谁”，failed_primary_rank 管“哪个分片先选”\n——既保证每个分片选出的是数据最新的副本，又保证多个分片不会同时抢票。\n需要说明\n一个\n数学\n细节：两层 rank 是线性叠加的（1000 × replica_rank + 500 × failed_primary_rank），而 1000 恰是 500 的整数倍，所以理论上不同副本确实可能算出完全相同的延迟——例如某 shard 的 2 号副本（replica_rank = 1）与另一个排名靠后两位的 shard 的领头副本，延迟都是 1000ms。但这并不影响错峰，关键就在“领头”二字：每个 shard 真正下场拉票的只有它的领头副本（replica_rank = 0），而所有领头副本的延迟恰好等于 500 × failed_primary_rank，随 shard 排名两两严格错开、永不重合。会发生延迟重合的只可能是非领头副本，而它们通常在本 shard 的领头副本（早至少 1000ms 发起）完成选举后，就不必再出场了。所以确定性延迟的碰撞，落不到真正参与竞争的那批选手身上。\n07\n算法实现拆解\n7\n.1\nStep 1：计算\"故障分片排名\"\n对当前 replica 而言，统计集群里所有失败的 primary 中，shard_id 比自己小的有几个：\n实现层面有一点要提醒：shard_id 不是字面的“1”\n和\n“2”，而是节点创建时生成的 40 字符随机标识。所以这里比较的是一串随机十六进制的字典序——排队顺序既不按 shard 编号、也不按故障先后（如第六章所说，它对人不可预测，但对每个副本完全一致，这正是错峰所需）。\n举例：在我们的故事里 shard1、shard2 同时故障，假设 shard1 的 shard_id 字典序恰好小于 shard2，那么：\nshard1 的副本（R1）→ failed_primary_rank = 0\nshard2 的副本（R2）→ failed_primary_rank = 1\n7\n.2\nStep 2：把 rank 翻译成延迟\n在原有的副本选举调度公式上，叠加一项与 failed_primary_rank 成正比的延迟：\n代入故事场景的数据（为聚焦错峰效果，下表略去 0~500ms 随机\n延迟\n）：\nShard\nfailed_primary_rank\n额外延迟\n大致发起选举时刻\nshard1\n0\n0\nt ≈ 500ms\nshard2\n1\n500ms\nt ≈ 1000ms\n关键就在那确定的 500ms 间隔：随机\n延迟\n会让两个时刻各自浮动，但 failed_primary_rank 带来的这 500ms 是确定性偏移，足以让两个 shard 大概率不再撞在同一瞬间——shard1 先进场抢票，shard2 退后半秒，等它进场时第一轮往往已经分出胜负。\n7\n.3 Step 3：动态修正\n集群是活的——gossip 消息可能姗姗来迟：副本忽然发现“原来还有一个 shard 也挂了”，rank 从 1 变成 2，就该再多等 500ms；也可能某个 shard 已经完成故障转移，rank 从 2 变回 1，就该少等 500ms。算法支持实时修正：\n注意 added_delay 可正可负：排队不是一锤定音，而是随着集群视图的变化持续校准——这让错峰在 gossip 有延迟、故障陆续发生的真实环境里依然站得住。\n7\n.4\nStep 4：留好 fast path\n排队是为了稳定，但稳定\n不应该\n成为效率的对立面。手动\n故障转移\n直接旁路整套排队机制——\n管理员手动处理流程时\n，绝不希望还被排队：\n一行 failover_auth_time = now 就把前面那条四段延迟公式整体短路了：自动\n故障转移\n场景下从容排队、确定性恢复，手动\n故障转移\n场景下零延迟即时响应——两种诉求各走各的路。\n08\n效果对比\n改造前：踩踏现场（5 分片 / 2 主挂）\n改造后：错峰发车（5 分片 / 2 主挂）\n串行化的隐性收益：先恢复的，反过来增援后恢复的\n串行选举还有一个容易被忽略的好处：\n先恢复的 shard，会反过来给后恢复的 shard 当“援军”\n。\n故障期间，能投票的只有幸存的主节点，而多数票门槛 ⌊N/2⌋+1\n也\n并不会因为有主节点挂掉而降低。当排在前面的 shard 完成选举、副本升为新主后，这个新主立刻成为一个合格的投票者，加入投票池。于是越靠后的 shard，面对的有效投票者一轮比一轮多，凑齐多数票也就越来越容易——\n每一轮选举，都站在前一轮的胜利成果之上\n。\n还是 5 分片、shard1 与 shard2 同时挂的场景：恢复前只有 shard3、shard4、shard5 三个主能投票，而门槛正好是 3——并发抢票时三票被两个候选瓜分，谁都不够。串行之后，shard1 先用满这三票完成选举，新主随即加入投票池；轮到 shard2 时，可投票的\n主节点变成了四个，\n拿 3 票绰绰有余。这正是“串行”比“并发”根本性更优的地方：它不只是错开了时间，还让每一步的成功，为下一步铺好了路。\n不只是兜底：日常可用性的全面提升\n这次改动常被概括成“让大规模故障也能自愈”，但这种说法其实低估了它的价值。除了在最极端场景下提供兜底恢复，排队机制对日常运行的集群同样有显著收益：\n大幅减少选票瓜分\n：哪怕只是两个主节点几乎同时被判 FAIL（差距不到 500ms），原本可能因随机\n延迟\n恰好撞车的两个副本，如今被 shard_id 顺序稳稳错开，撞车\n概率大大降低；\n大幅减少选举超时与重试\n：瓜分一旦避免，副本就不必干等超时、反复重试\n，\n一次干净的选举几百毫秒即可完成\n；\n加快集群恢复速度\n：单分片故障的恢复时间几乎不变（与原算法一致），但多分片场景从“几分钟乃至永不可用”压缩到“每分片约 1 秒、依次恢复”\n；\n更高的可用性\n：选举越顺畅，集群对外服务的中断窗口就越短。\n换句话说，这个改动既是大规模故障下的兜底保障，也是日常运行中的稳定器——它让集群的故障转移，从一场\"概率游戏\"变成一条\"确定性流程\"。\n实际收益\n先看一组对比：\n这些数字\n并不是测试环境\n里刻意构造的极端 case，而是云上会被反复触发的真实场景。其中最典型的一个触发源，就是机器级故障。\n为了提升资源利用率，云上同一台物理机往往会\n混部\n同一集群的多个分片\n主节点\n。这种部署一旦遇上物理机宕机、断电或网卡故障，落在这台机器上的多个\n主节点\n会在同一瞬间一起进入 FAIL——\"多主同时故障\"于是从理论上的小概率，变成了机房里时不时就会上演的现实，而它恰恰是选票瓜分最容易被触发的场景。\n现网已有金融、互联网等多个行业的客户实际踩中过这个问题：一台物理机带走若干分片\n主节点\n后，集群因为选票瓜分迟迟选不出新主，自愈时间被大幅拉长、甚至需要人工介入。优化上线后，相同的机器级故障场景下，各分片按序错峰选举、新主快速产生，集群在秒级内完成自愈，全程无需人工干预——对依赖高可用 SLA 的在线业务来说，这意味着一次\"几乎无感\"的故障转移。\n当然，错峰排队把冲突概率压到了极低，但并不能保证 100% 不发生。那么万一冲突真的还是发生了，集群又靠什么兜底？\n09\n彩蛋：当冲突真的发生时，也要\"快点失败\"\n排队机制把“两个副本同 epoch 竞选”的概率降到了极低——而且是分两层排队的：shard 内部由\nValkey\nPR #762（Valkey 8.0\n引入\n）让\nreplication\noffset 相同的副本按 node_id 字典序错开，解决了“同 shard 多副本 replica_rank 平局、同时拉票”的老问题；shard 之间则由本文主角\nValkey\nPR\n#1018\n让故障分片按 shard_id 错开。这两层其实是同一套“排队错峰”思想，只是作用在不同粒度上。\n但即便两层排队都到位了，冲突仍不能 100% 杜绝，比如：\ngossip 视图不一致\n：消息瞬时延迟，让两个 shard 的副本对“当前有哪些故障 shard”看法不同，failed_primary_rank 各算各的，错峰自然就乱了；\n延迟\n抹平了间隔\n：两边的 random(0, 500) 恰好取到相近数值，再叠加一点网络延迟，500ms 的错峰差就被吃掉了。\n万一冲突还是发生了，会怎样？回顾选举规则：\n同一 epoch 只有一个胜者，落选副本拿不到多数票；\n落选副本要先死等到选举超时（auth_timeout，约 2 × node_timeout，默认 30 秒）才判本轮作废；\n然后还要继续等到 auth_retry_time 满 60 秒（从本轮 auth_time 起算）才能触发下一轮（epoch + 1）。\n明明\n几十\n毫秒后就有人胜出了，落选方却要先熬 30 秒等本轮超时、再等够 60 秒才能进入下一轮——这段时间几乎全是白白空耗\n，硬生生将\n恢复拖慢了一个数量级。\nValkey\nPR\n#1009\n（Valkey 8.1 引入，并作为 bugfix 移植到 8.0）把这种“傻等”换成了“快速感知 + 立即放弃”。\n副本怎么知道自己输了？\n胜出的副本升主后，会用新的 configEpoch（等于本轮选举的 epoch）广播自己的\n新配置\n。落选副本通过 gossip 收到这个声明时，就明白了：“已经有节点用我手头这个 epoch 当选了——这个 epoch 被消费掉了，我再等也赢不了。”\n判定逻辑可以简化为：\n重置之后，副本\n会在下个周期触发新选举\n——而且这时胜者往往已经升主、加入了投票池，落选方的下一轮反而更容易成功。\n一图看清差别\n放弃一场注定要输的选举，远比死撑等待高效：重试早一点开始，整体恢复就早一点结束。\n三管齐下：两层预防 + 一层兜底\n把视野拉开，Valkey 其实是用三个机制共同守住多分片故障下的选举：\n前两个是“预防”——同一套排队思想分别作用在 shard 内、shard 间，把冲突概率从大概率压到极小概率；第三个是“兜底”——把那极小概率事件的代价，从“空等一个 60 秒周期”降到“几百毫秒重试”。\n但要分清兜底的边界：PR #1009 的\n前提是“有人胜出”，它靠胜者广播的 configEpoch 通知落选方。如果冲突演变成谁都没拿到多数票的纯瓜分死局，没有胜者、也就没有 configEpoch 广播，PR #1009 不会触发——这种死局正是 PR #762 / #1018 的排队预防要从源头避免的。预防让死局别发生，兜底让“有胜有负”的冲突别空等，各管一段，\n互相补充\n。\n这也呼应了分布式系统里的一条通则：“避免失败”和“快速失败”往往必须并存。再聪明的避让算法也无法覆盖所有时序竞争，因此必须有一条“竞争出现时如何快速感知并恢复”的兜底路径。\n10\n总结\n回到开头的故事：2 个 primary 同时被标记 FAIL，3 个幸存主，理论上能恢复。\n没有排队机制：2 个副本抢同一个 epoch，3 张票按“先到先得”被打散成 2-1，无人过 3 票门槛；如果每轮重试两副本都被\n延迟\n撞到一起，3 次预算一路耗光，最终因 data_age 超限放弃自动恢复——一切都押在“\n延迟\n够不够开”的运气之上。\n有排队机制：R1 看到 failed_primary_rank=0 立即进场、拿下全部 3 票；R2 退让 500ms，等它进场时投票池已扩大到 4 个主，稳稳拿满——集群\n稳定自愈\n。\n把规模拉到 128 分片，对比更触目惊心：从团队实测的“99% 无法恢复”，到“全部按序自愈”。而万一排队没拦住、冲突仍然发生，还有\nValkey\nPR #1009 的“快速失败”兜底，把代价从“60 秒一个空等周期”压缩到几百毫秒。\n整个排队改动的核心代码可能就 30 来行，但它绝不是一次孤立的灵光一现，而是腾讯云团队围绕“大规模集群故障转移”持续打磨的一条优化线上的一环：\nValkey\nPR\n#762\n（8.0）：让 shard 内部 offset 相同的副本按 node_id 排队；\nValkey\nPR #1009（8.1，回移植至 8.0）：冲突分出胜负时，让落选方快速失败、立即重试；\nValkey\nPR\n#1018\n（8.1）：让 shard 之间按 shard_id 排队。\n三者环环相扣，背后是多年大规模运营 Redis/Valkey 服务沉淀下来的经验——我们运行的实例数量足够大、规模足够多样，于是那些“理论上极小概率”的瓜分场景，在我们这里就成了“大概率事件”。每一次不及预期的故障转移时长，都在提醒我们：集群自愈，还有改进的空间。\n这次改动看起来思路很简单——不过是按 shard_id 给故障分片排个队——但它背后是一连串“单看合理、组合起来却互相耦合”的协议设计：epoch 单票、auth_timeout 30s、auth_retry_time 60s、data_age 160s。任何一条单独看都没问题，凑在一起却会在多主同时故障时，把 shard 卡进无法自愈的恶性循环。\n这个改动真正的价值，就是打破了那个循环，让“自动恢复”这条承诺在大规模、多故障的场景下也能兑现\n。\n更重要的是，它是更高层次容灾能力的基石。\n当我们谈论可用区级别的高可用——AZ 整个挂掉、集群依然能稳健自愈——前提就是底层的故障转移协议在多主同时挂时不会哑火\n。如果连“两个主一起挂”都救不回来，再漂亮的多 AZ 部署架构，也只是纸面上的容灾。\n-End-\n感谢你读到这里，不如关注一下？👇\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.98,
+        "peripheral": 0,
+        "transfer_agent": 0.02,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 0.7,
+      "probabilities": {
+        "0": 0.64,
+        "1": 0.03,
+        "2": 0.33,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.04,
+      "probabilities": {
+        "0": 0.65,
+        "1": 0.04,
+        "2": 0.07,
+        "3": 0.1,
+        "4": 0.13,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.21,
+      "probabilities": {
+        "0": 0.9,
+        "1": 0.02,
+        "2": 0.06,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.48,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.06,
+        "3": 0.39,
+        "4": 0.55,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.24,
+      "probabilities": {
+        "0": 0.21,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.5599999999999999,
+        "5": 0.17
+      }
+    },
+    "anti_hype": {
+      "score": 2.74,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.07,
+        "2": 0.04,
+        "3": 0.37,
+        "4": 0.31,
+        "5": 0.05
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 17013,
+    "outputTokens": 173,
+    "totalTokens": 17186
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.98,
+        "relevance": 0.53,
+        "grounding": 0.31,
+        "decision_action": 0.86,
+        "evidence": 0.65,
+        "actionability": 0.27,
+        "anti_hype": 0.29
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180005042,
+                "endTime": 1791180005230,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000714546",
+      "marketCost": "0.000714546",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000714546",
+      "inferenceCost": "0.000714546",
+      "inputInferenceCost": "0.000714546",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABQMS1PB0FVPCWYKD74Y7"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:05 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::4xmx6-1791180004479-b4f4667f0c4e"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.98,
+            "peripheral": 0,
+            "transfer_agent": 0.02,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.7,
+          "probabilities": {
+            "0": 0.64,
+            "1": 0.03,
+            "2": 0.33,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.04,
+          "probabilities": {
+            "0": 0.65,
+            "1": 0.04,
+            "2": 0.07,
+            "3": 0.1,
+            "4": 0.13,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.21,
+          "probabilities": {
+            "0": 0.9,
+            "1": 0.02,
+            "2": 0.06,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.48,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.06,
+            "3": 0.39,
+            "4": 0.55,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.24,
+          "probabilities": {
+            "0": 0.21,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.5599999999999999,
+            "5": 0.17
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.74,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.07,
+            "2": 0.04,
+            "3": 0.37,
+            "4": 0.31,
+            "5": 0.05
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 17013,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.98,
+            "relevance": 0.53,
+            "grounding": 0.31,
+            "decision_action": 0.86,
+            "evidence": 0.65,
+            "actionability": 0.27,
+            "anti_hype": 0.29
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180005042,
+                    "endTime": 1791180005230,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000714546",
+          "marketCost": "0.000714546",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000714546",
+          "inferenceCost": "0.000714546",
+          "inputInferenceCost": "0.000714546",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABQMS1PB0FVPCWYKD74Y7"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:04.684Z"
+  }
+}

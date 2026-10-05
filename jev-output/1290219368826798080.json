@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1290219368826798080",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Prompt越长越好吗？研究告诉你何时该停手",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697464&idx=1&sn=809c710e2b0a2392b16ebb5635121d6d",
+      "date": "2026-09-15T00:45:00.497Z",
+      "chars": 4667,
+      "text": "原创\n王鸿宇\n2026-09-15 08:45\n广东\n关注腾讯云开发者，一手技术干货提前解锁👇\n开发者公众号专属群聊\n扫码加入获取更多一手教程、科技前沿报告\n遇到一次失败，就补一条要求；担心遗漏，再加一轮自检；让 LLM 优化，又得到一份更长的说明。提示词常常这样越写越长，但新增的文字，究竟解决了什么问题？\n指令并非越长越好，也并非越短越好。\n必要条件要补齐，重复与冲突要清理，专用资料要在需要时可达。现有研究没有给出通用的最佳字数，但能帮助我们判断这三类改动是否值得。\n本文主要面向编写系统指令、Skill 和工作流的同学，重点讨论带工具、多步骤执行的 Agent。下面先给出修改方法，再解释研究依据；研究结果的适用范围以各自任务与实验设置为准。\n01\n先分清：到底是什么变长了？\n指令告诉模型做什么、遵守哪些要求；完整上下文还包括历史对话、工具说明与返回资料。Skill 是可按任务加载的指令与资料包。一个 Agent 可能多次调用模型，每次带入的内容也不同。\n例如，把指令从 500 字补到 800 字，同时加入验收条件，即使效果提高，也不能说明“多写 300 字”本身有益。删除文字时若删掉必要例外，效果变差同样不能证明短指令不好。比较长短之前，先看任务规格和信息内容是否也变了。\n模型标注的上下文窗口表示可容纳的规模，不保证窗口内的每条规则都能稳定执行。token 与中文字符数不能固定换算；讨论研究时，应保留原始计量单位。\n02\n什么时候该补、该删、该按需加载？\n先定位失败，再决定改动篇幅。可以依次问：模型缺少必要条件吗？同一要求是否重复或冲突？这些资料是否每个任务都需要？\n一个日志分析的修改示范\n假设问题是“模型给出了根因，但没有日志证据”，下面三种写法增加的信息并不相同。以下仅为写法示例，并非已经验证的实验结果。\n第三版是否更好，要看它有没有减少无证据断言。如果实际遗漏的是服务范围或时间范围，就应该补对应条件；如果选错了组件流程，就应该改善资料入口。修改应落在导致失败的具体条件上。\n删减时也要保留条件之间的关系。“满足 A 时执行 B，否则执行 C”不能简化成“执行 B”。精简应减少表达冗余，同时保留必要边界、例外和可执行含义。\n03\n研究与官方实践，分别支持哪些判断？\n下述证据分别改变了上下文、指令内容或资料组织方式，并非统一的纯长度对照。\n没有通用最佳长度，不代表长度没有影响。\n它意味着我们需要区分内容变化、输入规模与任务复杂度，并把实验结果、官方工程观察和规范建议分开理解。\n补：长输入中，明确清单仍可能有帮助\n代码审计研究 When and How Context Rot Appears in Coding Agents 固定任务与 24 项检查，比较 Codex + gpt-5.4-mini 在不同上下文中的表现，并在相关长上下文上加入不同自检要求。原论文（\nhttps://arxiv.org/abs/2607.17937v2\n）\n这个结果值得注意：大量增加上下文时，通过次数下降；继续加入明确检查清单时，通过次数又提高。泛泛要求“全面检查”和重新列清必要检查项，作用可能不同。\n但每组只有 10 次，另一个审计任务在所测条件下全部通过，仍属需要复现的小样本证据。基础组与两种长输入组分别比较的双侧 Fisher 检验 p=0.0698；明确清单与泛化自检比较的 p=0.0325。不能把 10/10 次通过理解为未来必然可靠。\n因此，跨很多步骤仍必须遵守的要求，可以尝试在相关决策点用短清单提醒，再验证是否减少关键遗漏。重复不必一律删除，但也不值得无差别保留。\n删：旧规则需要随着模型与流程变化重新验证\nAnthropic 2026 年 7 月 24 日的官方文章报告：针对 Claude Opus 5、Fable 5 等更先进模型，Claude Code 移除了超过 80% 的 system prompt，内部编码评测未出现可测损失。删减涉及跨层重复、过时绝对规则，以及可移入 Skill 的专用流程。官方工程观察 · Claude 5 上下文工程（\nhttps://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models\n）\n可借鉴的是定期检查每条规则是否仍在解决真实问题。模型或工作流升级后，旧限制可能失效；同一要求分散在系统指令、Skill 和用户请求中，也可能变得难以维护。业务事实、权限边界和验收条件，则仍要按实际任务保留。\n这是特定产品和内部评测下的工程观察，不能据此建议所有提示词都删掉 80%。保留或删除规则，应以自己的任务结果为依据。\n按需加载：入口要清楚，层级要有收益\n假设资料库有数十份故障手册。入口可以说明各组件的适用问题与资料位置，执行时再读取相关流程。资料总量没有减少，但某次调用需要处理的内容可以更集中。效果取决于能否找到正确资料，以及关键条款是否在执行前被读取。\nProgressive Disclosure 研究在 InfiniteBench 长文问答中，比较原文导航、Skill 资料组织和检索器，覆盖三种执行框架与三类模型。单本书场景的收益依赖框架；多书场景中，一层披露更稳，增加第二层路由没有收益，有时损害准确率。预印本 · 2026-07-20（\nhttps://arxiv.org/abs/2607.17598\n）\n这支持先改善信息入口，再评估是否需要更多层级。它研究的是特定资料组织方案，不能外推成任何资料库都只能有一层，也不能推出“拆得越碎越好”。\nOpenAI 的工程文章介绍了工具与 Skill 的延迟发现，以及默认 10,000 token 的工具输出上限。这些做法控制每次实际加载的内容；该上限是实现选择，并非模型的有效长度界限。官方工程观察 · 2026-07-29（\nhttps://openai.com/zh-Hans-CN/index/gpt-5-6-frontier-intelligence-efficiency/\n）\n还要区分加载与缓存：缓存可以减少重复处理开销，但缓存命中不代表无关内容已经移出上下文。输入长度、计费用量和任务质量需要分别观察。\nAgent Skills 规\n范建议正\n文低于 5,000 token、主文件少于 500 行；OpenAI 的一项工程实践使用约 100 行 AGENTS.md 作为知识目录。这些数字是组织建议或案例，可以借鉴“入口简洁、细节可达”，不能当作性能最优点。Agent Skills 规范（\nhttps://agentskills.io/specification\n）；OpenAI · Harness engineering（\nhttps://openai.com/zh-Hans-CN/index/harness-engineering/\n）\n04\n落到系统指令、Skill 和工具说明，怎么分配内容？\n下面是依据前述证据与实践整理的写法建议。分配内容时，既要看使用频率，也要看规则何时必须生效。\n必须在选择或执行前生效的限制，要在相应阶段可见；不要为了主文件变短，把它藏到可能永远不会被读取的资料里。按需加载需要同时设计“何时读”和“读不到怎么办”。\n让 LLM 帮忙修改指令时，也可以\n把要求从“\n扩写得更详细”改成：\n请找出这份指令中的遗漏、歧义、冲突和重复。保留必要边界与例外；每项修改说明它解决的具体问题、可能改变的行为，以及如何验证。无法从现有信息确认的业务条件，请标为待确认，不要自行补成规则。\n05\n怎样判断自己的修改有没有用？\n先明确要解决的是质量还是成本。遗漏条件、混淆规则、选错资料属于质量问题；重复输入过多、响应慢、维护困难属于成本问题。一份指令可能质量可用但成本偏高，也可能很短却缺少必要信息。\n先定验收标准。\n日志分析至少检查服务与时间范围、原始证据引用、不确定性标注，以及有没有把推断写成事实。\n固定比较条件。\n使用相同模型、设置和一组真实任务；避免同时更换模型、重写规则、改工具，否则难以判断收益来源。\n保留未参与修改的任务。\n用已知失败定位问题，再用留出的任务检查是否只修好了熟悉案例；不要凭一次成功决定长期版本。\n同时记录质量与整体成本。\n关注首次合格情况、关键遗漏、修复次数、用量、费用与耗时；小幅差异需要更多重复与任务支持。\n输入更短却需要多轮纠错，整体成本未必更低；增加少量必要条件，如果能减少错误和返工，也可能更划算。模型自称“已全面检查”、回答更长或更自信，都不能替代实际验收。\n下一次准备给指令追加一段话时，先写清楚：\n它要修复哪个已观察到的问题？什么结果能证明它有用？\n删除或拆分内容时也做同样的判断。长度是需要观察的变量，是否解决问题才是保留改动的依据。\n补充阅读：另外四项研究提供了什么线索？\n下面的研究补充了长期遵循、动态示例与反馈优化的证据。它们没有把字数作为唯一变量，因此适合用于理解修改方向。\nHANDBOOK.md：写进手册，不等于稳定执行\n65 项任务对应 20–124 页手册，包含 824 项程序化验收标准；评分检查最终状态及行为，不使用 LLM 评分器。最佳严格 pass@1 为 36.2%，即一次尝试满足全部要求的概率；每项任务重复 4 次用于估计这一指标，并非四次中成功一次即可。允许漏掉一个检查项时，领先配置的得分大致翻倍，显示少数遗漏即可影响交付。手册长度、要求数量和任务难度并未被单独控制，因此不能据此推导“删短就能解决”。论文 · v3 · 2026-08-03\nDynaContext：稳定指令与动态资料可以互补\n在元器件参数抽取的异构评测中，基础指令的平均字段 F1 为 51.8；仅加入动态示例为 59.2；仅优化通用指令为 66.9；两者结合为 71.0，均按百分制展示。评测在类别与字段定义已给定的条件下进行，有效评分记录包含 850 项标注事实。它支持针对当前任务补充信息；数据来自单一工业语料，不能当作自动识别类别到完成任务的全流程成绩。预印本 · 2026-08-22\nSkillOpt：有效修改可以是增加、删除或替换\nSkillOpt 固定执行模型，根据带评分的执行结果，对外部 Skill 做有限的增加、删除与替换，验证分数提高才接受修改。作者报告在 52 个“模型 × 基准 × 执行框架”评估单元中最好或并列最好。它没有把变长设成目标，更值得借鉴的是用反馈筛选修改，而不是让 LLM 无依据地扩写。预印本 · v2 · 2026-05-25\nOEO：一次性重写，在不同任务上可能方向相反\nOEO 的一次性重写对照中，GPT-5.5 只读起始指令与静态任务说明，不查看执行反馈。重写在 SearchQA 上改善，在 LiveMath 上退化，四组均未达到有反馈优化的成绩。下表按百分制展示，每行只与自身基线比较。预印本 · 2026-08-10 · 表 3\n它说明重写稿即使看起来更通顺、更完整，也需要用任务结果判断价值；有反馈的优化需要额外调用与成本，收益并非免费获得。\n-End-\n原创作者｜\n王鸿宇\n感谢你读到这里，不如关注一下？👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.84,
+        "peripheral": 0.04,
+        "direct_local": 0,
+        "irrelevant": 0.12,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.96,
+      "probabilities": {
+        "0": 0,
+        "1": 0.07,
+        "2": 0.89,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.53,
+      "probabilities": {
+        "0": 0.21,
+        "1": 0.19,
+        "2": 0.5,
+        "3": 0.06,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.38,
+      "probabilities": {
+        "0": 0.33,
+        "1": 0.03,
+        "2": 0.59,
+        "3": 0.04,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.93,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.02,
+        "4": 0.96,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.07,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.19,
+        "4": 0.51,
+        "5": 0.29
+      }
+    },
+    "anti_hype": {
+      "score": 4.06,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.03,
+        "4": 0.87,
+        "5": 0.1
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6013,
+    "outputTokens": 172,
+    "totalTokens": 6185
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.8,
+        "relevance": 0.92,
+        "grounding": 0.49,
+        "decision_action": 0.5,
+        "evidence": 0.95,
+        "actionability": 0.65,
+        "anti_hype": 0.91
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179990884,
+                "endTime": 1791179991080,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000252546",
+      "marketCost": "0.000252546",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000252546",
+      "inferenceCost": "0.000252546",
+      "inputInferenceCost": "0.000252546",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB9MN5Z2SQQJY2R5CZBHZ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:51 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::lw29j-1791179990531-cc24edb1db5c"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.84,
+            "peripheral": 0.04,
+            "direct_local": 0,
+            "irrelevant": 0.12,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.96,
+          "probabilities": {
+            "0": 0,
+            "1": 0.07,
+            "2": 0.89,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.53,
+          "probabilities": {
+            "0": 0.21,
+            "1": 0.19,
+            "2": 0.5,
+            "3": 0.06,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.38,
+          "probabilities": {
+            "0": 0.33,
+            "1": 0.03,
+            "2": 0.59,
+            "3": 0.04,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.93,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.02,
+            "4": 0.96,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.07,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.19,
+            "4": 0.51,
+            "5": 0.29
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 4.06,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.03,
+            "4": 0.87,
+            "5": 0.1
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6013,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.8,
+            "relevance": 0.92,
+            "grounding": 0.49,
+            "decision_action": 0.5,
+            "evidence": 0.95,
+            "actionability": 0.65,
+            "anti_hype": 0.91
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179990884,
+                    "endTime": 1791179991080,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000252546",
+          "marketCost": "0.000252546",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000252546",
+          "inferenceCost": "0.000252546",
+          "inputInferenceCost": "0.000252546",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB9MN5Z2SQQJY2R5CZBHZ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:50.310Z"
+  }
+}

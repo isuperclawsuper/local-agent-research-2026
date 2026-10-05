@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "264321426227439616",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "重磅发布｜Scale‑SWE 构造 10 万级真实 SWE 数据集，火山引擎沙箱底座重塑代码智能体训练",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247519199&idx=1&sn=52442c2cdf5e1b17055e999e8a91ff59",
+      "date": "2026-04-07T09:05:00.651Z",
+      "chars": 4141,
+      "text": "火山引擎开发者\n2026-04-07 17:05\n北京\n点击上方👆\n蓝字\n关注我们！\n论文题目：《Immersion in the GitHub Universe: Scaling Coding Agents to Mastery》\n论文链接：\nhttps://arxiv.org/abs/2602.09892\n仓库链接：\nhttps://github.com/AweAI-Team/ScaleSWE\n数据链接：\nhttps://huggingface.co/collections/AweAI-Team/scale-swe\n近日，中国人民大学高瓴人工智能学院与字节跳动技术团队合作完成相关研究，重磅发布 Scale-SWE 数据集。研究团队依托火山引擎强大的 Sandbox 基建，通过 Sandboxed multi-agent 系统，成功实现 SWE 任务的规模化拓展，构建起包含 100k 真实数据、目前规模最大的开源高质量 SWE 数据集——这一成果为 Code Agent 训练数据的规模扩展提供了可行路径，让模型在 GitHub 量级的真实场景数据上进行充分训练成为现实。\n与此同时，基于该数据集蒸馏数据所训练的 Qwen3-30A3B-Instruct 模型，在 SWE-bench-Verified 评测中取得了 64% 的优异成绩，实现学术界同等规模模型对工业界标杆模型（GLM-4.7-Flash）的赶超，充分彰显了高质量数据与强大技术基建深度结合的核心价值。\n此次 Scale-SWE 数据集的高效构建，\n关键得益于火山引擎 Sandbox 基建的有力支撑。\n正是这一行业领先的技术底座，让 SWE 数据的规模化拓展变得迅速、可控且具备高可行性。在数据集构建过程中，研究团队仅启用 5000 并发的 Sandbox 资源，便实现了数据构建流水线的稳定运行、安全防护与高效迭代，轻松支撑起 100k 量级数据的快速落地。\n而这一并发规模，仅为火山引擎 Sandbox 基建能力的“冰山一角”——其实际可支持 10 万量级的 Sandbox 并发调度，依托这一强大的技术储备，为 Code Agent 的全流程研发提供了全方位保障。从数据构建、RL 训练，到模型蒸馏、自动化评测，火山引擎 Sandbox 基建以高并发、高安全、高稳定的核心优势，将研发流程化繁为简，为低效环节显著提速，让每一步工作都更便捷、更安全，成为 Code Agent 训练与迭代的首选基建支撑。\n以下是关于本次研究成果的一些关键解读：\n1. 真实 SWE 数据的重要性\n此前，已有一些研究如 SWE-smith、SWE-Mirror 尝试利用自动化的流程合成数据，实现 SWE 数据的 Scaling。这类方法仅利用少量仓库就可以构造出数万条 SWE 数据，比如 SWE-smith 用了 128 个仓库就生成了 50k 条数据，其优势在于能够相对简单、快速地实现数据规模的 Scaling。\n然而以往也有工作（如 BugPilot）指出，观察得到合成数据的数据集数据分布极其不均衡，与该团队的分类结果一致，如下图所示：\n可以看到，相对于真实数据，SWE-smith 的绝大部分数据类型集中在 logic error 上。而真实数据集，比如 Scale-SWE、SWE-Gym 则表现出相对均衡的类别分布，更接近真实场景下的数据类别分布。\n2. 为什么以往的 SWE 真实数据没有实现 Scaling\n(1) 基础设施需要支持高并发 Sandbox 调度\n要构造 SWE 数据，无论是配置环境，还是 P2P、F2P 的验证都需要在 Sandbox 环境（沙盒环境）中完成，这意味着要进行高并发的镜像拉取、容器创建与销毁等操作。如果使用本地物理机进行检验，由于部分仓库的 pytest 需要大量 CPU 资源，会导致资源抢占问题。因此，需要依赖可支持大批量、高并发调度的 Sandbox 基础设施。\n(2) 环境配置的复杂性\n以往的数据往往集中在相对较少、环境配置相对简单的仓库。这样做的好处是大部分 pull request 的环境配置可以通过相对简单且通用的流程完成（如直接执行\npip install -e .\n）。然而，仅覆盖这类简单场景显然无法支撑大规模数据集的构建，因为 GitHub 上大部分仓库代码的环境配置不会这么简单。传统方法多依赖规则或单轮 LLM 对话来生成类似\nrequirements.txt\n的文件，面对复杂环境配置时，这样的方法难以实时执行测试脚本以验证配置是否成功，并根据反馈动态调整。\n(3) unit-test 的稀缺性\n对于 SWE 任务，unit-test 是很关键的，包含 Fail-to-Pass（F2P）和 Pass-to-Pass（P2P）。然而，当前许多开发者已经缺乏在提交代码时同步编写 unit-test 的习惯，这为构建真实 SWE 数据带来了严峻挑战——研究团队观察到，大量质量较高、极具价值的 pull request 并未附带 unit-test。以往的 SWE 数据构建方法通常仅保留作者在 pull request 中新增的 unit-test，这会导致大量高质量样本被遗漏。\n(4) Problem Statement 的严谨性\n大量 pull request 实际上并未关联对应的 issue。为构建 SWE 任务中的 problem statement，以往的工作往往会把 pull request 对话的内容和其他 pull request 的 meta 信息给到 LLM 来生成 problem statement。然而，pull request 本身是在作者解决问题后提交的代码与说明，若直接交由大模型让其生成 problem statement，极易导致信息泄露，例如泄露 bug 产生的位置或具体解决方案。\n3. Scale-SWE 方法\n为解决上述问题，研究团队提出了一套在 Sandbox 环境中运行的多 Agent 工作流，主要包含三个核心模块：EBA（Environment Builder Agent）、UCA（Unit-test Creator Agent）和 PSWA（Problem Statement Writer Agent）。\nEBA（Environment Builder Agent）：\nEBA 负责在 Sandbox 中自主探索仓库结构，定位并配置环境文件，如\nREADME.md\n,\nsetup.py\n,\npyproject.toml\n等并完成环境配置。在执行\npytest\n等脚本验证环境后，可根据报错信息动态调整配置。\n该阶段对资源消耗较大，依赖高并发调度实现高效执行。\nUCA（Unit-test Creator Agent）：\n针对缺乏自带 unit-test 的高质量 pull request，UCA 可依据代码差异与仓库完整代码自动生成 F2P/P2P 测试样例，并通过与环境交互进行调整，最终通过切换 commit 执行测试进行验证，确保测试用例符合定义。\n高并发物理机调度是本阶段快速验证的基础，因为数据量的规模高达 100k。\nPSWA（Problem Statement Writer Agent）：\nPSWA 负责生成高质量的问题描述，要求既不泄露缺陷位置或解决方案，又能完整准确地反映问题语义。为防止信息泄露，团队选用指令遵循能力更强的 Gemini 3-Pro 作为驱动模型。消融实验显示，问题描述质量对模型 SFT 效果影响显著，在 SWE-bench-Verified 上差异可达近 10%。\n上述三个 Agent 模块的高效协同，高度依赖稳定、高并发的 Sanbox 基础设施作为底座。依托火山引擎 Sandbox 基建，研究团队得以调度数千个 Sandbox 并发执行 SWE 数据构建任务，原本单台物理机需运行约\n1 个月\n的工作量，现仅需\n1 小时\n即可完成，且调度过程稳定可靠，有效避免了资源抢占问题。同时，镜像拉取内置 cache 机制，大幅降低延迟。正是这一高并发调度能力，为 100k 量级 SWE 数据的快速构建提供了坚实支撑，使多 Agent 工作流的规模化落地成为可能。\n4. 结果\n为了验证 Scale-SWE 数据的效果，研究团队使用 DeepSeek v3.2 进行蒸馏。得到 71k 条成功轨迹，并基于 Qwen3-30B-A3B-Instruct 进行 SFT。结果如下：\n实验表明，对于同等规模模型，Scale-SWE-Agent 相较于 Qwen3-Coder-30A3B 和 GLM-4.7-Flash-30A3B 均有显著提升。即便是更大规模的模型（如 KAT-Dev-32B）以及基于其他数据集训练的模型（如 SWE-Lego-32B），Scale-SWE 仍展现出稳定的性能优势，充分验证了该数据集的有效性。\n此外，团队在相同蒸馏流程下，对比了不同数据集的效果，结果如下：\n对比结果进一步印证了真实数据的重要性。尽管 SWE-smith 的数据量远超 SWE-Gym，但二者最终表现相近；而 Scale-SWE 在效果上显著超越 SWE-Gym，充分说明了数据规模扩展与真实数据质量相结合的关键价值。\n5. 展望未来\n更多细节与实验结果，请参见论文：\nhttps://arxiv.org/abs/2602.09892\n。研究团队希望 Scale-SWE 能够降低在 SWE 领域研究者的入门门槛，提供大规模开源 SWE 数据以及直接可用的大量蒸馏数据，助力相关研究与应用的高效推进。\n而此次 Scale-SWE 数据集的发布，既是双方合作研究成果的集中呈现，也充分体现了火山引擎 Sandbox 基础设施在高并发调度、系统稳定性与工程效率方面的硬核实力。未来，团队将持续深化与火山引擎的协作，依托高质量数据与强大基建，推动 Code Agent 技术实现更高效的突破与落地。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

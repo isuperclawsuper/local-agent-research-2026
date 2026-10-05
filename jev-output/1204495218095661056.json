@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1204495218095661056",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "PagePilot — PC端AI测试Skill设计与实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561535&idx=1&sn=49b536f842ef9b433f56cb0d8c2c5bac",
+      "date": "2026-07-17T01:00:00.747Z",
+      "chars": 10337,
+      "text": "原创\n李诗玥\n2026-07-17 09:00\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n一、背景介绍\n支付宝商家中心(b.alipay.com)是支付宝官方的商家服务平台,面向蚂蚁生态内所有商家,聚合产品签约、账户资金管理、营销运营、账单对账等能力,为商家提供一站式综合服务,帮助其更高效地开展日常经营，我们团队负责该平台的 PC 端业务测试。\n1.1 问题与挑战\n挑战1：基本都是面向B端和小二端，PC端业务多，测试链路长：\n以支付宝商家中心核心业务为例，店铺开通、商户入驻每一条都是跨系统、多步骤的长链路：\n店铺开通\n：登录 → 选类目 → 选经营类型 → 设置结算 → 上传资质 → 勾协议 → 提交 → 产品签约 → DB验证，一个case 15+步\n商户入驻\n：营业执照OCR → 经营场景 → 法人身份证 → 人脸核验 → 邮箱绑定 → 密码设置 → 签约，20+步\n挑战2：以前的PC测试，不管是人工测试还是人工编写自动化脚本，都需要极高的人工投入成本\n由于商家的业务特点是步骤多、弹窗多、上传多、异步等待多、SPA路由复杂。传统自动化写case维护成本极高，React受控组件、qiankun微前端fetch隔离、弹窗内状态被上传重置，每个都是坑。踩一个坑写一段workaround，换个业务场景又从头开始。再加上公司内除商开部门外，其它对PC自动化依赖不高，也使得自动化平台存在功能扩展慢（qiankun微前端、非标组件不支持）、录制调整成本高、部分功能不支持等问题。\n在自动化ROI比较低的情况下，商开部门的大量外包总是需要花费大量时间去执行前端页面点点点的验证，事情繁琐，人力成本仍然极高。\n挑战3：PC端线上问题风险高，在前端正式研发人员不断缩减的过程中，风险进一步放大。\nPC端是商家的主入口，在近几年内先后出现过：由于组件升级导致某商家子页面不可用/提交报错等阻断性问题，由于前端代码冲突导致某个关键字段没有提交至服务端带来重大线上问题。并且由于前端监控覆盖率的缺失，以及前后端核对难以布防等痛点，使很多前端线上问题的影响面不断放大最终导致客诉。\n1.2 AI时代下的思考\n核心思路转变\n：不写测试代码，写测试知识。把踩过的坑、验证过的交互代码、有效的DOM选择器封装成\"组件md\"，AI执行时查阅对应组件直接复用，每一次执行都在让组件库更完善，稳定性随知识积累递增。\n核心公式\n：AI Agent + 组件化知识库 + 浏览器自动化 + DB验证 = 端到端AI测试\n二、解决方案设计\n关键词：稳定·通用·轻量\n稳定执行不出错，一套方案通多业务，开箱即用成本低。AI 替你跑浏览器、填表单、查 DB、分析trace、出报告、发钉钉，验收一条龙。\n2.1 方案演进：从使用平台到自建 Skill\n初期选用店铺业务作为试点，先后尝试了平台提供的两类 AI 测试能力。\n自然语言驱动\n：模型对自然语言理解不稳定，导致 Case 编排出现偏差；执行下游存在资源瓶颈，单 Case 执行成功率低；前置步骤繁琐，需先配置空间测试账号、选择登录方式和执行账号。尤其店铺场景存在账号独占性（一个账号只能开通一个店铺），审核通过后该账号即不可复用，每次执行需重新配置账号，流程沉重。\n智能测试流\n：平台作为解决自然语言理解不稳定问题的推荐方案，但实际落地后，录制本身有成本，录制后仍需手动调整 Case 编排；后置执行也并不能解决业务问题\n实践过程中，平台方案在商家侧场景中暴露出明显短板：\n痛点\n具体问题\n账号体系受限\n不支持指定账号切换，审核通过分支每次必须换号，全流程 Case 无法自动执行\n流程控制粒度不足\n录制产出需大量手动修正；无法衔接 DB 验证、语雀归档等非浏览器环节，断链需人工补接\n文件上传能力缺失\n多处图片上传（营业执照、身份证、门头照）无法指定文件与校验\n验证手段单一\n无法获取接口响应和 trace_id，无法从 URL 提取业务单号串联 DB 验证，页面验证仍依赖人工\n扩展受平台排期约束\nqiankun fetch 隔离、非标组件、CDP 真实鼠标事件等均需等排期，无法自主解决\n结论\n：平台方案在通用场景具备一定价值，但在多步骤、强状态、深交互的业务场景中，执行稳定性、维护成本与适配性尚存差距。经一个月持续协作，店铺场景核心能力仍在推进中，暂未跑通完整链路。为更快支撑 AI 测试转型，决定同步探索自建 Skill 方案。\n2.2 Skill 设计：框架选型\n选型原则：能稳定执行。\nBrowser Agent 相比 Playwright 的核心差异是在 CDP 之上引入了大模型推理层，能理解自然语言意图、自主定位元素并生成操作序列，省去预编写选择器脚本。简单页面导航和基础表单，它能精准理解步骤描述、准确定位交互位置。但在商家侧的复杂组件上，通用推理难以覆盖边界情况，执行出现大量偏差：\n问题\n偏差\n解法\nReact 受控组件\ninput.value = 'xxx'\n赋值后 React 不感知，提交拿不到值\n走\nprototype.value setter\n+\ndispatchEvent\n触发合成事件\n图片上传\nCDP 无法操作原生文件选择 dialog\n绕过 dialog，用\nDOM.setFileInputFiles\n直塞文件路径\nCascader 异步加载\nAI 倾向跳级选择，面板未展开就点击\n逐级选 + 等待 500ms 下级菜单渲染\n异构搜索组件\n同一\"搜索\"功能三种实现（ant-select / .optionItem / input+button），定位策略不统一\nDOM 预扫描判断组件体系，分别走对应交互路径\n上传触发重渲染\n上传多图后 radio/cascader 被清空\n先上传、再选 radio/cascader、最后填 input，顺序与直觉相反\nSPA 路由销毁拦截器\n提交前注入的 fetch 拦截器被路由切换销毁，拿不到响应\n每次 submit 前 0.5 秒内重注入，不等\"之前装过就用\"\n按钮无响应\nbutton.click()\n和\ndispatchEvent\n均不响应\n用 CDP 真实鼠标事件（mouse move → down → up）\n页面崩溃表单丢失\nCDP session 崩溃，已填表单全部丢失\nwindow.__formState\n表单快照 + 崩溃后重登恢复，上传放最后最小化崩溃暴露面\n这些问题的共性是同类交互的底层实现因框架、组件库、业务场景而异，我们靠组件知识逐一沉淀。每遇到一个偏差，就把正确的交互方式写入组件 md 的踩坑段，下次直接复用而非重新推理。踩坑段只增不删，即使 bug 已修复也保留记录，避免同类问题换一种表现形式再次出现。不同业务场景持续喂入、持续校正、持续沉淀。随机出错率从首轮 40% 降到 4 轮后 5% 以下，靠的就是踩坑段的积累效果。它不是一次写对的，是在业务锤炼中变聪明的。\n三、skill架构设计\n3.1 架构图\n3.2 核心设计\n1. Case 解析：四趟编译——把人话变成机器能跑的指令\n用户写 Case 用自然语言，但 AI 不能直接拿着自然语言操作浏览器。于是设计了一个四趟编译管线，把人话逐步\"翻译\"成可执行内部指令，每一趟只做一件事、只承担一个职责，既保证解析精度，也让错误能被早发现、早拦截。\n第 1 趟｜风格检测\n职责：识别 Case 写法，用户不需要声明格式。\n用户可能用三种风格写 Case：AI 自动识别风格，用户无需指定，降低使用门槛的第一步。\n表格风格（推荐，最易解析）：\n序号\n操作\n参数\n1\n选择主营类目\n本地生活-餐饮\n2\n填写经营类型\n个体工商户\n自然语言风格：\"主营类目选本地生活-餐饮\" （最常见、最灵活）\n帮我执行 新增非标品牌 → 审核通过\n站点：B站预发 https:\n//\nb.alipay.com\n/\npage\n/\nbrandManage\n/\nhome\n账号密码：\n****\n/\n***\n数据库：数据库ARN:\n*****\n商户载体ID(carrierId)：\n******\n审核工具：brand\n-\naudit skill\n操作步骤：\n登录B站，进入品牌管理首页\n点击【添加品牌】→ 跳转\n/\npage\n/\nbrandManage\n/\nhome\n/\nbrandReport\n添加方式：选择【新增品牌】\n品牌材料：选择【非标品牌】\n品牌名称：输入「测试\n+\n当前时间戳」\n点击「补充更多品牌信息」，品牌logo：上传reference里的图片\n品牌故事：输入「这个是一个品牌故事」\n品牌类目：选择 电商平台 → 工厂优选平台\n门头店招：上传reference里的图片\n勾选同意《支付宝品牌商服务协议》\n点击【确定】→ 跳转\n/\npage\n/\nbrandManage\n/\nhome\n/\nconfirmResult，提示\"已提交，预计1-2个工作日完成审核\"\n审核（brand\n-\naudit skill）：\n从提交结果页获取brandId\n调用 brand\n-\naudit，action\n=\npass，eventCode\n=****\n_AUDIT\n等待\n10\ns\n预期结果：\n提交后跳转确认页，文案含\"已提交\"\n回到首页，已认领列表可见该品牌，状态为\"审核通过\"\n/\n\"可使用\"\nDB校验：\nSQL\n-- 品牌主表：status=1（已通过），source=MRCH，owner_name=**测试的公司\nSELECT\n*\nFROM\n****\nWHERE\nbrand_chs_name\n=\n'{brandName}'\nORDER\nBY\ngmt_create\nDESC\nLIMIT\n1\n;\n-- 审批流水：approval_type=1，status=3（审核通过）\nSELECT\n*\nFROM\n****\nWHERE\nbrand_id\n=\n'{brandId}'\nORDER\nBY\nid\nDESC\nLIMIT\n1\n;\n清单风格：\n- [ ] 主营类目选择本地生活\n（Markdown)\n第 2 趟｜元数据抽取\n职责：提取非操作步骤的结构化上下文，为执行准备\"弹药\"。\n这些不是操作步骤，而是执行前必须知道的\"环境参数\"：\n账号密码：登录需要\n入口 URL：从哪里开始\nDB ARN：验证需要查哪张表\n期望断言：如\nbiz_status = BLOCK_WAIT\n钉钉群号：结果通知发到哪里\n元数据与操作步骤分离，保证步骤序列干净，也保证执行阶段不会因为缺了密码而卡住。\n第 3 趟｜组件匹配 + 置信度评分\n职责：把每一步操作匹配到对应的 UI 组件，并给出\"我有多确定\"的评分。\n这是四趟编译的核心环节——也是最容易出错的地方。评分规则：\n置信度\n匹配条件\n说明\n95%+\n确命中触发词\n术语完全匹配，如\"选择主营类目\"→\nCategorySelector\n80-89%\n部分命中 + 语义\n关键词部分匹配 + 语义推理\n60-69%\n纯语义推理\n仅靠语义推断，无关键词支撑\n<50%\n猜测\n几乎无依据，不建议执行\n未匹配到的步骤标记为\nunmatched\n，同时建议可能需要新建的组件——既暴露问题，也给出建设性方向。\n第 4 趟｜输出可执行的任务step列表\n职责：合并前三趟结果，输出 AI 能逐步执行的内部格式。\n最终产物是一个 steps 列表，每步绑定组件和参数。同时自动注入：trace-collector 作为第 0 步——用户不需要写\"采集 trace\"，系统默认带上，保证可观测性。\n置信度门控，可多问一句，不让 AI 猜错一步，置信度评分不是\"参考值\"，它是门控阈值，直接决定执行策略：\n置信度区间\n执行策略\n90–100%\n静默执行，不打扰用户\n70–89%\n展示摘要，需用户确认\n50–69%\n拒绝执行，要求修正 Case\n<50%\n提示无法解析，建议改写\n核心思想\n：一条 Case 15 步操作，第 3 步猜错的代价是后面 12 步全白跑——\n宁可多问一句，不让 AI 猜错一步\n。\n这不是保守，是工程上的止损逻辑：在不确定的环节停下来让人类拍板，比让机器蒙头冲完再发现全错，成本要低得多。\n2. 组件查找优先链--平台兜底，业务按需覆盖\n第 3 趟组件匹配时，AI 不是只在一个地方找组件，而是按优先级依次查找三层目录：\n优先级\n目录\n职责\n举例\n最高\nlocal-components/\n业务方本地自定义组件，覆盖平台默认行为\n业务觉得平台的\"类目选择\"组件不够用，自己写了一个\ncategory-selector.md\n，加了品牌绑定逻辑\n其次\ncomponents/\n平台级共享组件，所有业务通用\n平台提供的标准\ncategory-selector.md\n，只做了基础 Cascader 逐级展开\n未命中\n无匹配\n标记 unmatched，提示用户新建\n新业务\"棋盘密云\"有个\"私域用户筛选\"操作，目前两个目录都没有对应组件\n核心逻辑：同名组件，\nlocal-components/\n胜出，业务方可以局部覆盖平台行为，而不需要修改平台源码。\n类比 CSS 的层叠规则：局部样式覆盖全局样式。业务方不需要向平台提排期等排期，自己写一个\n.md\n放进\nlocal-components/\n就能生效。\n实际使用场景：\n覆盖：支小店的页面结构跟 B 站完全不同，同一个\"登录\"操作需要走不同的 DOM 路径 → 支小店在\nlocal-components/\n放自己的\nlogin.md\n，覆盖平台的\nlogin.md\n扩展：店铺开通的\"结算设置\"需要额外做支付宝账号校验 → 在\nlocal-components/\n写一个\nsettle-modal.md\n，比平台版多一步校验\n新增：棋盘密云的\"私域用户筛选\"两个目录都没有 → unmatched，提示用户新建，下次就不再 unmatched 了\n一句话总结：平台提供通用能力兜底，业务方按需局部定制覆盖，覆盖不了的新增。三层优先链保证了扩展性和可控性的平衡。\n3. 脚本优于 eval 纪律\n组件层（components/）写的是知识——\"这个组件怎么交互、有什么坑\"。但 AI 每次执行时如果自己拼 agent-browser eval 命令，拼出来的代码不稳定，容易出错。脚本层把验证过的操作固化成 .sh 文件。组件说\"有脚本调脚本，禁手动拼 eval\"，确保每次走的是同一条经过实战的代码路径。\n4. Phase 0→6 门控\n整个执行流程是 7 个阶段串联，但不是\"无脑顺序往下跑\"——每个 Phase 都有前置通过条件，条件不满足就卡住不推进，输出原因然后停下来：\nPhase\n干什么\n门控条件（准入证）\n不满足会怎样\nPhase 0\n执行环境 precheck\nODC MCP 连通 + yuque CLI 可用 + allowlist 配好\nODC 不通不执行——连数据库都查不了，跑下去验证也没意义\nPhase 1\n浏览器自动化执行\n登录成功 + 页面已到达\n登录失败不填表——没登录进去，后面填表点按钮都是空操作\nPhase 2\nURL 提取 & ID 解析\n从 URL/拦截器拿到 brandId 或 astoreId\n无 ID 不查 DB——不知道查哪条记录，DB 查询无从下手\nPhase 3\n数据库查询\nSQL 返回结果（至少 1 行）\nSQL 无结果不比对——空结果比对什么？不是\"比对失败\"，是\"没东西可比\"\nPhase 4\n数据比对\n比对完成，状态明确（PASS/FAIL/WARNING）\n生成结论\nPhase 5\n生成报告\n报告含截图 + 无敏感信息\n报告无截图不归档——没有截图的报告无法回溯验证\nPhase 6\n归档到语雀\n报告完整 + 图片已上传\n归档成功\n没有门控，AI 一路往下跑，登录失败了还在\"填表\"，填完表发现页面没变，又去查 DB，查到空结果还硬比，最后生成一个全是 FAIL 的报告归档到语雀——浪费了 15 分钟跑了一条从头就错的 Case，浪费了 token，浪费了 context，产出的报告毫无价值。\n置信度门控解决的是：AI 可能在猜 → 不确定时停下来让人类确认\nPhase 门控解决的是：前置条件可能不成立 → 条件不足时停下来不白跑\n两者同源：宁可早停报告原因，不让错误往下传播放大。 一条 Case 15 步操作 + 7 个 Phase，如果在 Phase 1 就发现登录失败，后面 6 个 Phase 全免——省下来的不是时间，是整条链路的无效执行成本。\n一句话总结：每个 Phase 是一道关卡，关卡不放行，后面的路不许走。不是\"跑完看结果\"，是\"跑前先验路\"。\n5. 失败自学习\nCase 失败 → 按 errorCode 匹配 known-failures → 命中则标注模式 ID → 未命中则自动补录新模式，只增不删。\n假设场景你跑了一条\nCase\n，提交后返回错误码 THIRD_SYSTEM_ERROR，\nCase\n失败了。第一次遇到这个错误\nSkill 去 known\n-\nfailures.md 里搜 THIRD_SYSTEM_ERROR，没找到——这是第一次遇到。\n于是自动往文件里追加一条新记录：\nF\n-017\n状态: 活跃\n首次发现:\n2026-06-22\n最近发现:\n2026-06-22\n出现次数:\n1\nerrorCode: THIRD_SYSTEM_ERROR\n失败特征: 提交店铺开通时下游三方系统异常\n根因: 待补充\nowner: 待分配\n建议: 重试即可，非本系统问题\n这就是\"未命中则自动补录\"——第一次见，记录下来。\n第二次遇到同一个错误又跑了一条\nCase\n，同样的 THIRD_SYSTEM_ERROR。这次去 known\n-\nfailures.md 里搜，命中了 F\n-017\n。\n报告里直接写：失败模式 F\n-017\n（THIRD_SYSTEM_ERROR），建议：重试即可，非本系统问题\n不用再人工诊断——\"命中则标注模式 ID\"，直接复用之前的结论。\n四、业务实践 && 快速上手\n4.1 优秀实践分享\n案例 1：蚂蚁答疑助手评测—4 波 137 条用例 AI 自动评测，发现 64 个 Bug\n百晓蚂蚁答疑助手是AI驱动业务智答运营平台。一站式解答商家、商品、交易、营销技术和运营问题，需要验证多轮对话能力。评测方用 Skill 执行了 4 波自动化评测：\n波次\n用例数\n类型\n通过率\n发现 Bug\n第一波\n15 条\n单轮问答\n73.3%\n发现 MCP 工具列表泄露 P0 漏洞\n第二波\n35 条\n单轮问答\n71.4%\n发现\"全公司\"超范围查询未拦截\n第三波\n40 条\n单轮问答\n75.0%\n发现\"导出数据\"能力边界未拦截\n第四波\n47 条 / 157 轮\n多轮对话\n89.2%\n发现 64 个问题（3类大问题）响应慢，无响应、响应空\n原先人工怎么测\n：测试同学手动在对话框一条条输入、等回复、判断结果、截图、记录。一条用例平均 5分钟，多轮用例更长。4 波 137 条，人工约需2天（含截图整理和报告写作）。\nAI 自动执行\n：\nSkill 按用例脚本自动输入、等回复、抽取响应内容、判定 OK/FAIL、截图归档。4 波合计约 3 小时完成（含等待 Agent 响应时间和截图整理），节省 70% 人力。\n发现问题\n：4 波累计发现 10 类Bug\nP0 级 2 个：MCP 工具列表泄露 + 接受\"生成周报\"超能力请求\nP1 级 4 个：导出未拦截/超范围未拦截/Agent 执行报错/能力边界未拦截\nP2 级 4 个：第四波多轮评测额外发现 64 个问题（无响应 17 次、响应超慢 29 次、上下文丢失 4 次、回复为空 14 次）。\n案例 2：支付宝卡券频道-店铺开通——7 条 Case 30分钟跑完，人工需半天-1天\n店铺开通是商家侧最复杂的长链路：每条 Case 15 步表单填写 + 文件上传，涉及 账号切换（B站/P站/支小店不同账号），结算信息填写，类目资质等重要材料上传，每步需要等页面渲染、等接口返回、截图留证。\n原先人工\n：一条 Case 手动操作约 30分钟（含等页面渲染、填表、上传、截图），7 条需要半天-1天\nSkill 自动执行\n：7 条 Case 在 30 分钟内全部跑完，提交+撤销 DB 双验证全过，自动截图 + 自动归档语雀 + 自动发钉钉通知。\n4.2 其它业务实践案例\n店铺-神券 + 支小店——最成熟的业务域，7 Case 全流程冷启动验证\n店铺开通是商家侧最复杂的长链路：15 步表单填写 + 文件上传 + 异步等待 + SPA 路由切换。Skill 覆盖了 B 站自开通（独立门店/品牌连锁/mall 店）、P 站代开通（独立/品牌）、支小店（官方旗舰店/普通企业店）共 7 条 Case，提交+撤销 DB 双验证全部 PASS，最长一条 236 秒完成。\n企业商户入驻——跨 iframe + 人脸验证 + 邮箱验证码\n商户入驻 20+ 步，是目前人工介入最密集的 Case：iframe 内嵌开户验证页面（必须直接打开 iframe src 操作）、人脸验证扫码等待（session 5-10 分钟过期需重新登录）、邮箱验证码（必须先点发送按钮再填码），Skill 跑通了 97+50 老页面全流程。\n品牌管理（B站）——12 Case 全量覆盖，通过率 100%\n首次做全量用例覆盖而非只跑关键 Case，12 条从非标/标准品牌新增、审核通过/驳回、认证、认领、搜索筛选、品牌资产（门店/收款账号/小程序/会员卡/设备）到修改品牌、驳回重申请、首页冒烟，11/11 PASS。\n品牌管理（P站）——跨 Skill 联合验证，发现前端 Bug\nP站与 B 站共用组件体系但域名和交互细节不同。Skill 首次实现 UI 自动化 + 品牌审核 skill HTTP 审核的跨 Skill 联合验证——AI 提交品牌后自动调用 brand-audit skill 完成审核，再回到 UI 验证结果。7/12 PASS，3 条 BLOCKED 发现了 P站前端 Bug（品牌资产面板 API 绑定错误 brandId）。\n数商域客户管理——非标准登录体系 + 表单动态联动\n数商域用非标准登录体系三段登录（输密码→选账号→点登录）。行业字段有动态联动：选\"自助餐\"触发额外必填字段，选\"日化家清\"则不会，AI 需动态对比表单差异才能正确填写。品牌选择弹\"已被其他客户挂载\" Modal，点取消会清空品牌——必须点确定继续挂载。\n跨域扩展——万知管理平台 + **订单管理页面**安全越权 + 蚂蚁答疑助手助手\nSkill 的组件库不止服务商家平台侧，已被三个跨域团队复用：\n万知管理平台\n：100 条 Monkey 测试（导航/搜索/弹窗/表格），100% PASS，15 分钟完成。首次适配 Tailwind CSS（非 Ant Design）组件体系\n订单管理页面安全越权校验\n：两个账号交叉走\"有权限 UI 正路 + 无权限接口攻击\"双路径验证，4/4 PASS\n蚂蚁答疑助手评测\n：90 条三波评测，口径查询 93%、数据资产查询 100%，发现 MCP 工具泄露 P0 级漏洞\n4.3 组件能力全景\n42 个组件 md + 34 个脚本，分 5 类覆盖商家侧 90% 高频操作：\n基础能力 9 个\n：登录（authsa128/pubbuservice 双体系）、入口校验、Trace 采集、崩溃恢复、钉钉通知、ODC precheck\nReact/Ant Design 通用 7 个\n：表单填写（React setter）、Select（虚拟列表滚动）、Cascader（逐级+异步）、Modal、DatePicker、Form 定位、高德地图\n上传/CDP 5 个\n：fiber 注入上传、多图批量上传、CDP 真实鼠标事件、资质/品牌 logo 上传\n业务专属 14+ 个\n：主营类目、经营类型、品牌搜索、结算弹窗、门店地址、经营/认证信息段、提交拦截、撤销审核、P站客户、商标、支小店组件组\n流程归档 7+ 个\n：语雀报告归档、DB 查询、钉钉模板、报告三段式、失败模式库、安全清单、经验沉淀\n4.4 快速上手\n前置依赖\n依赖\n用途\nagent-browser\n浏览器自动化（CDP）\nODC MCP\n数据库查询验证\nyuque CLI\n报告归档 + 截图上传\nAntding.app\n钉钉消息发送\n执行 Case\n①建议先加载skill，避免模型幻觉未使用skill执行\n② 执行case\n查看结果\n本地截图\n：\n~/Documents/pc-e2e-ai-result/YYYYMMDD/\n语雀报告\n：自动创建并挂到指定目录节点，含截图\n钉钉通知\n：执行完成 / 失败 / 需人工介入时自动发送\n千问云\n-\n为\nAgent\n而生，驱动\nAI\n生产力\n扫描下方二维码，直达千问云体验\n点击阅读原文即可体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.8,
+        "transfer_business": 0.04,
+        "irrelevant": 0.15,
+        "peripheral": 0,
+        "direct_local": 0.01
+      }
+    },
+    "relevance": {
+      "score": 2.04,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.91,
+        "3": 0.06,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.7,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.08,
+        "4": 0.82,
+        "5": 0.02
+      }
+    },
+    "decision_action": {
+      "score": 2.55,
+      "probabilities": {
+        "0": 0.33,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.13,
+        "4": 0.4,
+        "5": 0.1
+      }
+    },
+    "evidence": {
+      "score": 3.97,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.04,
+        "4": 0.94,
+        "5": 0.02
+      }
+    },
+    "actionability": {
+      "score": 4.41,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.54,
+        "5": 0.44
+      }
+    },
+    "anti_hype": {
+      "score": 3.96,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.05,
+        "4": 0.92,
+        "5": 0.03
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 10479,
+    "outputTokens": 172,
+    "totalTokens": 10651
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.75,
+        "relevance": 0.93,
+        "grounding": 0.77,
+        "decision_action": 0,
+        "evidence": 0.96,
+        "actionability": 0.68,
+        "anti_hype": 0.93
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179820815,
+                "endTime": 1791179820985,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000440118",
+      "marketCost": "0.000440118",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000440118",
+      "inferenceCost": "0.000440118",
+      "inputInferenceCost": "0.000440118",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A63QVXT6VEFPJK8WC2VRX"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:00 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7j5dm-1791179820191-74a8c167c6e3"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.8,
+            "transfer_business": 0.04,
+            "irrelevant": 0.15,
+            "peripheral": 0,
+            "direct_local": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.04,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.91,
+            "3": 0.06,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.7,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.08,
+            "4": 0.82,
+            "5": 0.02
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.55,
+          "probabilities": {
+            "0": 0.33,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.13,
+            "4": 0.4,
+            "5": 0.1
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.97,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.04,
+            "4": 0.94,
+            "5": 0.02
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.41,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.54,
+            "5": 0.44
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.96,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.05,
+            "4": 0.92,
+            "5": 0.03
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 10479,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.75,
+            "relevance": 0.93,
+            "grounding": 0.77,
+            "decision_action": 0,
+            "evidence": 0.96,
+            "actionability": 0.68,
+            "anti_hype": 0.93
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179820815,
+                    "endTime": 1791179820985,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000440118",
+          "marketCost": "0.000440118",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000440118",
+          "inferenceCost": "0.000440118",
+          "inputInferenceCost": "0.000440118",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A63QVXT6VEFPJK8WC2VRX"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:00.221Z"
+  }
+}

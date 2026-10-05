@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "267431511904493568",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "神级开源插件！一句话让QClaw变3D小镇，Agent工作可视化，赛博云监工",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695289&idx=1&sn=a2aed60923f784bde036f9b062f829ef",
+      "date": "2026-04-16T00:46:00.977Z",
+      "chars": 5299,
+      "text": "原创\nJin_Thinking\n2026-04-16 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n15 天，我和 AI 吵了 185 次架， 4.5 万行代码，开发了一款 QClaw / OpenClaw 的UGC游戏插件，这可能是人类跟 Agents 交互的新范式，插件已完全开源，有需要的欢迎自取～\n装上插件之后，你的 龙虾 Agents 就能住进了一座 3D 小镇。\n当然你也可以创建自己的QClaw Agents 3D形象，小镇的地图也由你来搭。\n01\n一句话安装\nQClaw 用户\n（适配0.2.x版本），发送如下提示词，然后重启 QClaw，小镇自动在浏览器打开。\n安装插件\nhttps\n:\n//github.com/Agentshire/Agentshire\nOpenClaw CLI 用户\n（适配 2026.3.13 版本），输入如下指令，重启 Gateway。\nopenclaw\nplugins install agentshire\n不需要改任何配置文件。插件首次启动自动创建管家、注册 Agent、设置路由，全部零配置。\n手机浏览器也能访问小镇—电脑在跑任务，手机扫一眼进度。\n02\n为什么做这个\n一直在研究 Native AI UGC 编辑器，核心关注的问题是：AI 生成的内容怎么变成可控、可迭代、可交付的产品。\n做完那轮验证没多久，OpenClaw 彻底火了，QClaw 也出圈了。我天天用，用着用着我就在思考，Agent 产品现在的交互体验，基本都一个样。一个聊天框，一段流式文本，一个转圈。\n你说一句话，它开始跑，你就坐那等。让多个子 Agent 一起跑的时候更夸张，完全黑盒，他们干到哪了/有没有在干，完全看不出来。\nAgent 的界面难道只能是聊天框？\n游戏 + UGC + Agent 能交叉融合吗？\n能不能让用户自己造一个世界出来，让 Agent 在里面\"住着\"？\n不是给用户一个固定的3D小镇，而是让用户自己捏角色、搭小镇、定义规则，于是我花了2周业余时间通过 AI Coding 做了这个插件。名字叫 Agentshire，夏尔（shire），来自《指环王》里那个安静、不急不忙的家园。\n03\n还有哪些好玩的？\n3.1\n多 Agent 协作，全程可视化\nQClaw/OpenClaw 把任务交给子 Agent 之后，就是个黑盒—你不知道它在干什么，干到哪了，有没有卡住。只能等。\n装上这个插件，每个子 Agent 变成一个看得见的 NPC。谁在工作、谁在等待、进度到哪一步、中间出了什么问题—看一眼小镇就知道。\n3.2\n等 AI 干活不再无聊\nAI 在后台跑着，你就坐那儿，干瞅着。切出去干别的吧，怕错过结果。盯着屏幕吧，又没啥可看的。就挺尴尬的。\n我做了个东西来治这个病。NPC 写代码写太久，头顶会冒出紫色的「班味团子」，点击消灭它们，连击有 combo，甚至还有 Boss 战。\n但这不只是一个小游戏。我做了一套可插拔的小游戏框架，类似红白机的卡带槽，班味消除是第一个内置卡带。后面可以接入更多小游戏，当然你自己做的游戏也能插进去玩。\n3.3\n跟任何居民聊天\n点击小镇里任何一个 NPC（需居民管理手动开启Agent模式），直接跟它对话。消息路由到这个居民自己的独立 Agent 会话—每个居民有一份灵魂文件，性格、语气、专长都不一样。\n比如\"小烈\"：\n热血行动派，直来直去，代码即信仰，写代码像打仗。\n跟他聊天的感觉和温柔型的\"点点\"完全不同。不是换了个头像，是换了个人。\n3.4\n一座活着的小镇\n不只是工作场景，这座小镇有自己的时间和天气：\n24 小时昼夜循环，6 个时段，路灯自动开关\n12 种天气，晴天到极光，每天随机主题\nNPC 有自己的日常——散步、去咖啡馆、路上偶遇聊天、回家休息\n4 轨 BGM 按时段和场景自动切换\n所有环境音零音频文件，全部 Web Audio API 实时程序合成\n04\n技术架构（感兴趣往下看）\nAgent 不该活在日志里。它该活在一个你能看见、能理解、能亲手改造的世界里。\n这是整个插件的设计出发点。围绕这个出发点，架构做了三件事：让 Agent 行为\n可见\n，让多 Agent 协作\n可控\n，让小镇世界\n可改\n。\n4.1\n可见：事件翻译 + 实时追踪\nAgent 框架是事件驱动的（随时蹦出一条消息），3D 前端是帧循环的（每秒 60 帧固定节拍）。两个时间模型完全不同，中间需要一层翻译。\nQClaw\n/ OpenClaw（\n10\n+ Hook 回调）\n│  Hook 事件\n▼\nPlugin 翻译层（Node.js）\n│  Hook →\n26\n+ 种 AgentEvent → WebSocket 广播\n▼\nBridge 编排层（浏览器）\n│  AgentEvent →\n65\n种 GameEvent → Phase 状态机\n▼  ↕ 意图 + 回传\nFrontend 表演层（Three.js）\nNPC 状态机 · 工作流动画 · 天气 · 昼夜 · 环境音\n几个关键点：\nAgent = NPC 自动映射\n—每个 sub-agent 启动时自动映射为一个 3D NPC，Plugin 层翻译 Hook 为 AgentEvent（26+ 种），Bridge 层再翻译为 GameEvent（65 种），前端据此驱动 NPC 状态机。不需要手动配置。\n子 Agent 实时追踪\n—子 Agent 被 spawn 出去后，系统通过 300ms 轮询监听它的 JSONL 会话日志，实时解析 thinking、tool_use、tool_result、text 事件，转发到前端渲染为 NPC 头顶的思考气泡、工具动画、对话内容。没有这层追踪，子 Agent 的过程还是黑盒——你只知道它开始了和结束了。\n意图 + 回传\n—编排层只发意图（\"召唤这些 NPC\"），不管动画怎么播、播多久。前端播完回传 done，编排层才推进下一阶段。两个系统之间不共享状态、不猜时间，只有一个约定：你做完了告诉我。这个架构是翻了几次车才想通的—原有AI的实现机制是用 setTimeout 猜动画时长导致了幽灵 NPC、工位撞车、越改越崩，后面我停下来换了思路，推翻原有的架构，按照“意图+回传”的架构进行重构，之前的问题一次性全部解决。\n4.2\n可控：多 Agent 协作编排\n多 Agent 协作的核心挑战不是模型能力，而是编排—谁先做、谁后做、怎么传递上下文、怎么防止互相踩踏。基于 Harness Engineering 设计范式，我为 Agent 构建了一套结构化的运行环境：任务拆解、批次编排、文档驱动的架构约束、自动注入的工作上下文、反馈闭环、输出验证。人定规则，Agent 执行，系统做护栏。\n管家通过四步完成整个编排：\ncreate_project\n→\ncreate_plan\n→\nnext_step\n→\nmission_complete\n批次\n角色\n交付物\nbatch 1\n产品经理\nSPEC.md（需求规格）\nbatch 2\n架构师 + 设计师（并发）\n工程骨架 + MODULES.md / DESIGN.md\nbatch 3\n多个研发（并发）\n各自负责的模块代码\nbatch 4\n整合验收\n联调检查，确认交付物可用\n具体来说：\n上游文档驱动文件分工：\n架构师在 batch 2 产出 MODULES.md，定义模块结构和每个研发的文件边界。后续研发启动时，系统自动注入 MODULES.md，约束\"在骨架已有的目录结构上开发，禁止创建模块定义中未定义的新目录\"。文件边界不是靠人盯，是架构师的设计文档在驱动\n自动注入工作上下文：\n每个子 Agent 启动时，系统把角色人设（灵魂文件）、项目目录、PROJECT.md、上游设计文档、验收清单打包注入。子 Agent 不需要自己找上下文，减少幻觉和越权\n每批完成自动更新 PROJECT.md\n，记录进度和产出，供下一批 Agent 了解前序工作\n自动推进：\n批次完成后系统 nudge 管家调用\nnext_step()\n，不会卡死\n4.3\n可改：JSON 驱动的 UGC\nUGC 的核心思路是\n数据驱动而非代码驱动\n—居民的外观、人设、动画、技能全部是 JSON 配置，改配置就能改世界，不用动代码。\n角色工坊的数据流（已完整打通）：\n编辑器 UI\n│ 保存\n▼\ncitizen-config-draft.json（草稿）\n│ 发布（原子操作）\n▼\ncitizen-config.json（已发布配置，唯一数据源）\n├──▶ syncTownDefaults → town-defaults.json（运行时读取）\n└──▶ applyAgentChanges → 创建/更新独立 Agent + SOUL.md\nPublishedCitizenConfig\n是唯一数据源。所有运行时行为—NPC 外观、人设注入、动画映射、Agent 会话—都从这份 JSON 派生。发布是原子操作：写配置、创建 Agent、同步默认值一步到位。这个\"数据所有权\"的设计，是在做 UGC 之前先想清楚\"数据从哪来、到哪去、谁说了算\"才定下来的。\n灵魂系统支持四级覆盖：插件内置 → 项目级 → 用户自定义 → 工坊发布，后者覆盖前者。\n地图编辑器目前已支持拖拽搭建 + JSON 导出 + 游戏级预览，与小镇运行时的完整打通正在迭代中。\n05\n后续的进化\n方向\n内容\n状态\n补齐闭环\n编辑器地图接入小镇运行时、OpenClaw 新版本（4.x）兼容、多 Agent 协作交付质量提升\n🔥 下一步\n让小镇活起来\n灵魂模式完善（NPC 长期记忆）、常驻 Agent 与临时 Agent 打通、NPC 衣食住行玩、成长体系\n📋 再下一步\n连成世界\n跨镇 NPC 互访、技能交换、世界事件、小镇联邦协议\n🌍 远期\n如果，每个用户都有一座小镇\n那这些小镇就不该永远彼此隔绝。\n你的架构师去朋友的小镇做客，帮忙 review 一段代码。\n两个不同主人的 Agent 在边界偶遇，交换了各自学会的技能。\n一个全球事件发生时，所有连接的小镇一起行动。\n你的 AI 团队不再只为你一个人工作—他们开始互相帮助、学习、进化。\n聊天窗口之间不会产生连接。\n但小镇与小镇之间，天然会。\n当孤岛连成大陆，小镇就长成了世界。\n06\n写在最后\n在聊天窗里，我从没对 Agent 说过「辛苦了」。在小镇里，我说了。\n这不是矫情。游戏行业几十年前就验证过一件事—同一个 AI 逻辑，文明 6 的顾问如果只是输出文本，玩家不会信任它；但给它一张脸、一组待机动画、一些日常行为，信任就建立了。具象化的存在感建立信任，直观的可见性激发共情。\n当前 Agent 产品几乎把聊天当成唯一的交互范式。但我们可能忽略了一个设计空间—Agent 的在场感。你不需要翻日志，扫一眼小镇就知道谁在工作、谁在等待、进度到哪了。这种环境感知，跟开放式办公室让你抬头就能看到团队状态是一个道理。\n聊天窗是你跟 Agent 工作的方式。游戏世界也许是你跟 Agent 共处的方式。\n从日志到聊天窗到游戏世界，是 Agent 可观测性的三次跃迁。我们或许正处在第二次到第三次之间。\n现在的3D小镇插件虽然离我心目中的完美形态还有一段距离，剩下的边用边打磨。\n想体验的话，给 QClaw 发如下提示词就行，重启一下就能用。\n安装插件\nhttps\n:\n//github.com/Agentshire/Agentshire\n如果你需要以下高级功能，可以下载扩展资产包：\n居民工坊 Library 角色\n（308 个角色模型，多种变体和配色）\n编辑器 Cartoon City 资产\n（建筑、车辆、道路、公园等数百个3D模型）\n插件安装成功后，再给 QClaw 发送这句提示词就可以了。\n按照\nhttps://github.com/Agentshire/Agentshire/releases/tag/v0.1.0\n的指引下载和解压3D资源\n插件已通过 QClaw 内置的安全扫描。！！！\n仓库完全开源，MIT 协议：github.com/Agentshire/Agentshire ，有需要可以自取！\n以上，如果觉得不错，随手点个赞吧。\n使用问题可以微信联系（Jin_Thinking 同微信号，添加备注：腾讯云开发者）\n-End-\n原创作者｜Jin_Thinking\n感谢你读到这里，不如关注一下？\n👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。4月23日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.48,
+        "transfer_business": 0,
+        "peripheral": 0.11,
+        "irrelevant": 0.41,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.72,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.17,
+        "2": 0.77,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.87,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.16,
+        "2": 0.24,
+        "3": 0.25,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.56,
+      "probabilities": {
+        "0": 0.74,
+        "1": 0.1,
+        "2": 0.04,
+        "3": 0.1,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.67,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.32,
+        "3": 0.68,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.56,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.05,
+        "2": 0.02,
+        "3": 0.05,
+        "4": 0.82,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.36,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.1,
+        "2": 0.27,
+        "3": 0.56,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6223,
+    "outputTokens": 172,
+    "totalTokens": 6395
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "anti_hype": 0.56,
+        "category": 0.34,
+        "relevance": 0.81,
+        "grounding": 0.08,
+        "decision_action": 0.63,
+        "evidence": 0.78,
+        "actionability": 0.7
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180021127,
+                "endTime": 1791180021331,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000261366",
+      "marketCost": "0.000261366",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000261366",
+      "inferenceCost": "0.000261366",
+      "inputInferenceCost": "0.000261366",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AC7BQGFR5FBQ1748EBGG1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:21 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::fbwqg-1791180021103-229c692b676a"
+    },
+    "body": {
+      "answers": {
+        "anti_hype": {
+          "type": "score",
+          "score": 2.36,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.1,
+            "2": 0.27,
+            "3": 0.56,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.48,
+            "transfer_business": 0,
+            "peripheral": 0.11,
+            "irrelevant": 0.41,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.72,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.17,
+            "2": 0.77,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.87,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.16,
+            "2": 0.24,
+            "3": 0.25,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.56,
+          "probabilities": {
+            "0": 0.74,
+            "1": 0.1,
+            "2": 0.04,
+            "3": 0.1,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.67,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.32,
+            "3": 0.68,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.56,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.05,
+            "2": 0.02,
+            "3": 0.05,
+            "4": 0.82,
+            "5": 0.01
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6223,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "anti_hype": 0.56,
+            "category": 0.34,
+            "relevance": 0.81,
+            "grounding": 0.08,
+            "decision_action": 0.63,
+            "evidence": 0.78,
+            "actionability": 0.7
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180021127,
+                    "endTime": 1791180021331,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000261366",
+          "marketCost": "0.000261366",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000261366",
+          "inferenceCost": "0.000261366",
+          "inputInferenceCost": "0.000261366",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AC7BQGFR5FBQ1748EBGG1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:20.561Z"
+  }
+}

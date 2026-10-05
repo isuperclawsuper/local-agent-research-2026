@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "242561188879341568",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "【AI Coding】借助cursor实现业务需求全栈交付实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650542857&idx=1&sn=52e4387f926f7c2fcece005803297a08",
+      "date": "2026-02-06T09:24:00.895Z",
+      "chars": 4283,
+      "text": "原创\n用户互动团队\n2026-02-06 17:24\n浙江\n本文记录了借助Cursor完成红包签到页“单品返子”前端功能全栈交付的实践过程，涵盖需求拆解、AI生成方案与代码、弹窗动画、Feeds插卡与去重、问题排查等。\n本文记录了借助Cursor完成红包签到页“单品返子玩法”前端功能全栈交付的实践过程，涵盖需求拆解、AI生成方案与代码、弹窗动画（Lottie衔接+飞入效果）、Feeds插卡与去重、问题排查（预加载失效、回退刷新、状态管理等），强调AI辅助下需人工把控逻辑、样式和交互细节，并总结了日志定位、知识补缺等关键经验。\n背景\n伴随着AI模型和工具能力的快速发展，AI coding正在不断的改变着我们日常的研发模式，同时也拓展了我们的技术边界。借助AI工具，可以快速的去了解一个代码库的业务逻辑和使用的技术栈，甚至基于此做迭代研发。本文主要从一个服务端的视角出发，使用AI工具（cursor）完成一次实际业务需求AI coding 的全栈交付实践，主要包含前端的交互逻辑、样式、动画等内容，服务端部分忽略。 主要目的是对AI coding过程中遇到的问题记录、总结和尝试，当然目前对前端的知识了解\n还比较浅薄，过程中如果有理解和使用上的偏差欢迎指正～\n需求简介\n核心功能：在红包签到首页对单品返子玩法作引导强化。\n首页展示单品返子玩法商品POP，包括：弹窗前置动画、动画与POP过度、关闭弹窗收入二排动画等；\n首页Feeds展示单品返子玩法商品卡片，包括：单商品卡片和多商品卡片两种样式。\n单品返首页弹窗\n单\n品返首页插卡\nAI Coding实践\nAI coding，关键流程和日常\n研发流程类似，只是更多的是让AI去做具体的执行，而我们做好过程管理、决策和CR部分。一般\n我们会遵循以下流程：\n下面从这个具体的需求出发，展开实践过程。\n▐\nSTEP 1: 确定需求点、修改范围，编写需求描述\n需求澄清\n首页根据PRD和设计稿的要求，进行需求澄清，提炼需求点。再结合对工程了解程度，确定大致的方案和修改点，如果对需要修改的工程结构比较陌生，也可以借助cursor帮忙总结。\n初步分析本次需求，前端涉及的改动：\n首页新增一个Pop（需要回调疲劳度、动画、Pop上需要展示商品）-只在老版本；\n首页Feeds增加单品返商品插卡（可复用首页渠道插卡） - 新老版本都需要；\n首页Feeds和单品返插卡商品双向去重 - 新老版本都需要。\n涉及的前端工程：hbqd5（老版本主页）、\nqd\n（新版本主页）、order-withdraw-feeds（子玩法）。\n创建变更\n分仓库建迭代、拉变更（不同业务的前端发布平台可能不同，具体可咨询对应前端同学），编写需求描述- task.md\n▐\nSTEP 2: 使用AI工具编写实现方案，并review方案\nAI初版方案\n使用Cursor的plan模式，引用编写好的需求澄清文档，生成执行计划，并review，持续和AI交互迭代\n(待确认的问题，这里忘记截图了，，，，\ncursor会根据编写的执行计划中不确定的点给出待确认的问题，问题一般预设好了答案/是在不确定的会让你自己给答案，对预设答案的问题，还会标识推荐选项。按序号回复即可。\n方案Review\n对编写的执行计划进行review，有任何觉得不可行的实现都可以进行修改（这里还没输出到solution.md....\n生成执行计划之后，若还有其他问题，可以继续确认再修改执行计划，直到方案满足要求\n▐\nSTEP 3: AI 生码，完成需求基础框架\n前两步已完成执行方案生成，这里可以按照方案，让AI工具一次性完成前端需求的大体框架和内容\n▐\nSTEP 4: 自测并完善样式、动画、交互等功能\n弹窗样式细节调整\n本地调试观察实现和交互稿的差异，直接通过视觉稿截图和AI交互，让其修改\n(这里可以使用\nD2C插件\n，生成样式，但当时比较头铁....\n经验手调\n：结合视觉交互稿中的布局、字体、尺寸，调整样式文件\n动效实现\n动效和视觉确认后，拆分成两个部分，Pop前使用\nlottie\n动画播放，Pop后入口引导手搓一下。\n1. lottie\n动画实现\nlottie\n动画简单来说，就是播一段素材就行，代码库中有现成的组件，\n比较难的点是，动画和静态素材之间的过渡。需要但前置动画播放完之后，正好衔接POP弹窗，动画的结束位置在POP弹窗的顶部。\n那这里就需要拆成两步，基础实现+微调。基础的功能实现交给AI：\npop弹窗和lottie动画的衔接处理\n：增加弹窗状态，通过lottie动画组件回调控制弹窗的隐藏和可见。\n在onLoad中设置sleep，大致在动画播放完成时正好让弹窗可见，达到视觉效果。\n动画结束位置、阴影表达\n：通过布局样式定位。\n最外层样式itemsPop设置position：relative；动画和pop主体平级，动画样式设置position：absolute。\n使用relative为子组件提供一个“锚点”\n通过过程中和AI的不断交互，补充知识盲区，最终实现效果。\n2. 飞入动画实现\n原始诉求：\n点击或者关闭时，Pop需要缩放收入二排的单品返坑位。\n具体实现：\n计算飞入动画的开始和结束位置，调用飞入动画函数，给定动画时间，复用已有的飞入动画组件。\nAI实现过程遇到的问题（谁写的Bug谁修\n...AI修\n）：\n先关闭了弹窗，然后再获取起始位置，导致无法获取开始位置，动画不生效\n动画重复，一个弹窗缩放的，一个飞入二排的\nPop动画和商品加载完成后，点击Pop无跳转效果\n怀疑是动画添加后，覆盖了什么组件，导致点击事件失效；\n让cursor增加点击事件日志，根据控制台输出的日志，排查问题；\n调整lottie动画的z-index：1，Pop其他组件z-index调高，避免被覆盖。\nFeeds商品插卡-签到首页Feeds和渠道卡片商品去重\nFeeds去重服务端处理，但需要前端请求Feeds接口时带上已曝光的商品列表\n签到首页：携带单品返现渠道卡片曝光商品\n单品返渠道卡片：携带首页Feeds曝光商品\n实现过程中遇到的问题与优化：\n1. 预期的预加载的逻辑和实际不符\n签到首页Feeds有预加载逻辑，在首次进入页面或者下拉刷新时，请求Feeds第一页时，会预加载第二页请求，通过Feeds插件配置实现，但实际表现是：当用户在首页加载完成后，滑动页面，加载完第二页后，才会加载单品返现插卡商品。\n写让cursor确认下逻辑\n看起来链路上一切都没问题，那就继续找吧\n说是状态判断的问题：\n修复了之后依旧有问题，继续找\n重复请求的问题fix了，没解决滑动加载的问题\n给出了修复方案，但依旧未解决，甚至\n罢工\n了。。。。\nAI解决不了，那就“开发”看看...\n看组件的实现逻辑，FeedsList -> hudong-common-feeds中的InfiniteList -> coinhub-react-infinite-list中waterfallList\nhudong-common-feeds:\ncoinhub-react-infinite-list包：\n找到Feeds初始化逻辑\n让cursor帮忙确认这里逻辑：\n到这里，大概明确了问题原因，CSR链路下，在预发环境下，受Feeds接口请求耗时的影响，预加载会失效，只有等待用户翻页，才会继续请求，SSR链路下，没问题。总结：组件的代码，首次请求和预加载的执行是同步的，但请求feeds接口是异步的，会存在预加载失败的问题，应该等待首次请求结束后，再执行预加载。\n2. 首页Feeds直通车回退插卡，导致单品返插卡商品刷新\n问题表现是：直通车回退时，商品卡片商品刷新\n。先\n和cursor交互，先定位问题，梳理逻辑，再解决问题。\n再确认逻辑，确认其他优化：\n数据请求失败，不清空数据，只清楚标识，允许重试\nupdateFeedsData事件：清空数据\n问题总结：\n核心问题：单品返渠道插卡作为主页Feeds依赖的子组件，数据只需要请求一次，但因为依赖数组中包含了首页曝光商品，直通车回退时\n曝光商品改变\n组件重新挂载（点击的商品在渠道卡片之前），导致状态丢失，接口重新请求\n解决方式：将渠道卡片的Feeds请求的状态和数据提升到父组件中，保证当前会话不变。\n3. 页面加载状态优化\n因为首页需要商品去重，首页单品返渠道卡片Feeds的请求和主页Feeds存在时序，cursor一开始实现时，采用双状态：page1Loaded、page2Loaded来分别记录页面的加载状态，但综合来开，最后对状态的使用时机，单个状态即可满足要求，让AI帮忙优化。\n加载单品返Feeds判断\n紧急撤回...\n给我急得...\n都这么说了，蒜了蒜了\n4. 单品渠道卡片区分单商品和多商品，组件优化\nAI在实现时，是根据不同的渠道卡片不同的biztype，使用不同的css样式，来完成不同卡片样式的渲染，\n但服务端的经验告诉我们，应该抽出可复用的组件\n。让cursor抽取组件相同的样式文件、公共参数等，使得结构更加清晰。\n▐\nSTEP 5: 视觉验收、埋点\n验收过程\n，\n测试阶段，通过截图或者让视觉体验，发现问题，根据要求修改。\n埋点\n，\n让PD梳理好埋点相关信息，让AI执行，去埋点平台验证。\n总结\nAI coding充满想象力，也不断拓展着技术的边界。从这个具体的业务需求实践去看，虽然遇到了各种各样的问题，但借助AI去梳理逻辑、定位问题，在不需要完备的知识体系背景下，也能最终解决问题，达到预期效果，但还是会走不少弯路。所以全栈交付的过程中，还是建议去多了解技术栈的基础知识，再搭配AI工具，会更加的游刃有余。\n还有一个AI coding问题排查的心得：\n描述问题，让AI去增加日志埋点，然后直接把控制台的输出丢给他。\n团队介绍\n本文作者\n凌由\n，来自淘天集团-用户互动团队。团队支撑数亿级用户的互动业务（淘金币、芭芭农场、红包\n签到）的产品能力建设及演进，支持双十一、春节大促互动玩法的架构和开发，保障数亿权益的精准发放，通过多种互动形式提升用户规模和订单增长。我们正承担着捍卫电\n商主板块增长的重要使命，是阿里核心电商战场的参与者，用持续的技术创新来驱动阿里电商引擎的稳步前行。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.68,
+        "transfer_agent": 0.26,
+        "peripheral": 0.03,
+        "transfer_business": 0.03,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.6,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.19,
+        "2": 0.7,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.76,
+      "probabilities": {
+        "0": 0.37,
+        "1": 0.08,
+        "2": 0.18,
+        "3": 0.2,
+        "4": 0.17,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.07,
+      "probabilities": {
+        "0": 0.6,
+        "1": 0.08,
+        "2": 0.01,
+        "3": 0.29,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.91,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.09,
+        "3": 0.91,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.19,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.09,
+        "4": 0.7,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 3.49,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.45,
+        "4": 0.53,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5640,
+    "outputTokens": 173,
+    "totalTokens": 5813
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.59,
+        "relevance": 0.73,
+        "grounding": 0,
+        "decision_action": 0.29,
+        "evidence": 0.94,
+        "actionability": 0.45,
+        "anti_hype": 0.66
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179901936,
+                "endTime": 1791179902095,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00023688",
+      "marketCost": "0.00023688",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00023688",
+      "inferenceCost": "0.00023688",
+      "inputInferenceCost": "0.00023688",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8JYBPH17SQVVPFDAFH82"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:22 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::pzzwr-1791179901893-5b7a751346ec"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.68,
+            "transfer_agent": 0.26,
+            "peripheral": 0.03,
+            "transfer_business": 0.03,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.6,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.19,
+            "2": 0.7,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.76,
+          "probabilities": {
+            "0": 0.37,
+            "1": 0.08,
+            "2": 0.18,
+            "3": 0.2,
+            "4": 0.17,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.07,
+          "probabilities": {
+            "0": 0.6,
+            "1": 0.08,
+            "2": 0.01,
+            "3": 0.29,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.91,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.09,
+            "3": 0.91,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.19,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.09,
+            "4": 0.7,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.49,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.45,
+            "4": 0.53,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5640,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.59,
+            "relevance": 0.73,
+            "grounding": 0,
+            "decision_action": 0.29,
+            "evidence": 0.94,
+            "actionability": 0.45,
+            "anti_hype": 0.66
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179901936,
+                    "endTime": 1791179902095,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00023688",
+          "marketCost": "0.00023688",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00023688",
+          "inferenceCost": "0.00023688",
+          "inputInferenceCost": "0.00023688",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8JYBPH17SQVVPFDAFH82"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:21.328Z"
+  }
+}

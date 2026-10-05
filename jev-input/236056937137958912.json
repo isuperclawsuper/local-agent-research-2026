@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "236056937137958912",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "有手就行，教你从0到1快速手搓搭建个GUI Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798478&idx=1&sn=6bfaffaee1d5aec526aa33e3879cd6bc",
+      "date": "2026-01-19T09:37:00.181Z",
+      "chars": 16103,
+      "text": "原创\n腾讯程序员\n2026-01-19 17:37\n广东\n半个小时就好了啊\n作者：zishanshi\n随着通用大模型向着agentic以及GUI理解增强的方向发展，现在Gemini 3 Flash等通用大模型已经可以直接用来搭建一个效果还不错的GUI Agent，并且实践难度大幅降低，半小时左右就可以从0到1手搓出来。本文详细介绍如何逐步搭建一个GUI Agent，从实践中也可快速了解GUI Agent的原理。\n一、前言\n什么是GUI Agent？简单来说，就是一个能够\"看懂\"屏幕（mobile/pc/web）并进行自动操作的AI Agent。比如用户发送指令“整理文件”，PC GUI Agent就可以基于纯GUI界面理解页面内容，进行逐步决策&操作，直到完成用户任务。\n随着GUI Agent的应用前景逐渐明朗，GUI Agent在25年的发展很迅猛，其中一个比较明显的新趋势是，通用大模型也在训练GUI上的能力：\n因此，搭建一个好用的GUI Agent变得越来越简单。本文介绍如何使用通用大模型API，快速从0到1搭建一个可用性强的PC GUI Agent，可以用于自动完成PC任务操作。\n前置准备说明: 我使用的是Gemini 3 Flash，先看效果：\n二、GUI Agent基础原理介绍\n一个GUI Agent通常包含以下几个部分：\n设备环境（Environment）：比如手机、电脑这些用来操作的设备，是交互的 “载体“，本文仅以电脑为示例。\n感知系统（Preceptor）：负责 “接收信息“，这主要是针对GUI能力较弱的通用大模型。而Gemini 3 Flash这样本身具备较强GUI页面理解能力的大模型通常不再需要单独设计感知系统。\n大模型（决策器）：相当于 “大脑”—— 结合知识系统里存的信息，分析感知到的界面内容，决定要完成任务，下一步应该如何操作。\n交互系统（Operator）：相当于“手脚” —— 把大模型的决策结果（操作动作+坐标），转化为具体的操作与设备进行交互。\n为了完成一个完整的任务，通常需要进行 “感知->决策->执行” 的多次循环，直到任务完成。下文具体介绍PC GUI Agent的搭建方式。\n三、逐步搭建GUI Agent\n1. 最简单的模型对话\n在开始构建复杂的Agent之前，我们先实现最基础的功能：让AI看懂一张图片。\n# utils/model.py\nimport\nos\nimport\nbase64\nfrom\nopenai\nimport\nOpenAI\nfrom\ntyping\nimport\nList, Dict, Any\nAPI_KEY = os.getenv(\n\"OPENAI_API_KEY\"\n)\nBASE_URL = os.getenv(\n\"OPENAI_BASE_URL\"\n)\nclass\nLVMChat\n:\n\"\"\"多模态大模型聊天类\"\"\"\ndef\n__init__\n(self, api_key: str = API_KEY, base_url: str = BASE_URL,\nmodel: str =\n\"gemini-3-flash-preview\"\n)\n:\nself.client = OpenAI(api_key=api_key, base_url=base_url)\nself.model = model\ndef\n_encode_image\n(self, image_path: str)\n-> str:\n\"\"\"将图片编码为base64\"\"\"\nwith\nopen(image_path,\n\"rb\"\n)\nas\nimage_file:\nreturn\nbase64.b64encode(image_file.read()).decode(\n'utf-8'\n)\ndef\nget_multimodal_response\n(self, text: str, image_paths: str)\n-> str:\n\"\"\"\n最简单的图文对话\nArgs:\ntext: 你的问题\nimage_paths: 图片路径\nReturns:\n模型的回答\n\"\"\"\n# 1. 加载图片\nbase64_image = self._encode_image(image_paths)\n# 2. 构建消息\nmessages = [{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: [\n{\n\"type\"\n:\n\"image_url\"\n,\n\"image_url\"\n: {\n\"url\"\n:\nf\"data:image/jpeg;base64,\n{base64_image}\n\"\n}},\n{\n\"type\"\n:\n\"text\"\n,\n\"text\"\n: text}\n]\n}]\n# 3. 调用API\nresponse = self.client.chat.completions.create(\nmodel=self.model,\nmessages=messages\n)\nreturn\nresponse.choices[\n0\n].message.content\n测试一下：\nchat = LVMChat()\nresponse = chat.get_multimodal_response(\ntext=\n\"这张图片里输入框坐标？\"\n,\nimage_paths=\n\"image.png\"\n)\nprint(response)\n注意看这里！\n模型本身是有定位能力的\n（也就是说可以直接输出操作对象的坐标位置），所以不需要格外的感知器来锚定具体UI元素。\n2. 加入记忆 - 让AI记住上下文\n上面的代码有个问题：AI每次都是\"失忆\"的，不记得之前说过什么。对于GUI Agent来说，这是很致命的。举个简单的例子，任务“在输入框输入‘你好’”，如果Agent没有记忆，那么后序执行不记得自己已经决策过输入操作，就会陷入输入的循环，在输入框中多次输入‘你好’而不会停止。相反，有上文记忆的Agent，知道自己前一次已经决策了输入操作，结合当前页面内容，判断本次应为“finish”指令，就不会陷入输入循环。\n为此，我们需要升级 LVMChat 类：\nclass\nLVMChat\n:\n\"\"\"支持会话记忆的多模态聊天类\"\"\"\ndef\n__init__\n(self, api_key: str = API_KEY, base_url: str = BASE_URL,\nmodel: str =\n\"gemini-3-flash-preview\"\n)\n:\nself.client = OpenAI(api_key=api_key, base_url=base_url)\nself.model = model\n# 🔥 核心改动：添加会话历史记录\nself.conversation_history: List[Dict[str, Any]] = []\ndef\nget_multimodal_response\n(self, text: str, image_paths: str,\nuse_history: bool = False)\n-> str:\n\"\"\"\n支持记忆的图文对话\nArgs:\ntext: 你的问题\nimage_paths: 图片路径\nuse_history: 是否使用会话历史（记住之前的对话）\n\"\"\"\n# 1. 加载图片并构建当前消息\nbase64_image = self._encode_image(image_paths)\ncurrent_message = {\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: [\n{\n\"type\"\n:\n\"image_url\"\n,\n\"image_url\"\n: {\n\"url\"\n:\nf\"data:image/jpeg;base64,\n{base64_image}\n\"\n}},\n{\n\"type\"\n:\n\"text\"\n,\n\"text\"\n: text}\n]\n}\n# 2. 🔥 关键：如果启用历史，把之前的对话也带上\nif\nuse_history:\nmessages = self.conversation_history + [current_message]\nprint(\nf\"📚 使用历史上下文，共\n{len(self.conversation_history)}\n条\"\n)\nelse\n:\nmessages = [current_message]\n# 3. 调用API\nresponse = self.client.chat.completions.create(\nmodel=self.model,\nmessages=messages\n)\nresult = response.choices[\n0\n].message.content\n# 4. 🔥 更新历史记录\nif\nuse_history:\nself.conversation_history.append(current_message)\nself.conversation_history.append({\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n: result\n})\nreturn\nresult\ndef\nclear_history\n(self)\n:\n\"\"\"清空记忆\"\"\"\nself.conversation_history = []\n记忆的原理：\n# 第一轮对话\nconversation_history = [\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: [图片\n1\n,\n\"在输入框输入‘你好’\"\n]},\n{\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n:\n\"{'Thought'： '输入框在页面中间位置，我需要输入文案', 'Action': 'type(content=\\'你好\\')'}\"\n}\n]\n# 第二轮对话时，把历史也带上\nmessages = conversation_history + [\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: [图片\n2\n,\n\"在输入框输入‘你好’\"\n]}\n]\n# 现在AI能看到完整的对话链，知道自己做过什么决策。在第二轮返回:\n{\n'Thought'\n：\n'上一轮已经完成输入操作并且文案已经正确显示在输入框，任务已经完成'\n,\n'Action'\n:\n'finished'\n}\n3. 搭建Agent框架\n现在组装成一个完整的Agent，我们使用LangGraph来构建工作流。\n（1）Agent的核心循环\n一个GUI Agent的工作流程是这样的：\n（2）执行器Operator\n首先，我们需要一个能够真正控制鼠标键盘的工具类。在这里强烈推荐\npyautogui\n, 模拟键鼠操作，非常简单易用。但是有一个坑需要注意，输入操作需要用复制粘贴操作而不是打字，因为 pyautogui.write() 不支持中文！而用剪贴板粘贴可以完美支持中英文、特殊字符\n# operator/execute.py -\nimport\npyautogui\nimport\npyperclip\nimport\nmss\nimport\ntime\n# 允许鼠标移动到屏幕角落（默认会触发fail-safe）\npyautogui.FAILSAFE =\nFalse\nclass\nOperation\n:\n\"\"\"GUI操作工具类\"\"\"\ndef\nclick\n(self, x: int, y: int)\n:\n\"\"\"点击指定坐标\"\"\"\nprint(\nf\"🖱️  点击坐标 (\n{x}\n,\n{y}\n)\"\n)\npyautogui.click(x=x, y=y)\ndef\ninput\n(self, text: str)\n:\n\"\"\"输入文本（使用粘贴方式，支持中文）\"\"\"\nprint(\nf\"⌨️  输入:\n{text}\n\"\n)\npyperclip.copy(text)\n# 复制到剪贴板\npyautogui.hotkey(\n'command'\n,\n'v'\n)\n# Mac用command，Windows用ctrl\ndef\nscreenshot\n(self, save_path: str)\n:\n\"\"\"截图并保存\"\"\"\nwith\nmss.mss()\nas\nsct:\nsct.shot(output=save_path)\nprint(\nf\"📸 截图已保存:\n{save_path}\n\"\n)\ndef\nhotkey\n(self, *keys)\n:\n\"\"\"按下组合键（如ctrl+c）\"\"\"\nprint(\nf\"⌨️  按下组合键:\n{\n' + '\n.join(keys)}\n\"\n)\npyautogui.hotkey(*keys)\ndef\nwait\n(self, seconds: float =\n1.0\n)\n:\n\"\"\"等待指定时间\"\"\"\nprint(\nf\"⏱️  等待\n{seconds}\n秒...\"\n)\ntime.sleep(seconds)\n（3）Prompt\nGUI Agent的提示词告诉AI应该如何\"思考\"和\"行动\"的规则，需要定义好操作空间和输出格式，我在\nUI-TARS官方Prompt\n的基础上做了很小的改动（增加了Output Example，因为我发现Gemini 3 Flash使用UI-TARS的prompt输出格式不是很稳定）。\n# utils/prompts.py\nCOMPUTER_USE_UITARS =\n\"\"\"You are a GUI agent. You are given a task and your action history, with screenshots. You need to perform the next action to complete the task.\n## Action Space\nclick(point='<point>x1 y1</point>')\nleft_double(point='<point>x1 y1</point>')\nright_single(point='<point>x1 y1</point>')\ndrag(start_point='<point>x1 y1</point>', end_point='<point>x2 y2</point>')\nhotkey(key='ctrl c') # Split keys with a space and use lowercase. Also, do not use more than 3 keys in one hotkey action.\ntype(content='xxx') # Use escape characters \\\\', \\\\\\\", and \\\\n in content part to ensure we can parse the content in normal python string format. If you want to submit your input, use \\\\n at the end of content.\nscroll(point='<point>x1 y1</point>', direction='down or up or right or left') # Show more information on the `direction` side.\nwait()\n#Sleep\nfor 5s and take a screenshot to check for any changes.\nfinished(content='xxx') # Use escape characters \\\\', \\\\\", and \\\\n in content part to ensure we can parse the content in normal python string format.\n## Note\n- Use Chinese in `Thought` part.\n- Write a small plan and finally summarize your next action (with its target element) in one sentence in `Thought` part.\n- One action per turn.\n## Output Example\n{{\n\"Thought\": \"...\",\n\"Action\": \"...\"\n}}\n## User Instruction\n{instruction}\n\"\"\"\n（4）坐标归一化\n不同电脑屏幕分辨率不同（1920x1080、2560x1440等），GUI Agent往往会采用千归一化坐标的策略进行处理。因此，拿到大模型的返回之后，需要将归一化坐标 (0-1000范围) 还原成实际像素坐标：\n# AI返回归一化坐标: (500, 500) - 表示屏幕中心\n# 在1920x1080屏幕上: (500, 500) -> (960, 540)\n# 在2560x1440屏幕上: (500, 500) -> (1280, 720)\ndef\nnormalize_coords\n(self, x: int, y: int)\n-> tuple[int, int]:\n\"\"\"将归一化坐标(0-1000)转换为实际像素坐标\"\"\"\nactual_x = int(x /\n1000.0\n* self.screen_width)\nactual_y = int(y /\n1000.0\n* self.screen_height)\nreturn\nactual_x, actual_y\n（5）LangGraph\nLangGraph是一个用于构建Agent工作流的框架，\n图(Graph)\n的方式定义Agent的执行逻辑。\n# 传统方式（硬编码）\ndef\nrun_agent\n()\n:\nwhile\nnot\nfinished:\nscreenshot()\ndecision = model_decide()\nexecute(decision)\nif\ncheck_finished():\nbreak\n# LangGraph方式（声明式）\nworkflow = StateGraph(AgentState)\nworkflow.add_node(\n\"screenshot\"\n, take_screenshot)\nworkflow.add_node(\n\"decide\"\n, model_decide)\nworkflow.add_node(\n\"execute\"\n, execute_action)\nworkflow.add_edge(\n\"screenshot\"\n,\n\"decide\"\n)\nworkflow.add_edge(\n\"decide\"\n,\n\"execute\"\n)\nworkflow.add_conditional_edges(\n\"execute\"\n, should_continue, {...})\n优势：✅ 逻辑清晰：可视化工作流 ✅ 易于修改：添加节点/改变流程很简单 ✅ 状态管理：自动在节点间传递状态。\nAgentState 是整个工作流的\"记忆载体\"，在各个节点间传递：\n# Step 1: 截图节点\nstate = {\n\"instruction\"\n:\n\"打开浏览器\"\n,\n\"screenshot_path\"\n:\n\"s/step_1.png\"\n,\n\"step\"\n:\n1\n,\n\"finished\"\n:\nFalse\n}\n# Step 2: 决策节点（接收state，更新后返回）\nstate = {\n**state,\n# 保留之前的数据\n\"thought\"\n:\n\"需要点击Chrome图标\"\n,\n\"action\"\n:\n\"click(point='<point>100 200</point>')\"\n}\n# Step 3: 执行节点\nstate = {\n**state,\n# 继续保留\n# 执行点击操作...\n}\n（6）Agent主程序\n现在把所有模块组装起来：\n#!/usr/bin/env python3\n# -*- coding: utf-8 -*-\n\"\"\"\nGUI Agent - 自动化GUI测试Agent\n截图 -> 模型决策 -> 解析Action -> 执行 -> 循环，直到finished\n\"\"\"\nimport\nre\nimport\njson\nfrom\ndatetime\nimport\ndatetime\nfrom\ntyping\nimport\nTypedDict\nfrom\npathlib\nimport\nPath\nfrom\nlanggraph.graph\nimport\nStateGraph, END\nfrom\noperator.execute\nimport\nOperation\nfrom\nutils.model\nimport\nLVMChat, Model\nfrom\nutils.prompts\nimport\nCOMPUTER_USE_UITARS\n# 定义State\nclass\nAgentState\n(TypedDict)\n:\ninstruction: str\n# 用户指令\nscreenshot_path: str\n# 当前截图路径\nstep: int\n# 当前步骤\nthought: str\n# 模型思考\naction: str\n# 模型输出的动作\nfinished: bool\n# 是否完成\nclass\nGUIAgent\n:\n\"\"\"GUI自动化Agent\"\"\"\ndef\n__init__\n(self, instruction: str, model_name: str = Model.GOOGLE_GEMINI_3_FLASH_PREVIEW.value)\n:\nself.instruction = instruction\nself.operation = Operation()\nself.lvm_chat = LVMChat(model=model_name)\nself.s_dir = Path(\n\"s\"\n)\nself.s_dir.mkdir(exist_ok=\nTrue\n)\n# 获取屏幕尺寸用于坐标映射\nimport\npyautogui\nself.screen_width, self.screen_height = pyautogui.size()\nprint(\nf\"🖥️  屏幕尺寸:\n{self.screen_width}\nx\n{self.screen_height}\n\"\n)\ndef\nnormalize_coords\n(self, x: int, y: int)\n-> tuple[int, int]:\n\"\"\"将归一化坐标(0-1000)转换为实际像素坐标\"\"\"\nactual_x = int(x /\n1000.0\n* self.screen_width)\nactual_y = int(y /\n1000.0\n* self.screen_height)\nprint(\nf\"   归一化坐标 (\n{x}\n,\n{y}\n) -> 实际坐标 (\n{actual_x}\n,\n{actual_y}\n)\"\n)\nreturn\nactual_x, actual_y\ndef\ntake_screenshot\n(self, state: AgentState)\n-> AgentState:\n\"\"\"步骤1: 截图并保存\"\"\"\nstep = state.get(\n\"step\"\n,\n0\n) +\n1\ntimestamp = datetime.now().strftime(\n\"%Y%m%d_%H%M%S\"\n)\nscreenshot_path = str(self.s_dir /\nf\"step_\n{step}\n_\n{timestamp}\n.png\"\n)\nself.operation.screenshot(screenshot_path)\nreturn\n{\n**state,\n\"instruction\"\n: self.instruction,\n\"screenshot_path\"\n: screenshot_path,\n\"step\"\n: step,\n\"finished\"\n:\nFalse\n}\ndef\nmodel_decide\n(self, state: AgentState)\n-> AgentState:\n\"\"\"步骤2: 模型决策（自动使用会话历史）\"\"\"\nprompt = COMPUTER_USE_UITARS.format(instruction=state[\n\"instruction\"\n])\n# 调用多模态模型（use_history=True 自动保留上下文）\nresponse = self.lvm_chat.get_multimodal_response(\ntext=prompt,\nimage_paths=state[\n\"screenshot_path\"\n],\nres_format=\n\"json\"\n,\nuse_history=\nTrue\n# 启用会话历史，模型会记住之前的所有交互\n)\nprint(\nf\"\\n📸 Step\n{state[\n'step'\n]}\n- 模型响应:\\n\n{response}\n\\n\"\n)\n# 解析JSON响应\ntry\n:\nresult = json.loads(response)\nthought = result.get(\n\"Thought\"\n,\n\"\"\n)\naction = result.get(\n\"Action\"\n,\n\"\"\n)\nexcept\njson.JSONDecodeError:\n# 如果不是JSON格式，尝试正则提取\nthought_match = re.search(\nr'\"Thought\":\\s*\"([^\"]*)\"'\n, response)\naction_match = re.search(\nr'\"Action\":\\s*\"([^\"]*)\"'\n, response)\nthought = thought_match.group(\n1\n)\nif\nthought_match\nelse\n\"\"\naction = action_match.group(\n1\n)\nif\naction_match\nelse\n\"\"\nreturn\n{\n**state,\n\"thought\"\n: thought,\n\"action\"\n: action\n}\ndef\nexecute_action\n(self, state: AgentState)\n-> AgentState:\n\"\"\"步骤3: 解析并执行动作\"\"\"\naction = state[\n\"action\"\n]\nif\nnot\naction:\nprint(\n\"⚠️ 没有可执行的动作\"\n)\nreturn\n{**state,\n\"finished\"\n:\nTrue\n}\n# 检查是否完成\nif\naction.startswith(\n\"finished(\"\n):\ncontent_match = re.search(\nr\"finished\\(content='([^']*)'\\)\"\n, action)\ncontent = content_match.group(\n1\n)\nif\ncontent_match\nelse\n\"任务完成\"\nprint(\nf\"✅ 任务完成:\n{content}\n\"\n)\nreturn\n{**state,\n\"finished\"\n:\nTrue\n}\n# 解析并执行动作\ntry\n:\nself._parse_and_execute(action)\nexcept\nException\nas\ne:\nprint(\nf\"❌ 执行动作失败:\n{e}\n\"\n)\nprint(\nf\"   动作:\n{action}\n\"\n)\nreturn\nstate\ndef\n_parse_and_execute\n(self, action: str)\n:\n\"\"\"解析动作字符串并执行\"\"\"\nprint(\nf\"🔧 执行动作:\n{action}\n\"\n)\n# click(point='<point>x y</point>') 或 click(point='x y')\nif\naction.startswith(\n\"click(\"\n):\n# 尝试带标签的格式\npoint_match = re.search(\nr\"<point>(\\d+)\\s+(\\d+)</point>\"\n, action)\nif\nnot\npoint_match:\n# 尝试不带标签的格式\npoint_match = re.search(\nr\"point=['\\\"](\\d+)\\s+(\\d+)['\\\"]\"\n, action)\nif\npoint_match:\nx, y = int(point_match.group(\n1\n)), int(point_match.group(\n2\n))\nactual_x, actual_y = self.normalize_coords(x, y)\nself.operation.click(actual_x, actual_y)\nelse\n:\nprint(\nf\"⚠️ 无法解析点击坐标:\n{action}\n\"\n)\n# left_double(point='<point>x y</point>') 或 double_click(point='x y')\nelif\naction.startswith(\n\"left_double(\"\n):\n# 尝试带标签的格式\npoint_match = re.search(\nr\"<point>(\\d+)\\s+(\\d+)</point>\"\n, action)\nif\nnot\npoint_match:\n# 尝试不带标签的格式\npoint_match = re.search(\nr\"point=['\\\"](\\d+)\\s+(\\d+)['\\\"]\"\n, action)\nif\npoint_match:\nx, y = int(point_match.group(\n1\n)), int(point_match.group(\n2\n))\nactual_x, actual_y = self.normalize_coords(x, y)\nself.operation.double_click(actual_x, actual_y)\nelse\n:\nprint(\nf\"⚠️ 无法解析双击坐标:\n{action}\n\"\n)\n# type(content='xxx')\nelif\naction.startswith(\n\"type(\"\n):\ncontent_match = re.search(\nr\"content=['\\\"]([^'\\\"]*)['\\\"]\"\n, action)\nif\ncontent_match:\ntext = content_match.group(\n1\n)\n# 处理转义字符\ntext = text.replace(\nr\"\\'\"\n,\n\"'\"\n).replace(\nr'\\\"'\n,\n'\"'\n).replace(\nr\"\\n\"\n,\n\"\\n\"\n)\nself.operation.input(text)\n# hotkey(key='ctrl c')\nelif\naction.startswith(\n\"hotkey(\"\n):\nkey_match = re.search(\nr\"key=['\\\"]([^'\\\"]*)['\\\"]\"\n, action)\nif\nkey_match:\nkeys = key_match.group(\n1\n).split()\nself.operation.hotkey(*keys)\n# scroll(point='<point>x y</point>', direction='down') 或 scroll(point='x y', direction='down')\nelif\naction.startswith(\n\"scroll(\"\n):\n# 尝试带标签的格式\npoint_match = re.search(\nr\"<point>(\\d+)\\s+(\\d+)</point>\"\n, action)\nif\nnot\npoint_match:\n# 尝试不带标签的格式\npoint_match = re.search(\nr\"point=['\\\"](\\d+)\\s+(\\d+)['\\\"]\"\n, action)\ndirection_match = re.search(\nr\"direction=['\\\"]([^'\\\"]*)['\\\"]\"\n, action)\nif\npoint_match\nand\ndirection_match:\nx, y = int(point_match.group(\n1\n)), int(point_match.group(\n2\n))\nactual_x, actual_y = self.normalize_coords(x, y)\ndirection = direction_match.group(\n1\n)\n# 移动到位置并滚动\nimport\npyautogui\npyautogui.moveTo(actual_x, actual_y)\nscroll_amount =\n3\nif\ndirection\nin\n[\n\"up\"\n,\n\"left\"\n]\nelse\n-3\npyautogui.scroll(scroll_amount)\n# wait()\nelif\naction.startswith(\n\"wait(\"\n):\nself.operation.wait(seconds=\n5\n)\n# drag(start_point='<point>x1 y1</point>', end_point='<point>x2 y2</point>')\nelif\naction.startswith(\n\"drag(\"\n):\n# 尝试带标签的格式\nstart_match = re.search(\nr\"start_point=['\\\"]<point>(\\d+)\\s+(\\d+)</point>['\\\"]\"\n, action)\nend_match = re.search(\nr\"end_point=['\\\"]<point>(\\d+)\\s+(\\d+)</point>['\\\"]\"\n, action)\nif\nnot\nstart_match:\n# 尝试不带标签的格式\nstart_match = re.search(\nr\"start_point=['\\\"](\\d+)\\s+(\\d+)['\\\"]\"\n, action)\nend_match = re.search(\nr\"end_point=['\\\"](\\d+)\\s+(\\d+)['\\\"]\"\n, action)\nif\nstart_match\nand\nend_match:\nx1, y1 = int(start_match.group(\n1\n)), int(start_match.group(\n2\n))\nx2, y2 = int(end_match.group(\n1\n)), int(end_match.group(\n2\n))\nactual_x1, actual_y1 = self.normalize_coords(x1, y1)\nactual_x2, actual_y2 = self.normalize_coords(x2, y2)\nimport\npyautogui\npyautogui.moveTo(actual_x1, actual_y1)\npyautogui.drag(actual_x2 - actual_x1, actual_y2 - actual_y1, duration=\n0.5\n)\n# 等待一下让界面响应\nself.operation.wait(seconds=\n1\n)\ndef\nshould_continue\n(self, state: AgentState)\n-> str:\n\"\"\"判断是否继续循环\"\"\"\nreturn\n\"end\"\nif\nstate.get(\n\"finished\"\n,\nFalse\n)\nelse\n\"continue\"\ndef\nrun\n(self)\n:\n\"\"\"运行Agent\"\"\"\n# 构建graph\nworkflow = StateGraph(AgentState)\n# 添加节点\nworkflow.add_node(\n\"screenshot\"\n, self.take_screenshot)\nworkflow.add_node(\n\"decide\"\n, self.model_decide)\nworkflow.add_node(\n\"execute\"\n, self.execute_action)\n# 添加边\nworkflow.set_entry_point(\n\"screenshot\"\n)\nworkflow.add_edge(\n\"screenshot\"\n,\n\"decide\"\n)\nworkflow.add_edge(\n\"decide\"\n,\n\"execute\"\n)\nworkflow.add_conditional_edges(\n\"execute\"\n,\nself.should_continue,\n{\n\"continue\"\n:\n\"screenshot\"\n,\n\"end\"\n: END\n}\n)\n# 编译并运行\napp = workflow.compile()\nprint(\nf\"🚀 开始执行任务:\n{self.instruction}\n\\n\"\n)\n# 设置递归限制为100步\nconfig = {\n\"recursion_limit\"\n:\n100\n}\nfinal_state = app.invoke(\n{\n\"instruction\"\n: self.instruction,\n\"step\"\n:\n0\n},\nconfig=config\n)\nprint(\nf\"\\n🎉 任务完成! 共执行\n{final_state[\n'step'\n]}\n步\"\n)\nreturn\nfinal_state\nif\n__name__ ==\n\"__main__\"\n:\nagent = GUIAgent(instruction=\n\"\"\"打开浏览器查询GUI, 找到wikipedia的介绍页面进行查看\"\"\"\n)\nagent.run()\n4. 执行效果\n文章前言部分的demo, 模型的部分决策内容如下:\n对于中间步骤，模型会利用到上文的内容，与当前页面状态一起作为决策依据：\n最后，如果模型判断任务完成，会输出finished指令，程序停止\n四、总结\n本文采用简洁易用的方案搭建了一个 PC 端的 GUI Agent，该 Agent 不仅能在 Windows 和 macOS 系统上直接运行，还可操作 Web 应用。得益于以 pyautogui（键鼠模拟）作为核心执行器，该 Agent 能够实现跨应用的操作能力。未来可通过补充滑动、拖拽等更多样的交互方式，并结合知识库的构建，进一步强化其针对特定业务场景的适配性，打造功能更强大的 GUI Agent。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

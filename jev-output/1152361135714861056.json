@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1152361135714861056",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Harness Engineering落地前，先想清楚这几个问题",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695914&idx=1&sn=862b690b99a6036703617043ac4474cb",
+      "date": "2026-06-12T00:45:00.278Z",
+      "chars": 11134,
+      "text": "原创\nfranslee\n2026-06-12 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n传统数据中台往往系统功能强大，但门槛也是真的高。对于熟悉数据分析、SQL、指标体系的用户来说，数据中台是效率工具。但对于更多的新手/小白用户来说，它更像是一套\"需要先学会使用，才能开始解决问题\"的系统。用户需要知道数据在哪、表怎么关联、SQL 怎么写、结果怎么看，甚至还要理解图表配置和看板搭建逻辑，上手成本那是相当高。\n近两年 AI 带来了近乎完美破局路径：\n自然语言提问 → 生成 SQL\\Python → 查询数据 → 展示数据 → 可视化图表。\n这条链路的价值不只是\"帮用户写 SQL\"，更重要的是把原本需要专业知识才能完成的完整数据分析流程，改造成了更自然的对话式交互，门槛大幅降低。Dola 将这条链路跑通之后，在持续打磨产品体验的过程中，前端很快暴露出两类全新的问题：一类是\"AI产品形态变了，传统前端架构跟不上\"；另一类更隐蔽——当我们开始大量用 CodeBuddy、Cursor来协作开发时，发现多年来习以为常的\"优雅写法\"，在AI Coding协作中反而成了拖累。这两类问题逼着我重新思考前端在 AI 时代的定位。结论很简单，也是这篇文章想聊的两件事：\n第一件事：服务好 AI 产品\n—— 当产品形态变了，前端架构必须跟着变\n第二件事：服务好 AI Coding\n—— 当协作对象变了，编码范式也有必要跟着变\n插个题外话：\n随着AI破局而出世的，还有我们PCG大数据平台部的新一代数据分析AI助手——Dola\nDola是一款基于Agentic AI能力开发的数据分析助手：用户只需要引入个人的数据表，就能得到一枚专属的AI分析师\n它不仅能够完成日常的取数、跑数等基础任务，还能自主规划并执行复杂场景的数据分析，例如异动归因、画像对比分析、股票基金回测、房价预测等。Dola可以自行编写SQL、纠正SQL错误、执行查询、使用Python进行数据处理与可视化，并最终生成一份完整的分析报告。全程无需编写一行代码，只需通过自然语言对话，你就能拥有一个全自动工作的“数据小黑工”。\n这里以1个股票回测的例子看看dola的效果：\n可以看到dola在接收到“金叉买入法回测”这个问题之后，首先能自己生成一个计划，包括了需要进行的数据准备、策略实现、回测实现和结果分析等详细内容。\n在按照自己的计划执行完毕后，dola最终产出回测结果，完成可视化并进行深入分析总结，产出一份完整的回测报告\n。\n同时\n还可以\n将\n分析\n的\n报告\n做成\n一个\n美观\n的\n可视化\n插画\n/\n静态\n网页\n/\n看板\n，\n大大增加\n了\n报告\n的\n可读性：\n（\n上图\n左\n为\nDola\n生成\n的\n插画\n报告\n，\n右\n为\n静态\n网页\n。\n仅\n做\n样例\n展示\n参考\n，\n不\n构成\n分析\n建议\n）\n这里只是以股票回测这样一个比较复杂的案例场景展开，大家应该可以想象到，在工作场景中，Dola对于日常数据分析工作的提效程度是显而易见的。\n回到\n本期\n主题，对\n前端\n开发\n新范式\n感兴趣的同学欢迎接着往下阅读：\n01\n服务好 AI 产品之一：AI 数据分析可视化优化\n这条链路里，\"自动生成可视化图表\"是用户感知比较强的环节。因为用户最终并不是为了看一段 SQL，也不是为了看一张原始表格，而是希望快速理解分析结论。图表推荐得准不准、展示得清不清楚，直接决定了用户对\"AI 数据分析\"的第一印象。\n1\n.1\n让大\n模型直接生成图表配置？\n最自然的做法，是让大模型在生成完 SQL、拿到数据之后，再吐一份图表配置出来。实际尝试之后，碰到两个绕不开的问题：生成速度慢、复杂图表配置容易出错。\n所以我们考虑把策略改成：工程化推荐 + 大模型微调。也就是前端基于已有上下文快速给出推荐配置，用户立刻就能看到一张相对合理的图；如果不满意，再让 AI 介入修改。这样既能拿到工程化的速度和稳定性，也能保留 AI 的灵活性。\n1\n.2 主流图表推荐库为什么不够用？\n要做工程化推荐，第一反应是看看业界已有方案能不能直接用。我们调研了 AntV/AVA 这类主流图表推荐库，结论是——在我们的场景下不太够用。这类库的核心思路是完全基于数据特征推荐图表：看字段类型、看字段数量、看基数、看分布，然后匹配规则。\n这个思路在传统 BI 场景里是合理的。用户上传一份 Excel，或者手动选择了表，系统不知道用户在想什么，只能从数据特征出发猜一个相对合理的图表。但放到 AI 对话数据分析链路里，这套假设就不太成立了。\n比如 AI 生成了一段 SQL。\nSELECT\ndt\nAS\ndate\n,\nchannel,\nSUM\n(gmv)\nAS\ngmv,\nCOUNT\n(\nDISTINCT\norder_id)\nAS\norder_count,\nSUM\n(paid_order_cnt)\n/\nSUM\n(uv)\nAS\nconversion_rate\nFROM\ndwd_trade_order\nWHERE\ndt\nBETWEEN\n'2026-04-01'\nAND\n'2026-04-30'\nGROUP\nBY\ndt, channel\nORDER\nBY\ngmv\nDESC\nLIMIT\n10\n;\n查询结果包含 date 、 channel 、 gmv 、 order_count 、 conversion_rate 五个字段。仅看字段类型，可以判断出：一个时间字段、一个分类字段、三个数值字段。那应该推荐什么图？\n用户想看 GMV 趋势？看不同渠道的 GMV 对比？看转化率随时间的变化？还是看 GMV 和订单数的关系？\n只看数据特征，传统库只能挑一个\"最常见\"的方案，比如默认按时间画折线图，把所有数值字段都画上去。但这不一定是用户真正想看的。也就是说：仅凭数据特征不一定能准确推断出用户的分析意图，这导致图表类型、维度、度量的推荐准确率都偏低。\n1\n.3\n其实我们手里其实有更多上下文\n当我重新审视这条链路后发现，和传统 BI 场景相比，AI 对话数据分析场景有个巨大的优势：前端拿到的上下文更完整。在图表绘制之前，除了数据本身，对话上下文里还能拿到 生成数据的 SQL，以及 用户的原始 prompt。这正好能增强传统方案里\"用户意图\"识别这块的不足！\nSQL 里藏着维度、度量和意图\nSQL 不只是拿数据的工具，它本身就是一份结构化的分析意图描述。\n举几个直接的例子：GROUP BY dt → 用户想看的\"维度\"很可能就是 dt ，而不是其他分类字段\nORDER BY gmv DESC LIMIT 10 → 这是典型的 TopN 分析，柱状图比折线图更合适\nSUM(gmv) 、 COUNT(DISTINCT user_id) → 这些聚合函数本身就是\"度量\"，不需要再去字段里猜\nWHERE dt BETWEEN '2026-04-01' AND '2026-04-30' → 时间范围明确，趋势分析的可行性高\n出现 SUM(a) / SUM(b) → 计算字段往往是核心关注指标，应该优先作为主度量\n这些信息在传统 BI 场景里完全拿不到，但在 AI 链路里缺是天然可见的。\n用户 prompt 里藏着分析目标\n用户的原始问题里也经常包含意图关键词：\n“趋势”、“变化”、“最近一个月” → 倾向时间序列；\n“对比”、“哪个更高”、“排名” → 倾向分类对比；\n“占比”、“构成”、“比例” → 倾向饼图、堆叠图；\n“分布”、“区间” → 倾向直方图、箱线图；\n“下降最明显”、“异常” → 倾向带标注的对比图。\n同样是查 GMV，用户问\"最近一个月各渠道 GMV 趋势\"和\"最近一个月哪个渠道 GMV 下降最明显\"，SQL 结果可能完全一样，但期望的图是不一样的。如果只看数据，这两种意图就被抹平了。如果把 prompt 也纳入推荐，它们就能被区分。\n1\n.4\n三维评分推荐引擎\n基于这个思路，我尝试开发了图表三维评分推荐工具。核心思路是维护一套评分机制，把\n数据特征 + SQL 特征 + Prompt 特征\n综合起来，给候选图表打分，最终推荐得分最高的图表类型并生成配置。\n评分规则覆盖时间趋势、分类对比、占比分析、TopN、分布、相关性、多维探索等典型分析任务，每条规则都会从三个维度出发综合判断。\n举个简化的规则示例——时间趋势规则：\n数据特征：存在时间字段，且时间点数量适中 → +分；\nSQL 特征： GROUP BY 中包含时间字段，或 ORDER BY 时间字段 → +分；\nPrompt 特征：包含\"趋势\"、“变化”、“增长”、\"下降\"等关键词 → +分；\n反向条件：分类字段基数极高且 prompt 偏向对比 → -分。\n分类对比规则类似：\n数据特征：存在低/中基数分类字段 + 至少一个聚合度量 → +分；\nSQL 特征： GROUP BY category 、 ORDER BY metric DESC LIMIT N → +分；\nPrompt 特征：包含\"对比\"、“哪个”、“排名”、“TopN” → +分。\n每条规则不会单独决定推荐结果，而是统一汇总到打分模型里，择优输出。\n效果上，复杂多维数据场景下，推荐准确率从 55% 左右提升到近 90%，对维度和度量的识别准确性也明显提升。\n1\n.5\n几个有用的特色能力\n在评分推荐之上，还做了一些工程层面的细节，体验差异其实主要来自这些地方。比如，支持交互式二次探索。再比如，数据量大的时候自动开启采样和缩略图导航、多度量量纲差异大的时候自动启动双 Y 轴、数值字段方差极大的时候自动启用对数坐标等，这些规则看似琐碎，但对最终展示效果影响很大。\n在 Dola 项目中，如果对工程化推荐还是不满意，用户可以通过 AI 直接改配置——这时大模型只需要在已有配置基础上做局部修改，速度快、准确性也更可控。\n做完这些之后我自己的体感是，AI 把自然语言变成 SQL、把 SQL 变成数据，已经干了最重的活。但用户最终看到的不是 SQL 也不是数据表，而是那张图。这一步与其再让大模型推一轮，不如交给前端用工程化的方式收尾——快、稳、准。\n02\n服务好 AI 产品之二：LLM 流式对话代码展示体验攻坚\n这一章想聊的事其实可以用一句话概括：当产品形态从”静态展示“变成”流式增量输出“，渲染架构的底层假设也得跟着重写。下面是我们一路踩坑的过程。\n2\n.1\nMarkdown 流式选中复制问题\n最早的用户反馈很朴素——“AI 正在回答的时候我想把上一段复制出来，一松鼠标选区就没了”。这是早期 AI 大模型对话产品的通病，原因是传统 Markdown 解析工具并不是为流式输出设计的，在流式过程中频繁 re-render 导致 Selection API 引用失效。这个问题我们团队小伙伴通过在 Markdown 渲染层做增量输出解决了——让 DOM 在流式过程中尽量只追加、不重建。\n以为就此结束，但很快发现代码块的增量渲染是另一个量级的难题。\n2\n.2\n代码高亮的增量渲染几乎无法实现\n主流代码高亮库 highlight.js、Prism、Shiki 等，也都是为\"已经写好的代码\"设计的：每次调用都吐出一整棵  <span>  树，由调用方用 innerHTML 替换回去。流式场景下每个 chunk 到达时都触发一次完整重写，用户的选区、搜索命中、光标位置在每次重建时瞬间清空。\n我们调研过给这些库打增量补丁，结论是着色与 DOM 的耦合让\"稳定节点引用\"在现有架构上几乎无法实现。举个最直接的例子：流式输出  const result = await fetch(...)  这一行，代码会以 chunk 切片到达：\nchunk\n1\n:\n\"const re\"\nchunk\n2\n:\n\"sult = aw\"\nchunk\n3\n:\n\"ait fetch(...)\"\n第 1 个 chunk 到达时， re 会被 hljs 当作普通标识符着色为黑色；\n第 2 个 chunk 拼上  sult =  后， result  的语义才完整，整段需要重新判定为变量名（蓝色）；\n第 3 个 chunk 出现  await  关键字时，前面的语法判定可能再次变化。\nToken 边界不和 chunk 边界对齐是流式场景的常态——每一帧都要\"撤销前一帧的着色判定\"，而撤销的实现就是\"销毁旧 span、重建新 span\"。这不是改个调度器或加个缓存能绕开的，它是高亮算法和 DOM 输出耦合的必然结果。\n2\n.3\n另一条线：用户反馈的卡顿，真正原因是 DOM 规模\n差不多同时期有另一类反馈——“对话久了页面开始卡”。我通过 Chrome DevTools MCP 排查了用户提及的这个典型长对话页：多轮对话每轮含若干代码块，总 DOM 元素 33612 个，其中代码高亮相关节点占绝大多数。Style recalc 单次涉及上万元素，主线程持续承压，低端机和长会话场景尤其明显。\n传统代码高亮工具，每一个语法元素着色都会成为一个独立的 DOM 节点，高亮前代码段只有一个 textNode，高亮后 DOM 数量爆炸\n两条看似独立的反馈线汇到了同一个根因：社区高亮库的 DOM 模型与 AI 对话的流式、多块、长会话场景架构错配。\n2\n.4\n阶段一：自研代码高亮组件 2.x\n我们没有立刻重新造轮子。先复用自研的\n代码\n高亮\n组件\n——它基于 Worker + OffscreenCanvas 离屏渲染，原本用于大规模代码展示场景。我们针对 AI 对话场景做了些针对性的优化和升级，发布了 2.x 版本：\n补齐代码流式输出能力，支持流式过程中的选中和组件内搜索\n。\n新增智能静态图片模式：代码块稳定后降级为图片，节省内存，鼠标交互时瞬间恢复 Canvas 画布组件。\n智能静态图片模式下，代码块稳定无交互时会自动从Canvas画布转换为一张静态图片，释放资源仅保留少量事件监听。\n静态图片模式下，当鼠标交互时，瞬间恢复 Canvas 画布组件。\n这一阶段基本拉平了体验问题，但实际用下来又发现几个新的不匹配：\n该组件是为\"单块大代码\"场景设计的，而 AI 对话是\"多块小代码\"——每块代码都要启动 Worker、初始化 OffscreenCanvas，固定成本被放大\nCanvas 里的代码不是原生 DOM 文本，用户想把代码块内容和外部正文一起复制时体验欠佳——而这在 AI 对话里恰恰是高频动作\n不支持浏览器原生页面搜索（Ctrl+F）——Canvas 里的文字对浏览器只是像素。我们虽然在组件内做了独立搜索框，但用户的肌肉记忆是 Ctrl+F，这个落差很难通过教育解决\n2\n.5\n阶段二：3.0，双模渲染 + 多线程\n3.0 的核心改造不是\"把 Canvas 换成 DOM\"，而是把两者收编成同一个门面下的两个 renderer，对外 API 一致，内部各擅其场。\nDOM 模式的底层是 CSS Custom Highlight API——代码以单个 textNode 存在，着色通过  CSS.highlights  注册的 Range +  ::highlight()  伪元素完成，不创建任何  <span> 。流式追加只是  textNode.appendData() ，DOM 结构始终不变；选区、Ctrl+F、屏幕阅读器全部基于原始文本节点工作，重新着色不影响其中任何一个。这一刀直接打掉了 AI 对话场景下\"流式选中丢失\"和\"长会话 DOM 爆炸\"两个老问题。\n通过一个 textNode DOM 节点实现代码语法高亮，上色过程中 DOM 结构不变\nCanvas 模式作为 3000 行以上超大代码、以及需要水印防复制的兜底保留，并继承了 2.x 的智能静态图片模式。\n多线程是两个模式共同的底盘，但分工不同：Canvas 模式 Worker 里跑 ”tokenize + 绘制到 OffscreenCanvas“整套，主线程只转发消息；DOM 模式 Worker 只做 tokenize，token 流回主线程后交给  CssHighlightPainter  转成 Range 注册到  CSS.highlights ，绘制还给浏览器合成层。 hljs.highlight()  这个最重的活，无论走哪条路，都不再压在主线程上。\n关键不是\"多线程\"三个字，而是三件事配合：\n文本同步追加 + 着色异步节流双轨，让用户永远先看到字、再看到颜色，绝不卡白屏；rAF 而非 setTimeout 做节流，后台 tab 不漂移、前台帧对齐合成；Worker 启动期的小代码主线程兜底、大代码等齐 Worker 的策略，把\"首次 tokenize 卡顿\"挡在用户感知之外。\n业务侧无论 chunk 切得多碎，只需要持续调  updateCode(完整代码) ，token 边界与 chunk 边界对齐这件事完全交给调度器——这正是阶段一被 DOM 耦合卡死、做不到的事。\n2\n.6 实际收益\n指标\nhighlight.js\n自研\n组件\n2.x\n自研\n组件\n3.0\nDOM 节点数（20 轮对话）\n~15000\n~300（Canvas 节点）\n~500（稳定 DOM 骨架）\n主线程长任务（>50ms）\n12 次\n3 次\n1 次\n流式选中保留\n不支持\n支持（Canvas 模拟）\n支持（原生选区）\nCtrl+F 可检索代码\n不支持\n支持（组件内）\n支持（原生选区）\n内存占用（30 分钟对话）\n~180MB\n~90MB\n~55MB\n03\n服务好 AI Coding 之一：用 Harness Engineering 的思路改造存量项目\n3\n.1 改造存量项目\n前两部分讲的是前端如何服务 AI 产品体验。但 AI 时代还有另一条变化正在发生：研发过程本身也在被 AI 改造。\n在新项目里使用 AI Coding / Vibe Coding 时，体验往往不错。因为新项目上下文干净、约束少、代码风格统一，AI 很容易生成一套\"看起来还不错\"的实现。但一旦落到存量项目里，问题就会明显变多：\n命名风格和历史代码不一致\n组件 import 五花八门\n样式硬编码满天飞\n明明项目有封装组件，AI 却直接引用底层三方库\n生成代码看似能跑，但评审时大量细节被打回\n很多时候，我们会把这些问题归因于\"模型还不够强\"。但深入排查后会发现，根因往往不完全在模型，而在于：\n项目本身缺少一套机器可读、可被 AI 稳定遵循的工程约束。\nAI 看到的是历史代码里参差不齐的事实，它只能在这些事实里取一个\"平均值\"。如果一个项目里有三种按钮写法、五种颜色使用方式、两套请求封装、若干隐式团队约定，那么 AI 很难凭空推断出\"当前团队真正希望它怎么写\"。\n所以，要让 AI 真正写出可合入的代码，存量项目需要做一定的 AI Coding 适配改造。\n3\n.2\n把规则变成 AI 的上下文，而不是只写在文档里\n团队规范如果只躺在 iwiki、腾讯文档、README 或大家的脑子里，AI 是看不到的。因此，规则需要进入代码仓库，成为项目的一部分。\n我们的做法是在版本库里建立一份\"真相源\"（例如  openspec/rules/ ），用结构化的  .mdc  文件沉淀：\n编码铁律\n样式规范\n组件使用约束\n第三方库使用边界\n反模式清单\n再通过一个轻量同步脚本，配合  postinstall  和 Git Hooks，自动分发到  .cursor/rules/ 、 .codebuddy/rules/  等各类 AI 工具识别的目录。\n规则只在一处维护，全员、全工具零漂移。新人 clone 项目后第一次  install ，AI 就已经\"读过\"了所有团队规范。\n3\n.3\n给 AI 一个收敛的代码出口\nAI 出错的高发区，往往是项目里存在太多\"都能用，但只有一种最推荐\"的写法。比如业务代码里直接写：\nimport\n{\nButton\n}\nfrom\n'antd'\n;\n这在短期看没什么问题，但在存量项目里很容易造成风格失控。未来要替换组件库或定制交互，改造成本也会成倍放大。\n我们把 UI 组件统一收口到  src/components/ui/ ，作为业务代码访问 UI 的唯一入口：封装层承接默认样式、统一交互、对接 Design Token；\n用 ESLint  no-restricted-imports  在工具链层强约束，杜绝绕过封装层直接引  antd  的写法。\nAI 在\"只有一条正确路径\"的环境下，准确率显著提升。这类收敛对人也有价值：我们不需要每次纠结\"到底该用哪个 Button\"，评审的时候也不用再反复指出同类问题。\n3\n.4\n把视觉决策从代码里抽离成 Design Token\n颜色、间距、字号、圆角、阴影等，以 TS 为真相源沉淀在  src/themes/tokens/ ，通过脚本生成 less 变量、CSS 变量与 antd 主题配置，三端共享同一份数据。\nAI 不再需要\"猜\"该用  #1677ff  还是  #1890ff ，而是从一张明确的 token 表里选。写出来的样式天然一致、可主题化、可演进。\n对于存量代码，我们采用\n增量扩展策略\n：\n存量文件原样保留，不动结构；\n新代码强约束接入 token；\n老代码通过\"硬编码预算\"机制逐迭代收敛。\n我们做这套适配不是想把项目改干净，存量项目永远干净不了，只是想让它别越长越歪。\n存量项目适配 AI Coding 的核心，不是加一个插件，也不是写几句 prompt，而是把项目改造成 AI 容易写对的样子。\n规则机器可读、入口足够收敛、决策足够显式——AI 的输出方差就会大幅下降，评审成本随之降低，团队对 AI Coding 的信任才能真正建立起来。\n04\n服务好 AI Coding 之二：重新审视编程语法与范式\n项目适配之外，还有一个更底层的问题：我们过去推崇的很多语法习惯和编程范式，在 AI Coding 时代是否还成立？\n一个很小的例子，是 Sass 里的  &-  嵌套拼接。\n.user-card\n{\n&-\nheader\n{\nfont-weight\n: bold;\n}\n&-\ncontent\n{\npadding\n:\n12px\n;\n}\n}\n最终生成的类名是：\n.user-card-header {}\n.user-card-content {}\n这在过去看起来很优雅：少写重复前缀，结构也清楚。但问题是，当你在浏览器里看到  .user-card-header ，回到代码里全局搜索这个完整类名，可能搜不到。因为源码里不存在完整字符串，它是拼接出来的。人要脑内推导，AI 也要推导。\n类似问题还有很多：\nJS 里过度复杂的解构、重命名、默认值混写；\nPython 里多层列表推导式；\nTypeScript 里炫技式类型体操；\n过度抽象导致一个简单逻辑需要跨多个文件理解；\n极致 DRY 让局部变化变成全局影响。\n这些写法的共同点是：\n写起来省事，读、找、改、协作都变贵。\n4.1\n旧范式的底层初衷：减少人工手写成本\n我们过去喜欢语法糖、缩写、嵌套、抽象、DRY，有其历史合理性。\n因为在很长一段时间里，编程的主要成本之一就是人手写代码。\n所以旧审美是：\n短小 = 优雅\n抽象 = 高级\n复用 = 成熟\n少写 = 高效\n这些原则并没有错。它们确实帮助我们减少了重复劳动，提高了局部开发效率。但 AI Coding 改变了成本结构。\n4.2\nAI Coding 带来的成本结构反转\n当 AI 可以快速生成代码后，\"少打几个字符\"不再是最稀缺的能力。\n真正稀缺的是：\n代码是否容易理解\n是否容易搜索\n是否容易让 AI 定位\n是否容易 review\n是否容易局部修改\n是否容易验证正确性\n我现在写代码越来越多在想：这件事我到底要解决什么？边界在哪？怎么算做完了？反而\"怎么写\"这一步，AI 比我快多了。 这意味着，过去一些为了减少输入成本而牺牲可读性的写法，需要重新评估。\n4.3\n新标准：显式、可搜索、直白、适度重复\n我自己最近写代码会下意识做几件事，没什么大道理，纯粹是被 AI 教出来的肌肉记忆。\n显式优于隐式\n不要让关键信息藏在推导里。比如 CSS 类名，如果最终使用的是  .user-card-header ，源码里最好也能直接搜到  .user-card-header 。这对人有好处，对 AI 也有好处。\n可搜索优于可推导\n搜索是理解大型项目最重要的入口之一。如果一个变量名、类名、事件名、接口名在运行时才拼出来，那么它就会降低可定位性。过去我们觉得\"能推导出来就行\"，但 AI Coding 时代，更重要的是\"能直接匹配到\"。\n直白实现优于巧妙炫技\n聪明代码的问题在于，它往往依赖作者当时的灵感。但工程代码不是智力竞赛，而是长期协作资产。AI 生成、AI 修改、人类 review，都更喜欢直白的控制流和清晰的数据结构。\n适度重复优于过度抽象\nDRY 仍然重要，但不是所有重复都应该立刻抽象。有些重复只是看起来相似，业务变化方向并不一致。过早抽象会让后续修改变得更困难。在 AI Coding 场景下，适度重复反而能让局部改动更安全，因为 AI 可以在明确上下文内完成修改，而不是牵动一套复杂抽象体系。\n4.4\n不是反语法糖，而是反\"为了写得爽牺牲读得懂\"\n需要强调的是，这并不是说所有语法糖、抽象和 DRY 都过时了。\n在这些场景里，旧范式依然成立：\n领域核心模型层，DRY 依然是底线\n系统边界处，抽象依然有巨大价值\n表达力关键场景，适当语法糖可以显著提升清晰度\n稳定公共能力，复用仍然比复制更好\n真正需要反思的是：我们是否为了写得爽，牺牲了读得懂、搜得到、改得动。AI Coding 时代，代码不仅要对人友好，也要对 AI 友好。\n4.5\n前端开发者角色的变化\n在这个变化里，前端开发者的角色也会发生变化。\n过去我们很大一部分能力体现在熟悉语法和框架 API、手写代码快、能快速堆出页面等方面。这些能力仍然有价值，但不再是全部。\n未来更重要的是：能不能准确拆解问题、定义清楚边界，能不能判断 AI 生成方案是否合理，能不能设计可维护的架构，能不能让项目持续适合人机协作。\n也就是说，前端开发者会从\"语法工匠\"逐步转向意图拆解者、架构决策者、AI 编码验收者——落到日常就是：少写几行炫技代码，多花点时间想清楚到底要做什么。\n05\n总结\n写到这里其实就一句话——前端在 AI 时代要做好两件事：\n对外，把 AI 能力变成顺滑的产品体验；对内，把工程体系改造成适合 AI 协作的新形态。\n服务好 AI 产品，也服务好 AI Coding。\n-End-\n原创作者｜\nfranslee\n感谢你读到这里，不如关注一下？👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。6月19日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.02,
+        "transfer_agent": 0.67,
+        "irrelevant": 0.29,
+        "peripheral": 0.02,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.96,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.07,
+        "2": 0.85,
+        "3": 0.06,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.88,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.08,
+        "2": 0.09,
+        "3": 0.1,
+        "4": 0.56,
+        "5": 0.02
+      }
+    },
+    "decision_action": {
+      "score": 1.1,
+      "probabilities": {
+        "0": 0.52,
+        "1": 0.12,
+        "2": 0.15,
+        "3": 0.19,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.89,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.07,
+        "4": 0.91,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.92,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.08,
+        "4": 0.72,
+        "5": 0.15
+      }
+    },
+    "anti_hype": {
+      "score": 3.15,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.02,
+        "2": 0.05,
+        "3": 0.61,
+        "4": 0.29,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 11310,
+    "outputTokens": 172,
+    "totalTokens": 11482
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.59,
+        "relevance": 0.89,
+        "grounding": 0.22,
+        "decision_action": 0.27,
+        "evidence": 0.92,
+        "actionability": 0.75,
+        "anti_hype": 0.7
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180008861,
+                "endTime": 1791180009052,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00047502",
+      "marketCost": "0.00047502",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00047502",
+      "inferenceCost": "0.00047502",
+      "inputInferenceCost": "0.00047502",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABVC17GXPFKMPXB3F757B"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:09 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::msdbh-1791180008399-2fb372992efa"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.02,
+            "transfer_agent": 0.67,
+            "irrelevant": 0.29,
+            "peripheral": 0.02,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.96,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.07,
+            "2": 0.85,
+            "3": 0.06,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.88,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.08,
+            "2": 0.09,
+            "3": 0.1,
+            "4": 0.56,
+            "5": 0.02
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.1,
+          "probabilities": {
+            "0": 0.52,
+            "1": 0.12,
+            "2": 0.15,
+            "3": 0.19,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.89,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.07,
+            "4": 0.91,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.92,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.08,
+            "4": 0.72,
+            "5": 0.15
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.15,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.02,
+            "2": 0.05,
+            "3": 0.61,
+            "4": 0.29,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 11310,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.59,
+            "relevance": 0.89,
+            "grounding": 0.22,
+            "decision_action": 0.27,
+            "evidence": 0.92,
+            "actionability": 0.75,
+            "anti_hype": 0.7
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180008861,
+                    "endTime": 1791180009052,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00047502",
+          "marketCost": "0.00047502",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00047502",
+          "inferenceCost": "0.00047502",
+          "inputInferenceCost": "0.00047502",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABVC17GXPFKMPXB3F757B"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:08.289Z"
+  }
+}

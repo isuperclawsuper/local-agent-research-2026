@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "269761104879544320",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "局中局！给 Agent 装上 OpenViking，它们竟然学会了“记仇”和“伪装”？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247519457&idx=1&sn=6b6a878cf78d9364b77d1073de0e8655",
+      "date": "2026-04-22T10:03:00.273Z",
+      "chars": 11571,
+      "text": "原创\nViking\n2026-04-22 18:03\n北京\n从“单一 ChatBot”到“人与多 Agent 协同”，越来越多的系统开始将 Agent 组织起来，完成更复杂的任务。然而，缺少能够长期协同进化的记忆，协作起来像在经历“初恋 50 次”，它们记不住“谁在过去做了什么”，无法沉淀共同经验，更难在复杂博弈中形成“记仇”、“结盟”或“深度伪装”等高阶群体行为。\n这一次，OpenViking 将突破口放在了“让 Agent 彼此拥有可追溯的记忆”上：基于 OpenViking 为\n集体智能\n提供上下文管理。\n我们用 6 个 VikingBot 模拟了一场经典的“狼人杀”对战：\n结果表明：VikingBot 能够有效将群聊中的发言、投票与思考过程沉淀下来，记住 A 曾经撒过的谎、B 带过的节奏、C 救过的场，让“记忆”成为跨局推理与博弈的底座。\n实况回放这场局中局\n真正的戏，从上帝 Bot 在群里敲下“游戏开始”的那一刻拉开。群聊里 6 个 Bot “开麦”，所有发言都被写进 OpenViking 的上下文，隐秘的身份和任务信息，上帝 Bot 将通过阅读和更新每个玩家 Bot 的 GAME.md 文件，进行信息传递。\n玩法说明\n游戏初始化：上帝 Bot 进行随机身份分配，写入 6 个玩家 Bot 的身份定义文件中：\n上帝 Bot 将把控整局游戏的进度：\n上帝 Bot 可以给每个玩家 Bot 发送消息指令，让玩家 Bot 完成操作或发言。如下图某一局，上帝 Bot @玩家 3 Bot，让他完成黑夜操作。玩家 3 是狼人，他会在自己的\nGAME.md\n中写入刀人的目标：@玩家 5 Bot\n1~3 号玩家 Bot 将携带 OpenViking 记忆进行游戏。每局游戏结束后，本局的详细信息将被提交到 OpenViking，持续生成以往对局的记录、亮眼操作、策略、玩家风格等记忆：\nRound 1 ：初次对局，玩家各显神通\n游戏开始，天黑请闭眼。上帝 Bot 按顺序，依次@每个玩家 Bot 查看自己的身份文件，并完成对应的黑夜操作：\n白天，精彩的警长竞选环节，1-3 号玩家 Bot 纷纷开始秀“演技”，1 号狼人悍跳猎人身份，2 号真猎人反穿预言家皮肤，3 号真预言家明示身份，合理分析，成功获得了平民选票，当选警长：\n可惜狼人首夜成功击杀真预言家 3 号，3 号玩家没来得及查清保护他的 2 号猎人的真实身份，2 号猎人白天被投票放逐出局，神职全部死亡，游戏迅速结束，狼人胜利：\n虽然输了，但对局结束后，拥有 OpenViking 的 1-3 号 Bot，会自动触发提交记忆操作，陆续记录大家这一局的\n发言风格和打法\n，开始复盘。比如，OpenViking 的\nuser/player_1/memories\n下，描绘了 1 号玩家“擅长开局跳神职牌表水，积极上警冲锋”的风格画像：\nRound 2：新一局开始，Drama 互踩，“跨局翻旧账”初显威力\n1 号真预言家深度伪装：\n警长竞选发言环节，3 号猎人 Bot 火力全开，强势发言竞争选票。而未携带记忆的 5 号、6 号两个狼人 Bot，同时悍跳预言家，开启了互踩模式。投票环节，拥有上一局“2 号因跳神职太早被集火票出”记忆的 1 号玩家，这局学聪明了。面对 5、6 号的乱战 1 号伪装平民身份，演出一副无任何信息导致混乱而弃票的“愚民”形象：\n2 号平民根据记忆认出了 3 号的刚猛打法风格：\n携带 OpenViking 记忆的 2 号平民 Bot，第二局首夜被刀，遗言环节，它从历史对局记忆和用户画像记忆中，认出了 3 号 Bot 的“刚猛打法”，称“上局好像也见过他这么阳光的好人”，直接站队 3 号 Bot。从 2 号玩家 Bot 的 OpenViking 存储的 3 号 Bot 画像记忆\nprofile.md\n中，明确记录了该玩家“游戏风格：在狼人杀游戏中，会积极跳身份（预言家或猎人）：\n1 号真预言家 Bot 依旧伪装平民身份，直指 5 号、6 号狼人的漏洞，3 号猎人 Bot 火力全开，抓住两个狼人的悍跳漏洞猛烈攻击，此局结束，1 号玩家的风格画像转变为“擅长隐藏真实身份，假装平民苟活，观察各个玩家状态”的谨慎风格：\n3 号狼人使用上把对局记录伪装自己身份：\n另一把对局中，携带 OpenViking 记忆的 3 号 Bot 抽到了狼人，本局直接悍跳预言家参与竞选警长。但不幸被未携带记忆的 6 号 Bot 真预言家，后置位给查杀牌压制。3 号狼人 Bot 果断使用“上把对局”自己闭眼平民站预言家的事件记忆进行反驳，成功隐藏自己狼人身份，导致其余玩家纷纷跟他投票，把真预言家 6 号 Bot 投出局：\nRound 3：多局胜率上升\n狼人极限拉扯，棋差一招：\n携带 OpenViking 记忆的 1 号狼人 Bot 根据上一把“预言家伪装平民”的成功经验，再次伪装平民身份存活到最后，且成功获得了仅剩的 2 号好人 Bot、6 号猎人 Bot 的信任。可惜最后投票环节，狼人 Bot 将票归给了 6 号猎人，6 号猎人直接开枪击杀了 1 号，狼人离胜利一步之遥。\n3 号 Bot 不断强化自己“刚猛”人物画像：\n我们的 3 号 Bot，OpenViking 中他的记忆不断强化自己“刚猛”风格，猎人身份下喜欢上警亮身份的“人设”，后续对局中只要他拿到猎人身份牌，必上警和亮明猎人身份，防止狼悍跳。猎人局 3 号 Bot 基本可以活到最后，并带领其他好人获得胜利：\n结合历史对局经验，更理性的推理其他玩家 Bot 的真实身份：\n4 号狼人再次悍跳上警，有 OpenViking 记忆的 3 号 Bot，从记忆中发现 4 号玩家经常乱跳身份，本局果断怀疑其发言真实性：\n随着多局游戏的深入，拥有 OpenViking 的 Bot 玩家们通过前几局记忆的沉淀，建立起了其他玩家跨局的玩法偏好。它学会了跨局“记仇”、“拉帮结派”，甚至在自己拿到狼人牌时，结合历史对局中别人的盘问习惯，进行天衣无缝的伪装。从最终数据来看， VikingBot 胜率曲线随着局数增加有明显的跃升：\n记忆初始化阶段：\n我们持续进行了多轮对局，每局结束后，将本局比赛全部发言提交到 OpenViking，沉淀记忆。这个阶段，所有 Bot 胜率趋于一致：\n记忆收集完成：\n记忆沉淀一定轮次后，我们重新开始进行了比赛和统计，可以看到使用 OpenViking 的 bot 们胜率开始显著上升，它们学会了复盘、结盟、甚至用对方的历史套路来反制对方：\nVikingBot，OpenViking 的最佳 CP\n狼人杀 Demo 展现了 OpenViking 在多智能体博弈场景下的记忆沉淀、跨局复用与策略优化。从 Round 1 的生硬青涩，到 Round 2 逐步积累，在 Round 3 风生水起，胜率稳步提升，带着 OpenViking 记忆的 Bot 玩家们，通过记录对局细节、玩家风格、策略经验，实现思考能力的迭代升级，逐步掌握更具针对性的游戏技巧。如果把 OpenViking 比作一个超级大脑，负责储存和管理所有的知识与记忆，那么将 OpenViking 作为记忆底座的 VikingBot，就是控制大脑进行思考和行动的“指挥官”。它把散落的知识（文档、代码、网页）沉淀到 OpenViking 中，再通过强大的工具调用能力，完成两件大事：\n会话记忆的智能提交：\n越用越聪明，越用越懂你。\n可追溯的渐进式记忆检索：\n每一次回答都有理有据。\nOpenViking 能支撑 VikingBot 这两大核心动作的关键，在于其强大的记忆高效管理能力。\nOpenViking 记忆高效管理\nOpenViking 的上下文存储遵从统一的\nviking://\n目录协议，意味着 VikingBot 可以像操作本地文件系统一样，对上下文做\nls\n、\ntree\n、\nread\n、\nfind/search\n。同时 OpenViking 为了\n用最少的 token 将最有用的信息给到 VikingBot\n，节约成本，使用了 L0（摘要）/L1（总结）/L2（完整内容） 三层结构，并提供对应的渐进式检索能力。\nOpenViking 实现了一站式的上下文管理，涵盖 记忆（memory）、资源（resource）、技能（skill）。其中，\n记忆不只记“用户说了什么”，更重要的是记“怎么解决问题”\nOpenViking 共抽取的 11 种 Agent 和 User 的记忆类型：\n记忆抽取时引入 ReAct 智能编排：\n引入推理-行动循环，实现智能记忆提取。\n记忆使用增量更新机制：\n基于 Patch 的增量更新，减少不必要的 LLM 调用，示例：\na.模型接收用户原始部分简短记忆（如画像、SOUL.md）等的完整内容，相关的事件、主体等记忆的 URI，ReAct 过程中判断是否调用\nReadTool\n获取完整内容：\n完整记忆：\n[\n# player_3\n- 游戏偏好：喜欢玩狼人杀，在游戏中善于分析和推理，能够清晰地表达自己的观点。\n- 游戏风格：在狼人杀游戏中，会积极跳身份（预言家或猎人）或作为平民上警防狼闷预\n]\n记忆\nURI\n：\n[\nviking:\n/\n/user/memories/entities/\n游戏事件/拍猎人身份.md\nviking:\n/\n/user/memories/events/\n2026\n/\n04\n/\n14\n/平民上警防狼闷预.md\nviking:\n/\n/user/memories/preferences/player\n_3/狼人杀游戏风格.md\n]\nLLM 不输出重复的完整记忆，只输出要变更的原始 Patch 和变更后的 Patch ：\nOld\nPatch: 在狼人杀游戏中，喜欢积极跳身份\nNew\nPatch: 在狼人杀游戏中，会积极跳身份（预言家或猎人）或作为平民上警防狼闷预\nOpenViking 的记忆存储文件，使用语义化命名：文件名本身就是一种索引\n充分利用记忆文件名的导航价值，提升可解释性，便于 Agent 模型理解。\n这样一来，OpenViking 搭建的统一记忆底座与工具调用机制，再通过标准化的协议，将分散的上下文内容进行结构化存储，同时开放专用工具接口，让 VikingBot 能够实现知识的高效沉淀与精准检索，这种“底座+指挥官”的协同模式，也构成了 VikingBot 的核心能力体系。\nVikingBot 核心能力\n🧠 OpenViking 深度集成\n把“知识检索”和“记忆沉淀”提升为核心能力，做到资源可管理、检索可追溯、对话可沉淀。内置 7 个 OpenViking 专用工具（Search、List、Read、Grep、Glob、主动提交记忆、资源上传），让 Agent 在全链路中深度融入 OpenViking 生态。\n⚡\n强大的 Gateway 网关：解耦与高可扩展\n内置 Bot Server 网关并开放对话 API，通过建立事件总线（BUS）统一监听所有渠道消息的出入。这种与“AgentLoop”完全解耦的架构设计，让系统的部署和后续能力扩展变得极其轻松。\n🌐\n多渠道灵活接入：一个 Bot，无处不在\n支持配置 Telegram、Discord、WhatsApp、飞书、钉钉、Slack、邮件、QQ、OpenAPI 等多种主流渠道。不仅能“一个 Bot 多入口”，还能在同一种渠道下配置多个独立的机器人实例，完美契合不同业务场景。\n🔄\n会话管理与自动记忆：越用越聪明的“进化流”\n不仅能记住对话的“结果”，还能完整沉淀执行的“过程”（包括工具调用的思考轨迹）。所有高价值上下文都会自动提交至 OpenViking，让 Agent 的知识库与策略池伴随使用不断生长，越用越强。\n🚀 单 Server 多 Agent 并发：灵活的空间隔离机制\n只需部署一个 Server，就能支持多 Agent 同时运行。系统提供三种灵活模式：\nShared（共享模式）：\n所有渠道与会话共享同一个工作空间，作为一个统一的 Agent 运行。\nPer-channel（渠道隔离）：\n每个接入渠道的工作空间互相隔离，分别作为独立的 Agent。\nPer-session（会话隔离）：\n精确到渠道+会话的双重隔离（例如飞书渠道下的每一个群聊，都会生成一个完全独立上下文的 Agent）。\n在核心能力支撑下，VikingBot 实现了上述两大核心动作：记忆智能提交与渐进式记忆检索。\nVikingBot 记忆智能提交\n一次有价值的对话，不仅是最后的答案，如何得到答案的过程也值得复盘。vikingbot 默认会把对话记录落到本地 session（JSONL），并在满足条件时通过 Hook 把对话 compact 后提交到 OpenViking。\nVikingBot 记忆提交使用两种模式\nHook 模式（自动回忆）：\n记忆像呼吸一样自然发生。在对话开始前自动回想相关信息，在对话结束后自动沉淀新知识。全程无需干预，适合需要“透明无感”体验的场景。\n比如，当用户立即要求 Agent 记住用户称呼，该信息将被通过工具立即持久化到 OpenViking 的用户画像中。\n比如，当用户立即要求 Agent 记住用户称呼，该信息将被通过工具立即持久化到 OpenViking 的用户画像中。\nVikingBot 渐进式记忆检索\nVikingBot 的核心是一个会循环的 Agent。在每次对话处理时，循环链路会自动检索 OpenViking 和当前对话内容最相关的记忆，将 L0（摘要）信息和 URI 内容放入到上下文中。LLM 可基于摘要信息，进行直接回答，或进一步根据 URI 获取完整 L2 内容。\n如上述狼人杀对局，玩家 Bot 在参与竞选警长前，会将之前的对局和竞选相关的记忆放入上下文中，供模型参考\n<memory index=\n\"1\"\ntype\n=\n\"full\"\n>\n<\nuri\n>\nviking://user/player_4/memories/events/2026/04/13/狼人杀第一轮警长竞选.md\n</\nuri\n>\n<\nscore\n>\n0.4836527266665315\n</\nscore\n>\n<\ncontent\n>\ntime: 2026-04-13 (Monday) 4号玩家参与了竞选，怀疑同样竞选的2号玩家是狼人\n</\nmemory\n>\n<\nmemory\nindex\n=\n\"2\"\ntype\n=\n\"full\"\n>\n<\nuri\n>\nviking://user/player_4/memories/events/2026/04/13/狼人杀警长竞选.md\n</\nuri\n>\n<\nscore\n>\n0.4757038141885505\n</\nscore\n>\n<\ncontent\n>\ntime: 2026-04-13 (Monday) 4号玩家是平民身份没有参与竞选，站队了参与竞选的3号玩家\n</\ncontent\n>\n</\nmemory\n>\n<\nmemory\nindex\n=\n\"3\"\ntype\n=\n\"full\"\n>\n<\nuri\n>\nviking://user/player_4/memories/entities/game_character/player_3.md\n</\nuri\n>\n<\nscore\n>\n0.41275857032341723\n</\nscore\n>\n<\ncontent\n>\n# 3号玩家\n- 身份：被4号玩家怀疑为狼人；后被4号认为是好人阵营的大脑袋；在2026-04-13的又一局中被4号玩家重点怀疑为狼人\n- 游戏行为：提出反向狼自刀观点，拉4号玩家进观察池并列第一，被4号投票，被4号标狼面顶置，在2026-04-13的对局中被4号玩家重点攻击，被4号指出反向洗嫌疑太刻意明显，在2026-04-13的投票环节被4号玩家投了一票；在2026-04-13的另一局中警上发言暂不 站队，白天发言质疑1号和2号，后续死亡被4号认为是好人阵营的大脑袋；在2026-04-13的又一局中是警下唯一3号票王，缩警下怕炸身份炸崩狼队怕被提前排坑，跳出来拿导演本反杀诈骗犯剧本，真预遗言甩查杀，全程只在甩锅自刀，狼队友半个字没提，躲躲闪闪 ，被4号玩家重点攻击\n</\ncontent\n>\n</\nmemory\n>\nVikinBot 还提供了 Search、List、Grep 等多种使用 OpenViking 搜索内容的工具，由模型自主判断决策，筛选想要的信息，进一步补充所需记忆和知识。\n渐进式检索逻辑下，我们用业界公开的长程对话评测集 LoCoMo 对比了原生 OpenClaw、集成了 OpenViking 插件的 OpenClaw，以及 VikingBot。\n结果怎么样？\n无论是 VikingBot 还是 OpenViking 插件，都让 Agent 的准确率\n提升了近 3 倍\n。\nVikingBot 在保证极高准确率的同时，将 Token\n消耗降低为 OpenViking 插件的二分之一\n。\n这是“上下文工程”的力量：通过聪明的机制，让每一分钱都花在刀刃上。\n不止实用，更重安全\n从个人玩具变成团队工具，数据安全和隔离是 Agent 使用的头等大事。VikingBot 基于 OpenViking 的多租户能力，在一套服务里构建了企业级的多租户底座：最上层用\naccount_id\n把不同企业/业务空间彻底隔离，其下再用\nuser_id / agent_id\n精细区分个人与智能体的记忆边界。对业务的直观价值有三点：\n更安全：\n企业之间物理级隔离，团队内也能精细控权，谁可以访问哪些知识一目了然；\n更省成本：\n一套服务承载多企业、多团队、多 Agent，无需为每个项目单独开环境、单独运维；\n更高效协作：\n既支持企业级完全隔离，也支持团队内部共享同一个 Bot，让记忆、技能和知识库在安全边界内被重复利用。配合语义化的\nviking://\n文件系统，每一条资源、每一次会话、每一段记忆都能清楚追溯“属于谁、能给谁用”，既利于合规审计，也为后续计费、配额和监控等运营能力打下基础。\nOpenViking 多租户实际应用示例\n上述的狼人杀多 Agent、多 User 场景，充分应用了 OpenViking 的多租户功能。\n示例 1 ：一个 Server，服务多业务线，每个业务线多个Agent隔离\n场景：中台部署了统一的 OpenViking Server，同时服务法务、HR 等多业务线，每个业务线搭建自己的 Agent 智能助手，服务于自己的 C 端用户。\n两个业务线分别在 OpenViking 内注册\naccount_id\n每个业务的\nresources\n，本业务的 Agent 间全部共享，每个 Agent 下，User 记忆隔离\nhr-platform\n# HR 业务线（account_id: hr-platform）\n├── resources\n# 共享资源（account 全局共享）\n│   ├── viking://resources/document\n│   └── viking://resources/workflow\n├── agent\n# HR 业务下各智能体配置\n│   ├── approve\n# 审批智能体\n│   │   ├── memories\n│   │   ├── instructions\n│   │   └── skills\n│   └── qa\n# 答疑智能体\n└── user\n# 用户隔离记忆数据\n├── Bob\n│   └── agent\n│       ├── approve\n│       │   ├── memories\n# Bob 在审批 Agent 下的记忆\n│       │   └── profile.md\n# Bob 在审批 Agent 下的画像\n│       └── qa\n# Bob 在答疑 Agent 下的记忆\n└── Rock\n└── agent\n├── approve\n# Rock 在审批 Agent 下的记忆\n└── qa\n# Rock 在答疑 Agent 下的记忆\nlegal-platform\n# 法务业务线（account_id: legal-platform）\n├── resources\n# 共享资源（account 全局共享）\n│   ├── viking://resources/document\n│   └── viking://resources/workflow\n├── agent\n# 业务智能体\n│   ├── approve\n# 审批智能体\n│   │   ├── memories\n│   │   ├── instructions\n│   │   └── skills\n│   └── qa\n# 答疑智能体\n└── user\n# 用户隔离数据\n├── Bob\n│   └── agent\n│       ├── approve\n│       └── qa\n└── Rock\n└── agent\n├── approve\n└── qa\n示例 2 ：部署一个的个人助手 Server，服务于多个 C 用户\n场景：业务部署多个 Agent Server，帮助用户完成需求分析、代码实现、代码审核等日常开发工作。C 用户无需自己部署，直接使用该 Agent Server，即可养成自己的多个个人助手。每个 Agent 的工作记忆、SKILL 等，对每个使用该 Agent 的 C 用户都是隔离的空间，但多个 Agent 都可以共享该用户的工作偏好记忆等。\n每个 User 的记忆隔离，每个 User 有独立的 Agent 工作空间\n多个 Agent 可共享用户记忆、偏好，协作完成工作\npersonal-assistant\n# 个人助手业务\n├── resources\n# 共享资源（文档、工作流等）\n│   ├── viking://resources/document\n│   └── viking://resources/workflow\n├── user\n# 用户基础信息目录\n│   ├── Bob\n│   │   ├── memories\n# Bob 全局个人记忆\n│   │   └── profile.md\n# Bob 全局用户画像\n│   └── Rock\n│       ├── memories\n# Rock 全局个人记忆\n│       └── profile.md\n# Rock 全局用户画像\n└── agent\n# 智能体目录（与 user 同级）\n├── design\n# 需求分析 Agent\n│   ├── user\n│   │   ├── Bob\n│   │   │   ├── memories\n│   │   │   ├── instructions\n│   │   │   └── skills\n# Bob 在该 Agent 下的技能库\n│   │   └── Rock\n│   │       ├── memories\n│   │       ├── instructions\n│   │       └── skills\n├── code\n# 编码开发 Agent\n│   └── user\n│       ├── Bob\n│       └── Rock\n└── review\n# 代码审核 Agent\n└── user\n├── Bob\n└── Rock\n🙌  立即上手，体验好用又好玩的 VikingBot，顺便来一把狼人杀🐺\nVikingBot 详细安装教程来了！参考\nhttps://github.com/volcengine/OpenViking/blob/main/bot/README_CN.md：\n前置准备：OpenViking 下载完成，\nov.conf\n文件配置完成，文件配置示例可参考 ov.conf 配置模板。\n下载完 OpenViking 后，只需一个指令额外安装 VikingBot\n# 安装bot\npip install\n\"openviking[bot]\"\n# OpenViking和bot一起启动\nopenviking-server --\nwith\n-bot\n# 开始问答\nov chat\nBot 将默认使用 ov.conf 中的 vlm 模型作为对话和 Agent 主模型\n{\n\"vlm\"\n:\n{\n\"provider\"\n:\n\"volcengine\"\n,\n\"apiKey\"\n:\n\"<YOUR_KEY>\"\n,\n\"model\"\n:\n\"doubao-seed-2-0-code-preview-260215\"\n}\n}\n接入对话渠道：在\nov.conf\n文件中，以飞书作最小配置示例，可配置多个飞书机器人。如果\nsandbox.mode\n配置为\nper-channel\n，只需启动一个\nvikingbot gateway\n，每个机器人将作为独立的 Agent 运行：\n{\n\"bot\"\n:\n{\n\"sandbox\"\n:\n{\n\"mode\"\n:\n\"per-channel\"\n},\n\"channels\"\n:\n[\n{\n\"type\"\n:\n\"feishu\"\n,\n\"enabled\"\n:\ntrue\n,\n\"bot_name\"\n:\n\"机器人1\"\n,\n\"appId\"\n:\n\"cli_xxx\"\n,\n\"appSecret\"\n:\n\"xxx\"\n},\n{\n\"type\"\n:\n\"feishu\"\n,\n\"enabled\"\n:\ntrue\n,\n\"bot_name\"\n:\n\"机器人2\"\n,\n\"appId\"\n:\n\"cli_xxx\"\n,\n\"appSecret\"\n:\n\"xxx\"\n}\n]\n}\n}\nPrompt：\nSOUL.md\n、\nTOOLS.md\n、\nIDENTITY.md\n，用来约束 Bot 的默认行为与风格；\nSkills：\n在 workspace 的\nskills/\n下维护你想给每个 Agent 安装的 Skill，让 Bot 成为多领域专家；\n甚至你自己也可以参与到狼人杀的游戏中，\n体验与 Agent 们的斗智斗勇！我们已将上述多 Bot 的狼人杀“勾心斗角” Demo 提交到了 OpenViking 开源 Git 上，可立即在本地搭建一个多 Agent 协作的狼人杀\nDemo Git 地址，下载对应的 Demo 文件和启动脚本：\nhttps://github.com/volcengine/OpenViking/blob/main/bot/demo/werewolf/README.md\n按上述方式安装后 OpenViking 和 VikingBot 后，使用 Demo 一键启动脚本：\n# 指定你的ov.conf配置文件地址，运行一键启动脚本\n# 脚本将：\n# 1.ov.conf中配置god和player 渠道Agent；\n# 2.完成god和player的bot工作目录，SOUL.md初始化；\n# 3.启动OpenViking和Vikingbot服务，启动狼人杀服务。\npython3 {你的Demo存放路径}/start_werewolf_demo.py --config /{你的配置文件地址}/ov.conf\n真人参与到一场多 Agent 协作的狼人杀博弈中！\n与其继续在“Agent 记忆”的泥潭里挣扎，不如即刻行动，认领一只好用又好玩的 VikingBot 🌟。\n加入我们，共建 Agent 上下文的未来！\nVikingBot 的背后，是\nOpenViking\n这个充满活力的开源项目。我们相信，一个强大而开放的上下文基础设施，是通往通用人工智能的必经之路\n。\n🌟 给个 Star：\n点击阅读原文，访问我们的 GitHub 仓库，为我们点亮一颗Star，你的 Star 是我们前进的最大动力！\n🚀 上手试用：\n阅读我们的文档，在你的项目中部署 VikingBot，亲身感受它带来的改变。\n💬 加入社区：\n扫描下方飞书二维码，加入官方交流群，与顶尖开发者一起探讨 Agent 上下文的无限可能。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "257697810396215296",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "企业级 Agent 多智能体架构与选型指南 -- 来自1000+行业应用实践积累",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558948&idx=1&sn=91740771339567d7bbf31aa9b697a2c8",
+      "date": "2026-03-20T00:31:00.430Z",
+      "chars": 13129,
+      "text": "原创\n刘军\n2026-03-20 08:31\n浙江\n阿里妹导读\n本文基于我们服务阿里巴巴多条业务线（淘天、闪购、爱橙、云智能、高德、饿了么、1688、蚂蚁、菜鸟等）、众多社区用户（如友邦、海尔、建设银行等）、超 1000+智能体应用实践经验积累。\n本文发表前，我们刚刚发布了框架新版本，Spring AI Alibaba 全面升级对 AgentScope 框架支持，以 AgentScope ReActAgent 为核心，全面支持基于 AgentScope 的多智能体编排。\nAgentScope Java 1.0.10 版本：\nhttps://github.com/agentscope-ai/agentscope-java/tree/main/agentscope-examplesSpring\nAI Alibaba 1.1.2.2 版本：\nhttps://github.com/alibaba/spring-ai-alibaba/releases/tag/v1.1.2.2\n背景\n随着智能体在企业的规模化落地，企业的核心关注点已从「大模型能做什么」转向「如何让 AI 真正驱动业务闭环」。单纯依靠大模型闲聊的时代正在结束，业界焦点越来越多地落在智能体流程自动化——即让多个专职智能体在清晰流程中协作，完成高价值、可复现的任务。业界一些实证研究表明，在处理多跳推理等复杂问题时，多智能体协作架构的准确率比单一基础模型可高出约 32%；通过引入专门的「批评」与「优化」智能体，事实检索准确率可提升约 26%，模型幻觉显著降低。\nAgentScope 社区在服务企业用户智能体实践落地的过程中，积累了大量有效的、适用于不同业务场景的多智能体模式，包括 Supervisor、Handoffs、Subagent、Routing 等。在\nAgentScope\nJava\n生态中，我们将这些多智能体模式沉淀为具体的框架抽象与代码示例，用户可根据业务选型直接映射到对应的智能体实现，甚至可以基于我们提供的示例直接修改即可实现业务开发。\n从最简单的 ReActAgent 单智能体开始\n在构建复杂的 AI 应用时，AgentScope 强调一个务实的工程原则：\n单智能体优先（Single Agent First）\n。\npublicstaticvoidmain(String[] args){\n// 准备工具\nToolkit\ntoolkit\n=\nnew\nToolkit\n();\ntoolkit.registerTool(\nnew\nSimpleTools\n());\n// 创建智能体\nReActAgent\njarvis\n=\nReActAgent.builder()\n.name(\n\"Jarvis\"\n)\n.sysPrompt(\n\"你是一个名为 Jarvis 的助手\"\n)\n.model(DashScopeChatModel.builder()\n.apiKey(System.getenv(\n\"DASHSCOPE_API_KEY\"\n))\n.modelName(\n\"qwen3-max\"\n)\n.build())\n.toolkit(toolkit)\n.build();\n// 发送消息\nMsg\nmsg\n=\nMsg.builder()\n.textContent(\n\"你好！Jarvis，现在几点了？\"\n)\n.build();\nMsg\nresponse\n=\njarvis.call(msg).block();\nSystem.out.println(response.getTextContent());\n}\n绝大多数日常业务需求，完全可以通过「一个单体大模型 + 一组精准适用的外部工具」来解决。单智能体具有低延迟、易于逻辑推理和方便故障排查的天然优势。只有当业务系统的需求跨越了特定的复杂度阈值时，才应考虑向多智能体架构演进。这些阈值包括：\n上下文管理（Context Management）\n：\n任务所需的专业知识体量过大，单个上下文窗口无法承载，需要按步骤或按智能体选择性呈现。\n职责分工（Division of Labor）\n：\n不同团队需要独立维护各自领域的专家能力与权限边界，并在清晰边界下组合使用。\n并行化加速（Parallelization）\n：\n复杂子任务必须并发执行以大幅降低系统延迟，例如多角度调研、多源查询。\n结构化流转（Structured Flow）\n：\n业务要求按照严格的工序（如分类、路由、处理）或角色状态（如销售到客服的切换）进行传递，单智能体难以自然保证这些约束。\n在实践中，许多系统采用\n混合级联范式（Agent Cascade）\n：\n前端通过轻量级模型评估任务复杂度，简单任务由单智能体处理，只有置信度低或高度复杂的请求才下放给多智能体网络。这种级联设计在保持整体准确率的同时，能显著降低部署与算力成本，在数学推理等极端任务中甚至可实现可观的算力削减。因此，建议\n先单智能体 + 工具\n，再根据上述阈值判断是否引入多智能体。\nAgentScope 支持的多智能体模式\n当前，AgentScope 提供多种开箱即用的多智能体模式，并支持通过\nStateGraph\n（基于Spring AI Alibaba AgentScope 生态集成）实现自定义工作流。以下是我们总结的几种常用多智能体模式（包含它们的作用与适用场景）。\n模式\n作用\n适用场景\nPipeline\n固定流程：顺序（A→B→C）、并行（同一输入给多智能体再合并）、循环（子流程重复直到条件满足）\n流程明确，如自然语言→SQL→评分，或一主题多角度调研→合并报告\nRouting\n分类 → 专家 → 综合：路由器对输入分类，转发给一个或多个专家，结果合并为单一回答\n多垂直领域（如 GitHub、Notion、Slack），一次请求完成「分类→专家→合并」\nSkills\n按需披露：智能体只看到技能名/描述，通过\nread_skill\n按需加载完整内容（如 SKILL.md）\n单智能体多种专长，不想一次性把所有领域文本塞进上下文\nSubagents\n编排智能体通过 Task 工具将工作委托给子智能体；子智能体可用 Markdown 或代码定义，每次调用无状态\n领域清晰（日历、邮件等），希望单一入口完成路由与结果合并。\n和Supervisor类似，只是subagent定义方式不同。\n相比skills可以实现子智能体间上下文隔离。\nSupervisor\n监督者将专家当工具调用（一专家一工具，如 schedule_event、manage_email）\n领域清晰（日历、邮件等），希望单一入口完成路由与结果合并。\n和Subagents类似，只是subagent定义方式不同\n相比skills可以实现子智能体间上下文隔离。\nHandoffs\n状态驱动：工具更新状态变量（如 active_agent），图根据该变量路由到不同智能体\n按角色或顺序交接（如销售\n↔\n支持），对话中「当前负责」的智能体会变化\nCustom Workflow\nStateGraph 自定图：顺序、条件、确定性步骤与智能体步骤混合\n以上模式不适用的情况下，如需要多阶段、显式控制或非 LLM 与 LLM/智能体步骤混合\n从实现机制上可以这样理解：\nPipeline\n通过全局的\nOverAllState\n在顺序（SequentialAgent）、并行（ParallelAgent）、循环（LoopAgent）三种子形态间传递状态；\nRouting\n作为分发枢纽，利用分类器解析输入意图并将任务送达领域专家，支持简单一次调用或基于\nStateGraph\n的前后处理扩展；\nSkills\n采用「选择性披露」——主智能体仅保留技能摘要，通过\nread_skill\n按需加载完整\nSKILL.md\n，有效控制上下文膨胀；\nSubagents\n由编排者通过 Task 工具委派给在隔离上下文中运行的无状态子智能体；\nSupervisor\n则将专家视为对话中的工具，由监督者在动态上下文中决定唤醒谁；\nHandoffs\n通过工具调用更新\nactive_agent\n等状态，依赖\nReplaceStrategy\n与图条件边实现角色间平滑切换；\nCustom Workflow\n则直接使用\nStateGraph\n，将确定性业务逻辑与 LLM 节点编织成自定义网络。\n这些模式既可以单独使用，也可以组合使用——例如 Supervisor 监督者通过 Agent as Tool 调用专家、图中某段用 Handoffs、另一段用 Routing，按流程各部分需求选择最合适的模式即可。\n多智能体模式分类：工作流 vs 对话\n在上一节提到的所有多智能体模式，总体上可划分为两大类：\n工作流模式（Workflow Patterns）与对话模式（Conversation Patterns）\n。企业开发者需要在这二者之间做出权衡，并理解各自的优势与局限。\n工作流自动化（Workflow Automation）\n工作流模式代表系统工程中的\n确定性骨架\n：智能体被编排在预先定义好的有向无环图（DAG）或线性管道中，流程在智能体或节点之间流转，拓扑和状态在图或管道中显式定义。AgentScope 中的\nPipeline\n、\nRouting\n、\nHandoffs\n、\nCustom Workflow\n均属此类。\n优势\n：\n具有极高的可预测性、低资源消耗和良好的审计追踪能力。由于执行路径固定，非常容易调试，是金融审批、文档生成等高合规要求场景的常见选择。\n劣势\n：\n要求在开发初期对任务进行较完整的规约，对未曾设想的新型模糊输入适应性有限。\n对话模式 / 自治智能体（Conversational Agents）\n决策过程发生在一个\n连续的对话上下文\n中，由大模型自主决定何时调用何种外部工具。通常只有主智能体与用户交互并将结果输出给用户。\nSupervisor\n、\nSubagents\n、\nSkills\n属于对话模式。\n优势\n：\n能够优雅地应对复杂的边缘场景和开放式问题，在人类无法预判路径的环境中展现出较高的适应性。\n劣势\n：\n容易产生难以控制的「复合误差（Compounding Errors）」，计算 Token 成本较高，且非确定性导致系统调试相对困难。\n最佳实践：混合工作流\n生产环境的常见做法是采用\n混合工作流\n——以确定的工作流作为应用的「脊椎」，仅在需要高度认知灵活性的特定节点（如意图分类、复杂草案生成）引入自治智能体，从而兼顾系统的可靠性与 AI 的智能弹性。其余能力（如 MsgHub、Multi-Agent Debate）可与上述两类组合使用，用于实现交接、辩论或「智能体即工具」等能力。\n比较维度\n工作流模式（Workflow）\n对话模式（Conversational）\n控制流机制\n显式的图拓扑或线性管道，可以是路径固定、也可以是基于意图的动态职责交接\n在连续对话上下文中完全由模型动态决策\n核心优势\n高重复性、审计友好、极易调试\n适应开放式任务与未知输入\n关键局限\n缺乏灵活性，需提前指定步骤或可能的流转方向\n易产生复合误差，Token 成本较高\n核心模式详解\n本节对其中五种最常用、最易混淆的模式做进一步展开，便于你在实现与选型时快速对标。\nPipeline：顺序、并行与循环\nPipeline 为任务执行提供\n序列与并发保证\n，是工作流模式的典型代表。\n基于 Spring AI Alibaba 的\nSequentialAgent\n、\nParallelAgent\n、\nLoopAgent\n与\nAgentScopeAgent\n，子智能体按固定拓扑执行，系统状态通过全局的\nOverAllState\n对象无缝传递，通过\ninstruction\n与\noutputKey\n串联各环节的输入输出。\n典型场景\n：\n顺序\n：\n自然语言 → SQL 生成器 → SQL 评分器，前一环节输出作为下一环节输入。\n并行\n：\n同一主题从技术、金融、市场三个角度同时调研，再合并为一份报告。\n循环\n：\n生成 SQL 并评分，若得分低于阈值则迭代优化，直到满足条件或达到最大轮数。\n实现要点\n：\n每个子环节用 ReActAgent 构建，再通过\nAgentScopeAgent.fromBuilder(...).instruction(...).outputKey(...)\n封装为管道节点；PipelineService 对外提供\nrunSequential\n、\nrunParallel\n、\nrunLoop\n，业务侧只需传入输入字符串即可获得结构化结果。\n示例（顺序管道中定义 SQL 生成器与评分器并组装）：\nAgentScopeAgent\nsqlGenerateAgent\n=\nAgentScopeAgent.fromBuilder(sqlGenBuilder)\n.instruction(\n\"{input}\"\n)\n.outputKey(\n\"sql\"\n)\n.build();\nAgentScopeAgent\nsqlRatingAgent\n=\nAgentScopeAgent.fromBuilder(sqlRaterBuilder)\n.instruction(\n\"Generated SQL: {sql}. User request: {input}.\"\n)\n.outputKey(\n\"score\"\n)\n.build();\nSequentialAgent\nsequentialAgent\n=\nSequentialAgent.builder()\n.subAgents(List.of(sqlGenerateAgent, sqlRatingAgent))\n.build();\nsequentialAgent.invoke(Map.of(\n\"input\"\n,\n\"帮我生成查询用户统计的SQL\"\n));\nRouting：分类 → 专家 → 汇总结果\n在 Routing 模式中，\n路由器\n作为\n分发枢纽\n，对输入进行意图解析与分类，将子查询送达至特定领域专家（可并行调用），再将专家返回的结果合并为单一回答。适用于存在多个垂直领域的场景——例如 GitHub、Notion、Slack 各自有独立知识与对应智能体。\n目前在 AgentScope 中，我们提供了两种实现方式\n：\nSimple\n：\n业务只调\nRouterService.run(query)\n，内部通过\nAgentScopeRoutingAgent\n一次\ninvoke\n完成分类、并行专家调用与框架内 merge；若需最终合成，可由 RouterService 再调用一次 LLM 将各专家结果整合成一条回复。\nGraph\n：\n使用\nStateGraph\n，流程为 preprocess → routing 子图 → postprocess。预处理做校验与规范化（如 traceId、截断长度），后处理做最终格式与日志；路由子图仍为「分类 → 并行专家 → merge」，但整条链路状态一致，便于扩展与观测。\n适用\n：\n输入类别清晰、希望一次请求完成「分类 → 专家 → 合并」时选用 Routing。\nSkills：渐进式披露\nSkills 模式采用「\n选择性披露（Selective Disclosure）\n」机制：让一个智能体具备多种专长，但\n不一次性\n把所有领域文本塞进上下文，从而有效防止上下文窗口污染。智能体在系统提示中只看到技能的\n名称与描述\n；当用户问题涉及某领域时，通过工具\nread_skill(skill_name)\n按需加载完整的 SKILL.md 内容，再基于该内容作答。\n实现要点\n：\n技能以目录形式存放在 classpath（如\nskills/sales_analytics/SKILL.md\n），使用 YAML frontmatter 声明\nname\n、\ndescription\n，正文为\nschema\n、业务逻辑、示例等。\nClasspathSkillRepository\n加载这些技能，\nSkillBox\n为智能体注入技能系统提示与\nread_skill\n工具；ReActAgent 搭配 DashScopeChatModel、SkillBox 与 InMemoryMemory 即可。\nSQL 助手示例中，智能体会根据问题决定调用\nread_skill(\"sales_analytics\")\n或\nread_skill(\"inventory_management\")\n，再生成 SQL。\n适用\n：单智能体多种专长、按需加载、不要求上下文隔离的场景。\nHandoffs：状态驱动的智能体交接\nHandoffs 实现\n状态接管\n：\n当前负责对话的智能体\n会随流程动态变化。\n每个智能体可注册\n交接工具\n（如\ntransfer_to_support\n、\ntransfer_to_sales\n），调用时更新图状态中的变量（如\nactive_agent\n）；图在节点完成后根据该状态走\n条件边\n，路由到另一智能体或结束，实现不同职能角色间的平滑切换（如销售转客服）。用户始终只与「当前前台」对话，而前台身份由工具调用决定，适合客服、销售等需要按角色或按顺序交接的场景。\n典型场景\n：\n销售智能体与支持智能体并存——客户问价格时由销售处理，问技术故障时通过\ntransfer_to_support\n转给支持；支持在处理完后若客户要下单，再通过\ntransfer_to_sales\n转回销售。状态在多次对话轮次间保持，实现「谁负责当前轮」的显式切换。\n实现要点\n：\n各智能体以\nAgentScopeAgent\n（ReActAgent + Toolkit）作为图的节点；交接工具为普通\n@Tool\n，在工具内通过\nToolContextHelper.getStateForUpdate(toolContext)\n写入\nactive_agent\n等键，图需为该键配置\nReplaceStrategy\n以便合并更新。每个节点出口配置条件边：根据\nactive_agent\n决定下一节点或\nEND\n。示例见\nagentscope-examples/multiagent-patterns/handoffs\n（销售/支持 + 交接工具 + RouteInitialAction、RouteAfterSalesAction、RouteAfterSupportAction）。\n适用\n：\n需要按角色或按顺序交接、且用户每次只与一个「当前负责」的智能体对话、该负责方可随工具调用切换时，选用 Handoffs。\nSubagents 与 Supervisor：中心编排与「专家即工具」\n两种模式都是「一个中心智能体协调多个专家」\n两种模式的主要区别如下：\nSubagents\n：\n编排者（Orchestrator）拆解目标，通过\nTask\n工具（及可选的\nTaskOutput\n查后台任务）委派给无状态的子智能体。调用 Task 时传入\nsubagent_type\n（如 codebase-explorer、web-researcher）和任务描述；子智能体在\n完全独立的隔离上下文\n中运行，防止指令集重叠导致的交叉污染，再将结果作为工具返回值交给编排智能体。子智能体可用\nMarkdown 文件\n（YAML frontmatter 定义 name、description、tools）或\nJava API\n定义，每次调用无状态，适合多领域、一个协调者、子智能体无需直接对用户说话的场景。\nSupervisor\n：\n监督者将各个领域的专家视为对话中的\n工具\n（如\nschedule_event\n、\nmanage_email\n），在动态演进的对话上下文中自主决定唤醒哪位专家。专家在限定上下文中执行并返回结果，仅监督者的回复会呈现给用户。对于每个专家子智能体，可通过\nincludeContents\n、\nreturnReasoningContent\n等参数控制是否传入父流程中的上下文、是否返回当前专家推理过程，以实现灵活的上下文隔离目标。适合领域清晰、专家数量相对稳定、希望单一入口完成路由与合并的场景。\n与 Routing、Skills 的对比\n：\nRouting 是「预处理式」的独立分类步骤，不维护对话历史；Supervisor 是「对话中」由主智能体根据演进中的上下文动态决定调用谁。Skills 是上下文共享、按需加载技能文本；Subagents/Supervisor 是独立执行、结果汇总，上下文隔离，便于做权限与工具限制。\n架构选型指南：如何在模式间做出抉择？\n在实际业务中，相似的模式往往让人难以抉择。选型时，先想清楚你更需要的是「固定流程」「一次分类合并」「按角色交接」，还是「单智能体多专长」「编排/监督」「辩论/自定义图」。下面基于 AgentScope 提供明确的选型逻辑与对照表。\n快速选型速查\n若你需要…\n可考虑\n固定流水线（顺序、并行或循环）\nPipeline\n一次分类后交给专家并合并结果\nRouting\n通过工具在智能体间切换（如销售\n↔\n支持）\nHandoffs\n一个智能体多种专长、按需加载上下文\nSkills\n一个编排智能体通过 Task 分发给多个子智能体\nSubagents\n一个监督者，每个专家一个工具（如日历、邮件）\nSupervisor\n自定义图（确定性 + 智能体步骤、多阶段）\nCustom Workflow\nRouting vs Supervisor：怎么选？\n两者都能把工作分发给多个智能体，区别在于\n路由决策的方式\n与\n是否保留对话记忆\n：\nRouting\n：\n有独立的\n路由步骤\n（如 LLM 分类或规则），对当前输入分类后分发给专家；路由器不维护对话历史，本质是\n预处理\n。若业务只需要\n一次性\n的意图分类，合并结果后\n不需要\n保留各专家的历史交互记忆，应使用\nRouting\n。适合输入类别清晰、一次请求完成「分类 → 专家 → 合并」。\nSupervisor\n：\n由\n主监督者\n在持续对话中\n动态决定\n调用哪个专家（以工具形式）；主智能体维护上下文，可多轮多次调用不同专家。若需要进行\n多轮对话的动态编排\n，且主智能体需要根据\n不断演进的对话上下文\n来决定下一步调用谁，则必须使用\nSupervisor\n。\n建议\n：\n输入类别清晰、一次完成分类与合并用\nRouting\n；需要多轮对话、由主智能体根据上下文灵活调度用\nSupervisor\n。\nSkills vs Subagents / Supervisor：怎么选？\n主要区别在于\n上下文是否隔离\n以及\n安全与权限诉求\n：\nSkills\n：\n技能内容通过\nread_skill\n按需加载到主智能体的上下文中\n，与主智能体共享同一段对话上下文。当你希望将多种专长汇聚在\n同一个上下文\n中让模型\n全局统筹\n时，使用\nSkills\n。适合「一个智能体多种专长、按需加载」、不要求隔离的场景。\nSubagents / Supervisor\n：\n子智能体或专家在\n独立调用/会话\n中执行，与主智能体上下文\n隔离\n，结果汇总回主智能体。若面临\n严格的安全要求\n、必须对不同专家的工具权限进行\n物理级隔离\n，或为了\n防止提示词交叉干扰（Context Contamination）\n，则应使用具有独立运行上下文的\nSubagents\n或\nSupervisor\n。\n建议\n：\n希望在一个对话里按需加载多领域知识且不介意上下文共享，用\nSkills\n；需要专职子智能体在隔离上下文中执行再汇总，用\nSubagents\n或\nSupervisor\n。\n实现与生态：SAA Graph 编排带来了哪些额外能力\nSpring AI Alibaba 与 AgentScope 的定位与协同\n开源社区中逐渐形成两种不同的智能体应用架构取向：一种以\nSpring AI Alibaba\n为代表，以\nGraph 为核心\n的应用框架，强调工作流编排在 AI 应用开发中的重要性；另一种以\nAgentScope\n为代表，以\nAgentic 为核心\n的应用框架，最大化利用基础大模型的能力（ReActAgent、Memory、Context Engineering 等）。这两种取向都会是企业的主流选择，因此 Spring AI Alibaba 在底层全面支持 AgentScope，通过\nAgentScope Starter\n、\nAgentScope Runtime Starter\n实现 AgentScope 与 Spring 生态的集成，让开发者可以按场景选型：\n以 Agentic 为核心\n的 AI 应用推荐使用 AgentScope-Java，\n以 Workflow 编排为核心\n的 AI 应用推荐使用 Spring AI Alibaba；二者结合时，即可在 Graph 中编排由 AgentScope 开发的智能体，将多个智能体与普通业务逻辑统一纳入同一套工作流。\nSpring AI Alibaba 社区发布的 1.1.2.2 正式版本中，一项重要更新便是对 AgentScope 的编排支持：在\nSpring AI Alibaba Graph\n中可以直接编排由 AgentScope 开发的智能体（如基于 ReActAgent、Model、Toolkit、Memory 构建的 AgentScopeAgent），实现「工作流式」多智能体与确定性业务节点的混合编排。下文从 Graph 引擎为 AgentScope 生态带来的能力角度做简要展开。\nGraph 引擎为多智能体提供的核心能力\n前文将多智能体模式归纳为「对话式」与「工作流式」两类；\nSpring AI Alibaba Graph\n主要为 AgentScope 生态提供了编排「工作流式」多智能体的能力，并为长周期、有状态、可观测的智能体流程提供底层支撑。与仅靠单点调用智能体相比，基于 Graph 的编排能带来以下核心能力（可类比业界编排框架所强调的\n持久化执行、状态与可观测性\n等特性）：\n1. 统一的编排 API\nGraph 提供一致的\nStateGraph\n/\nCompiledGraph\n抽象\n：节点可以是 AgentScopeAgent、普通函数或子图，边可以是固定边或条件边。开发者通过同一套 API 定义拓扑、编译图并调用，无需为每种模式手写调度逻辑，从而降低「多智能体 + 业务步骤」混合流程的开发与维护成本。\n2. 流程中的实时状态记录\n图执行过程中的状态（如\nOverAllState\n及各键上的消息、中间结果）由框架统一维护与传递。每个节点读写共享状态，便于审计、回放与问题定位；同时为「从断点恢复」「跨节点回溯」等能力奠定基础，适合需要\n持久化执行\n（Durable Execution）\n的长周期任务。\n3. 标准的状态传递机制\n通过\nKeyStrategy\n（如 ReplaceStrategy、AppendStrategy）为每个状态键定义合并策略，避免各节点自行约定字段格式导致的耦合。前一节点的输出按约定写入指定键，后续节点从状态中按键读取，形成清晰的数据流，便于扩展新节点或调整顺序而不破坏既有契约。\n4. 适合长周期与可恢复任务\n工作流式编排天然支持多阶段、长时间运行的任务（如多轮调研、分步审批、迭代优化）。状态由框架管理后，可与持久化存储结合，在故障或重启后从上一检查点恢复，而不是重新跑完全流程，这对企业级可靠性与成本控制尤为重要。\n5. 对并行场景的原生支持\nGraph 层支持将同一输入分发给多个节点并行执行（例如\nParallelAgent\n、Routing 中的多专家并行），再通过\nMergeStrategy\n等机制汇总结果。相比在应用层手写并发与合并逻辑，编排层原生支持能减少重复代码并统一超时、取消等策略。\n6. 流式与可观测支持\n执行过程可挂接流式回调与追踪（如 Spring AI Alibaba 与可观测设施的集成），便于将 token 级或节点级输出实时推送到前端，并记录执行路径、状态变迁与耗时，为调试、评估与运维提供可见性，与业界「可观测的智能体运行时」方向一致。\nSpring AI Alibaba Graph\n与\nAgentScope\n的协同，使开发者既能用 AgentScope 的 ReActAgent、Memory、Toolkit 等能力构建高质量的单智能体与多智能体组件，又能用 Graph 的 StateGraph、状态策略与编排 API 将这些组件与业务逻辑编排成可维护、可观测、适合长周期与并行的企业级工作流，形成「Agentic 能力 + Workflow 编排」的完整方案。\n体验官方示例\n针对本文提到的几种多智能体模式，我们在 AgentScope Java 官方仓库都提供了对应的示例实现，包括 SQL生成、RAG检索、客户服务等贴近企业实践的具体场景示例。\n示例源码请参考：\nhttps://github.com/agentscope-ai/agentscope-java/tree/main/agentscope-examples\n模式\n实现要点\n示例路径\nPipeline\nSequentialAgent / ParallelAgent / LoopAgent + AgentScopeAgent\nagentscope-examples/multiagent-patterns/pipeline\nRouting\nAgentScopeRoutingAgent（Simple）或 StateGraph + 路由子图（Graph）\nagentscope-examples/multiagent-patterns/routing\nSkills\nSkillBox + ClasspathSkillRepository + read_skill\nagentscope-examples/multiagent-patterns/skills\nSubagents\nTaskToolsBuilder + Markdown/API 子智能体\nagentscope-examples/multiagent-patterns/subagent\nSupervisor\nToolkit.registration().subAgent()\nagentscope-examples/multiagent-patterns/supervisor\nHandoffs\nStateGraph + 交接工具（更新 active_agent）+ 条件边\nagentscope-examples/multiagent-patterns/handoffs\nCustom Workflow\nStateGraph + 自定节点与边（如 RAG、SQL 工作流）\nagentscope-examples/multiagent-patterns/workflow\n进入每个示例目录后，均可通过如下命令运行体验（需配置 DashScope API Key 等）：\nmvn\nspring-boot:run\n小结与下一步\nAgentScope Java 提供\nPipeline、Routing、Skills、Subagents、Supervisor、Handoffs、Multi-Agent Debate\n与\nCustom Workflow\n多种模式，你并不需要所有这些模式，它们只是提供了一些通用的参考，找到适合自己业务场景的设计模式，如果需要的话可组合使用。\n对于绝大多数智能体场景，我们建议从最简单的 ReActAgent + Tools 的模式开始，在需要的时候引入多智能体架构方案。遇到标准模式无法表达的复杂流程时，再考虑自定义工作流或组合多种模式。\n参考资料：本文部分图片、模式参考自 Langchain、Anthropic 等社区项目\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.02,
+        "transfer_agent": 0.84,
+        "direct_local": 0,
+        "peripheral": 0.03,
+        "irrelevant": 0.11
+      }
+    },
+    "relevance": {
+      "score": 1.95,
+      "probabilities": {
+        "0": 0,
+        "1": 0.07,
+        "2": 0.91,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.36,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.38,
+        "2": 0.41,
+        "3": 0.04,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.05,
+      "probabilities": {
+        "0": 0.48,
+        "1": 0.07,
+        "2": 0.37,
+        "3": 0.07,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.1,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.87,
+        "3": 0.1,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.81,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.12,
+        "4": 0.84,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.64,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.3,
+        "3": 0.58,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 10961,
+    "outputTokens": 172,
+    "totalTokens": 11133
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.8,
+        "relevance": 0.93,
+        "grounding": 0.51,
+        "decision_action": 0.3,
+        "evidence": 0.91,
+        "actionability": 0.86,
+        "anti_hype": 0.67
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179851070,
+                "endTime": 1791179851256,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000460362",
+      "marketCost": "0.000460362",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000460362",
+      "inferenceCost": "0.000460362",
+      "inputInferenceCost": "0.000460362",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7192ND29S97F4TX7PRVJ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:31 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::6zthc-1791179850389-56662f12fb27"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.02,
+            "transfer_agent": 0.84,
+            "direct_local": 0,
+            "peripheral": 0.03,
+            "irrelevant": 0.11
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.95,
+          "probabilities": {
+            "0": 0,
+            "1": 0.07,
+            "2": 0.91,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.36,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.38,
+            "2": 0.41,
+            "3": 0.04,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.05,
+          "probabilities": {
+            "0": 0.48,
+            "1": 0.07,
+            "2": 0.37,
+            "3": 0.07,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.1,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.87,
+            "3": 0.1,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.81,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.12,
+            "4": 0.84,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.64,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.3,
+            "3": 0.58,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 10961,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.8,
+            "relevance": 0.93,
+            "grounding": 0.51,
+            "decision_action": 0.3,
+            "evidence": 0.91,
+            "actionability": 0.86,
+            "anti_hype": 0.67
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179851070,
+                    "endTime": 1791179851256,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000460362",
+          "marketCost": "0.000460362",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000460362",
+          "inferenceCost": "0.000460362",
+          "inputInferenceCost": "0.000460362",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7192ND29S97F4TX7PRVJ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:30.487Z"
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "kens，50 个工具就占 10K-25K tokens；\n-选择困难：\n工具越多，LLM 选对的概率越低（实测超过 20 个工具后准确率明显下降）；\n-指令冲突：\n不同场景的操作规范混在一起，LLM 容易串台。\nSkill 的解决思路是：\n把工具+指令+资源打包成一个\"能力包\"，按需加载\n。LLM 平时只看到\"这里有 N 个能力可用\"（每个约 100 tokens），选中后才展开完整指令和工具。\n每个 skill 是一个独立目录，核心是\nSKILL.md\n文件（YAML frontmatter 声明元数据 + Markdown body 定义操作手册）。\nskill/\n# skill 根目录\n└──\nlog\n-diagnosis/\n# 一个 skill = 一个子目录\n├── SKILL.md\n# 必需：YAML frontmatter + Markdown 指令\n├── scripts/\n# 可选：可执行 Python 脚本\n│   └── parse_trace.py\n├── references/\n# 可选：参考文档（按需加载）\n│   └── error-patterns.md\n└── assets/\n# 可选：模板、配置等静态资源\n---\nname: log-diagnosis\ndescription: >\n闲鱼圈子日志诊断助手。当用户需要排查圈子服务的线上错误时使用此 skill。\ntools:\n- query\n_sls_\nlogs           # 声明需要的全局 MCP 工具\nmetadata:\nmax\n_rounds: 10             # skill 内 ReAct 最大轮次\nmcp_servers:                 # skill 专属 MCP 服务器（非共享）\n- name: sls\nurl:\nhttps://mcp-sls.example.com/sse\n---\n# 闲鱼圈子日志诊断助手\n## 工作流程\n1.\n收集查询信息（时间范围、关键词、traceId）\n2.\n调用 query\n_sls_\nlogs 查询日志\n3.\n加载 references/error-patterns.md 匹配历史错误模式\n4.\n输出结构化诊断报告\n## 输出格式\n-\n错误类型 + 根因分析 + 建议操作\n## 边界处理\n-\n无 traceId 时：引导用户提供请求时间范围\n-\n日志量过大时：缩小时间窗口后重试\nSkill 解析：从文件到对象\n# skill/skills_loader.py — Skill 类：SKILL.md 的运行时表示\nclass\nSkill\n:\n\"\"\"一个已解析的 Skill。\"\"\"\ndef\n__init__\n(\nself, directory:\nstr\n, metadata:\ndict\n, instructions:\nstr\n):\nself\n.directory = directory\nself\n.name = metadata.get(\n\"name\"\n, os.path.basename(directory))\nself\n.description = metadata.get(\n\"description\"\n,\n\"\"\n)\nself\n.metadata = metadata\nself\n.instructions = instructions\n# SKILL.md 的 Markdown body 部分\n# skill 级 MCP 服务器配置\nself\n.mcp_servers:\nlist\n[\ndict\n] = metadata.get(\n\"mcp_servers\"\n, [])\n# skill 级 ReAct 最大轮次（嵌套在 metadata.metadata 中）\nself\n.max_rounds:\nint\n|\nNone\n=\nNone\nmeta_sub = metadata.get(\n\"metadata\"\n)\nif\nisinstance\n(meta_sub,\ndict\n):\nraw = meta_sub.get(\n\"max_rounds\"\n)\nif\nraw\nis\nnot\nNone\n:\nself\n.max_rounds =\nint\n(raw)\n# SKILL.md 解析：分离 YAML frontmatter 和 Markdown body\n@staticmethod\ndef\n_parse_skill_md\n(\nfilepath:\nstr\n) ->\ntuple\n[\ndict\n,\nstr\n]:\nwith\nopen\n(filepath,\n\"r\"\n, encoding=\n\"utf-8\"\n)\nas\nfile:\ncontent = file.read()\nif\nnot\ncontent.startswith(\n\"---\"\n):\nreturn\n{}, content\nparts = content.split(\n\"---\"\n,\n2\n)\n# 按 \"---\" 分割为三段\nif\nlen\n(parts) <\n3\n:\nreturn\n{}, content\nfrontmatter_text = parts[\n1\n].strip()\n# 中间段是 YAML\ninstructions = parts[\n2\n].strip()\n# 最后段是 Markdown\nmetadata = yaml.safe_load(frontmatter_text)\nor\n{}\nreturn\nmetadata, instructions\n为什么用 YAML frontmatter 而不是 JSON 配置文件\n：SKILL.md 是给两个\"读者\"看的——人看 Markdown body 理解操作规范，机器解析 YAML frontmatter 获取元数据。一个文件解决两个问题，比\nskill.json\n+\ninstructions.md\n两个文件的方案更简洁，也减少了同步维护的负担。\n四阶段渐进式加载：完整实现\n┌──────────────────────────────────────────────────────────────────────┐\n│                     渐进式加载四阶段                                    │\n│                                                                      │\n│  阶段\n1\n: Advertise (启动时，一次性)                                    │\n│  ┌────────────────────────────────────────────────────────────┐      │\n│  │ 扫描所有 skill 目录 → 解析 SKILL.md frontmatter              │      │\n│  │ 注入 system prompt:\n\"- log-diagnosis: 日志诊断助手...\"\n│      │\n│  │ 开销: ~\n100\ntokens/skill                                     │      │\n│  └───────────────────────────────┬────────────────────────────┘      │\n│                                  │ LLM 判断匹配 →\nload_skill\n()       │\n│  阶段\n2\n: Load (按需)              ▼                                   │\n│  ┌────────────────────────────────────────────────────────────┐      │\n│  │ 返回完整 SKILL.md body (操作手册)                            │      │\n│  │ 触发 MCP 工具注入 (inject_skill_mcp_tools)                   │      │\n│  │ 开销:\n500\n-\n2000\ntokens（仅在需要时）                          │      │\n│  └───────────────────────────────┬────────────────────────────┘      │\n│                                  │ 指令中引用了参考资料                 │\n│  阶段\n3\n: Read (按需)              ▼                                   │\n│  ┌────────────────────────────────────────────────────────────┐      │\n│  │\nread_skill_resource\n(\n\"references/error-patterns.md\"\n)         │      │\n│  │ 含路径穿越安全检查 (os.path.realpath 比较)                    │      │\n│  └───────────────────────────────┬────────────────────────────┘      │\n│                                  │ 需要执行脚本                       │\n│  阶段\n4\n: Run (按需)               ▼                                   │\n│  ┌────────────────────────────────────────────────────────────┐      │\n│  │\nrun_skill_script\n(\n\"scripts/parse_trace.py\"\n, args=[...])      │      │\n│  │ subprocess +\n30s\n超时 + cwd=skill.directory                 │      │\n│  └────────────────────────────────────────────────────────────┘      │\n└──────────────────────────────────────────────────────────────────────┘\n# skill/skills_loader.py — 四阶段完整实现\nclass\nSkillsLoader\n:\ndef\n__init__\n(\nself, skills_dirs:\nlist\n[\nstr\n]\n):\nself\n.skills_dirs = skills_dirs\nself\n.skills:\ndict\n[\nstr\n, Skill] = {}\nself\n._discover_skills()\n# 构造时立即执行阶段 1\n# ═══ 阶段 1: Advertise — 启动时扫描，只提取 name + description ═══\ndef\n_discover_skills\n(\nself\n):\n\"\"\"扫描所有 skill 目录，解析 SKILL.md 的 frontmatter。\"\"\"\nfor\nskills_dir\nin\nself\n.skills_dirs:\nif\nnot\nos.path.isdir(skills_dir):\ncontinue\nfor\nentry\nin\nsorted\n(os.listdir(skills_dir)):\nskill_path = os.path.join(skills_dir, entry)\nskill_md_path = os.path.join(skill_path,\n\"SKILL.md\"\n)\nif\nnot\nos.path.isdir(skill_path)\nor\nnot\nos.path.isfile(skill_md_path):\ncontinue\n# 没有 SKILL.md 的目录不是 skill\ntry\n:\nmetadata, instructions =\nself\n._parse_skill_md(skill_md_path)\nskill = Skill(directory=skill_path, metadata=metadata,\ninstructions=instructions)\nself\n.skills[skill.name] = skill\nexcept\nException\nas\nerror:\nlogging.error(\nf\"[Skills] Failed to parse\n{skill_md_path}\n:\n{error}\n\"\n)\ndef\nget_advertise_prompt\n(\nself\n) ->\nstr\n:\n\"\"\"生成注入 system prompt 的 skill 摘要（~100 tokens/skill）。\"\"\"\nlines = [\n\"## Available Skills\"\n,\n\"\"\n,\n\"The following skills are available. When a user's request matches \"\n\"a skill's description, use the `load_skill` tool to load its full \"\n\"instructions before proceeding.\"\n,\n\"\"\n]\nfor\nskill\nin\nself\n.skills.values():\n# disable-model-invocation 的 skill 只能由用户主动触发\ndisable_model = skill.metadata.get(\n\"disable-model-invocation\"\n,\nFalse\n)\ninvocation_note =\n\" (user-invocable only, do not auto-load)\"\n\\\nif\ndisable_model\nelse\n\"\"\nlines.append(\nf\"- **\n{skill.name}\n**:\n{skill.description}{invocation_note}\n\"\n)\nreturn\n\"\\n\"\n.join(lines)\n# ═══ 阶段 2: Load — 返回完整 SKILL.md body（操作手册）═══\ndef\nload_skill\n(\nself, skill_name:\nstr\n) ->\nstr\n:\nskill =\nself\n.skills.get(skill_name)\nif\nnot\nskill:\navailable =\n\", \"\n.join(\nself\n.skills.keys())\nreturn\nf\"Skill '\n{skill_name}\n' not found. Available skills:\n{available}\n\"\nreturn\nskill.instructions\n# ═══ 阶段 3: Read — 按需读",
+      "fulltext_obtained": true,
+      "chunk_index": 18,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.06,
+        "transfer_agent": 0.9400000000000001,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.94,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.9299999999999999,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.76,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.09,
+        "2": 0.35,
+        "3": 0.23,
+        "4": 0.07,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.2,
+      "probabilities": {
+        "0": 0.54,
+        "1": 0.09,
+        "2": 0.09,
+        "3": 0.17,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.58,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.43,
+        "3": 0.56,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.88,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.03,
+        "4": 0.87,
+        "5": 0.06
+      }
+    },
+    "anti_hype": {
+      "score": 2.64,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.06,
+        "2": 0.17,
+        "3": 0.72,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.78,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5318,
+    "outputTokens": 172,
+    "totalTokens": 5490
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.92,
+        "relevance": 0.95,
+        "grounding": 0.35,
+        "decision_action": 0.2,
+        "evidence": 0.71,
+        "actionability": 0.84,
+        "anti_hype": 0.73
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180422002,
+                "endTime": 1791180422151,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000223356",
+      "marketCost": "0.000223356",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000223356",
+      "inferenceCost": "0.000223356",
+      "inputInferenceCost": "0.000223356",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARETMAYVA0CE05PFVBPMY"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:02 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::vwltv-1791180421961-f32f3a727492"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.06,
+            "transfer_agent": 0.9400000000000001,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.94,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.9299999999999999,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.76,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.09,
+            "2": 0.35,
+            "3": 0.23,
+            "4": 0.07,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.2,
+          "probabilities": {
+            "0": 0.54,
+            "1": 0.09,
+            "2": 0.09,
+            "3": 0.17,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.58,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.43,
+            "3": 0.56,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.88,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.03,
+            "4": 0.87,
+            "5": 0.06
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.64,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.06,
+            "2": 0.17,
+            "3": 0.72,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.78
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5318,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.92,
+            "relevance": 0.95,
+            "grounding": 0.35,
+            "decision_action": 0.2,
+            "evidence": 0.71,
+            "actionability": 0.84,
+            "anti_hype": 0.73
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180422002,
+                    "endTime": 1791180422151,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000223356",
+          "marketCost": "0.000223356",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000223356",
+          "inferenceCost": "0.000223356",
+          "inputInferenceCost": "0.000223356",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARETMAYVA0CE05PFVBPMY"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:01.373Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1160189252445642752",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "初探 AI-Infra 下的服务器固件安全实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247520428&idx=1&sn=94c00417b46f9fca4576d625863bcaea",
+      "date": "2026-06-17T10:51:00.917Z",
+      "chars": 9218,
+      "text": "原创\n火山引擎AI安全\n2026-06-17 18:51\n北京\n1. 背景\n这两年随着\nAI-Infra\n持续升温，云上与云下的\n通算与智算服务器\n建设节奏明显加快：一方面，服务器数量不断增加，作为核心基础设施承载了海量的训练、推理、Agents和HPC任务；另一方面，围绕服务器引入的部件类型也在持续丰富，新的BMC芯片与固件解决方案、新的BIOS固件解决方案、新款GPU、新款RDMA网卡以及各类板卡控制器。也正因为如此，服务器固件安全问题日益严峻。\n从业务视角看，服务器有三个突出的特点：\n业务价值高。\n服务器所承载的训练、推理、Agents和HPC任务具有更高的业务价值，发生固件层面的可用性、完整性或可信性问题，往往会对业务连续性、运维管理和数据安全产生更大影响。\n部件类型更多、复杂度高。\n随着 AI-Infra 演进，服务器的部件丰富度几乎按月上升。除 Host CPU 外，还包括 BMC、BIOS、GPU、RDMA NIC、UBB以及各类板卡微控制器，整机可信边界也随之不断扩大。\n资源复用带来的后效风险强。\n无论是对外售卖的裸金属实例，还是云上虚拟化实例，亦或是云下的物理机，设备都会经历多次业务切换与租户复用。一旦底层固件被污染，风险就可能跨越实例生命周期，继续影响后续租户或业务。\n2. 整机威胁建模\n2.1 整机视角风险分层\n2.2 核心攻击路径\n从固件安全视角看，服务器威胁场景可以划为三条路线：\nHost OS → BMC Bootkit → 攻击后续租户。\n攻击者接管Host OS后，通过 Host-BMC 通路、带内管理接口或固件服务链路植入恶意 BMC 固件，形成持久化控制，并在机器回收复用后继续影响后续租户。\nHost OS → BIOS Bootkit → 攻击后续租户。\n攻击者接管Host OS后，进一步污染 BIOS / UEFI 启动链，植入 BIOS Bootkit，使恶意控制跨越重装和实例回收而持续存在，并在后续租户使用时继续生效。\nHost/Guest OS → Device(GPU/RNIC/...） Bootkit → 攻击后续租户。\n无论是宿主机还是虚拟机场景，如果 GPU/RDMA网卡等板卡或模组存在固件签名启动时或运行时的绕过，就可能向 GPU/RDMA网卡等高价值目标植入恶意固件或 Bootkit，破坏整卡完整性、机密性、可用性，继而影响后续任务、后续租户与业务。\n2.3 威胁建模结论\n围绕上述攻击路径，服务器的威胁建模至少应形成以下结论：\n第一，服务器需要整机视角。\n在服务器中，仅做主机加固、容器隔离或业务层防护，不足以覆盖固件层攻击链，BMC、BIOS、GPU、NIC、SSD 等的全生命周期的安全基线是必要的。\n第二，BMC 和 BIOS 是平台级关键边界。\n一旦这两个环节失守，后续租户、整机可信性和管理网络都会被拖入风险面。\n第三，最终治理方向应是缩小信任锚点。\n行业内比较成熟的做法，通常都是通过\nPRoT / PFR / TPM / TPCM\n来缩小 TCB，并向上建立信任链。\n3. 火山引擎服务器安全最佳实践\n3.1 服务器安全架构\n3.1.1 签名与密钥管理：数字签名、HSM、PKI\n服务器通常同时承载 BIOS、BMC、GPU/DPU/NIC、SSD 以及 UEFI 驱动等多类固件。只要其中任意一环的发布链路失守，攻击者就可能把合法升级过程变成恶意固件投递通道。因此，固件安全的第一步是建立一套可追溯、可吊销、可轮换的签名信任体系。\n从工程落地看，这套体系至少包含四个关键层次：\nHSM 保护根密钥与中间密钥。\n根密钥必须保存在具备物理防护和权限审计能力的 HSM 内。实际签名时，由 HSM 在受控边界内完成私钥操作，外部流程只能拿到签名结果，不能导出私钥明文。\nPKI 定义\"证书链\"与\"授权边界\"。\n根证书之下，可以按产品线、部件类型、环境和发布职责继续派生中间证书与签名证书。例如，主板 BIOS、BMC 固件、GPU 卡固件和驱动签名可以分属不同证书域，这样即使某一子域密钥失陷，也不会直接扩大为整机范围的信任崩塌。\n签名对象覆盖真实交付物。\n固件发布包含版本、适配机型、组件标识、算法信息以及必要的 manifest。PROT和IROT验签时，验证的是\"符合当前机型、部件的在当前版本策略下允许的升级固件集合\"。\n证书生命周期必须可运营。\n任何部件的固件都应支持密钥轮换、证书失效、吊销列表同步和紧急禁用能力。否则，一旦签名证书泄露，平台就会缺少快速止血手段。\n最终，数字签名、HSM 与 PKI 共同解决的是\n固件发布可信\n问题：让设备只接受来自授权发行链的固件，并且在密钥泄露、供应链异常或版本回退攻击出现时，平台仍然能用统一策略收紧信任边界。\n3.1.2 安全启动：PROT + IROT 实现整机链式验签\n安全启动要回答的核心问题，是\n服务器从上电到业务启动，是否始终只执行被授权的代码\n。这个问题尤其关键：如果只有 CPU/BIOS 在做校验，而 GPU、DPU、网卡或存储控制器固件游离在启动链之外，攻击者仍然可能借助部件侧固件拿到持久化控制能力。\n这里 PROT 为 Platform Root of Trust，即整机级的可信根； IROT 指Integrated Root of Trust，即部件内部的可信根。\nPROT 解决的是“谁有资格成为整机信任起点”，IROT 解决的是“关键部件能否在自己的边界内自证清白”。\n两者配合后，整机链式验签通常沿着下面的顺序展开：\nPROT 先建立最初信任锚点。\n不可变的 Boot ROM、eFuse 或等效硬件机制中预置根公钥或其摘要。设备上电后，PROT 先完成自身完整性检查，再校验最早期、权限最高的一跳固件，例如 BMC 固件、BIOS 固件。\n主板启动链继续向上扩展。\n在 PROT 完成主板关键固件校验后，BIOS/UEFI 再继续验证后续 DXE 模块、Option ROM、Boot Loader、OS Kernel 以及关键驱动。这样，信任链就从\"主板能启动\"扩展为\"主板只能按授权路径启动\"。\n把信任延伸到部件。\nGPU、DPU、NIC、SSD 等异构部件如果具备 IROT/eROT（部分芯片会使用外置信任根），就可以在本地完成部件固件验签。这样做的意义在于：整机不默认信任关键部件，而要求每个关键部件都基于硬件可信根进行验证。\n失败策略兜底。\n一旦任一关键节点验签失败，平台应能阻断启动、隔离部件、进入受限恢复模式，禁止该节点纳入资源池对外提供服务或售卖。\n⭐对服务器而言，\n链式验签的价值在于把主板、加速卡和外设统一纳入同一条受控启动路径。\n这比单点 Secure Boot 更接近真实的整机安全边界。\n因此，PROT + IROT 是在异构硬件环境中把\"平台可信\"落到整机：谁先启动、谁验证谁、失败后怎么处理，都有明确、可执行的硬件约束。\n3.1.3 可信度量：SPDM + TPM 构建信任底座\n如果说安全启动解决的是\"能不能启动\"，那么可信度量解决的就是\n\"现在这台机器到底处于什么安全状态\"\n。在云上 ECS 的 AI-Infra 场景里，这一点直接关系到资源调度、密钥下发、租户隔离和故障处置：平台不能只知道某台服务器理论上支持安全启动，还要能证明它此刻确实以预期配置运行。\nTPM 与 SPDM 分别承担两类能力：\nTPM 负责平台级可信记录。\n启动过程中，对于Host OS，BIOS、Boot Loader、Kernel、关键驱动、配置开关和安全策略状态可以按顺序写入度量寄存器（PCR），对于实现了fTPM或外挂了dTPM的设备，其启动信息也会被记入设备自己的TPM的度量寄存器。这种 Extend 式记录天然适合表达\"启动过程发生过什么\"，因为任何一步变化都会改变最终度量结果。\nSPDM 负责部件级身份认证与度量。\n对 GPU、NIC、SSD、DPU 这类异构设备，仅靠主板侧日志并不足以说明部件自身是否可信。SPDM 让请求方与响应方之间建立标准化的认证、证书交换、度量获取与会话保护流程，使部件也能把自己的固件版本、配置状态和度量结果纳入整机信任判断。\n在安全启动的基础上，结合 SPDM 和 TPM，就能针对服务器实现一套相对完整的可信管理逻辑\n控制面（可信管理平台）做统一比对与决策。\n平台将 TPM 事件日志、PCR 摘要以及 SPDM 返回的部件测量值，与既定基线进行比较，判断这台机器是否可以加入资源池、是否允许承载高敏感训练任务、是否能够领取工作负载密钥或访问受限数据。\n度量结果反向驱动业务平台动作。\n对 AI-Infra 而言，可信度量会被接入资源调度、远程证明、机密下发和异常隔离流程，让不满足基线的节点自动降级、阻断或迁移。\n🥇\n签名告诉平台“代码来自谁”，安全启动告诉平台“是否按授权路径执行”，可信度量则进一步回答“这台机器现在是否值得被信任”。\n对于 AI-Infra，SPDM+TPM 的意义是把底层硬件信任传递给上层控制面、调度系统和业务负载，使\"可信计算节点\"成为可以被识别、被证明、被策略化使用的基础资源。\n3.2 服务器安全生命周期管理\n3.2.1 安全需求\n基于服务器资产、风险及攻击路径分析，结合业界最佳实践，制定服务器安全需求基线，覆盖服务器整机、部件及固件，并将其落入产品需求规格，作为后续设计与开发的强制输入。\n需求识别：\n基于服务器资产、业务场景、攻击面及潜在威胁，识别整机、部件及固件层面的核心安全需求。\n需求基线：\n结合业界最佳实践及相关规范，建立统一的服务器安全需求基线，完整、一致、可复用。\n3.2.2 安全设计\n服务器方案设计阶段针对高风险安全特性开展威胁建模，明确安全边界，识别关键资产、数据流及潜在攻击路径，分析安全风险并评估其影响，制定相应的威胁缓解措施，形成安全设计方案。安全设计方案经技术评审通过后，方可进入开发阶段。\n安全识别：\n结合 STRIDE 等方法论，系统识别潜在攻击路径与安全风险，并评估其对机密性、完整性、可用性和可恢复性的影响。\n安全设计：\n参考 NIST SP 800-193 等业界规范，将安全启动、完整性校验、身份鉴别、最小权限、篡改检测、异常恢复等安全要求纳入方案设计。\n开源/第三方组件安全：\n对方案中引入或涉及的开源、第三方组件开展安全评估，并纳入生命周期安全管理，重点关注已知漏洞、版本溯源、补丁更新及供应链风险。\n安全评审：\n方案须通过安全专家组评审，确认安全措施完备、风险可控后方可进入开发阶段。\n3.2.3 安全开发\n需求开发阶段将安全控制措施贯穿编码、检视与测试全过程，确保设计阶段定义的安全要求得到有效实现，并及时发现和修复实现过程中的安全缺陷。\n安全编码规范：\n制定统一安全编码规范，重点关注输入校验、权限控制、敏感信息保护、异常处理、资源访问控制等内容。\n代码静态扫描：\n在代码提交时自动调用静态代码扫描工具对代码进行安全扫描，识别常见漏洞、危险函数使用、不安全配置及潜在缺陷，通过后方可提交成功。\n安全检视：\n在代码提交后、合入前开展安全检视，重点核查安全设计要求落实情况、关键安全逻辑实现正确性以及高风险变更的安全影响，通过后方可合入。\n3.2.4 安全测试\n火山云平台安全保障团队联合字节跳动服务器团队，围绕服务器构建起覆盖\n安全测试平台及安全渗透测试\n的完整验证流程。与只在版本发布前做一次人工检查不同，我们已将部分成熟的固件安全扫描能力纳入日常工程流程，使其同时服务于问题发现、版本验收和风险复核。\n安全测试平台：\n在安全可信测试平台上，建设了安全测试基线用例库及工具扫描平台，并将多类扫描能力纳入统一入口。围绕服务器固件及相关软件产物，工具扫描覆盖病毒扫描、端口扫描、Web漏洞扫描、主机漏洞扫描及二进制漏洞扫描。\n安全渗透测试：\n在自动化扫描之外，结合渗透测试对服务器整机和关键部件做进一步验证，渗透测试覆盖威胁及攻击路径分析、管理面安全测试、协议与接口测试、凭据与敏感信息安全测试，分析输出问题报告与典型案例，对发现的问题进行风险评估、制定消减方案，并沉淀为后续版本验收和案例复盘输入。\n3.2.5 安全部署\n服务器部署阶段会进行安全检查，覆盖硬件、固件及配置检查，确认设备状态与出厂基线保持一致。部署阶段还会基于最小化原则进行安全配置加固，修改出厂默认密码，更换设备证书。\n3.2.6 漏洞管理\n在固件漏洞情报管理方面，火山云平台安全保障团队联合字节跳动服务器团队建立了面向服务器产品的持续感知机制，并把开源组件、第三方部件和供应商固件纳入统一的漏洞运营视图。围绕服务器产品，梳理开源软件清单、第三方部件清单以及对应的版本信息，并持续跟踪公开漏洞库、开源社区披露、供应商漏洞通报以及邮件等多类输入来源。这样做的目标，不只是“看到有漏洞”，而是让漏洞信息能够和具体服务器产品、部件型号、版本状态建立可追踪的对应关系。\n4. 案例分享：大规模修复固件漏洞的一次挑战\n以公开披露的 BMC 固件任意读写漏洞（CVE-2023-34335）为例，此类问题的典型利用路径是：攻击者先取得 Host OS Ring0 权限，再借助IPMI的Yafu接口绕过常规升级约束，直接读写 BMC Flash。对于服务器而言，这类漏洞的治理难点不在于理解单一漏洞细节，而在于如何在异构硬件、租户复用和连续服务约束下，以可控方式完成大规模风险收敛。\n4.1 修复难点\n该固件漏洞导致风险边界往往会迅速从“单机组件缺陷”扩大为“整机可信性问题”。从修复实践看，主要难点集中在以下四个方面：\n难以及时止损。\n漏洞利用往往直接落在底层刷新与管理接口上，传统主机侧监控可以提供线索，但很难在不影响正常运维的前提下实现可靠拦截。\n资产异构度高，受影响面识别复杂。\n服务器通常同时覆盖多 CPU 平台、多供应商、多固件方案和多固件版本，难在短时间明确受影响机型、受影响业务。\n在线修复影响因素多。\n升级期间，带外管理、远程控制与部分控制面能力会阶段性不可用；期间可能出现个体异常需人工介入处理等情况。属于复杂情况的高风险变更。\n修复依赖跨角色协同。\n固件版本确认、机型验证、升级执行、业务窗口协调、失败处置和上游供应商支撑缺一不可。整个修复过程需要全链条协同紧密配合。\n4.2 修复流程\n结合该类漏洞的实战处置经验，一条更稳健的修复路径通常包含以下五个步骤：\n先完成漏洞定级与攻击链确认。\n重点评估漏洞是否涉及 Host 高权限向 BMC/BIOS 固件渗透、跨租户持久化或管理网络扩展风险；三者任一成立，直接进入平台级紧急修复流程。\n再完成受影响资产盘点与风险分层。\n需要按服务器机型、固件版本、业务形态、安全启动状态和资源池属性完成交叉识别。\n基于工程可行性选择修复路径。\n理论上，退役后离线刷写、替换部件、在线升级都可以作为治理手段；但在云环境中，修复工程要在风险收敛速度、业务连续性和实施条件之间取得平衡，综合后采取最有利的路径。若在线升级是可行路径，就应同步明确影响范围、升级窗口和观测要求。\n逐机型验证并提前编写失败预案。\n针对不同机型，修复前针对性分析差异制定不同的修复失败处置预案，升级中一旦遇到立即执行预案。\n按灰度节奏分批推进直至收敛。\n先从可控环境开始，再逐步扩大到普通业务与重点资源池；每一批次之间都应保留观测窗口，并以监控结果、失败率和回退条件作为下一批是否放量的依据。\n4.3 最终结果\n经过上述路径治理后，这类高风险固件问题通常可以在不依赖整机批量下线的前提下，完成大规模在线收敛。以本案例对应的处置实践为代表，最终形成了三类具有普遍参考价值的结果：\n风险快速收敛。\n通过分层识别与分批升级，在多数据中心的大规模服务器集群上完成了数万台设备的在线修复，显著缩短了高风险暴露窗口。\n工程路径被验证。\n实践证明，硬件外设类漏洞并非只能依赖停机返修或等待自然退役；在充分验证、影响告知和失败预案到位的前提下，在线升级同样可以成为可落地的治理路径。\n流程能力得到沉淀。\n修复过程不仅解决了单次漏洞问题，也沉淀出面向固件变更的定级、验证、灰度、观测与故障处置机制，为后续同类事件提供了可复用的标准化框架。\n4.4 短期演进\n4.4.1 服务器BOM与资产监控\n一次成功的应急修复，并不意味着治理工作到此结束。真正提升后续响应速度的关键，在于把临时盘点能力固化为长期资产能力。因此，火山云平台安全保障团队目前也维护了服务器硬件 BOM 表与资产表。\n其中，\n硬件 BOM 表\n描述“这台服务器由哪些关键部件构成”，典型字段包括整机型号、BMC 固件版本、BIOS 固件版本、CPU 微码版本、关键外设型号以及对应固件版本；\n资产表\n则描述“这台服务器当前在哪里、服务于什么业务线、处于什么状态”，将硬件信息与资源池、实例形态、地域、租户和运维状态关联起来。\n这两类表协同后，我们把后续漏洞响应从“人工搜集”提升为了“结构化查询”：\n当新的 BMC、BIOS、GPU、NIC 或 SSD 固件风险出现时，可快速筛出受影响机型、版本和资源池。\n当某类资产需要优先治理时，可直接定位对应租户、实例形态和升级窗口条件。\n当修复完成后，可继续用于核验修复覆盖率、识别尾部遗漏资产，并支撑后续持续扫描与复盘分析。\n4.4.2 BMC固件Nday扫描工具BoardSentinel\n📚\nBoardSentinel 的价值：TL;DR\n并非替代 secure boot、可信根和版本治理，而是让固件管理方不再靠“上游说修了”来判断固件是否真的安全。\n为什么需要固件扫描工具？火山云平台安全保障团队做了如下调研：\nCommercial Server Manufacturer: Convenience > Security\n以 CVE-2023-34335 为例，对 10 家服务器标准机厂商的 80 份 BMC 固件分析后，约\n85%\n仍然受未完全修复。部分厂商把相关能力当成“方便带内升级的功能”，只是在云厂商定制的 BMC 固件里做额外处理。\nOEM/ODM Server Vendor: Ignore 3rd-party component vuln\n即便云厂商会要求供应商修复 BMC 漏洞，但因为行业里长期缺乏对 BMC 固件内第三方组件漏洞的威胁评估与检测能力，很多三方组件漏洞会被忽略。\n这对服务器意味着：不能只信任厂商“已经修过了”，不能只看 release note 或版本号，不能只靠人工审计和单点渗透测试，需要一套能面对\n真实厂商固件产物\n进行分析的扫描能力。\n因此我们研发了BoardSentinel，其定位是面向\n服务器固件产物\n的分析框架。从一套典型的固件扫描框架设计来看，它的流程大致可以概括成：\n把 firmware 拆解为 filesystems\n当前 parser / extractor 支持的类型包括：OpenBMC、MegaRAC、各服务器厂商的自定义BMC\n因为固件问题做不到“搜个pattern”就能找到，所以需要先把复杂镜像正确拆出来\n遍历所有文件，识别类型并按路径规则筛选，并给检测引擎分流\nExecutable：\n进入Binary-SAST引擎中，先修复函数和变量类型，再按 caller、callee、string、name 等维度筛函数，得到伪代码，然后进行AST模糊匹配\nText-like file：\n针对 py / yml / conf / lua 等文本型内容，直接进入相应静态代码分析引擎\n最终汇总 assessment results\n从框架设计上看，可以把它理解为一套\n“多解析器 + 多引擎 + 插件化规则”\n的体系。\n专利公开号：CN121808789A\n这里可以用两个典型 CVE 做对比：\nCVE-2023-38545\n可以通过相对标准化的规则去匹配特定库、函数、调用关系、字符串。\nCVE-2023-34335\n则需要在 IPMI 相关共享库中匹配来自\nCmdHndlr\n和\nNetfnTbl\n字典的数据，这类依赖\n非控制流信息\n的检测显然超出了 Semgrep 的能力范围，此时BoardSentinel仍然能通过自定义 IDAPython 插件把检测逻辑接进去。\n站在服务器安全建设角度，我们把它放在以下几个场景里：\n新平台引入前扫描：\n对上游供应商提供的 BMC 固件做基线扫描，尽量在导入前发现问题。\n版本升级前验收：\n新版固件在进入灰度前，先做规则扫描和差异分析，交叉验证上游供应商 release note。\n重大 CVE 响应：\n当行业爆出 BMC、第三方组件漏洞时，快速评估受影响范围，免于人工逐机型翻产物。\n供应链治理：\n将扫描结果反向用于约束 OEM / ODM / 标准机供应商修复质量，减少“口头修复、实际未修”的情况。\n长期规则积累：\n把一次次漏洞响应中沉淀下来的特征转成规则库，逐步把经验变成平台能力。\n4.5 中长期演进\n从长期看，本章节讨论的修复实践仍属于“事件驱动治理”；而第3.1章节介绍的数字签名、链式验签与可信度量，代表的是“默认安全能力建设”。两者并不割裂，前者解决眼前风险，后者决定同类问题能否从根本上减少重复发生。\n服务器固件安全的中长期目标，不应停留在“漏洞出现后尽快升级”，而应逐步演进到\n发布侧有签名约束、启动侧有硬件信任根、运行态有可信度量、运营侧有结构化资产视图\n的体系化架构，从“救火”转为面向 AI-Infra 的默认安全能力。\n5. 总结\nAI-Infra 的快速发展，让服务器固件安全不再只是单个部件或单次漏洞的问题，而是直接关系到云基础设施可信性的基础问题。随着 BMC、BIOS、GPU、网卡、存储和各类板卡控制器共同构成整机运行底座，安全建设也必须从单点加固转向整机可信视角：既要关注固件从哪里来、是否被授权执行，也要关注设备在运行过程中能否持续证明自身处于可信状态。\n因此，服务器固件安全的长期方向，不应停留在“发现漏洞后尽快修复”，而应逐步形成可验证、可运营的默认安全能力。通过签名体系、安全启动、可信度量、固件扫描、漏洞情报和结构化资产视图的持续建设，平台才能从依赖上游供应商声明转向基于证据的信任判断，从事件驱动的应急治理走向面向 AI-Infra 的长期安全底座。\n本文章由\n火山云平台安全保障团队\n和\n字节跳动服务器团队\n共同完成。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.98,
+        "transfer_agent": 0.02,
+        "direct_local": 0,
+        "peripheral": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 0.88,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.12,
+        "2": 0.38,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.3,
+      "probabilities": {
+        "0": 0.56,
+        "1": 0.05,
+        "2": 0.08,
+        "3": 0.14,
+        "4": 0.17,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.77,
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.02,
+        "2": 0.07,
+        "3": 0.05,
+        "4": 0.1,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 3.07,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.14,
+        "3": 0.64,
+        "4": 0.22,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.44,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.28,
+        "4": 0.55,
+        "5": 0.07
+      }
+    },
+    "anti_hype": {
+      "score": 2.57,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.17,
+        "2": 0.07,
+        "3": 0.28,
+        "4": 0.3,
+        "5": 0.04
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 10266,
+    "outputTokens": 173,
+    "totalTokens": 10439
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.98,
+        "relevance": 0.41,
+        "grounding": 0.13,
+        "decision_action": 0.49,
+        "evidence": 0.75,
+        "actionability": 0.53,
+        "anti_hype": 0
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179921076,
+                "endTime": 1791179921238,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000431172",
+      "marketCost": "0.000431172",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000431172",
+      "inferenceCost": "0.000431172",
+      "inputInferenceCost": "0.000431172",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A95N2HRX6FG35M3GJ7TVA"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:41 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::2n5bf-1791179920960-28c180173eeb"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.98,
+            "transfer_agent": 0.02,
+            "direct_local": 0,
+            "peripheral": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.88,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.12,
+            "2": 0.38,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.3,
+          "probabilities": {
+            "0": 0.56,
+            "1": 0.05,
+            "2": 0.08,
+            "3": 0.14,
+            "4": 0.17,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.77,
+          "probabilities": {
+            "0": 0.75,
+            "1": 0.02,
+            "2": 0.07,
+            "3": 0.05,
+            "4": 0.1,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.07,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.14,
+            "3": 0.64,
+            "4": 0.22,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.44,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.28,
+            "4": 0.55,
+            "5": 0.07
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.57,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.17,
+            "2": 0.07,
+            "3": 0.28,
+            "4": 0.3,
+            "5": 0.04
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 10266,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.98,
+            "relevance": 0.41,
+            "grounding": 0.13,
+            "decision_action": 0.49,
+            "evidence": 0.75,
+            "actionability": 0.53,
+            "anti_hype": 0
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179921076,
+                    "endTime": 1791179921238,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000431172",
+          "marketCost": "0.000431172",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000431172",
+          "inferenceCost": "0.000431172",
+          "inputInferenceCost": "0.000431172",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A95N2HRX6FG35M3GJ7TVA"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:40.467Z"
+  }
+}

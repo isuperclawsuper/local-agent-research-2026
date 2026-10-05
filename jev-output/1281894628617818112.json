@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1281894628617818112",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "Agent 长程任务断点续传：从框架 Checkpoint 到跨进程恢复的完整实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650545838&idx=1&sn=3c5a25dfe00876f608af093ff0881942",
+      "date": "2026-09-09T09:41:00.311Z",
+      "chars": 10094,
+      "text": "原创\n直播技术团队\n2026-09-09 17:41\n浙江\nAgent 断点续传全链路实践\n本文介绍了针对 Agent 长程任务中断恢复需求的完整实践方案，旨在解决用户主动、工具执行及系统级中断带来的稳定性问题。该方案采用“框架层 Checkpoint + 上层任务调度”的两层架构，在不修改 Spring AI Alibaba 框架源码的前提下，通过扩展 InterruptableAction、利用 Hook 机制注入自定义逻辑（如关机信号检测、消息顺序修正、多工具调用 Mock 返回及子图会话 ID 记录）来实现进程内的状态保存与恢复；同时，上层调度通过 MQ 摘流防止关机机器消费新消息，并结合任务表与 MQ 消息队列协调跨进程的任务恢复，有效覆盖了包括人机协作、多 Agent 协同及系统重启在内的多种复杂中断场景，保障了 Agent 系统的稳定长期运行。\n背景\n▐\n1.1\n业务场景\n对于 Agent 系统而言，确保任务稳定可靠地执行是核心诉求。在Agent的 ReAct 循环执行过程中，不同任务对中断恢复能力有着差异化的需求：\n长程任务\n：例如在实际生产项目中，一次完整的业务流程涉及多个步骤，执行时间不可控，需要从中断点恢复\nA2A 协同任务\n：多 Agent 协同编排，偏向系统自治，是长程任务中的关键环节。这类任务中断后无法依赖用户手动干预，同样需要中断恢复能力\n人机协作场景（Human-in-the-loop）\n：执行过程中需要人工介入，如权限控制、问题澄清等，任务暂停等待人工确认后继续执行，核心是安全可靠的中断机制\n目前直播技术业务中，许多Agent服务对上述三类场景均有涉及，为保障系统稳定长期运行，对系统的中断恢复能力提出了较高的要求。\n▐  1.2 中断的分类与影响\n长程任务的核心风险是\n中断\n。生产环境中的中断大致可分为三类：\n用户主动中断和工具执行中断属于\n协作式中断\n，框架可通过 Hook 机制在节点执行前后检测并保存 Checkpoint；系统级中断属于\n非协作式中断\n，需要上层调度配合 MQ 消息队列协调恢复。\n长程任务执行时间不可控、上下文状态庞大，中断后无法通过简单重试恢复，必须从断点续传。同时，\n稳定的中断机制本身也是前提\n——若未在合适的拦截点将任务稳定中断，可能导致状态不一致，恢复时无法判断已完成与待重试的步骤边界。\n恢复策略需根据场景差异化设计：\n人机交互场景\n下由用户触发恢复，过程可见可控；\n多 Agent 协同场景\n下无法依赖人工干预，需要系统自动恢复。两层架构中，底层依赖框架层 Checkpoint 保存与恢复，上层根据场景选择恢复触发方式。\n▐  1.3 其他方案调研\n通过基建层面解决长程任务中断问题的方案：\n蓝绿发布 + 摘流等待方案\n：发布时对新旧机器做蓝绿切换，旧机器停止接收新流量，但保持运行状态，等待其上所有长程任务执行完毕后再进行机器回收。该方案的核心思路是\n避免中断发生\n，而非中断后恢复。\n局限性\n：\n长程任务执行时间不可控，发布周期受限、旧机器可能需要长时间保持运行，资源成本较高\n对于非发布场景的中断可能无法覆盖\n因此本方案选择从应用层面实现断点续传，通过框架层 Checkpoint + 上层任务调度的两层架构，以更低的成本覆盖更多中断场景。\n整体架构\n图 1：断点续传整体架构。上层调度负责任务状态追踪与恢复协调，\n框架层负责 Checkpoint 的保存与恢复。\n框架层：Checkpoint 机制深度利用\n▐\n3.1 框架 Checkpoint 机制分析\nSpring AI Alibaba 框架（以下简称 SAA，当前使用版本 1.1.2.0）的 Checkpoint 机制的保存\n时机\n如下：\n图 2：框架 Checkpoint 保存时序。每个节点正常执行完毕后都会自动保存 Checkpoint，唯一不保存的\n是\n__END__\n节点和异常场景。\n▐  3.2 关键设计决策：不改框架源码\n方案的核心约束是\n完全基于框架已有能力\n实现断点续传，不修改任何框架源码。框架是公共依赖，修改源码意味着维护私有 fork，后续升级成本极高。方案利用的框架能力：\n▐  3.3 关机信号检测：GraphEnvironmentMonitor\n新增轻量级工具类\nGraphEnvironmentMonitor\n，用于检测应用内的关机信号共享变量是否被设置。\n关机信号的触发链路如下：\n应用执行下线脚本，会调用到应用的下线脚本文件\n下线脚本在执行应用停止前，通过 HTTP 请求调用应用内的关机信号接口（如\n/check/shutdown/signal\n）\n应用接收到该请求后，将内存中的共享变量置为下线状态\nGraphEnv\nironmentMonitor.isShutdownSignal\nDetected()\n检测到该变量被设置，返回 true\n正在执行的 Agent 任务会在当前节点完成后检测到关机信号，触发中断并保存 Checkpoint。\n▐\n3.4 恢复时消息顺序问题（已修复）\n断点续传场景中存在一个问题：恢复执行时，用户新发的消息可能被插入到消息列表的第一条而不是最后一条，导致模型上下文错乱。\n这是框架的一个 bug\n（提的issue:\nhttps://github.com/alibaba/spring-ai-alibaba/issues/4662\n）。\n该问题已在社区修复。\n对于使用旧版本的场景，可以通过\nResumeMessageOrderHook\n在\nBEFORE_MODEL\n阶段拦截来实现：\n@HookPositions\n({\nHookPosition\n.\nBEFORE_MODEL\n})\n@Component\npublic\nclass\nResumeMessageOrderHook\nextends\nMessagesModelHook\n{\n@Override\npublic\nAgentCommand\nbeforeModel\n(\nList\n<\nMessage\n> previousMessages,\nRunnableConfig\nconfig\n) {\n// 检测是否是恢复请求\nOptional\n<\nMap\n<\nString\n,\nObject\n>> customInfoMap =\nITool\n.\ngetCustomInfoMap\n(config);\nif\n(customInfoMap.\nisEmpty\n()) {\nreturn\nnew\nAgentCommand\n(previousMessages,\nUpdatePolicy\n.\nREPLACE\n);\n}\nObject\npendingUserMsgObj = customInfoMap.\nget\n().\nget\n(\n\"pendingUserMessage\"\n);\nif\n(!(pendingUserMsgObj\ninstanceof\nString\npendingUserMsg) || pendingUserMsg.\nisEmpty\n()) {\nreturn\nnew\nAgentCommand\n(previousMessages,\nUpdatePolicy\n.\nREPLACE\n);\n}\n// 构造新消息列表：原有消息 + 追加用户消息到末尾\nList\n<\nMessage\n> newMessages =\nnew\nArrayList\n<>(previousMessages);\nnewMessages.\nadd\n(\nnew\nUserMessage\n(pendingUserMsg));\ncustomInfoMap.\nget\n().\nremove\n(\n\"pendingUserMessage\"\n);\nreturn\nnew\nAgentCommand\n(newMessages,\nUpdatePolicy\n.\nREPLACE\n);\n}\n}\n建议：优先升级框架版本，避免引入额外的 Hook 组件。\n▐\n3.5 多工具调用的 Checkpoint 限制\n当模型返回多个工具调用（如 toolA、toolB、toolC）时，框架在一个 for 循环中顺序执行所有工具，\n中间不保存 Checkpoint\n。\n图 3：多工具调用场景的 Checkpoint 保存时机。\n如果 toolA 执行完、toolB 执行中崩溃，恢复时三个工具全部重新执行。\n框架在\nAgentToolNode\n中\n已内置部分工具恢复能力\n——它会检测哪些工具已经执行过，只执行剩余的。但由于无法在 for 循环中间保存 Checkpoint，这个能力暂时无法被利用。\nTool Mock 返回与 Checkpoint 的配合\n多工具调用中间无法保存 Checkpoint，但在中断场景下，通过\nToolRecordInterceptor\n实现了折中方案：当检测到任务被中断时，未执行的工具返回 mock 响应（status=\"error\"），该 mock 响应\n通过 Checkpoint 机制保存到状态中\n。\n图 4：Tool Mock返回与Checkpoint配合\n效果\n：任务重新拉起时，框架能够识别哪些工具已有结果（包括 mock 响应），哪些需要重试。已完成的工具不会重复执行，mock 的工具会在恢复时重新执行。这在多工具场景下显著减少了重复工作。\n工具执行循环的中断跳过机制\n在中断场景下，如何让一次模型推理产生的多个工具调用链快速跳过？本方案借助异常机制\nHumanInterventionException\n配合\nToolInterceptor\n实现。\n当某个工具执行过程中需要中断（如权限校验失败、Human-in-the-loop 需要人工确认），\nToolInterceptor\n会抛出\nHumanInterventionException\n。\nObservationInterceptor\n捕获该异常后执行以下操作：\n调用\nagentInterruptManager.interrupt()\n设置中断标记\n通过 SSE 发送中断通知（对话框弹窗或表单页面）\n返回 mock 的工具响应（status=\"error\"）\n中断标记设置后，后续工具的\nToolRecordInterceptor\n在执行前会检测到该标记，直接跳过工具执行并返回 mock 响应。这样，一次模型推理产生的多个工具调用链就被快速跳过，无需等待每个工具逐一执行。\nHumanInterventionException\n支持多种中断场景：\n权限不足\n：抛出异常并携带权限申请链接\n表单填写\n：携带表单协议信息 ，前端渲染表单页面\n对话框确认\n：携带对话框协议信息，前端渲染确认弹窗\n该机制的核心价值在于：\n通过异常快速跳出工具执行循环，配合中断标记让后续工具自动跳过，最终通过 Checkpoint 保存完整的工具响应状态\n。恢复时，框架能够根据已有的工具响应识别哪些需要重试。\n▐  3.6 框架层恢复机制\n框架的 Checkpoint 恢复由\nGraphRunnerContext\n构造函数自动触发。当运行时metadata检测到\ncheckPointId\n或\nHUMAN_FEEDBACK\n标记时，自动进入\ninitializeFromResume\n分支，从持久化的 Checkpoint 中恢复执行状态：\nGraphRunnerContext(initialState, config, compiledGraph)\n│\n├── config 有 checkPointId 或 HUMAN_FEEDBACK ?\n│     ├── 是 → initializeFromResume()\n│     │         ├── 从 BaseCheckpointSaver.\nget\n(config) 获取 Checkpoint\n│     │         ├── 恢复 overallState = initialState.input(checkpoint.getState())\n│     │         ├── 设置 nextNodeId = checkpoint.getNextNodeId()\n│     │         └── 设置 resumeFrom = checkpoint.getNodeId()\n│     └── 否 → initializeFromStart()\n恢复时通过\nRunnableConfig.threadId\n关联 Checkpoint，无需额外传递 Checkpoint ID。框架会根据 threadId 从\nBaseCheckpointSaver\n中查询最新的 Checkpoint 记录，自动恢复完整的执行上下文（包括 state、消息历史、当前节点 ID 和下一节点 ID），从中断点继续执行。\n▐\n3.7 子图会话 ID 后缀问题\n在多 Agent 嵌套编排场景下，当父 Agent 内部调用子 Agent（以嵌套子图形式）时，子图中的\nRunnableConfig.threadId()\n会被框架自动拼接后缀，导致中断恢复和状态查询时出现不一致。\n问题现象：\n原始 threadId：\nplugin_xxx\n进入子图后变成：\nplugin_xxx_subgraph_SUB_AGENT_A\n根本原因：\nSAA 框架在执行嵌套子图时，为了确保状态隔离和可恢复性，会自动为子图的\nthreadId\n添加后缀。核心代码位于框架的\nReactAgent.AgentToSubCompiledGraphNodeAdapter\n中：\n// 当父图和子图使用同一个 CheckpointSaver 实例时触发\nif\n(parentSaver.\nget\n() == subGraphSaver.\nget\n()) {\nsubGraphRunnableConfig = RunnableConfig.builder(config)\n.threadId(config.threadId()\n.map(threadId -> format(\n\"%s_%s\"\n, threadId, subGraphId(nodeId)))\n.orElseGet(() -> subGraphId(nodeId)))\n.nextNode(\nnull\n)\n.checkPointId(\nnull\n)\n.addMetadata(\n\"_AGENT_\"\n, subGraphId(nodeId))\n.build();\n}\n触发条件是：\n父图和子图注册了同一个\nCheckpointSaver\n实例\n。\n影响范围：\n中断处理\n：\nAgentInterruptManager\n使用\nthreadId\n构建\nRunnableConfig\n调用\nreactAgent.interrupt()\n，如果传入的是带后缀的 ID，可能导致中断失效\n状态恢复\n：从缓存/DB 中根据\nconversationId\n查询状态时，如果 key 不匹配则无法恢复\n日志追踪\n：日志中记录的会话 ID 与实际业务会话 ID 不一致，增加排查难度\n解决方案对比：\n我们选择了方案二\n：在\nCheckpointAgentHook.beforeAgent()\n中将原始 threadId 记录到 metadata，后续通过统一的工具方法\nITool.getActualThreadId()\n获取。这样既保留了子图的状态管理能力，又解决了 ID 不一致的问题。\n// 在 Hook 中记录原始 threadId\n@Override\npublicCompletableFuture<\nMap\n<\nString\n,\nObject\n>>\nbeforeAgent\n(\nOverAllState\nstate,\nRunnableConfig\nconfig\n) {\nconfig.\nthreadId\n().\nifPresent\n(threadId ->\nconfig.\nmetadata\n().\nifPresent\n(metadata ->\nmetadata.\nput\n(\nAgentConstants\n.\nACTUAL_THREAD_ID\n, threadId)\n)\n);\n// ... 其他逻辑\n}\n// 统一获取实际 threadId 的工具方法\nstaticOptional<\nString\n>\ngetActualThreadId\n(\nRunnableConfig\nconfig\n) {\nif\n(config ==\nnull\n) returnOptional.\nempty\n();\nreturn\nconfig.\nmetadata\n(\nAgentConstants\n.\nACTUAL_THREAD_ID\n).\nmap\n(\nString\n::valueOf);\n}\n优先级链路\n：\nACTUAL_THREAD_ID\n→ 请求对象中的\nconversationId\n。通过统一封装，避免各处重复实现，同时加 try-catch 兜底，避免因获取失败导致中断等功能异常。\n上层调度：跨进程的任务恢复\n框架层的 Checkpoint 解决了进程内状态保存的问题，但无法处理应用重启、机器下线等导致 Agent 被强制终止的场景。上层调度负责管理任务的跨进程状态——记录被中断的任务，并协调恢复流程。\n▐\n4.1 任务表设计\n对于复杂的长程任务（如 A2A 多 Agent 协同场景），通过任务表（如\nagent_task\n）记录任务的关键请求信息（如 Agent 类型、业务关联键、会话 ID 等），以及过程中的关键用户侧数据，便于任务中断后恢复执行。简单的单轮 Agent 交互无需引入此表，直接依赖框架层 Checkpoint 即可。\n▐\n4.2 MQ 摘流：防止关机机器消费新消息\n上层调度通过 MQ 消息队列分发恢复任务。需要解决的关键问题是：\n如何保证即将关机的机器不会消费到新的 MQ 消息？\n如果正在下线的机器消费了恢复任务但未执行就关机，任务会再次成为\"孤儿\"。\n解决方案是在应用回调的下线脚本中，\n先摘流 MQ，再停止应用\n。核心逻辑如下：\noffline_mq\n() {\n# 检查本地 MQ 客户端管理端口是否在监听\ncheck_mq=`(/usr/sbin/ss -ln4 sport = :\n${MQ_ADMIN_PORT}\n; /usr/sbin/ss -ln6 sport = :\n${MQ_ADMIN_PORT}\n) | grep -c\n\":\n${MQ_ADMIN_PORT}\n\"\n`\necho\n\"try to offline mq...\"\nif\n[\n$check_mq\n-ne 0 ];\nthen\necho\n\"start to offline mq....\"\n# 调用 MQ 客户端本地管理接口，将本实例所有消费者下线\nret_str=`curl --max-time\n${MQ_ONLINE_TIMEOUT}\n-s\n\"\nhttp://localhost:\n${MQ_ADMIN_PORT}\n/mq-client/allConsumersOffline\"\n2>&1`\nifecho\n\"\n$ret_str\n\"\n| grep\n\"all clients in instance\"\n&>/dev/null;\nthen\necho\n\"mq offline success.\"\nreturn\n0\nelse\necho\n\"mq offline failed.\"\nfi\nfi\n}\noffline\n() {\necho\n\"INFO:\n${APP_NAME}\ntry to offline...\"\nrm\n-f\n$STATUSROOT_HOME\n/status.ok\n# 摘除负载均衡流量\noffline_rpc\n# 摘流 RPC 服务\noffline_mq\n# 摘流消息队列\necho\n\"INFO:\n${APP_NAME}\noffline success\"\nreturn\n$?\n}\n工作原理：\n应用收到下线信号后，\noffline()\n函数被调用\n先调用\noffline_mq()\n，通过调用 MQ 客户端的\nallConsumersOffline\n接口\nMQ Broker 会将该消费者从消费组中移除，后续消息不会再分发到这台机器\n摘流成功后，再执行后续的应用停止逻辑\n效果\n：即将关机的机器不再消费新消息，这些消息会被消费组中的其他健康机器消费。对于摘流后、关机前已消费但未来得及执行的消息，由于任务状态仍为\nWORKING\n，新实例启动后会通过 MQ 重新消费该任务消息，触发恢复流程。\n▐\n4.3 恢复流程\n恢复由外部MQ消息队列触发：\n图 5：恢复执行流程。核心思路：读 DB 状态 →\n从 Checkpoint 恢复框架状态 → 从中断节点继续执行。\n思考与规划\n▐\n5.1 关键设计决策与可复用模式\n方案在多个关键决策点上做出了选择：不改框架源码以避免维护私有 fork，升级成本可控；对于基于SAA框架的React Agent友好，可与原工作graph工作机制兼容，这些设计模式具有较高通用性。\n▐\n5.2 遇到的问题与解决方案\n问题 1：恢复时消息顺序错乱（框架 bug，已修复）。\nCheckpoint 恢复后，用户新消息被插入到列表第一条而不是最后一条，导致模型上下文完全错乱。这是 Spring AI Alibaba 框架的 bug（issue:\nhttps://github.com/alibaba/spring-ai-alibaba/issues/4662\n）。\n社区已在新版本中修复此问题\n，建议优先升级框架版本。如暂时无法升级，可通过\nResumeMessageOrderHook\n在\nBEFORE_MODEL\n阶段拦截来 workaround（详见 3.4 节）。\n问题 2：多工具调用中间无法保存 Checkpoint。\n模型返回 3 个工具调用，执行到第 2 个时崩溃，恢复后 3 个全部重跑。目前通过\nToolRecordInterceptor\n在工具执行前检查中断标记来缓解（已执行的工具结果保留，未执行的跳过），彻底解决需要框架侧改动。\n问题 3：子图会话 ID 后缀导致中断失效。\n在多 Agent 嵌套编排时，框架会自动给子图的 threadId 拼接\n_subgraph_{agentName}\n后缀，导致用原始 conversationId 查询中断状态时找不到记录。解法是通过 Hook 在子图执行前将原始 threadId 记录到 metadata，后续统一从 metadata 获取（详见 3.6 节）。\n▐\n5.3 后续\n跟进框架侧多工具调用中间的 Checkpoint 保存问题，实现工具级粒度的断点续传（可能与Agent scope结合）。此外，框架层面存在优化空间，例如 Human-in-the-loop（HITL）扩展机制的完善（issue:\nhttps://github.com/alibaba/spring-ai-alibaba/issues/4091\n），这类问题的修复将进一步提升断点续传场景下的支持能力。\n参考资料\nSpring AI Alibaba 框架源码：\nhttps://github.com/alibaba/spring-ai-alibaba\nSpring AI Alibaba 社区文档：\nhttps://java2ai.com/\nSpring AI Alibaba 框架消息顺序 bug issue：\nhttps://github.com/alibaba/spring-ai-alibaba/issues/4662\nSpring AI Alibaba HITL 扩展机制 issue：\nhttps://github.com/alibaba/spring-ai-alibaba/issues/4091\n团队介绍\n本文作者绍清，来自淘天集团-直播技术团队。团队专注于用技术连接直播内容与商业价值，以 AI 深度发掘直播业务的场景价值。围绕直播运营智能体、直播数字人等方向，团队构建起覆盖供需匹配、内容组织、运营决策到数字人自主开播的完整链路，并在业务与研发实践中持续沉淀 AI Native 的系统能力，为直播经营提质提效，助力商家与主播释放直播势能。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.01,
+        "transfer_agent": 0.9,
+        "irrelevant": 0.09,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.97,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.02,
+        "2": 0.97,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.12,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.18,
+        "2": 0.23,
+        "3": 0.28,
+        "4": 0.16,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.46,
+      "probabilities": {
+        "0": 0.51,
+        "1": 0.05,
+        "2": 0.05,
+        "3": 0.26,
+        "4": 0.13,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.92,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.08,
+        "3": 0.92,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.89,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0,
+        "2": 0,
+        "3": 0.03,
+        "4": 0.89,
+        "5": 0.05
+      }
+    },
+    "anti_hype": {
+      "score": 3.12,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.03,
+        "3": 0.78,
+        "4": 0.18,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8478,
+    "outputTokens": 172,
+    "totalTokens": 8650
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.87,
+        "relevance": 0.98,
+        "grounding": 0.2,
+        "decision_action": 0.03,
+        "evidence": 0.95,
+        "actionability": 0.87,
+        "anti_hype": 0.84
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179873984,
+                "endTime": 1791179874140,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000356076",
+      "marketCost": "0.000356076",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000356076",
+      "inferenceCost": "0.000356076",
+      "inputInferenceCost": "0.000356076",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7QNH2R8MYQ4WRTKDNXMG"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:54 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::nqn8n-1791179873780-c39792a4ead3"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.01,
+            "transfer_agent": 0.9,
+            "irrelevant": 0.09,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.97,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.02,
+            "2": 0.97,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.12,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.18,
+            "2": 0.23,
+            "3": 0.28,
+            "4": 0.16,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.46,
+          "probabilities": {
+            "0": 0.51,
+            "1": 0.05,
+            "2": 0.05,
+            "3": 0.26,
+            "4": 0.13,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.92,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.08,
+            "3": 0.92,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.89,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0,
+            "2": 0,
+            "3": 0.03,
+            "4": 0.89,
+            "5": 0.05
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.12,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.03,
+            "3": 0.78,
+            "4": 0.18,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8478,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.87,
+            "relevance": 0.98,
+            "grounding": 0.2,
+            "decision_action": 0.03,
+            "evidence": 0.95,
+            "actionability": 0.87,
+            "anti_hype": 0.84
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179873984,
+                    "endTime": 1791179874140,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000356076",
+          "marketCost": "0.000356076",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000356076",
+          "inferenceCost": "0.000356076",
+          "inputInferenceCost": "0.000356076",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7QNH2R8MYQ4WRTKDNXMG"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:53.369Z"
+  }
+}

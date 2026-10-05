@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "261430993608508416",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "认知重建之后，步入Agentic Engineering的工程革命",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801026&idx=1&sn=3e12f0888b3c232ed7218caf90df5f0a",
+      "date": "2026-03-30T09:37:00.859Z",
+      "chars": 6338,
+      "text": "ken，在几分钟内完成以前半天的工作。一个需求的全生命周期，多个 Agent 在不同阶段接力消耗 token，人只在关键决策点介入。\n这意味着：一个团队的软件产能，不再只受限于\"有多少工程师\"，而是同时受限于\"能调度多少 token\"。\n消耗量是前提——得先用起来。但拉开差距的是\ntoken 的利用率\n。Vibe Coding 消耗大量 token——复制粘贴错误信息让 AI 反复尝试、不给上下文让 AI 从零猜测、不沉淀经验让同一个错误反复付费修正。它的 token 利用率很低。\nAgentic Engineering 追求的是\n每个 token 的产出最大化\n：精准的上下文让 Agent 一次做对（减少无效重试的 token 消耗），沉淀的知识库让 Agent 不重复犯错（减少重复学习的 token 消耗），工具化的约束让 Agent 调用即合规（减少人工纠偏的 token 消耗），渐进式披露让 Agent 只加载需要的信息（减少上下文浪费的 token 消耗）。\n整个体系——context/、Skill、Subagent、门禁、知识闭环——本质上都是在做同一件事：让 Agent 的每一次执行都尽可能产出正确的结果。\ntoken 在工程流程中更顺畅地流转和 token 利用率的提升，都是这个目标的自然结果。\n把这个逻辑推到终局：\n消耗量体现投入程度，\n\"每个 token 转化为多少有效工程产出\"\n决定竞争力。\nAgent 时代需要\n工程基础设施\n（上下文体系、工具体系、知识管理、质量门禁）才能让 token 高效转化为软件产能。\nAgentic Engineering 就是这个时代的工程基础设施。\n10.2 从实践者视角看企业级工具：缺的不是功能，是连通与生态\n如果 Agentic Engineering 是电力基础设施工程，那谁来建这个基础设施？\n在构建这套体系的过程中，我消耗了数十亿 token。这个数字不是夸张——需求全生命周期管理、多 Agent 并行代码审查、知识沉淀闭环、活动配置端到端生成，每一个环节都在持续消耗 token。\n为了维持这个消耗量，我先后使用了 CodeBuddy Code、Claude Code、Codex CLI、Codex App——哪个还有额度就用哪个。这种\"打游击\"式的使用体验，让我以实践者的身份对比了这些工具，也因此看到了一个更大的问题。\n从纯功能角度，这些工具的差异正在缩小。\nCodeBuddy Code 和 Open Code（Claude Code 的开源实现）对比：核心交互模型一致（对话式 Agent + 工具调用），自定义能力上 Open Code 甚至更开放（直接修改源码、无平台限制）。Claude Code 和 Codex CLI 的差异主要在底层模型和上下文管理策略上，但在用户体验层面越来越趋同。功能趋同是必然的——这些工具本质上都是\"LLM + 工具调用 + 上下文管理\"的不同封装，底层模型能力在对齐，上层交互模式在收敛。\n当功能不再是差异化因素时，什么才是？\n我在构建过程中反复遇到的痛点，恰好指向了答案：\n企业内部的工程化连通性。\n举几个具体的场景——有些已经实现，有些正在打通：\n场景一：测试闭环（已具备插件能力）。\n代码审查通过后，下一步是跑测试。但\"跑测试\"不是在本地\ngo test\n就完了——企业环境中，真正的测试需要对接 QTA（自动化测试平台）：创建测试任务、选择测试环境、触发执行、等待结果、解析报告。QTA 已经具备了插件化对接能力，这意味着 Agent 不再需要在\"代码写完\"时交卷——\"提交代码 → 触发 QTA 测试 → 解析结果 → 修复问题\"可以在一次 Agent 会话中闭环完成。\n场景二：需求追溯（MCP 已可用）。\n需求从哪来？在企业环境中，需求在 TAPD 上。TAPD 已经提供了 MCP Server，Agent 可以直接读取需求单、关联代码变更。这把需求管理从\"人工复制粘贴需求描述\"变成了 Agent 直接从源头获取结构化需求信息，需求的全生命周期真正在一条线上了。\n场景三：知识检索（MCP 已可用）。\n企业内部的技术文档散落在 iWiki、KM 等平台上。iWiki 已经提供了 MCP Server——我在写这篇文章时就在用它直接检索企业知识平台的内容。这把知识沉淀的链路从\"人工搬运到 context/\"变成了\"Agent 直接检索 + 人工确认后沉淀\"。\n场景四：CI/CD 联动。\n代码合入后的构建、部署、灰度发布——这些都在企业的 DevOps 平台上。这个环节还在打通的过程中，但方向已经清晰。\n这些连接不是\"设想\"，其中多个已经落地了。但已有的连接也暴露了下一个问题：\n单点连通不等于体系化。\n有了 TAPD MCP 不等于需求管理自动化了，有了 iWiki MCP 不等于知识沉淀自动化了——还需要上层的 Skill、Agent、工作流把这些连接编排成完整的解决方案。\n从连通到生态，中间差的是编排和沉淀。\n这正是企业级 Code Agent 的差异化路径，三层递进：\n第一层：内置核心平台连接（部分已实现）。\nTAPD、iWiki 的 MCP 已经可用，QTA 已经有插件能力。下一步是把这些连接从\"用户自己配置\"提升为\"开箱即用\"——不需要每个团队自己找 MCP Server、自己配\n.mcp.json\n，而是装完就能用。\n第二层：插件市场沉淀解决方案。\n单点连接只是基础，真正有价值的是\n包含上下文、Skill、Agent 的完整解决方案\n。\"活动配置生成 + 商品系统对接\"是一个方案，\"代码审查 + QTA 自动化测试\"是一个方案，\"需求管理 + TAPD 双向同步\"是一个方案。插件市场的核心不是分发 MCP Server，而是分发\n可复用的工程方案\n——每个方案都是某个团队踩完坑后沉淀的最佳实践。\n第三层：构建 AI 工程的完整生态。\n当内置连接 + 插件市场覆盖了足够多的企业场景，CodeBuddy Code 就不再只是\"一个 Code Agent\"，而是\n企业 AI 工程的操作系统\n——就像 VS Code 不只是一个编辑器，而是一个通过插件生态覆盖了几乎所有开发场景的平台。\n回到 10.1 的类比：开源工具是自备发电机——灵活但受限于单体规模；企业级工具的机会是成为\n电网\n——连接所有发电站（平台能力）和用电设备（开发场景），让 token 在整个企业的工程流程中高效流转。\n功能可以趋同，连通和生态无法复制。\n这是我作为一个消耗了数十亿 token 的实践者，最直观的感受。\n10.3 多 Agent 协作：全能解还是阶段解？\n在构建运营活动落地的过程中，Anthropic 的一篇案例给了我很大启发：\nBuilding a C compiler with a team of agents\n。体系中的 Ralph Loop 也参考了它的做法。Nicholas Carlini 让 16 个 Claude 实例并行工作，在两周内、近 2000 次 Claude Code 会话、2 万美元 API 成本下，从零写出了一个 10 万行的 Rust C 编译器，能编译 Linux 6.9 内核。\n这个实验最有价值的不是结果，而是过程中暴露的问题和解法：\n并行的前提是可分割。\n当有数百个独立的编译器测试用例时，16 个 Agent 可以各认领一个，并行效率极高。但当任务变成\"编译 Linux 内核\"这个不可分割的整体时，所有 Agent 都卡在同一个 bug 上互相覆盖，16 个 Agent 的效率等于 1 个。解法是引入 GCC 作为对照编译器，把一个巨型任务拆成可并行的文件级子任务——\n并行的瓶颈不在算力，在任务拆分的质量。\n角色分化自然发生。\nCarlini 给不同 Agent 分配了不同职责——有的写功能、有的消除重复代码、有的优化性能、有的改善代码质量、有的写文档。这不是刻意设计的\"团队结构\"，而是项目规模膨胀后的自然需求。\n测试驱动一切。\n整个体系能运转的前提是\"极高质量的测试\"——Agent 自主决策的唯一依据就是测试结果。测试质量不行，16 个 Agent 就是 16 倍速度地往错误方向跑。\n这让人自然地想到下一个问题：\n如果多 Agent 并行有效，那是不是可以更进一步——让 Agent 不只扮演\"程序员\"，而是扮演整个软件工程团队？\nBMAD-METHOD\n就是这个方向的尝试。它定义了 12+ 个领域专家角色——产品经理、架构师、开发者、UX 设计师、Scrum Master、业务分析师——覆盖从头脑风暴到部署的完整生命周期，包含 34+ 个结构化工作流。每个斜杠命令自动加载对应角色的 Agent，PM 写 PRD、Architect 做架构设计、SM 管理 Sprint、DEV 写代码并做 Code Review，工作流之间通过文档交接——PRD 输入给 Architect，架构输入给 Story 分解，Story 输入给 DEV。\n其中比较有趣的是它的\nParty Mode\n：一条命令把整个 AI 团队拉进同一个会话，由 BMad Master 动态编排——根据每条消息选择相关角色参与讨论，Agent 之间会互相同意、反驳、补充，而不是轮流回答。比如讨论\"单体还是微服务\"，Architect 建议从单体起步、PM 认同上市速度优先、DEV 补充要预留模块边界——像一场真实的技术评审会议。\n更有趣的是事后复盘场景：你说\"上个 Sprint 是灾难，认证服务挂了三次\"，Architect 说\"设计没问题，实现偏离了 spec\"，DEV 反驳\"我完全按架构文档做的，spec 没考虑竞态条件\"，PM 承认\"PRD 里漏了会话管理的验证\"，测试架构师补刀\"集成测试该覆盖并发失效场景\"——每个角色从自己的视角追责和反思，跟真实团队复盘会一模一样。\n把 Carlini 的编译器实验和 BMAD-METHOD 放在一起看，一个拼图浮现出来：\n\"多 Agent + 软件工程团队角色\"是不是研发的全能解？\n我的判断是：它是全能解，但不是最优解。\n说它是\"全能解\"，因为它确实能 cover 软件工程的完整生命周期。需求分析、方案设计、代码实现、测试验证、文档维护——每个环节都可以由对应角色的 Agent 来执行，而且已经有人在这么做了。BMAD-METHOD 证明了角色化工作流的可行性，Carlini 的实验证明了并行执行的可行性。把两者结合——多角色覆盖广度，同角色并行提供深度——理论上可以处理任意规模、任意类型的软件工程任务。\n说它\"不是最优解\"，因为\n不是所有项目都需要完整的软件工程团队角色支持\n。每个项目有自己的特性——从个人开发者的 side project 到小团队的快速迭代，很多优秀的软件从来不需要 PM 写 PRD、Architect 画架构图、SM 管 Sprint。尤其是 Agentic Engineering 开始发扬光大的当下，一个人 + Agent 的组合已经能覆盖过去需要小团队才能完成的工作量。强行为每个项目配齐完整角色，是用组织复杂度换取了并不需要的\"专业分工\"。\n即使对于确实需要多角色协作的大型项目，角色化本身也引入了具体的成本：\n第一，角色切换的上下文损耗。\n每个 Agent 角色需要加载自己的 persona、理解项目状态、读取前置文档。BMAD-METHOD 的建议是\"每个工作流用新会话\"——这意味着每次角色切换都有一次完整的上下文重建。而一个人 + 单 Agent 走完全流程，上下文是连续积累的，没有切换损耗。\n第二，文档交接的信息衰减。\n角色之间通过文档传递信息——PM 写 PRD 给 Architect，Architect 写架构给 DEV。每一次从\"理解\"到\"文档\"再到\"理解\"的转换都有信息损失。真实团队中这个损耗靠会议和即时沟通来弥补，Agent 团队靠什么？BMAD 的 Party Mode（多角色同会话讨论）是一个尝试，但上下文窗口的限制意味着它只能处理局部问题。反观个人开发者，需求、设计、实现都在一个人的脑子里，信息衰减天然最小——Agent 只需要辅助执行，不需要跨角色\"翻译\"。\n第三，过程正确不等于结果正确。\n有了完整的工作流（头脑风暴→PRD→架构→Story→开发→Review），流程上无懈可击。但 Carlini 的实验给了一个直白的警示：编译器最终\"代码质量合理，但远不及专家级 Rust 程序员的水平\"，\"生成的代码效率不高，即使开了所有优化也不如 GCC 关闭优化\"。\n流程完备不能弥补单步质量的不足——每一步的输出质量取决于模型能力，而不是流程设计。\n与其在流程上做到完美，不如把精力投入到每一步的上下文质量上——这才是决定 Agent 输出质量的关键变量。\n所以在我看来，当前阶段的务实选择不是追求\"完美的多 Agent 团队\"，而是认清一个现实：\n一个人 + Agent + 好的上下文，在大多数场景下比一个完整的 Agent 团队更高效。\n具体来说：\n大多数项目，单 Agent + 结构化上下文就够了\n——个人开发者和小团队不需要模拟完整团队，需要的是让 Agent 在每个环节都拿到精准的上下文，一次做对。\n关键环节按需引入角色化\n——需求分析、代码审查这些确实需要不同视角的环节，再引入专门的 Agent。不是\"先配齐团队再开工\"，而是\"需要时再拉人\"。\n并行用在执行层，不是决策层\n——代码审查 6 个 Checker 并行、批量测试并行，这些执行性工作的并行收益最直接。但方案设计、架构决策这些需要深度思考的环节，并行反而带来冲突。\n这正是 AgenticMetaEngineering 当前的定位：不追求模拟完整团队，而是让一个人 + Agent 的组合发挥最大效能。随着模型能力提升和 token 成本下降，多 Agent 协作的适用范围会持续扩大——但\n个人 + Agent 的黄金组合不会因此过时\n，因为大量软件开发本身就不需要一个\"完整团队\"，它需要的是一个足够好的上下文。\n多 Agent 协作打开了天花板，但对大多数人来说，地基是上下文，不是团队规模。\n参考资料\nAndrej Karpathy:\nVibe Coding\n（2025-2）/\nAgentic Engineering\n（2026-2 推文）\nHarrison Chase (LangChain):\nWhat is an AI Agent?\nOpenAI:\nHarness engineering: leveraging\nAnthropic:\nBuilding Effective AI Agents\nAnthropic:\nEffective Context Engineering for AI Agents\nGeoffrey Huntley:\nRalph Wiggum Technique\neverything-claude-code:\n社区独立演化的 Claude Code 配置方案\nNicholas Carlini (Anthropic):\nBuilding a C compiler with a team of agents\nBMAD-METHOD:\n多角色 Agent 驱动的全生命周期开发框架\n跳转微信打开",
+      "fulltext_obtained": true,
+      "chunk_index": 9,
+      "chunk_count": 9
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.01,
+        "transfer_agent": 0.84,
+        "irrelevant": 0.15,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.77,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.2,
+        "2": 0.77,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.55,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.1,
+        "2": 0.18,
+        "3": 0.33999999999999997,
+        "4": 0.24,
+        "5": 0.02
+      }
+    },
+    "decision_action": {
+      "score": 1.27,
+      "probabilities": {
+        "0": 0.42,
+        "1": 0.04,
+        "2": 0.4,
+        "3": 0.12,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.38,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.54,
+        "3": 0.4,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.83,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.24,
+        "3": 0.48,
+        "4": 0.21,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 3.96,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.17,
+        "4": 0.61,
+        "5": 0.2
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.88,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6950,
+    "outputTokens": 172,
+    "totalTokens": 7122
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.8,
+        "relevance": 0.83,
+        "grounding": 0.33,
+        "decision_action": 0.16,
+        "evidence": 0.68,
+        "actionability": 0.59,
+        "anti_hype": 0.71
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180438878,
+                "endTime": 1791180439055,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.0002919",
+      "marketCost": "0.0002919",
+      "surchargeCost": "0",
+      "gatewayCost": "0.0002919",
+      "inferenceCost": "0.0002919",
+      "inputInferenceCost": "0.0002919",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARZAD3TFMR0HJV99B2G70"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:19 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::xmcht-1791180438859-03e9da269382"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.01,
+            "transfer_agent": 0.84,
+            "irrelevant": 0.15,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.77,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.2,
+            "2": 0.77,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.55,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.1,
+            "2": 0.18,
+            "3": 0.33999999999999997,
+            "4": 0.24,
+            "5": 0.02
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.27,
+          "probabilities": {
+            "0": 0.42,
+            "1": 0.04,
+            "2": 0.4,
+            "3": 0.12,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.38,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.54,
+            "3": 0.4,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.83,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.24,
+            "3": 0.48,
+            "4": 0.21,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.96,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.17,
+            "4": 0.61,
+            "5": 0.2
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.88
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6950,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.8,
+            "relevance": 0.83,
+            "grounding": 0.33,
+            "decision_action": 0.16,
+            "evidence": 0.68,
+            "actionability": 0.59,
+            "anti_hype": 0.71
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180438878,
+                    "endTime": 1791180439055,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.0002919",
+          "marketCost": "0.0002919",
+          "surchargeCost": "0",
+          "gatewayCost": "0.0002919",
+          "inferenceCost": "0.0002919",
+          "inputInferenceCost": "0.0002919",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARZAD3TFMR0HJV99B2G70"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:18.320Z"
+  }
+}

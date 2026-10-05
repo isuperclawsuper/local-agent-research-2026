@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1152361505249796096",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AgentForge —— 让一句话变成一个生产可用的 Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560806&idx=1&sn=14e1c53672873e8df6bfbee80b2760db",
+      "date": "2026-06-12T00:30:00.640Z",
+      "chars": 6001,
+      "text": "原创\n祁南\n2026-06-12 08:30\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n先看效果\n生产一个线上可运行的云端Agent Team\n只需1分13秒（73秒）\n回归正文：\n我们想解决什么\n我们看到身边四类人，各自卡在不同的地方：\n非技术同学\n有 AI 自动化需求（客服路由、值班播报、行程规划、辩论裁判、研发助理 ……），但他们不写代码、不懂 Prompt 结构、不知道怎么接 MCP、更搞不动容器部署 —— 想法烂在脑子里。\n前端 / Node 技术同学\n虽然能写，但每造一个 Agent 都要从 0 搭一遍：Dockerfile、Aone 容器适配、Egg 启动脚本、调度框架接入、钉钉对接、记忆存储 …… 重复劳动累积起来比写真正的业务逻辑还多。\nJava 同学\n是集团绝对主力，但 Agent 生态都是 Node / Python 系 —— 要么自学一套陌生语言栈，要么自己造一个简陋的 Java Agent 框架（多半半成品）。\n真正想要的是不碰 Node、不学 Prompt 工程，直接 HTTP 调用一个能跑业务的 Agent\n。\nALL\n我就想玩一下，自己搞个算命助手、模拟辩论法庭、日程安排，Qoderwork私人助手满足不了多人共享，还想让别人玩一下\nidealab平台太轻，Agent 框架太重（OpenAI Agents SDK、LangGraph 都要写代码）。\n我们想把这一段路一次性填上 —— 一边让非技术同学不写代码就能造 Agent，一边给 Node 技术同学一套企业级、可直接部署上生产的全链路 SOP，再让 Java 同学无痛复用完整 Agent 架构\n。\n我们做了什么：AgentForge\nAgentForge 是一个「Agent 工厂」型平台 —— 用户\n一句话描述需求\n，平台流式生成 Agent 的人设、技能链、工具装备，\n直接在浏览器里调试对话、配置定时任务、私有化部署到自己的 GitLab 仓库\n。\n对非技术同学：5 分钟出一个真 Loop Agent\n1.描述\n—— 一句话告诉 AI Builder「我要一个 Agent 能干嘛」\n2.生成\n—— Builder 流式生成 7 层 Prompt（SOUL / USER / AGENTS / SKILL_CHAIN / TOOLS / MEMORY ……）+ 自动匹配 Skill 和 MCP 装备\n3.写自己的 Skill\n—— 上传 ZIP 即装，自动校验 + 沙盒预检；非技术同学也能用 Markdown 写一个 Skill 让 Agent 学会新本事\n4.调试\n—— 同一页面双模切换「装备 ↔ 对话」，改 Prompt 即时见效；带 SSE 事件流可以看每一步路由命中、工具调用、记忆召回\n5.云端跑起来\n—— 一键部署，云端就是一个搭载他们自己写的 Skill 的\n真 Loop Agent\n（不是简单的 Prompt 转发，是带 Function Calling 主循环、记忆召回、工具确认/重试的完整生产闭环）\n对 Node 技术同学：直接拿走、直接上生产\n我们直接搞定了：\n●Dockerfile 容器\n—— APP-META/docker-config 全套，nodejsctl 标准 start_app / health_check / setenv 都齐\n●Aone 容器适配\n—— 集团 Aone 平台的 node 原生 Agent 教授级落地，AONE_SCHEMA_NAME / AONE_ENV_SIGN 自动派生 EGG_SERVER_ENV，无需运维额外配置\n●直接可部署上生产的全链路 SOP\n—— 从 BUC 鉴权 → MySQL/Redis 配置 → Egg 启动 → migration 自动 apply → 健康检查，每一步都有现成模板可抄\n●Anvil Agent 框架\n—— 每个派遣出去的 Agent 都基于 Anvil 启动，相当于把平台能力的子集打包成独立可部署的运行时；Anvil-Multi 进一步支持多 Agent 仓库\n对 Java 同学：\n无痛复用完整 Agent 架构，不碰 Node 一行代码\nJava 同学不需要学 Node、不需要懂 ReAct / Loop / Function Calling 那一套主循环实现，\n他们眼里的 AgentForge 就是一个 HTTP 服务\n：\n●在浏览器里造一个 Agent\n（5 分钟，跟非技术同学路径一样）→ 自动得到一个生产可用的 Agent 实例\n●三条复用通道任选\n：\n○HTTP API\n—— POST /api/chat\n直接对话，SSE 流式响应；\nJava 服务\nRestTemplate\n/\nWebClient\n就能接\n○钉钉机器人\n—— 把 Agent 挂到自己业务群，Java 后台跟用户 @ 一下互动，零代码\n○MCP 反向调用\n—— Java 服务本身可以暴露成 MCP Server 让 Agent 调用，业务方法即工具\n●跨 Session 记忆中心化\n—— Java 服务多次调用同一 Agent，记忆自动累积，不用自己存上下文\n●真正零侵入\n—— Java 项目不引一行 Node 依赖、不要 LLM SDK key、不动 Maven pom，\n等价于把完整 Agent 架构装进了一个 HTTP 端点\n集团 Java 服务的常见痛点 ——「我也想加 AI 能力但是不想搭一套 Node 栈」—— 在 AgentForge 这里直接绕过。\n对小团队：单 Agent 自由编排成 Agent 战队\n我们\n制定了一套 Agent 编排协议\n—— 所有 AgentForge 生产的 Agent 都自带统一的对接契约（人设描述 / 能力声明 / 接收消息 / 回传结果），无论是哪个团队、哪个业务域造的，都能被随意拉进同一个 team 里组队作战：\n●可视化画布拖拽\n—— TeamCanvas 上把任意几个已有 Agent 拖进画布，连一条 handoff 线就组成 Manager + Worker 战队，零代码\n●协议化的角色互通\n—— 客服 Agent + 行程规划 Agent + 设计师 Agent 可以拼成「旅游业务一站式 team」；研发派单 Agent + 代码评审 Agent + 文档生成 Agent 可以拼成「研发流水线 team」；任意组合\n●hub-and-spoke 拓扑 + handoff 路由\n—— Manager 拆解任务，按语义路由到最合适的 Worker，Worker 完成后回传 Manager 整合，支持多轮往返\n●共享记忆 / 共享 Skill 装备\n—— team 内成员共享 namespace 记忆，知识沉淀不重复；每个成员仍保留自己的私有 Skill 不串味\n效果：原本各团队各自维护一个 Agent，\n现在能跨团队拼成更强的复合 Agent\n，\n1 + 1 > 2 的能力扩展不再需要重新写代码\n。\n怎么用\n正向链路\nSTEP1：新建Agnet\nSTEP2：选择SOLO 还是 TEAM\nSPEP3：描述生成初步的\n系统提示词和推荐SKILL、MCP的草稿\n开始装备你的agent\nSTEP4：开始使用\n配套常用中心化能力\n关联钉钉\n定时任务\n权限管控\n一键私有化部署\n我们的核心技术建设\nAgentForge 能跑起来不是靠拼接现成轮子，\n底下是我们自己造的几大独立技术资产\n：\nfliggy-memory-sdk ——\n飞猪自研的 mem0\n不是简单接一下 OpenAI Memory / 第三方 SDK，是\n飞猪自研的、对标 mem0 的 Agent 长期记忆 SDK\n。完整覆盖 namespace 隔离、catalog 注入、topK 召回、事实抽取、衰减/合并/去重 —— mem0 能做的它都做，并且为集团内业务场景做了深度适配。Agent 跨 Session、跨用户、跨业务域的记忆复用全靠它，是飞猪在 AI 记忆基础设施上的独立技术资产。\nFECHO ——\n集团 HSF 自动变 MCP 的 MAX AGENT 网关\n集团内成千上万的 HSF（High-Speed Service Framework）服务，过去 Agent 想用只能挨个写适配。\nFECHO 把集团所有 HSF 服务自动翻译成 MCP 服务\n—— 任何 Agent 都能直接调用集团任何 RPC 接口，等于给 AI 时代造了一个\n统一的「集团服务 → Agent 调用」网关\n。这是 AgentForge 真正的\"上限突破点\"：Agent 的能力边界 = 集团服务的全集，而不是几个手工接的 MCP。\nANVIL / ANVIL MULTI ——\n真正的 Agent 框架，不是脚手架\n派遣出去的 Agent 不是 LangGraph 包一下、也不是 OpenAI Agents SDK 套个壳 —— 是\nANVIL，自研的单 Agent 运行时框架\n；多 Agent 场景用\nANVIL MULTI\n。两套框架在集团 Aone 容器里跑通了从 BUC 鉴权 → 模型调用 → MCP 集成 → 调度触发 → 钉钉对接 → 监控审计的\n全链路生产闭环\n。\n这是真\"框架\"不是\"模板\"\n—— 用户拿到的不是一份要自己改的代码骨架，是一套即装即跑的运行时。\nchatLoop ——\n自研的 ReAct + Function Calling 主循环\n2200 行核心 + 5 子模块懒加载，类 Hermes / OpenClaw 的 Loop 主循环结构，但每一步都暴露 SSE 事件、工具确认 / 重试 / 跳过 / 历史压缩 / 错误兜底全是标准化 hook 点 —— 中文场景下比直接接 OpenAI Agents SDK 更可控，平台和 ANVIL 框架共用同一份核心。\n7 层 Prompt 模板的权责分离标准\nSOUL / USER / AGENTS / SKILL / SKILL_CHAIN / TOOLS / MEMORY 各自独立编辑、独立版本、独立复用，比扁平 system prompt 更适合复杂 Agent 的协作演进，也让\"AI Builder 生成 → 用户手改 → 平台部署\"全链路有标准化锚点。\n我们串联了什么\n我们把自家造的核心技术资产和集团生态拼成了一张网\n，让用户在一个浏览器界面里就能用到全部能力：\n能力维度\n自研\n串联的集团生态\nAgent 编排\n自研编排协议 + TeamCanvas 可视化画布\n——\nAgent 运行时\nANVIL / ANVIL MULTI\n（自研框架）\nAone 容器 / nodejsctl\nMCP 网关\nFECHO\n（集团 HSF→MCP 网关）\nHSF\nSkill 市场\nali-skills\n（集团 Skill 仓库 CLI） + 自定义 ZIP 上传体系\nopen-aone\n跨 Session 记忆\nfliggy-memory-sdk\n（飞猪自研 mem0）\n——\n造 Agent 的 Agent\nAgentBuilder\n（造 Agent 的 Agent）\n——\n鉴权 / 部署 / 调度 / IM\n自研多环境一致性 SOP\nBUC / Aone GitLab / SchedulerX / 钉钉机器人\n横向看：\n自家底座是 ANVIL（框架）+ chatLoop（主循环）+ fliggy-memory-sdk（记忆）+ AgentBuilder（造 Agent 的 Agent）+ TeamCanvas（编排）\n；集团生态串联的是\nFECHO（HSF→MCP 网关）+ ali-skills（Skill 仓库）+ BUC / Aone / SchedulerX / 钉钉\n。两边拼在同一个浏览器界面里，对用户完全透明 —— 业务同学不用知道下面有这么多层。\n我们怎么做的：\n把碎片化能力系统化成解决方案\n光有自家造的核心技术资产还不够 —— 让它们能\n长期演化、跨团队复用、零踩坑接入\n，靠的是一套工程组织哲学：\n●Agent 生命周期五阶段标准\n—— 生成 → 装备 → 调试 → 部署 → 调度，每一阶段抽象成独立模块 + 标准契约。任何阶段单独迭代（换调度后端、换生成策略、换部署目标）都不破坏其他阶段，整套系统能持续演化而不变成屎山\n●多环境一致性工程标准\n—— dev / pre / prod 同代码同行为，靠\nconfig.{env}.ts\n+ Aone 派生\nEGG_SERVER_ENV\n自动切换，migration 自动 apply，生产容器零额外配置启动\n●DB-first + 文件 fallback 双模存储\n—— 生产 RDS 完整持久化，本地零 MySQL 也能跑全套；降级路径在线上线下都被验证过，不是\"理论上可用\"\n●Skill / MCP / Memory 三类扩展点协议化\n—— 任何团队按契约写就能扩展（Skill manifest + 5 子模块、MCP 三传输统一封装、Memory namespace + catalog），平台不需要每次都改代码\n一句话总结\n：别人在做\"造一个能跑的 Agent\"，我们在做\"造一套让任何人都能造 Agent 的标准体系\" ——\n底下有 fliggy-memory-sdk / FECHO / ANVIL 三块自家造的核心技术资产撑着\n。\n我们做出了什么\n●平台已稳定运行，平台已私有化部署多个业务线agent\n●已沉淀的真实 Agent：客服路由助理 / 研发任务派单 / 辩论赛庭 / 值班播报 / 行程规划 ……\n●完整链路打通：BUC 鉴权 / Aone GitLab 部署 / SchedulerX 调度 / 钉钉机器人 / 集团内 MCP 服务\n我们想往哪走\n短期\n：把\"造一个 Agent\"的门槛压到完全不懂技术的业务同学也能上手，目标\n5 分钟出首个 Agent\n。\n中期\n：让 Agent 之间能互相调用，组成更复杂的\"Agent 生态\" —— 每个团队都有自己的 Anvil 仓库矩阵，业务能力像乐高一样拼出来。\n我们相信，下一波生产力解放不来自更强的模型，\n来自让\"造 Agent\"这件事变成普通人能完成的事，让\"部署 Agent 上生产\"这件事变成不需要专门搭一遍轮子的事\n。AgentForge 是我们交出的第一份答卷。\n飞猪-CTO线-用户技术\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.1,
+        "transfer_agent": 0.89,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.92,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.92,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.67,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.09,
+        "2": 0.16,
+        "3": 0.65,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.4,
+      "probabilities": {
+        "0": 0.46,
+        "1": 0.14,
+        "2": 0.04,
+        "3": 0.25,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.03,
+      "probabilities": {
+        "0": 0,
+        "1": 0.06,
+        "2": 0.85,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.47,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.03,
+        "2": 0.04,
+        "3": 0.19,
+        "4": 0.68,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 0.51,
+      "probabilities": {
+        "0": 0.58,
+        "1": 0.33,
+        "2": 0.08,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6201,
+    "outputTokens": 172,
+    "totalTokens": 6373
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.86,
+        "relevance": 0.93,
+        "grounding": 0.67,
+        "decision_action": 0.07,
+        "evidence": 0.9,
+        "actionability": 0.63,
+        "anti_hype": 0.66
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179829478,
+                "endTime": 1791179829617,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000260442",
+      "marketCost": "0.000260442",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000260442",
+      "inferenceCost": "0.000260442",
+      "inputInferenceCost": "0.000260442",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6C6MNMX5FGDF0FPX8DCS"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:09 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::hq68b-1791179829185-360c6b9746de"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.1,
+            "transfer_agent": 0.89,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.92,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.92,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.67,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.09,
+            "2": 0.16,
+            "3": 0.65,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.4,
+          "probabilities": {
+            "0": 0.46,
+            "1": 0.14,
+            "2": 0.04,
+            "3": 0.25,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.03,
+          "probabilities": {
+            "0": 0,
+            "1": 0.06,
+            "2": 0.85,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.47,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.03,
+            "2": 0.04,
+            "3": 0.19,
+            "4": 0.68,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.51,
+          "probabilities": {
+            "0": 0.58,
+            "1": 0.33,
+            "2": 0.08,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6201,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.86,
+            "relevance": 0.93,
+            "grounding": 0.67,
+            "decision_action": 0.07,
+            "evidence": 0.9,
+            "actionability": 0.63,
+            "anti_hype": 0.66
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179829478,
+                    "endTime": 1791179829617,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000260442",
+          "marketCost": "0.000260442",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000260442",
+          "inferenceCost": "0.000260442",
+          "inputInferenceCost": "0.000260442",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6C6MNMX5FGDF0FPX8DCS"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:08.849Z"
+  }
+}

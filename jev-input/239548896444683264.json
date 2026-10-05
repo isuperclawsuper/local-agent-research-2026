@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "239548896444683264",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里重磅开源！OpenSandbox：专为 AI Agent 打造的下一代沙箱",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509113&idx=1&sn=a8caab8fdc270626c1e3e56a0813d20f",
+      "date": "2026-01-29T00:31:00.391Z",
+      "chars": 4276,
+      "text": "原创\n宇拓\n2026-01-29 08:31\n浙江\n这是\n2025\n年的第\n134\n篇文章\n（ 本文阅读时间：15分钟 ）\n01\n当 AI 需要执行代码时，我们该怎么办？\n想象这样一个日常开发场景： 你正在使用 Claude Code 帮你重构一段清理逻辑，或者让 Gemini 写个自动化脚本处理数据，甚至是一个 LangGraph 驱动的 Agent 正在你的指令下调用系统 API。\n你满怀期待地按下运行键，但危险往往就在这一刻： 如果 AI 在处理路径时产生了一个逻辑偏移，将清理范围锁定在了根目录；或者它引入的一个第三方库，在安装瞬间静默扫描了你的\n.ssh\n目录。\nAI 生成的代码是一把双刃剑。\n直接在宿主机“裸奔”，无异于将系统权限交给一个可能随时“幻觉”的黑盒。资源隔离、环境依赖、权限越权 —— 这些都是 AI 能力落地到真实环境时绕不开的挑战。\n今天，我们正式开源 OpenSandbox —— 一个面向 AI 应用场景设计的「通用沙箱平台」，为大模型相关的能力提供安全、可靠的执行环境。\n02\n什么是 OpenSandbox？\nOpenSandbox 是阿里巴巴开源的通用沙箱基础设施，专门为 AI 应用场景设计。它为大模型相关的能力 —— 命令执行、文件操作、代码执行、浏览器操作、Agent 运行等提供：\n多语言 SDK\n：Python、Java/Kotlin、JavaScript/TypeScript；\n企业级并发调度能力\n：\n基于 Kubernetes 的池化加速方案；\n统一沙箱协议\n：基于 OpenAPI 的标准化接口；\n灵活运行时\n：Docker 和 Kubernetes 双支持；\n丰富沙箱环境\n：代码解释器、浏览器自动化、远程开发环境。\n03\n六大核心亮点\n3.1 多语言 SDK，开发者友好\n无论你使用 Python、Java、Kotlin 还是 JavaScript/TypeScript，OpenSandbox 都提供了统一的 API 设计，跨语言一致性让你无缝切换。\n以下为Python SDK示例，更多语言SDK示例请参考github项目空间。\nimport\nasyncio\nfrom\ndatetime\nimport\ntimedelta\nfrom\ncode_interpreter\nimport\nCodeInterpreter, SupportedLanguage\nfrom\nopensandbox\nimport\nSandbox\nfrom\nopensandbox.models\nimport\nWriteEntry\nasync\ndef\nmain\n() ->\nNone\n:\n# 1. Create a sandbox\nsandbox =\nawait\nSandbox.create(\n\"sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:latest\"\n,\nentrypoint= [\n\"/opt/opensandbox/code-interpreter.sh\"\n],\nenv={\n\"PYTHON_VERSION\"\n:\n\"3.11\"\n},\ntimeout=timedelta(minutes=\n10\n),\n)\nasync\nwith\nsandbox:\n# 2. Execute a shell command\nexecution =\nawait\nsandbox.commands.run(\n\"echo 'Hello OpenSandbox!'\"\n)\nprint\n(execution.logs.stdout[\n0\n].text)\n# 3. Write a file\nawait\nsandbox.files.write_files([\nWriteEntry(path=\n\"/tmp/hello.txt\"\n, data=\n\"Hello World\"\n, mode=\n644\n)\n])\n# 4. Read a file\ncontent =\nawait\nsandbox.files.read_file(\n\"/tmp/hello.txt\"\n)\nprint\n(\nf\"Content:\n{content}\n\"\n)\n# Content: Hello World\n# 5. Create a code interpreter\ninterpreter =\nawait\nCodeInterpreter.create(sandbox)\n# 6. 执行 Python 代码（单次执行：直接传 language）\nresult =\nawait\ninterpreter.codes.run(\n\"\"\"\nimport sys\nprint(sys.version)\nresult = 2 + 2\nresult\n\"\"\",\nlanguage=SupportedLanguage.PYTHON,\n)\nprint\n(result.result[\n0\n].text)\n# 4\nprint\n(result.logs.stdout[\n0\n].text)\n# 3.11.14\n# 7. Cleanup the sandbox\nawait\nsandbox.kill()\nif\n__name__ ==\n\"__main__\"\n:\nasyncio.run(main())\n3.2 统一沙箱协议，开放可扩展\nOpenSandbox 采用协议优先（Protocol-First）设计，所有交互都通过 OpenAPI 规范定义。这意味着：\n你可以基于规范实现自己的运行时\n不同语言 SDK 之间完全兼容\n社区可以共建扩展能力\n3.3 双运行时支持，灵活部署\n自研的高性能 Kubernetes 沙箱调度器，支持大规模并发场景。\n批量沙箱支持：通过 Kubernetes Operator 实现批量沙箱生命周期管理；\n高性能调度：优化的调度算法，支持大规模并发创建和销毁。\n3.4 沙箱粒度网络控制策略\n{\n\"defaultAction\"\n:\n\"deny\"\n,\n\"egress\"\n:\n[\n{\n\"action\"\n:\n\"allow\"\n,\n\"target\"\n:\n\"api.openai.com\"\n},\n{\n\"action\"\n:\n\"allow\"\n,\n\"target\"\n:\n\"*.pypi.org\"\n},\n{\n\"action\"\n:\n\"allow\"\n,\n\"target\"\n:\n\"*.npmjs.org\"\n}\n]\n}\n3.5 开箱即用的沙箱流量入口代理\n3.6 丰富的沙箱使用案例助你快速上手\n04\n典型企业应用场景\n4.1 Alibaba Coding Agent\n阿里巴巴内部的 Coding Agent 是 OpenSandbox 的核心应用场景之一。\n作为企业级 AI 编程助手，它不仅需要高度隔离的独立沙箱，也对环境的拉起效率与\n会话恢复能力\n有着极致追求。\nOpenSandbox 提供的 Code Interpreter 能力完美契合这些需求，让 Coding Agent 能够安全、高效地“动手”编写并验证代码。\n4.2 Coding 产品评测环境\n针对 Coding 产品的评测与验证，社区贡献了 Harbor 这一卓越的环境驱动框架。它通过对评测环境的高度\n封装\n，确保了测试过程的\n一致性与可复现性\n。针对复杂 Agent 评测中单机效率低下的痛点，Harbor 凭借出色的\n工程化弹性伸缩能力\n，能够调度成千上万个环境进行大规模并行测试。而 OpenSandbox 则作为\n底层基础设施\n，为这一高效评测流程提供了理想的沙箱环境与性能支撑。\n4.3 Agentic RL 训练环境\n强化学习（RL）训练 Agent 依赖高频的环境交互与海量的样本数据采集。\nOpenSandbox 为\nAgentic RL\n构建了高性能的基础设施支撑：\n极致并发与秒级响应\n：通过资源池化与预创建机制，支持数千个沙箱并发运行，实现环境的秒级分配。\n高效任务编排\n：\n内置任务执行引擎，支持异构任务的灵活分发，确保每个沙箱可独立承担不同的训练指令。\n强力状态隔离\n：\n各训练环境互不干扰，确保样本数据的独立性与实验结果的可复现性。\n弹性资源管理\n：\n根据训练负载动态分配与回收资源，极大优化了集群整体的资源利用率。\n目前，OpenSandbox 已在阿里巴巴大规模 Agentic RL 训练场景中得到实证，显著缩短了训练周期并提升了算力效率。\n4.4 Remote Agent Sandbox\nOpenSandbox 支持将 Claude Code、Gemini CLI 等 Agent 实例封装在远程沙箱中，通过将 Agent 行为“远程化”，解决本地环境配置复杂与安全合规问题：\n环境隔离与沙箱化\n：\n通过远程部署实现 Agent 执行环境与宿主机的完全解耦，消除环境污染风险。\n灵活的运行时预设\n：\n支持针对异构 Agent 定制专属运行时（Runtime），包括特定版本的编程语言环境与依赖包。\n计算下沉与远程执行\n：\n核心代码执行逻辑下沉至云端沙箱，本地仅承载交互指令与结果渲染，实现轻量化办公。\n05\n开源与社区\nOpenSandbox 遵循 Apache 2.0 开源协议，你可以自由地将其用于个人或商业项目。\n我们正在积极建设社区，欢迎你：\n🌟\n给项目点个 Star\n🐛\n提交 Issue 反馈问题\n💡\n参与 Feature 讨论\n🤝\n贡献代码完善功能\nGitHub 地址：\nhttps://github.com/alibaba/OpenSandbox\n微信扫码加入交流群\n06\n写在最后\nAI 正在重塑软件开发的方式，而 OpenSandbox 致力于成为 AI 应用场景下最可靠的通用沙箱基础设施。\n无论你是正在构建内部 AI 平台的企业技术团队，还是需要大规模沙箱调度能力的 SaaS 服务商，OpenSandbox 都能为你提供：\n安全可靠的隔离环境；\n灵活多变的部署方式；\n完整的企业级能力；\n开放可扩展的架构。\n但我们深知，一个优秀的开源项目离不开社区的共建。\nOpenSandbox 的未来，期待你的加入，让我们一起打造 AI 场景下的通用沙箱基础设施！\n欢迎关注我们的 GitHub，获取最新动态！\n欢迎留言一起参与讨论~\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

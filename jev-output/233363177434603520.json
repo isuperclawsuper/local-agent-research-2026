@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "233363177434603520",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "CodeGenius Memory：构建面向代码生成的可控上下文系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557330&idx=1&sn=782f98f8d7199b31d4fa2a192615bdff",
+      "date": "2026-01-12T00:31:00.988Z",
+      "chars": 11625,
+      "text": "原创\n驭竹\n2026-01-12 08:31\n浙江\n阿里妹导读\n本次 Memory 系统重构是一次面向 AI Agent 未来演进的上下文工程升级——通过结构化、压缩与抽象机制，让模型在有限上下文预算下更高效地维持任务理解、目标对齐与推理连贯性。\n上下文膨胀带来的新瓶颈\n随着模型能力的快速提升，代码类产品的形态正在从传统 Chatbot 向更加自主、可执行多步任务的 AI Agent 转变。Agent 不再只处理简单问答，而是需要：\n分析用户需求；\n读取多个文件并理解整个项目；\n调用不同工具生成结构化结果；\n多轮推理、修改、验证中间产物；\n在长流程中保持一致的任务状态；\n这使得模型的上下文规模呈指数级膨胀。文件内容、构建日志、多轮工具输出、任务中间状态、先前讨论……这些都逐步挤进了 Prompt，使得原本相对可控的短对话场景，变成了复杂的多源异构大上下文输入。结果非常直接：\n模型需要处理更长的 Token → 推理时延增加，成本上升；\n有效信息被噪声淹没或被截断 → 输出质量下降；\nAgent 在长流程中“忘记”关键上下文 → 任务失败率上升；\n换句话说，模型能力的提升并不能弥补上下文结构的混乱，反而会让模型在面对冗余输入时显得束手无策。因此，当产品从 Chatbot 进化为 AI Agent 后，模型本身不再是唯一瓶颈，上下文工程开始成为系统性能与体验的核心约束。\nCodeGenius Memory 的设计与演进\n早期 CodeGenius 采用了固定窗口来管理上下文，我们只保留最近 5 轮的完整对话，这种策略在产品早期非常简单有效，但随着编码任务越来越复杂，该方案面临着 3 个主要问题：\n上下文断裂：复杂任务往往需要超过 5 轮对话才能完成，固定截断会导致前面的重要信息丢失，模型“忘记”用户的原始意图。\n缓存失效：每次截断都会改变 Prompt 的内容，导致之前的缓存无法复用，需要重新进行完整推理，增加了推理成本和延迟。\n冗余信息干扰：长对话中会积累大量重复引用的文件内容，以及早已过时的工具调用结果。这些无效信息不仅占用 Token 额度，还会干扰模型判断，降低代码生成质量。\n随着项目规模扩大，需求越来越复杂，这种固定窗口机制已不再适用。因此，我们为 CodeGenius 构建了一个新的 Memory 系统，使其能够在长任务、长对话、多文件、多工具的复杂场景下：\n控制上下文规模\n保留关键语义\n提升模型稳定性\n降低成本与延迟\n让 Agent 能够真正连续执行任务\n这便是 CodeGenius Memory 重构工作的起点。\nMemory 真正的难，是“取舍”\n在调研过程中，我们很快意识到 Memory 不是单纯“把更多信息塞进去”，而是如何取舍。这里主要的挑战包括：\n如何识别上下文中冗余、过期的内容，并尽可能在不影响缓存的前提下移除这些内容；\n何时对上下文进行压缩并保留上下文中关键的技术细节、架构决策和遗留问题。\n这两类挑战都指向一个共同问题：上下文必须被结构化管理，因此我们设计了一套分层的 Memory 优化框架，让系统在每一次对话前，先把上下文“整理打包”一遍，再交给模型。\n整体流程\n方案的核心是三件事：\n优化方案遵循「输入 → 整理 → 压缩 → 生成」流程，核心目标是保持上下文稳定性，以提高提示词缓存命中率，同时通过分层处理保证跨轮次连续性。\n关键机制设计\n卸载过时信息\n当和模型进行多轮对话后，历史消息中的很多信息其实是冗余的，比如实现上个目标而查看/编写的代码，已经使用过的组件文档等等。这些过时的内容占用着大量的 Token，增加成本和延迟的同时还会干扰模型的注意力分配，使推理行为偏离当前目标。\n因此，我们对 5 轮对话之前的工具出入参进行了卸载，将这些信息从 LLM 上下文中移除并存储到文件当中，留给模型的只有文件路径和提示信息，后续需要时可以重新读取文件内容查看或者通过 grep 获取关键信息。\n因为卸载信息并不是 append-only 的模式，需要对历史消息进行修改。如果 5 轮对话后，每次都进行卸载会导致缓存持续失效，反而得不偿失。为了尽可能保持上下文的稳定性，我们对卸载设置了 batch size，每过 5 轮进行一次卸载，这样既有效移除了过时信息，同时也享受到了缓存带来的成本和延迟的降低。\nClaude 系列模型读取缓存的 Token 价格是正常的 0.1 倍，创建缓存的价格是正常的 1.25 倍。\n文件去重和摘要生成\n文件类内容在上下文中往往是最大开销来源，当多轮对话中一直挂载着同一个文件，如果每次都带着最新的文件内容给模型会导致上下文膨胀得很快。现在的模型已足够智能，模型能够根据文件原始内容和编辑路径推断出最新的内容。因此，我们的策略是：遵循 append-only 的模式，只在第一次添加文件时带上完整代码，后续只在手动编辑代码后提供 diff 内容，其他情况都只提供文件路径，不再附带内容。\n除此之外，我们还发现有时一个大文件就占据了大部分模型上下文，但对这次需求来说，其中大部分内容都是无效的，真正关键的代码只有几行。为了解决这个问题，我们在检测到文件过大时（文件大于 3000 行）利用 tree-sitter 对文件进行了压缩，生成了只包含类型定义、变量和函数签名等重要信息的摘要。有了带行号的摘要，模型会在需要时缩小查看范围，只读取其中的关键内容。\n代码摘要示例\n...\n64\n|\ninterface\nRuleNode\n{\n65\n|\ntitle\n:\nstring\n;\n66\n|\nkey\n:\nstring\n;\n67\n|\nhitRate\n:\nnumber\n;\n68\n|\ntotalCases\n:\nnumber\n;\n69\n|\nhitCases\n:\nnumber\n;\n70\n|\nnodeType\n:\nNodeTypeEnum\n|\n'logicGroup'\n;\n71\n|\nlogicType\n?:\n'AND'\n|\n'OR'\n;\n72\n|\nisLeaf\n?:\nboolean\n;\n73\n|\nchildren\n?:\nRuleNode\n[];\n74\n|}\n75\n|\n76\n|\ninterface\nStrategyInsightProps\n{\n77\n|\nstrategyCode\n?:\nstring\n;\n78\n|\nstrategyName\n?:\nstring\n;\n79\n|\n/** 来源标识，用于控制实时流量分析tab的显示 */\n80\n|\nsource\n?:\n'scenario-operation'\n|\n'default'\n;\n81\n|}\n82\n|\n83\n|exportconst\nStrategyInsight\n:\nReact\n.\nFC\n<\nStrategyInsightProps\n> =\n(\n{\n84\n|  strategyCode: propStrategyCode,\n85\n|  strategyName: propStrategyName,\n86\n|  source,\n87\n|}) =>\n...\n190\n|\nconst\ncopyToClipboard =\nasync\n(\ntext\n:\nstring\n):\nPromise\n<\nboolean\n> =>\n...\n405\n|\nconst\nprocessCandidateStrategies\n= () =>\n...\n721\n|\nconst\nconvertTrafficDataToRuleTree = (\n722\n|\nnode\n:\nTrafficAnalysisNodeVO\n,\n723\n|    parentKey =\n''\n,\n724\n|    index =\n0\n725\n|  ):\nRuleNode\n=>\n...\n769\n|\nconst\ngetAllNodeKeys = (\nnodes\n:\nRuleNode\n[],\nmaxLevel\n:\nnumber\n=\n1\n):\nstring\n[] =>\n771\n|\nconst\ntraverse\n= (\nnodeList\n:\nRuleNode\n[], currentLevel =\n0\n) =>\n...\n791\n|\nconst\nhandleStrategyTypeChange\n= (\nvalue\n:\nStrategyTypeEnum\n) =>\n797\n|\n798\n|\nconst\nhandleStrategyCodeChange\n= (\nvalue\n:\nstring\n) =>\n805\n|\n806\n|\nconst\nhandleRuleCodeChange\n= (\nvalue\n:\nstring\n) =>\n812\n|\n813\n|\nconst\nhandleDateChange\n= (\ndate\n:\nMoment\n|\nnull\n) =>\n817\n|\n818\n|\nconst\nhandleExecutionModeChange\n= (\nmode\n:\nExecuteTypeEnum\n) =>\n...\n824\n|\nconst\nhandleQuery\n= () =>\n...\n835\n|\nconst\nhandleRealtimeStartTimeChange\n= (\ndate\n:\nMoment\n|\nnull\n) =>\n838\n|\n839\n|\nconst\nhandleRealtimeEndTimeChange\n= (\ndate\n:\nMoment\n|\nnull\n) =>\n842\n|\n843\n|\nconst\nhandleRealtimeDataLimitChange\n= (\nvalue\n:\nnumber\n|\nnull\n) =>\n...\n这就像只告诉模型一本书的目录，而不是全文，让模型按需获取相关内容。通过这种方式，在上下文有限的情况下，完美解决了大文件无法一次性加载到模型上下文的问题。\n动态对话摘要\n即使已经通过卸载、去重和结构摘要等手段显著降低了上下文体积，上下文仍会随着对话轮次的增长不断膨胀。对于需要多轮对话的复杂任务来说，如果不主动清理上下文，迟早会触及模型的最大窗口，导致成本上升、推理变慢，甚至模型无法继续工作。\n因此，我们为 CodeGenius 设计了一套能够根据上下文状态动态触发的对话摘要机制，用于在关键时刻“折叠历史”，确保 Agent 始终在可控范围内运行。\n摘要生成部分我们直接使用了 Claude Code Compact 的提示词，该提示词会让模型生成一份极其详细、结构化的对话总结，总结会包含九个结构化部分：\nPrimary Request and Intent:\n重点描述用户在对话中的主要目标、核心需求和明确意图\n•\nKey Technical Concepts:\n列出整个对话涉及的重要技术点、框架、工具、概念等；\nFiles and Code Sections:\n记录讨论或修改过的具体文件、代码片段、函数签名，以及这些操作的目的；\nErrors and Fixes:\n总结出现过的错误、产生原因、如何修复，以及用户对修复的反馈；\nProblem Solving:\n整理在对话中完成的关键问题解决步骤与正在进行的排查工作；\nAll User Messages:\n列出所有用户的消息，用于完整保留用户需求和每轮反馈；\nPending Tasks:\n列出用户明确要求但尚未完成的任务；\nCurrent Work:\n描述助手在总结前正在进行的具体工作内容，包括相关文件和代码状态；\nOptional Next Step:\n在用户现有指令范围内，给出下一步明确且与当前工作直接相关的行动建议；\nClaude Code Compact 提示词\nYour task\nis\nto\ncreate\na detailed summary\nof\nthe conversation so far, paying\nclose\nattention\nto\nthe\nuser\n's explicit requests and your previous actions.\nThis summary should be thorough in capturing technical details, code patterns, and architectural decisions that would be essential for continuing development work without losing context.\nBefore providing your final summary, wrap your analysis in <analysis> tags to organize your thoughts and ensure you've covered\nall\nnecessary points.\nIn\nyour analysis process:\n1.\nChronologically analyze\neach\nmessage\nand\nsection\nof\nthe conversation.\nFor\neach\nsection thoroughly identify:\n-\nThe\nuser\n's explicit requests and intents\n- Your approach to addressing the user's requests\n-\nKey decisions, technical concepts\nand\ncode patterns\n-\nSpecific\ndetails\nlike\n:\n-\nfile names\n-\nfull\ncode snippets\n-\nfunction\nsignatures\n-\nfile edits\n-\nErrors that you ran\ninto\nand\nhow you fixed them\n-\nPay special attention\nto\nspecific\nuser\nfeedback that you received, especially if the\nuser\ntold you\nto\ndo something differently.\n2.\nDouble\n-\ncheck\nfor\ntechnical accuracy\nand\ncompleteness, addressing\neach\nrequired element thoroughly.\nYour summary should include the following sections:\n1.\nPrimary\nRequest\nand\nIntent: Capture\nall\nof\nthe\nuser\n's explicit requests and intents in detail\n2. Key Technical Concepts: List all important technical concepts, technologies, and frameworks discussed.\n3. Files and Code Sections: Enumerate specific files and code sections examined, modified, or created. Pay special attention to the most recent messages and include full code snippets where applicable and include a summary of why this file read or edit is important.\n4. Errors and fixes: List all errors that you ran into, and how you fixed them. Pay special attention to specific user feedback that you received, especially if the user told you to do something differently.\n5. Problem Solving: Document problems solved and any ongoing troubleshooting efforts.\n6. All user messages: List ALL user messages that are not tool results. These are critical for understanding the users' feedback\nand\nchanging intent.\n7.\nPending Tasks: Outline\nany\npending tasks that you have explicitly been asked\nto\nwork on.\n8.\nCurrent\nWork:\nDescribe\nin\ndetail precisely what was being worked\non\nimmediately before this summary request, paying special attention\nto\nthe most recent messages\nfrom\nboth\nuser\nand\nassistant. Include file names\nand\ncode snippets\nwhere\napplicable.\n9.\nOptional Next Step: List the next step that you will take that\nis\nrelated\nto\nthe most recent work you were doing. IMPORTANT: ensure that this step\nis\nDIRECTLY\nin\nline\nwith\nthe\nuser\n's explicit requests, and the task you were working on immediately before this summary request. If your last task was concluded, then only list next steps if they are explicitly in line with the users request. Do not start on tangential requests without confirming with the user first.\nIf there is a next step, include direct quotes from the most recent conversation showing exactly what task you were working on and where you left off. This should be verbatim to ensure there's\nno\ndrift\nin\ntask interpretation.\nHere\n's an example of how your output should be structured:\n<example>\n<analysis>\n[Your thought process, ensuring all points are covered thoroughly and accurately]\n</analysis>\n<summary>\n1. Primary Request and Intent:\n[Detailed description]\n2. Key Technical Concepts:\n- [Concept 1]\n- [Concept 2]\n- [...]\n3. Files and Code Sections:\n- [File Name 1]\n- [Summary of why this file is important]\n- [Summary of the changes made to this file, if any]\n- [Important Code Snippet]\n- [File Name 2]\n- [Important Code Snippet]\n- [...]\n4. Errors and fixes:\n- [Detailed description of error 1]:\n- [How you fixed the error]\n- [User feedback on the error if any]\n- [...]\n5. Problem Solving:\n[Description of solved problems and ongoing troubleshooting]\n6. All user messages:\n- [Detailed non tool use user message]\n- [...]\n7. Pending Tasks:\n- [Task 1]\n- [Task 2]\n- [...]\n8. Current Work:\n[Precise description of current work]\n9. Optional Next Step:\n[Optional Next step to take]\n</summary>\n</example>\nPlease provide your summary based on the conversation so far, following this structure and ensuring precision and thoroughness in your response.\nThere may be additional summarization instructions provided in the included context. If so, remember to follow these instructions when creating the above summary. Examples of instructions include:\n<example>\n## Compact Instructions\nWhen summarizing the conversation focus on typescript code changes and also remember the mistakes you made and how you fixed them.\n</example>\n<example>\n# Summary instructions\nWhen you are using compact - please focus on test output and code changes. Include file reads verbatim.\n</example>\n经过压缩后，上百 K 的上下文会浓缩成 2～3 K 的摘要信息，大幅减少上下文的同时还保留着任务的关键信息。这种定量清理的策略，不仅降低了 Agent 的调用成本，也解决了复杂任务场景下上下文窗口不够的问题。\n触发摘要生成的时机有两个：\n上下文即将逼近模型窗口上限：\n当上下文使用量达 70% 时，系统会提前触发压缩，避免溢出风险；\n开启与历史无关的新话题：\n识别到用户输入与历史意图不相关，系统会主动对历史对话进行压缩，为新任务腾出空间；\n第一个时机是为了模型稳定迫不得已，而第二个时机则是我们发现有些用户总是在同一个会话中不断向模型许愿实现需求，即使是不同的需求也不会新开会话减少无用信息的干扰。因此，我们从成本和生成质量的角度考虑，对用户输入进行识别，如果和之前的内容无关，就会触发自动压缩来减少过时信息的 Token 占用。\n如果每次都对用户输入进行识别，会导致用户等待时间过长，并且有可能压缩后的 Token 占用比原上下文更大，反而不划算。我们的策略是判断历史上下文 Token 占用是否超过 3K（通常摘要占 2～3K），确保用摘要替换历史长下文能节省 Token 才会进行压缩。\n关于新话题的判断还有两处细节需要注意：\n一是因为开启了缓存，命中缓存成本只有十分之一，所以我们还判断了用户输入距上次是否在五分钟内（缓存时间），如果在五分钟内，历史上下文 Token 占用超过 30K 才会压缩。\n二是判断新话题无需将整个上下文都给模型。为了加快判断速度，我们只取了最近 3 轮的历史上下文用于判断，同时对模型输出的部分做了剪裁，移除模型中间的思考过程和工具调用，只取模型输出轮次的最后一段文本内容。模型最后一般都会对这次生成做一次总结，因此最后一段文本算是模型输出的摘要，对判断新话题来说已足够。\n效果、收益与未来思考\n经过内部多轮测试，几个显著收益非常直观：\n提示词缓存命中率显著提升：过去频繁截断导致缓存失效，现在上下文更稳定，缓存命中提升，使推理成本直接下降；\n复杂任务的生成能力明显增强：尤其是涉及多文件、多步骤、多轮迭代的开发任务，模型不再“忘记来时的路”；\n平均 Token 消耗降低：去重、增量 Diff、结构摘要等机制，让上下文长度平均下降显著，推理效率提高。\n这些改进一起构成了一个更可控、更稳定、更经济的上下文管理体系。然而，在更复杂的 Agent 场景中，Memory 仍有进一步演进的空间。未来我们重点关注以下方向：\n上下文隔离：通过 Sub Agent 机制，将独立任务由子 Agent 完成后反馈给主 Agent，避免无关内容污染主上下文；\n记忆分级体系：短期放上下文，中期放结构化摘要，长期放外部知识库，不同信息按生命周期和访问频率分层存储；\n动态策略优化：基于上下文规模、任务复杂度等，由系统自动调整阈值、压缩强度与摘要结构，不再依赖固定规则。\n这次 Memory 重构让 CodeGenius 在真实工程任务中迈出了关键一步：从“被动记忆”转向“可管理记忆”，从“堆叠信息”转向“组织信息”。而未来，Memory 将不仅是一项基础能力，更会成为让 Agent 变得可控、可扩展、可协作的核心基石。\n结语\n回过头看这次 Memory 系统的重构，它并不是一个单点优化，而是一次围绕“上下文如何被管理、组织与压缩”的系统性工程升级。随着 AI Agent 能力增强，模型对上下文的依赖只会越来越深；而上下文若无法被结构化、裁剪和抽象，最终反而会限制模型的表现。\nMemory 的价值就在这里：它不是为了塞进更多信息，而是为了让模型在有限的上下文预算下，持续保持对任务的理解、对目标的对齐，以及对推理链路的稳定掌握。\n本次改造让 CodeGenius 在复杂任务、长对话、多文件、多工具调用的真实工程场景中获得了明显提升，但我们也清楚这只是起点。未来更大型的 Agent 体系、更开放的任务边界、更长尾的用户需求都会继续挑战上下文工程的上限。\n这一次，我们让 CodeGenius 更聪明了一些。下一次，我们希望让它更像一个真正能“思考”的协作伙伴。\n参考资料\nClaude Code Compact Prompt：\nhttps://github.com/Yuyz0112/claude-code-reverse/blob/main/results/prompts/compact.prompt.md\nContext Engineering for AI Agents：\nhttps://drive.google.com/file/d/1QGJ-BrdiTGslS71sYH4OJoidsry3Ps9g/view\nBuilding a better repository map with tree sitter：\nhttps://aider.chat/2023/10/22/repomap.html\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0,
+        "transfer_agent": 0.91,
+        "irrelevant": 0.09,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.89,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.07,
+        "2": 0.91,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.32,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.11,
+        "2": 0.14,
+        "3": 0.39,
+        "4": 0.19,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.5,
+      "probabilities": {
+        "0": 0.76,
+        "1": 0.09,
+        "2": 0.07,
+        "3": 0.05,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.73,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.28,
+        "3": 0.7,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.6,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.12,
+        "4": 0.77,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.64,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.04,
+        "2": 0.17,
+        "3": 0.73,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8116,
+    "outputTokens": 172,
+    "totalTokens": 8288
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.89,
+        "relevance": 0.92,
+        "grounding": 0.29,
+        "decision_action": 0.67,
+        "evidence": 0.8,
+        "actionability": 0.71,
+        "anti_hype": 0.73
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179869179,
+                "endTime": 1791179869343,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000340872",
+      "marketCost": "0.000340872",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000340872",
+      "inferenceCost": "0.000340872",
+      "inputInferenceCost": "0.000340872",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7JZBVY80GMR8ZVEQT9RS"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:49 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::gxhbb-1791179868678-90446e9dc2d9"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0,
+            "transfer_agent": 0.91,
+            "irrelevant": 0.09,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.89,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.07,
+            "2": 0.91,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.32,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.11,
+            "2": 0.14,
+            "3": 0.39,
+            "4": 0.19,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.5,
+          "probabilities": {
+            "0": 0.76,
+            "1": 0.09,
+            "2": 0.07,
+            "3": 0.05,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.73,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.28,
+            "3": 0.7,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.6,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.12,
+            "4": 0.77,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.64,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.04,
+            "2": 0.17,
+            "3": 0.73,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8116,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.89,
+            "relevance": 0.92,
+            "grounding": 0.29,
+            "decision_action": 0.67,
+            "evidence": 0.8,
+            "actionability": 0.71,
+            "anti_hype": 0.73
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179869179,
+                    "endTime": 1791179869343,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000340872",
+          "marketCost": "0.000340872",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000340872",
+          "inferenceCost": "0.000340872",
+          "inputInferenceCost": "0.000340872",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7JZBVY80GMR8ZVEQT9RS"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:48.583Z"
+  }
+}

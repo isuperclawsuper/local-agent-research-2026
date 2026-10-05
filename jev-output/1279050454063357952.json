@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1279050454063357952",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "Agent Plan 「Agent云电脑」工具： 让 AI 在云电脑上完成股市深度研究",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247522149&idx=1&sn=383a089a1ed8658ac6742851ca4d4325",
+      "date": "2026-09-07T11:00:00.987Z",
+      "chars": 1889,
+      "text": "Agent Plan\n2026-09-07 19:00\n北京\n引言\n你有没有过这样的经历：接到一个深度调研任务，要查行情、翻研报、对数据、写分析，一坐就是大半天，浏览器开了十几个标签页，还得反复切换整理？\n如果能把这些活儿 \"丢给云端\"，让一台 24 小时在线的云电脑自己拆解任务、检索资料、生成报告，而你只需要最后验收结果 ，将显著提升工作效率。\n今天这篇文章，就来聊聊火山方舟 Agent Plan 里专属 Harness工具「Agent 云电脑」。它不只是一个远程桌面，而是一个自带 agent loop、能自行拆解并执行复杂任务的云端助手。\n核心亮点：\n跨网页与桌面操作：\nCUA 可以在云桌面中打开网页、使用站内搜索、滚动页面、切换标签页，并处理需要交互的页面。它适合多步 GUI 工作流，不局限于返回搜索摘要。\n一次委派，持续观察：\n只创建一次任务，云平台可自动拆解并执行复杂任务。平台可持续监控任务进度，监控任务中断不影响任务执行，可以随时停止和恢复任务监控。\n长程复杂任务自行拆解：\n对于复杂任务，云电脑agent可以自行拆解，充分利用云电脑预装的软件和交互方案，完成复杂任务。\n我们以 \"做一份股市大盘深度研究\" 为例演示「Agent 云电脑」能力，把复杂调研交给云端，真的可以很简单。\n前置准备\n购买套餐：请登陆「火山方舟」或 「官网活动页」，购买Agent Plan套餐\n1. 购买Agent Plan套餐\n进入 Agent Plan 控制台 购买 Agent Plan 套餐。购买后即可开启使用套餐内专属Harness工具。\n注意：目前Agent 云电脑（Computer Use Agent）当前仅支持在\nLarge/Max套餐\n下使用。\n2. 安装并配置skill\nAgent 云电脑只使用 Agent Plan 凭证。推荐先用\narkcli\n安装和配置 skill。\n使用 arkcli 安装和配置（推荐）。\n安装 arkcli\nnpm\ni\n@volcengine\n/ark-cli -g --registry\nhttps\n://registry.npmjs.org\n通过 arkcli 配置 agentplan 并安装 cua，其中 profile 选择 agent plan\narkcli helper mcp codex\n--capability\ncua\n在 codex 中确认是否已经安装完毕\n详细操作指南\nStep1  通过 skill 来发起任务\nAgent 云电脑是一个开箱即用的一个 skill，初次登录时，服务端会给用户分配一个云电脑，后续用户使用同一个 api key 登录时，会复用之前的云电脑机器，因此你可以随时启用云电脑而不必担心配置和安装的软件丢失。\nAgent 云电脑自带 agent loop，因此可以不必像传统的 computer use 工具一样，只暴露基础的操作接口，agent需要频繁和云桌面操作，而只需要下达指令即可，Agent 云电脑可以自行拆解复杂任务，并自己驱动执行。\nStep2  等待任务执行完成\n云电脑的 agent 会自动解析和拆解任务，并且触发云端安装的软件和工具进行资料检索。\n完成资料整理和分析，生成有深度的分析。\nStep3  登录云电脑查看执行过程\n可以通过 skill让agent 返回临时 URL 来访问 Agent 云电脑查看执行过程和执行产物。\nStep4 查询 AFP 用量消耗\n用户可通过方舟控制台查询 Agent Plan 套餐 AFP 的实时用量，完成该深度研究预估消费 11.46 AFP，此外还会根据任务独立消耗 token，请注意用量消耗根据个人具体使用情况存在差异。\n详情可见 AFP 积分机制：\n该 Demo 实现的预估 AFP 消耗明细如下：\n消耗项\n消耗量\n预估 AFP消耗\n机器占用\n本次任务耗时11分钟，按照实际占用机器时长折算\n11.46 AFP\nToken 消耗\n本次任务使用 Deepseek V4 pro 作为 CUA agent，输入消耗1221.3K，输出消耗29.7K\n688.050 AFP\n结尾\n当然，Agent 云电脑的能力远不止做股市研究 —— 行业调研、竞品分析、资料汇总、数据采集…… 凡是需要多步检索和整理的复杂任务，都可以交给它来跑。\n目前「Agent 云电脑」已在 Agent Plan 的 Large/Max 套餐开放，如果你手头正好有 \"必须开浏览器、来回切换窗口才能完成\" 的任务，不妨去尝试一次\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0.11,
+        "direct_local": 0,
+        "irrelevant": 0.43,
+        "transfer_agent": 0.45,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.8,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.21,
+        "2": 0.67,
+        "3": 0.08,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.98,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.16,
+        "2": 0.62,
+        "3": 0.18,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.98,
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.16,
+        "2": 0.07,
+        "3": 0.19,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.67,
+      "probabilities": {
+        "0": 0,
+        "1": 0.33,
+        "2": 0.67,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.92,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.1,
+        "2": 0.15,
+        "3": 0.1,
+        "4": 0.55,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.49,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.19,
+        "2": 0.57,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3331,
+    "outputTokens": 172,
+    "totalTokens": 3503
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.31,
+        "relevance": 0.75,
+        "grounding": 0.73,
+        "decision_action": 0.35,
+        "evidence": 0.78,
+        "actionability": 0.28,
+        "anti_hype": 0.59
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179909260,
+                "endTime": 1791179909503,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000139902",
+      "marketCost": "0.000139902",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000139902",
+      "inferenceCost": "0.000139902",
+      "inputInferenceCost": "0.000139902",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8T3C3JCR6NQFWZM1FA3Q"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:29 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::fbw58-1791179909218-69089e3ab5c2"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0.11,
+            "direct_local": 0,
+            "irrelevant": 0.43,
+            "transfer_agent": 0.45,
+            "transfer_business": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.8,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.21,
+            "2": 0.67,
+            "3": 0.08,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.98,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.16,
+            "2": 0.62,
+            "3": 0.18,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.98,
+          "probabilities": {
+            "0": 0.55,
+            "1": 0.16,
+            "2": 0.07,
+            "3": 0.19,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.67,
+          "probabilities": {
+            "0": 0,
+            "1": 0.33,
+            "2": 0.67,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.92,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.1,
+            "2": 0.15,
+            "3": 0.1,
+            "4": 0.55,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.49,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.19,
+            "2": 0.57,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3331,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.31,
+            "relevance": 0.75,
+            "grounding": 0.73,
+            "decision_action": 0.35,
+            "evidence": 0.78,
+            "actionability": 0.28,
+            "anti_hype": 0.59
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179909260,
+                    "endTime": 1791179909503,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000139902",
+          "marketCost": "0.000139902",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000139902",
+          "inferenceCost": "0.000139902",
+          "inputInferenceCost": "0.000139902",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8T3C3JCR6NQFWZM1FA3Q"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:28.740Z"
+  }
+}

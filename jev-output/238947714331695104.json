@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "238947714331695104",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元AI Infra核心技术重磅开源：推理吞吐提升30%！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798546&idx=1&sn=2a832bbfe5448299c27b5bf683b9c92f",
+      "date": "2026-01-27T09:36:00.261Z",
+      "chars": 3544,
+      "text": "腾讯程序员\n2026-01-27 17:36\n广东\n核心算子性能逼近硬件峰值，实现显著性能突破\n腾讯混元AI Infra团队开源生产级高性能LLM推理核心算子库 HPC-Ops，该算子库基于生产环境痛点，采用 CUDA 和 CuTe 从零构建，通过抽象化工程架构、微架构深度适配及指令级极致优化等，降低底层算子开发门槛，将核心算子性能逼近硬件峰值，实现了显著性能突破。\n在真实场景下，基于HPC-Ops，混元模型推理 QPM 提升30%，DeepSeek模型 QPM 提升17%。同时，在单算子性能方面，HPC-Ops实现Attention相比 FlashInfer/FlashAttention 最高提升2.22倍；GroupGEMM 相比 DeepGEMM 最高提升1.88倍；FusedMoE 相比 TensorRT-LLM 最高提升1.49倍。\n项目开源地址：\n👉\nGitHub项目地址\n：\nhttps://github.com/Tencent/hpc-ops\n在大模型时代，计算效率已成为 AI 应用及发展的关键瓶颈。目前主流算子库（如FlashInfer、DeepGEMM）多以 NVIDIA H800等高配训练卡为首要优化目标，但限于客观原因，不少大模型的大规模线上推理服务只能采用 H20 等推理型计算卡。现有 SOTA 算子库在这些显卡上往往难以发挥硬件峰值能力。同时业务侧对极致吞吐、低延迟以及 Blockwise FP8 等复杂量化策略的需求日益迫切，亟需更适配的底层支持。\n现有主流算子库主要存在以下痛点：\n使用成本高\n：主流算子库设计复杂，核心 Kernel 封装深，在其上修改适配成本非常高，除了对代码非常熟悉的开发者，普通的AI 研究者很难在其上适配修改。而大模型的很多加速研究创新，比如量化算法和投机采样等方法都严重依赖于与之匹配的高效算子实现。比如最开始4bit和8bit的量化算法出来后，虽然理论上加载数据量减少，但由于没有与之匹配的低精度算子实现，低精度量化在很长的一段时间内都是负优化。\n目标硬件不匹配\n：现有的主流算子库都是以 H800 等显卡为目标优化、NVIDIA 提供的 CUTLASS 等算子更是以 Blackwell 架构为目标，而目前国内主流的推理显卡则有所不同。不同硬件间算力带宽的差距导致Kernel的优化方法也会不同，因此现有的算子库在国内主流推理卡上的表现并未发挥出硬件的全部性能。\n基于以上问题，腾讯混元使用 CUDA 和 CuTe 开发了一套轻量、高效的 LLM 核心算子库，主要包括几个模块：FusedMoE、Attention、机内/机间通信、Norm、Sampler、以及各类小算子的融合算子，整体算子库架构如图1所示。通过分析任务特性和硬件微架构，将任务的划分逻辑与硬件指令做了更好的对齐，以此获得更好的性能，并且对工程代码进行了适度的抽象，让开发者能聚焦于算法本身，降低维护门槛。本算子库不仅是高性能生产工具，也可作为开发者深入理解 CUTLASS 与 CuTe 工业级开发的实践范本，具体的技术细节如下：\n图1 HPC-Ops 算子库架构图\n1.\n任务特性与硬件能力对齐\n：针对访存瓶颈的算子，其性能主要受限于数据加载速度。针对国内的主流推理显卡，通过调整指令发射顺序进行数据预取优化，确保数据传输单元一直处于高利用率。针对不同的问题规格做了更细致的指令对齐和优化，去除冗余低效指令以减少算力的浪费，如针对 Decode Attention 和小 batch 下的 GroupGEMM 都做了AB矩阵交换的优化，以此对齐到硬件架构上的 wgmma 指令，访存带宽可达到硬件峰值能力的80%以上。\n图2 Attention SwapAB示意图\n2.\n精细的任务调度和数据重排\n：针对每个算子问题，都重新思考了任务数据的划分调度策略，尽可能保证每个 SM 都任务均衡的同时兼顾cache的连续性，并且采用了 persistent kernel 的方式隐藏 kernel prologue 和 epilogue 的开销。另外也通过数据重排减少了额外的操作和显存占用，比如在 FP8 Attention Kernel 中创新性采用了 Interleave 重排技术，解决了指令不匹配的问题，减少线程间数据 shuffle，获得了优于业界 SOTA 的算子性能。\n3.\n聚焦于计算逻辑本身\n：GPU编程的复杂度很大程度上来源于操作的复杂性，为了能使用高效指令，一般需要对数据进行多次的重解释和变换等编程技巧，这大大加重了开发者的心智负担。因此基于 CuTe 扩展开发 vec 抽象层统一负责高效数据搬运，利用 Layout 代数抽象隔离复杂的 Tiling 与计算逻辑，让开发者能聚焦于算法本身，降低维护门槛。\n一、    关键实验结果\n通过以上高效算子实现，在混元模型上将QPM端到端提升30%，DeepSeek 上 QPM 提升17%。同时针对 LLM 中核算子模块进行了测试，以常用的模型规格（混元、DeepSeek）进行了测试，并对比了目前主流的算子库实现，实验表明，在 LLM 的核心模块 Attention 和 FusedMoE 上的性能都超越当下 SOTA 实现。\n1.\nGroupGEMM\n：与 DeepGEMM (v2.2.0) 的两种版本进行对比，在 Batch<=64 的低延迟场景下优势显著，较 DeepGEMM 最佳表现最高提升 1.88x，且通过流水线掩盖技术使 Blockwise 与 PerTensor 性能几乎持平；在大 Batch 场景下，亦能保持约 1.1x 的领先优势。该算子同时兼容紧密排布与 Token 不连续输入，显著减少临时显存用量。\n图3 GroupGEMM 性能对比图\n2.\nFusedMoE\n完整封装了包括前序数据重排、GroupGEMM 及后续 Reduce 加权平均在内的全流程模块，并在序列长度取16倍数的均衡分配规格下，对比了 vLLM (v0.11.0) 与 TensorRT-LLM (v1.1.0) 的实现。测试结果显示，该 FusedMoE 模块在 TP 场景下相比 TensorRT-LLM 提升显著，最大性能提升达 1.49x；在 EP 模拟均衡场景下最大提升1.09x。针对不同输入长度采取的差异化重排策略，进一步确保了整体模块在各类规格下的最优表现。\n图4 FusedMoE 性能对比图\n3.\nAttention\n：针对 Prefill 场景，测试128～64K的输入长度。在 batch 较小时，BF16 精度下相比 SOTA 实现提升1.3x；在大 batch 时基本与当前 SOTA 对齐。针对 Decode 场景，根据线上 SLO 约束，搭配一组 batch 和输入长度的测试用例，BF16 精度下提升1.35x～2.22x；FP8 精度下，当 Sequence Length 较小时与 SOTA 相当，当 Sequence Length 较大时相比 SOTA 提升1.09x~2.0x。\n图5 Attention 性能对比图\n二、    算子库当前能力和未来发展方向\n作为面向大模型推理场景的高性能算子库，HPC-Ops 凭借 Attention、FusedMoE、GroupGEMM 等核心算子的极致优化，达成最高2.22倍的性能提升，且已在腾讯大规模生产环境中完成验证。其简洁易用的 API 可无缝对接 vLLM、SGLang 等主流推理框架，原生支持 BF16、FP8 等多精度量化方案，同时还以 CuTe、CUTLASS 为基础，提供了数百行代码即可构建 SOTA 算子的实践范例，为开发者降低了高性能 CUDA 内核的开发门槛。\n在未来的发展规划中，HPC-Ops 将持续深耕大模型推理性能的突破方向：一方面，将重点研发稀疏 Attention 算子，针对性解决长上下文大模型的内存与算力瓶颈；另一方面，会拓展更丰富的量化策略，覆盖 4bit/8bit混合精度等更多量化方案，进一步平衡推理速度与模型精度；此外，算子库还将布局计算-通信协同优化的内核，通过融合多 GPU 间的计算逻辑与通信流程，大幅降低分布式推理场景下的通信开销，为超大规模大模型的高效部署提供底层支撑。\n目前，HPC-Ops 已在 github 开放源码供开发者下载使用，同时腾讯混元infra团队也表示，欢迎行业内的技术实践者提交高价值 PR，参与算子边缘场景优化、教程案例打磨等精准化贡献，共同推动大模型推理技术的边界拓展。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.77,
+        "transfer_agent": 0.05,
+        "direct_local": 0,
+        "peripheral": 0.18
+      }
+    },
+    "relevance": {
+      "score": 1.35,
+      "probabilities": {
+        "0": 0.2,
+        "1": 0.26,
+        "2": 0.54,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.36,
+      "probabilities": {
+        "0": 0.79,
+        "1": 0.12,
+        "2": 0.05,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.02,
+      "probabilities": {
+        "0": 0.99,
+        "1": 0.01,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.81,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.05,
+        "3": 0.03,
+        "4": 0.91,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.31,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.09,
+        "2": 0.12,
+        "3": 0.16,
+        "4": 0.35000000000000003,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 0.72,
+      "probabilities": {
+        "0": 0.59,
+        "1": 0.16,
+        "2": 0.22,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4816,
+    "outputTokens": 173,
+    "totalTokens": 4989
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.71,
+        "relevance": 0.56,
+        "grounding": 0.76,
+        "decision_action": 0.99,
+        "evidence": 0.87,
+        "actionability": 0,
+        "anti_hype": 0.52
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179984838,
+                "endTime": 1791179984976,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000202272",
+      "marketCost": "0.000202272",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000202272",
+      "inferenceCost": "0.000202272",
+      "inputInferenceCost": "0.000202272",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB3XJ7H2T0HYS99Q1H9XP"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:44 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7nx9h-1791179984812-24c5dbf18683"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.77,
+            "transfer_agent": 0.05,
+            "direct_local": 0,
+            "peripheral": 0.18
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.35,
+          "probabilities": {
+            "0": 0.2,
+            "1": 0.26,
+            "2": 0.54,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.36,
+          "probabilities": {
+            "0": 0.79,
+            "1": 0.12,
+            "2": 0.05,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.02,
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.81,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.05,
+            "3": 0.03,
+            "4": 0.91,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.31,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.09,
+            "2": 0.12,
+            "3": 0.16,
+            "4": 0.35000000000000003,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.72,
+          "probabilities": {
+            "0": 0.59,
+            "1": 0.16,
+            "2": 0.22,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4816,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.71,
+            "relevance": 0.56,
+            "grounding": 0.76,
+            "decision_action": 0.99,
+            "evidence": 0.87,
+            "actionability": 0,
+            "anti_hype": 0.52
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179984838,
+                    "endTime": 1791179984976,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000202272",
+          "marketCost": "0.000202272",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000202272",
+          "inferenceCost": "0.000202272",
+          "inputInferenceCost": "0.000202272",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB3XJ7H2T0HYS99Q1H9XP"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:44.243Z"
+  }
+}

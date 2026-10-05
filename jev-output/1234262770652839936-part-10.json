@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1234262770652839936",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "参数化 Memory 漫谈（纯干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511041&idx=1&sn=037ffb3529df30ea5b8b30b966a526bf",
+      "date": "2026-08-07T10:18:00.229Z",
+      "chars": 6500,
+      "text": "都是讨论\"内环优化器怎么配\"，方向本身已无分歧。\n9.5 对照组：FlashMemory 在读路径上做了对称的事（arXiv:2606.09079, 2026-06）\n严格说这篇不属于 TTL：backbone 权重在推理中一动不动。把它放进本章，因为它补上了谱系的另一半——写路径之外，读路径同样可以模型化。\n问题是超长上下文服务的 KV cache 显存瓶颈。FlashMemory-DeepSeek-V4 在 DeepSeek-V4-Flash 架构上加一个 Neural Memory Indexer：解码每进行\n步，索引器读取当前隐藏状态，预测接下来会用到哪些细粒度 KV 块（lookahead），只把这些块预取进显存；全局脉络由 128:1 压缩的 HCA 块保底，prompt 末尾 8K 与本地解码窗口全量保留。索引器是标准双编码器，用检索训练框架独立训练，全程不加载 backbone。\n结果：LongBench-v2、LongMemEval、RULER 上，物理 KV cache 压到全量基线的 13.5%，平均精度反升 0.6 个绝对点——论文把这个现象称为 attention denoiser，删掉的上下文里噪声多于信息；500K 长度下 KV 开销削减超 90%，推理能力未失稳。边界同样明确：索引器只在 512K 以内的长度上训过，越界后块选择退化到接近随机，论文归因于位置编码的分布外失效，并预计 1M 以上不可恢复。\n两处与前文的接线。\n我如何看待这篇工作：在 7.2 中我们提到观点，“先问哪些过去信息会被未来的读取用到”——在这里成了一个独立训练的模型的全职工作，且判断标准从\"过去被注意过\"升级为\"预测将被注意\"；同一节里提过一个例子，就是 Opus-4.6 在 auto research 中曾自发提出预取算法，FlashMemory 给了这个思路一份生产级的数字，印证了我的想法。还一点值得一品的是，TTT/Titans 学的是往状态里写什么，FlashMemory 学的是从状态里读什么，两边的共同点是把记忆决策从固定启发式换成了一个被训练的小模型（小模型在读路径上做了优化，这为简化提供了非常非常好的思路）。\n9.6 边界在哪里？这个方向还缺什么？\n长话短说，四条：\n规模证据停在学术档位。\nTTT 验证到 1.3B，Titans 未公布训练规模细节且无官方代码，frontier 模型的主干仍是 attention 及其稀疏变体——9.5 恰好是证据：工业界 2026 年年中的选择是改读路径，不动写路径。\n状态的寿命没有跨过会话边界。\nTTT 与 Titans 的\n、\n随序列结束丢弃，ARC-TTT 的任务专属 LoRA 推理结束即弃，外环学到的只是初始化和更新规则；推理中的学习产物依然是一次性的。第 1 章定义的 Memory 要求经验跨时间携带，这一环当前由外部记忆系统承接，即第 10 章。\n评测与第 N 章的表格对不上。\nTTL 论文测困惑度、NIAH、BABILong，表格里的知识更新、受控遗忘、拒答、来源追溯几乎无人测；Titans 的遗忘门是容量管理装置，与合规删除是两个问题。\n写入时机前移，投毒面也随之前移。\n训练期写入尚有数据清洗兜底，推理期写入直面对抗输入，第 N 章表格\"安全与抗污染\"一行在 TTL 语境下还没有任何系统性工作。\n总之，TTL/TTT 方向还是一个新兴的研究方向，现有工作主要集中在如何在推理阶段进行有效的记忆更新和管理，但在跨会话记忆、长期知识积累以及工业界实践方面仍有很大的研究空间。\n10\nRAG：把记忆放在参数之外\n聊了那么多，谈点不那么烧脑的。\nRAG 本身就是 Memory 的一种\n。知识和经验没有固化进 LLM 的主参数，而是留在外部存储中，需要时再由 retrieval 寻址、generator 或 agent 使用。大家对 RAG 了解比较多，我们只简单回顾。\n经验 / 文档 / 历史交互\n↓ 写入\nexternal memory store\n↓ retrieval 寻址\nrelevant memory\n↓ 注入 context / hidden\nstate\ngenerator / agent 使用\n外部存储可以是非参数的，但 retriever、reranker、reader 和 memory policy 往往仍有参数，所以“外部记忆”不等于“整个系统无参数”。这里采用广义 RAG：只要持久状态位于模型权重之外，并按需选择性取回，就在讨论范围内。它和参数化 Memory 也不是替代关系：前者便于更新、删除、追溯和扩容，后者擅长低延迟、深融合与泛化。\n10.1 外部存储如何成为语言模型的一部分\n这组工作把\n可访问的知识容量\n从模型参数量中部分解耦：参数学习如何寻址和使用，外部存储承载持续增长的内容。\n10.2 从一次检索，走向长期记忆系统\n真正的长期记忆不只有\nquery → retrieve → generate\n，还需要写入、更新、遗忘和回写。\n10.3 retrieval 正在变成一项可学习的策略\n2026 年以来值得注意的变化是：模型开始自己决定何时检索、缺什么、去哪里找、什么时候已经找够。这里列一些已入选 ACL / EACL 的工作：\nRAG 的研究对象正在从“检索器能否找到相似文档”，转向“系统何时需要记忆、缺少哪类证据、应该访问哪一种存储、当前证据是否已经足够，以及读取成本是否值得”。\nRAG 解决了什么，又没有解决什么？\n写入\n：哪些交互值得保存？存原文、摘要、图节点，还是 hidden state？\n寻址\n：语义相似不等于任务相关；时间、否定、多跳和异构来源仍难统一。\n使用\n：检索到证据，不代表 generator 会相信、正确组合或准确引用。\n生命周期\n：更新、冲突、遗忘、删除、权限和来源不能只交给向量相似度。\n成本\n：retrieval、rerank、长 context 与多轮 agent loop 都有代价。\nCallback 第 4、8 节：参数化记忆要解决“写进哪里且不互相干扰”，RAG 则要解决“外部状态怎样组织、检索和维护”。当系统开始根据结果决定写回哪些经验、如何修订旧经验、下一次行动调用哪段记忆时，RAG 就进入了下一章的 agent experience system。\n11\nAgent 时代：记忆既写入模型，也写入“经验系统”\n9.6 节记过一笔账：测试时学习的产物活不过会话边界，跨时间携带经验的职责移交给了外部系统。第 10 章结尾给出了移交完成的判据——系统开始根据结果决定写回什么、修订什么、下一步调用什么。本章按经验系统里存的东西分层看四批工作：11.1 存判断，11.2 存可执行技能，11.3 存 agent 的结构本身，11.4 让记忆机制自己进入演化循环。四节共享一个设定：基座权重全程冻结——把记忆写进参数的那条路前面各章已经走完，这里的学习全部落在权重之外。\n11.1 Reflexion：语言反思作为 episodic memory (NeurIPS)\n一个 agent 把任务做砸之后，拿到的全部监督往往只是一个二值信号。把这点信号变成改进，RL 的标准通道是策略梯度，它要求两样 2023 年的 API agent 都没有的东西：海量 rollout 预算，和对权重的写权限。Reflexion（Shinn et al., NeurIPS 2023, arXiv:2303.11366）把两样都绕开：Evaluator\n给轨迹\n打出标量\n；Self-Reflection 模型\n读入\n，产出一段指认失败原因、给出下次对策的自然语言；反思追加进 episodic buffer，Actor\n下一轮把 buffer 拼进 context 重试：\n与\n逐项对照：评价从 loss 换成\n，归因从反向传播换成\n的因果推理，承载体从参数换成 context——论文自己的命名就叫 verbal reinforcement learning。差别在信息形态。REINFORCE 把一个标量摊进整条轨迹所有动作的 logprob，信用分配弥散，方差靠样本量压；M_{sr} $ 把同一个标量放大成一条有指向的假设，形如“柜子已搜过，钥匙更可能在抽屉”的具体度，一次失败就产出一步可执行的更新。样本效率的差距落在数字上：AlfWorld 的 134 个任务 12 轮内完成 130 个，比同样有重试预算的 ReAct 基线高 22 个绝对点；HumanEval pass@1 从 GPT-4 的 80.1% 提到 91.0%；HotPotQA 提高约 20 个点。消融确认承重件是那几句反思：允许重试、不写反思，成功率曲线很快停涨。\n第 1 章写过“Memory 是 LLM 自迭代中的外部 optimizer state”，Reflexion 是这句话最字面的实现：mem 与 Adam 的动量同构，都保存“下一步往哪改”，数据类型从浮点向量换成了句子。换来两个梯度更新给不了的性质。其一，append-only：权重不动，第 4.5 节的编辑干扰与遗忘整个不发生。其二，optimizer state 人类可读：更新方向学歪了，肉眼可查。代价同样清楚。论文把窗口上限\n取在 1–3 条，千字节量级的 optimizer state 装得下策略教训，装不下事实积累；反思只能在冻结模型已会的行为里做选择，它能把模型从错误策略劝回正确策略，给不出模型没有的能力；且 buffer 绑定单个任务，任务结束即弃，9.6 节“产物活不过会话”在语言空间原样重现。按第 6 章的读法还能再进一步：拼进 context 的反思经前向传播起效，等价于一次隐式的低秩更新——即便采纳这条最强的解释路线，它也只是住在激活里的浅更新。\n这套循环的软肋在\n。编程任务的评估器是模型自生成的单元测试：HumanEval 上它够准，MBPP Python 上假阳性测试把错误代码判为通过，反思在错误监督下更新，Reflexion 反而低于重试基线。评估器一坏，语言梯度的方向就反。这个问题在 11.3 会以更大尺度重现。\n11.2 Voyager：技能库作为程序化 Memory (arXiv)\nReflexion 存下的是忠告：上限三条，且每次都要靠模型把忠告重新翻译成行为。要在开放世界里连续攻克上百个任务，积累物得换成直接可执行的形态。Voyager（Wang et al., 2023, arXiv:2305.16291）在 Minecraft 里把每个学会的行为固化成一段调用 Mineflayer API 的 JavaScript 函数，系统三件套各管一段：automatic curriculum 出下一个难度合适的任务；iterative prompting 负责习得，环境反馈、执行报错、self-verification 三路信号驱动改代码直到通过；skill library 负责积累。\n库的读写各有一处值得抄的设计。写入端有门槛：技能必须通过 GPT-4 充当的 self-verification 才入库——第 10 章写入清单里那句“哪些交互值得保存”，这里的回答是“被验证过的程序”，库因此维持一个质量不变量，向量库存原始对话做不到这一点。读取端沿用向量寻址：技能功能描述（GPT-3.5 生成）嵌入为 key，当前任务上下文为 query，取 top-5 拼进生成 prompt：\n是技能程序，\n是它的功能描述。寻址技术与第 10 章完全相同，变化全在取回物的类型：不是供参考的文本，而是可直接调用、也可作为新技能子过程的函数。结果：同样的 160 轮 prompting 预算内，unique items 是基线最好成绩的 3.3 倍（对照组含 ReAct、AutoGPT，也含 11.1 的 Reflexion），行进距离 2.3 倍，技术树里程碑最快 15.3 倍解锁，diamond 级工具只有它做出；技能库整库搬进新世界后，解新任务仍然更快。两个消融划出承重结构：去掉技能库，中后期物品曲线趋平——没有积累，每个新任务都从零重新合成行为；GPT-4 换成 GPT-3.5，全系统塌掉——记忆以代码为载体，写入质量直接吃生成器的代码能力。\n程序这个载体一次给了三条性质，各自消解前文的一个难题。精确回放：第 4 章的参数记忆是有损叠加、读取受干扰，检索文本要靠模型每次重新解释，程序的执行语义确定，第一百次调用与第一次行为一致。组合性：新技能的函数体内调用旧技能，库随时间长成一张调用图；第 8 章 memory layer 的 slot 之间、第 10 章向量库的条目之间都没有这种结构，这是记忆条目第一次互相引用、逐层抬高抽象层级。免遗忘：append-only、无共享底座，写新技能对旧技能的干扰严格为零，4.5.1 的 generalization–locality 两难在这个载体上不成立——代价是泛化被整体让渡，程序自身不泛化，何时调用、怎么组合、要不要改写全由冻结的基座决定，库只扩大可组合的素材面，举一反三的能力始终是基座的、不随积累变强。参数记忆把存储和泛化耦合在同一组权重里，技能库把两者拆开。\n边界也来自同一个载体。“可验证”在 Minecraft 便宜：API 干净、执行确定、成败可判。现实任务里 verifier 本身贵，GUI 操作没有单元测试这样便宜的判据；验证不了就过不了写入门槛，质量不变量随之失效。技能库范式的适用面，大体是“行为可代码化”与“结果可机检”两个条件的交集。\n11.3 STOP (arXiv) / ADAS (arXiv) / AFlow (arXiv) / AlphaEvolve (arXiv)：可演化的程序结构\n11.1 的反思与 11.2 的技能都运行在一层手写的控制流上：怎么拆任务、何时验证、采样几个候选、拿什么当评估器。这一层本身是代码，没有理由豁免于优化。四篇工作把它变成搜索对象，共同设定是语言模型全程冻结、只充当变异算子，累积全部落在程序制品和它们的评估记录里。\nSTOP\n（Zelikman et al., 2023, arXiv:2310.02304）把问题推到自指的极限。种子 improver\n接收（程序\n，效用\n），调用冻结语言模型\n生成候选改进，按\n择优返回；然后把\n喂给它自己，递归由元效用驱动：\n是下游任务程序的分布。几代之后，GPT-4 写出的 improver 里自发出现 beam search、遗传算法、模拟退火——提示词没有要求任何一种，它们是被\n从候选里选出来的。同一篇论文如实记录了反面样本：少数生成的 improver 试图关掉执行沙箱的开关——效用读数与出题人意图之间的缝隙，在自指循环里同样会被搜索利用。\nADAS\n（Hu et al., ICLR 2025, arXiv:2408.08435）把搜索对象从改进器泛化为整个 agent 设计：meta-agent 用代码定义新 agent，档案存下全部历史设计与分数，每轮读档案、产出与既有条目有区分度的新设计。搜出的 agent 在 DROP 上比手工最优基线高 13.6 F1，MGSM 上高 14.4 个点，换基座后增益保留。\nAFlow\n（ICLR 2025, arXiv:2410.10762）把同一件事收窄成可规模化的形式：workflow 表示为代码图，节点是一次 LLM 调用，MCTS 做搜索——选择、LLM 依据执行经验展开修改、验证集评分、分数回传。六个 benchmark 平均超 SOTA 基线 5.7%；成本侧的结论更值得记：搜出的 workflow 让小模型在特定任务上",
+      "fulltext_obtained": true,
+      "chunk_index": 10,
+      "chunk_count": 11
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.66,
+        "irrelevant": 0.34
+      }
+    },
+    "relevance": {
+      "score": 1.5,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.45,
+        "2": 0.48,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.18,
+      "probabilities": {
+        "0": 0.89,
+        "1": 0.05,
+        "2": 0.04,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.51,
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.04,
+        "2": 0.19,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.86,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.89,
+        "5": 0.03
+      }
+    },
+    "actionability": {
+      "score": 2.59,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.22,
+        "2": 0.14,
+        "3": 0.28,
+        "4": 0.27,
+        "5": 0.03
+      }
+    },
+    "anti_hype": {
+      "score": 3.94,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.09,
+        "4": 0.78,
+        "5": 0.1
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.83,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7245,
+    "outputTokens": 172,
+    "totalTokens": 7417
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.56,
+        "relevance": 0.63,
+        "grounding": 0.88,
+        "decision_action": 0.66,
+        "evidence": 0.86,
+        "actionability": 0.28,
+        "anti_hype": 0.83
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180417071,
+                "endTime": 1791180417300,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00030429",
+      "marketCost": "0.00030429",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00030429",
+      "inferenceCost": "0.00030429",
+      "inputInferenceCost": "0.00030429",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARA0W2XC87FYS3270QASY"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:57 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::dgz9l-1791180416929-2494aca3a7c3"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.66,
+            "irrelevant": 0.34
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.5,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.45,
+            "2": 0.48,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.18,
+          "probabilities": {
+            "0": 0.89,
+            "1": 0.05,
+            "2": 0.04,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.51,
+          "probabilities": {
+            "0": 0.75,
+            "1": 0.04,
+            "2": 0.19,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.86,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.89,
+            "5": 0.03
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.59,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.22,
+            "2": 0.14,
+            "3": 0.28,
+            "4": 0.27,
+            "5": 0.03
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.94,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.09,
+            "4": 0.78,
+            "5": 0.1
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.83
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7245,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.56,
+            "relevance": 0.63,
+            "grounding": 0.88,
+            "decision_action": 0.66,
+            "evidence": 0.86,
+            "actionability": 0.28,
+            "anti_hype": 0.83
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180417071,
+                    "endTime": 1791180417300,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00030429",
+          "marketCost": "0.00030429",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00030429",
+          "inferenceCost": "0.00030429",
+          "inputInferenceCost": "0.00030429",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARA0W2XC87FYS3270QASY"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:56.805Z"
+  }
+}

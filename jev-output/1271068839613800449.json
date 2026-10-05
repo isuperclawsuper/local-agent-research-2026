@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1271068839613800449",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "CloudLens for TOS：打通日志分析与数据透视，让对象存储可见、可查、可治理",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247521877&idx=1&sn=0a0633b5daac6e93db59009212cb3e93",
+      "date": "2026-08-31T11:00:00.594Z",
+      "chars": 7808,
+      "text": "火山引擎存储\n2026-08-31 19:00\n北京\n从“存得下”到“看得清”\n对象存储 TOS 正在承载日志归档、音视频素材、备份文件、数据湖和 AI 数据集等越来越多的核心数据。随着存储桶（Bucket）数量、对象规模和目录层级持续增长，团队面对的问题也从“容量是否够用”，转变为更具体的运营与治理问题：\n流量或请求突然升高，究竟来自哪个存储桶、客户端或对象？\n错误请求集中在什么时间、状态码和操作类型？\n容量增长发生在哪个地域、存储类型、Bucket 或前缀（Prefix）？\n历史版本和未合并分片占用了多少空间，应该优先治理哪里？\nCloudLens for TOS 是日志服务 TLS 与对象存储联合推出的 TOS 日志观测应用，将 TOS  API 请求访问行为与存储资产纳入同一套观测框架。访问日志分析，还原 TOS API 请求访问，回答“发生什么、有哪些洞察”的问题；数据透视，沉淀按天统计的存储资产多维快照，回答“数据长期如何分布和变化”的问题。两者共同将 TOS 从“黑盒”转变为可查询、可分析、可治理。\n访问日志分析适合实时排障、访问分析和安全审计；数据透视适合容量规划、成本优化和资产治理，两类能力互为补充。\n日志分析：TOS API 请求，发生了什么？\nTOS Bucket 开启日志分析后，会将 TOS API 访问日志写入日志服务 TLS。CloudLens for TOS 在这些明细日志之上提供资源用量、热度统计、访问分析、安全分析和检索分析五个视角，让团队能从全局趋势逐步下钻到单次请求。\n流量与请求是否异常：\n同时观察读写流量、请求数及 Bucket TopN，快速判断突增来自哪个存储桶。\n谁在访问、访问了什么：\n通过 PV、UV、客户端 IP、Referer 和热点对象，识别主要访问主体与内容。\n高风险操作是否可追溯：\n聚焦删除、覆盖写和分片上传等敏感操作，定位来源 IP 与访问身份。\n异常请求如何还原：\n从聚合图表下钻到原始日志，结合状态码、错误码和 RequestId 复原单次请求。\n资源用量：先看清流量和请求的全局走势\n资源用量监控提供资源概览，主要覆盖以下指标：\n读流量、写流量、总流量以及读请求、写请求、总请求的时间趋势。\n存储桶流量 / 带宽 Top1000 和请求 Top1000。出现突增时，先确认异常时间窗口，再快速定位主要贡献 Bucket。\n热度统计：快速找到访问热度最高的目录\n热度统计监控便于快速定位热点目录。\n按操作类型分析访问热点：展示各类 Operation 的请求占比，如\nHeadObject\n、\nGetObject\n、\nPutObject\n、\nDeleteObject\n等，用于判断主要访问行为和异常操作类型。\n按对象大小分析访问分布：统计不同对象大小区间的访问占比，如小于 4KB、8MB～32MB、大于 128MB 等，用于识别热点访问主要集中在小文件还是大文件。\n按目录聚合访问热度：以目录为维度汇总请求数、请求 QPS、响应流量和访问对象大小，快速识别热点目录。\n支持目录下钻分析：目录名称可点击，支持逐层下钻进入子目录，查看更细粒度的访问分布。\n访问分析：理解谁在访问、访问了什么\n访问分析覆盖上传数据量、下载数据量、删除数据量、PV、UV 等核心指标。\n提供客户端 IP、Referer、文件访问、上传 / 下载 / 删除数据量 Top1000。\n配合状态码趋势和错误访问次数，判断异常来自访问主体、热点对象还是服务端错误。\n安全分析：高风险操作有迹可循\n安全分析聚焦 DeleteObject、PostObject、AppendObject、UploadPart、CopyObject、ListObjects、CreateMultipartUpload、CompleteMultipartUpload 等操作，统计关注操作的增长趋势。\n文件操作趋势、删除文件统计、来源 IP 和删除趋势共同回答“谁在什么时间，删除了哪些数据”，方便业务定位危险操作。\n检索分析：还原 TOS API 请求记录\n仪表盘用于发现异常和统计特征，检索分析则可真实还原 TOS API 请求记录。基于 TLS 提供的检索和分析能力，用户可以：\n灵活查询与追踪请求记录：按时间范围、Bucket、对象、操作、状态码、来源 IP 和访问身份检索原始日志，查看 RequestId、CostTime、DeltaDataSize 等字段，完成请求级追踪。\n自定义统计分析请求访问：按时间、操作类型、状态码、访问 IP、Bucket、存储类型等维度，灵活统计分析操作分布、来源热点 IP 等信息。\n一键接入 Agent，智能诊断分析\n开启日志分析后，可通过\nTLS CLI\n（\nhttps://docs.volcengine.com/docs/6470/2559490?lang=zh）\n让 Agent 访问 TLS 中的 TOS API 请求访问日志，对访问记录进行智能诊断分析。\n一键安装 TLS CLI，详情可参考：\nTLS CLI 安装与使用说明\n（\nhttps://docs.volcengine.com/docs/6470/2559491?lang=zh）\nAI Agent 版：\nnpm install -\ng\n@volcengine-tls\n/volclog\n@latest\n--registry\nhttps\n://registry.npmjs.org/\n分析示例：\n查询存储桶一天内的存储容量变化\nvolclog\n--\nprofile\ndefault\ntool exec log.search \\\n--\ninput '{\n\"TopicId\"\n:\n\"a0319c42-cdce-4a0a-87de-aa9a23388c91\"\n,\n\"Query\"\n:\n\"Bucket: archive-sy-shipper AND NOT Operation:\n\\\"\nBatchDeleteDetails\n\\\"\n| SELECT SUM(DeltaDataSize) / 1024.0/1024/1024 AS `总存储量变化(GB)`\"\n,\n\"StartTime\"\n:\n1786846906294\n,\n\"EndTime\"\n:\n1786933306295\n,\n\"Limit\"\n:\n20\n}'\n执行结果：可以看到总存储量变化（GB）为395.2。\n{\n\"action\"\n:\n\"tool.log.search\"\n,\n\"artifacts\"\n:\n[],\n\"contract_digest\"\n:\n{\n\"policy\"\n:\n\"soft\"\n,\n\"value\"\n:\n\"bda1a39bd021e0a22a52ff73d1c621a450665372d4ebb2b7c2e5f74973e91c83\"\n},\n\"data\"\n:\n{\n\"Analysis\"\n:\ntrue\n,\n\"AnalysisResult\"\n:\n{\n\"Data\"\n:\n[\n{\n\"总存储量变化(GB)\"\n:\n\"395.2\"\n}\n],\n\"Schema\"\n:\n[\n\"总存储量变化(GB)\"\n],\n\"Type\"\n:\n{\n\"总存储量变化(GB)\"\n:\n\"double\"\n}\n},\n\"Context\"\n:\n\"\"\n,\n\"Count\"\n:\n1\n,\n\"ElapsedMillisecond\"\n:\n42\n,\n\"HitCount\"\n:\n1\n,\n\"Limit\"\n:\n100\n,\n\"ListOver\"\n:\ntrue\n,\n\"Logs\"\n:\n[],\n\"ResultStatus\"\n:\n\"complete\"\n},\n\"error\"\n:\nnull\n,\n\"requestId\"\n:\n\"9261c8d379514054b1912e67f51b124b-ac13786f\"\n,\n\"status\"\n:\n\"success\"\n,\n\"summary\"\n:\n{\n\"deliveryMode\"\n:\n\"stdout\"\n,\n\"dryRun\"\n:\nfalse\n,\n\"itemCount\"\n:\n0\n,\n\"outputMode\"\n:\n\"stdout\"\n,\n\"totalBytes\"\n:\n751\n}\n}\n数据透视：数据都存在哪里，资产如何分布？\n数据透视按天统计 TOS 资产，支持从区域、存储类型、存储桶和前缀等维度分析总存储量、对象数量、当前版本、历史版本和未合并分片。数据透视不关注单次请求，而是帮助团队理解容量结构、增长趋势与治理优先级。\n整体资产水位：\n概览页汇总对象数量、总存储量、平均对象大小与 Bucket 数量，掌握当前资产规模。\n地域容量是否集中：\n对比不同 Region 的趋势和分布，为跨地域容量规划和治理排序提供依据。\n存储分层是否合理：\n比较标准、低频、归档和冷归档数据，发现应降冷但仍留在高成本层的数据。\n治理应从哪里开始：\n通过 Bucket 与前缀 TopN，将容量增长定位到具体存储桶和业务目录。\n成本是如何分布：\n量化历史版本和未合并分片占用，支撑生命周期与清理策略。\n概览：掌握规模、趋势与热点\n指标明细：\n集中展示总存储量、总对象数量、当前版本 / 历史版本、未合并的分片上传对象数和字节数。\n趋势分布：\n观察近期变化，并按地域和存储类型拆解资产结构。\n热点定位：\n通过前缀 TopN 与增量榜单找到占用最大、增长最快的目录。\n地域视角：识别容量集中度与区域差异\n趋势对比：\n查看不同 Region 的指标变化趋势与当日分布。\n多指标分析：\n通过气泡图同时比较容量、对象数量等指标。\n规划用途：\n识别容量集中度和区域差异，辅助跨地域容量规划，可从摘要指标、成本优化指标和数据保护指标多角度分析。\n存储类型视角：验证分层策略是否合理\n趋势分布：\n比较各存储类型的容量趋势、当日分布和对象数量。\n策略校验：\n检查长期不访问的数据是否仍停留在标准存储层。\n风险识别：\n发现热数据误归档及生命周期策略未生效的问题。\n存储桶视角：找到最值得优先治理的 Bucket\n排名趋势：\n通过 Bucket TopN 和容量分布识别重点存储桶。\n多指标比较：\n使用气泡图同时观察容量、对象数量和成本优化指标。\n治理判断：\n区分“大容量少对象”与“容量不大、但对象极多”等形态。\n前缀视角：把容量增长定位到具体目录\n启用高级功能后，可以按照前缀聚合指标。\n前缀页展示趋势、分布、气泡图和 TopN 明细，将“某个 Bucket 在增长”进一步细化为“哪个业务目录在增长”，适合多租户或多业务共用 Bucket 的场景。\n典型场景：从异常发现到治理行动\n访问日志分析\n推荐场景\n日常运维与故障排查：\n快速确认流量、请求和状态码异常发生的时间与 Bucket。\n热点识别与访问优化：\n分析客户端 IP、Referer、热点对象及下载流量，优化访问路径和缓存策略。\n错误根因定位：\n按 ErrorCode、HTTPStatus、Operation 和 RequestId 下钻原始日志。\n安全审计：\n追踪删除、覆盖写、分片上传等高风险操作的来源和身份。\n近实时容量变化分析：\n通过 DeltaDataSize 和 HistoricalVersionDeltaSize 计算请求引起的容量变化。\n举例\n找到 QPS 突增的请求\nBucket:\n*\n|\nSELECT\n\"Operation\"\nAS\nAction,\nCOUNT\n(\n*\n)\nAS\n`请求次数`,\nHTTPStatus\nAS\n`响应码`,\nCOUNT\n(\n*\n)\n*\n100.0\n/\nNULLIF\n(\nSUM\n(\nCOUNT\n(\n*\n))\nOVER\n(),\n0\n)\nAS\n`请求占比(\n%\n)`\nWHERE\n\"Operation\"\nIS\nNOT NULL\nAND\n\"Operation\"\n<>\n'-'\nGROUP\nBY\n\"Action\", `响应码`\nORDER\nBY\n`请求次数`\nDESC\nLIMIT\n50\n预期输出：可以看到该时间段内请求最多的是\nHeadObject\n。\n还可以通过 SQL 查找 QPS 最高的请求以及出现的时间点。\nBucket:\n*\n|\nSELECT\nAction,\nROUND(minute_request_count\n/\n60.0\n,\n4\n)\nAS\n`请求峰值QPS`,\ntime_minute\nAS\n`峰值出现时间`\nFROM\n(\nSELECT\nAction,\ntime_minute,\nminute_request_count,\nROW_NUMBER\n()\nOVER\n(\nPARTITIONBY Action\nORDERBY minute_request_count\nDESC\n, time_minute\nDESC\n)\nAS\nrn\nFROM\n(\nSELECT\n\"Operation\"\nAS\nAction,\nDATE_TRUNC(\n'minute'\n, __time__)\nAS\ntime_minute,\nCOUNT\n(\n*\n)\nAS\nminute_request_count\nWHERE\n\"Operation\" ISNOTNULL\nAND\n\"Operation\"\n<>\n'-'\nGROUPBY \"Operation\", DATE_TRUNC(\n'minute'\n, __time__)\n) minute_metrics\n) ranked\nWHERE\nrn\n=\n1\nORDERBY `请求峰值QPS`\nDESC\nLIMIT\n50\n查询访问量前 100 的对象\nBucket\n: *\nAND\n(\nOperation\n:\n\"GetObject\"\nOR\nOperation\n:\n\"HeadObject\"\n) |\nSELECT\nObject\nAS\n`文件名`\n,\nBucket\nAS\n`存储桶`\n,\nCOUNT\n(*)\nAS\nPV\nGROUPBY\nObject\n,\nBucket\nORDERBY\nPV\nDESC\nLIMIT\n100\n预期输出：\n查询客户端访问 Top100\nBucket:\n*|\nSELECT\nRemoteIp\nAS\n`客户端IP`,\nBucket\nAS\n`存储桶`,\nCOUNT\n(\n*\n)\nAS\nPV\nGROUPBY RemoteIp, Bucket\nORDERBY PV\nDESC\nLIMIT\n100\n预期输出：\n查询错误请求 API 分布\nBucket\n: *and\nHTTPStatus\n: >\n400\n|\nSELECT\nOperation\nAS\n`操作`\n,\nBucket\nAS\n`存储桶`\n,\nCOUNT\n(*)\nAS\n`出现次数`\nGROUPBY\nOperation\n,\nBucket\nORDERBY\n`出现次数`\nDESC\n预期输出：\n数据透视\n推荐场景\n容量规划：\n观察存储量和对象数量的长期增长趋势，判断容量是否符合业务预期。\n成本优化：\n找出存储量最大的 Bucket 或前缀，优先治理主要成本来源。\n存储分层：\n分析各存储类型的容量分布，评估标准、低频和归档数据的分层策略。\n历史版本治理：\n定位历史版本字节数较大的 Bucket，配置生命周期删除或降冷策略。\n未合并分片治理：\n发现长期未完成的分片上传，减少无效存储成本。\n多业务共用 Bucket 治理：\n通过前缀聚合，识别具体业务目录的容量与对象增长情况。\n举例\n找到 Bucket 内最大的前缀目录\n选择“总存储量”，默认 Top4，可以看到，parquet-tls-sy-shipper 这个 Bucket 的最大前缀是\n300个shard大流量写入\n。\n找到存储量最大的 Bucket\n选择“概览→快照 TopN→存储桶”，指标选择“总存储量”，可以看到最大的 Bucket 是\nparquet-tls-sy-shipper\n。\n减少历史版本对象数量\n如果存储桶开启了版本控制，删除或覆盖数据时，TOS 会自动保存历史版本，可能累积大量历史版本对象，导致存储成本增加。可通过数据透视看板找出历史版本字节数较多的存储桶，再进行针对性清理。\n一键接入：统一管理日志分析与数据透视\nCloudLens for TOS 目前已提供双入口，既可以在 TOS 控制台接入，也可以在 TLS 控制台接入，只需要接入一次即可，接入后按需分别开启日志分析和数据透视任务。\nTOS 控制台开通\n登录 TOS 控制台，选择“数据洞察”，点击“开通及授权”，完成授权后即可开通。\n开通后，即可看到日志分析与数据透视。\nTLS 控制台开通\n进入 TLS 控制台，选择“日志应用 → 应用市场” ，搜索 “TOS” ，找到  CloudLens for TOS，点击“接入应用”，按提示完成授权后即可开通。\n开通后，即可看到日志分析与数据透视。\n日志分析接入\n在\n“日志分析 → 看板配置”\n中，可按存储桶查看地域与接入状态，通过开关启用或停用日志分析，并直接进入对应分析页。\n按 Bucket 开启：\n在看板配置中搜索“目标存储桶”，并打开日志分析开关。开启后，系统会自动创建用于存放 TOS 访问日志的日志项目、主题及索引。\n进入分析：\n点击“去分析”，即可使用资源用量、访问分析、安全分析与检索分析看板。\n数据透视接入\n数据透视通过任务方式接入。创建任务时，需要一次性确定任务名称、存储地域与指标采集方式，并选择纳入统计的区域和存储桶。\n基础配置：\n填写任务名称并选择地域。任务创建后，名称和地域不可修改，应使用可长期识别的命名方式。这里的地域指存储数据透视结果的 Region，不同区域的 Bucket 会汇总到此 Region。\n选择采集方式：\n普通模式采集基础指标；高级模式在基础指标之外，还提供活动指标及前缀分析能力，支持指定前缀或前缀阈值和深度。\n选择覆盖范围：\n支持按“包含”或“排除”方式选择区域和 Bucket。若选择“全部”时，即便后续新增 Bucket 也会动态生效。\n导出指标：\n检查 TOS 读写与 KMS 授权状态；如需在自有工具中继续分析，可开启指标导出，系统会每天导出一份数据到指定 Bucket。\n创建任务后，一般次日才能看到数据统计结果，统计维度按天聚合。\n初次开通 CloudLens for TOS，系统会默认创建一个名为 default-account-dashboard 的面板，该面板提供基础指标能力，包含用户所有的 Bucket，无需配置，且完全免费。\n使用高级功能的前缀能力时，会引入 Table Topic 来存储桶的对象元数据信息，该功能目前限时免费。\n结语\nTOS 规模越大，越不能只依赖一张容量曲线图。CloudLens for TOS 以日志分析还原每一次请求，以数据透视描绘长期资产分布，让团队能够从异常发现走向请求定位，从容量统计走向目录级治理，并最终把可观测数据转化为稳定性、安全和成本优化行动。\n看见访问，理解数据，持续治理。\n这正是 CloudLens for TOS 希望为对象存储带来的改变。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.01,
+        "transfer_business": 0,
+        "irrelevant": 0.79,
+        "transfer_agent": 0.2
+      }
+    },
+    "relevance": {
+      "score": 1.69,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.08,
+        "2": 0.73,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.15,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.07,
+        "2": 0.3,
+        "3": 0.43,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.38,
+      "probabilities": {
+        "0": 0.38,
+        "1": 0.11,
+        "2": 0.31,
+        "3": 0.15,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.95,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.37,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.06,
+        "4": 0.77,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 1.1,
+      "probabilities": {
+        "0": 0.33,
+        "1": 0.3,
+        "2": 0.3,
+        "3": 0.06,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7640,
+    "outputTokens": 173,
+    "totalTokens": 7813
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.72,
+        "relevance": 0.72,
+        "grounding": 0.36,
+        "decision_action": 0.08,
+        "evidence": 0.96,
+        "actionability": 0.56,
+        "anti_hype": 0.27
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179910566,
+                "endTime": 1791179910731,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00032088",
+      "marketCost": "0.00032088",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00032088",
+      "inferenceCost": "0.00032088",
+      "inputInferenceCost": "0.00032088",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8VBTD6CDNPSNNKHT33V6"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:30 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::879h2-1791179910387-09f0b24acfef"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.01,
+            "transfer_business": 0,
+            "irrelevant": 0.79,
+            "transfer_agent": 0.2
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.69,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.08,
+            "2": 0.73,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.15,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.07,
+            "2": 0.3,
+            "3": 0.43,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.38,
+          "probabilities": {
+            "0": 0.38,
+            "1": 0.11,
+            "2": 0.31,
+            "3": 0.15,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.95,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.37,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.06,
+            "4": 0.77,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.1,
+          "probabilities": {
+            "0": 0.33,
+            "1": 0.3,
+            "2": 0.3,
+            "3": 0.06,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7640,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.72,
+            "relevance": 0.72,
+            "grounding": 0.36,
+            "decision_action": 0.08,
+            "evidence": 0.96,
+            "actionability": 0.56,
+            "anti_hype": 0.27
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179910566,
+                    "endTime": 1791179910731,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00032088",
+          "marketCost": "0.00032088",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00032088",
+          "inferenceCost": "0.00032088",
+          "inputInferenceCost": "0.00032088",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8VBTD6CDNPSNNKHT33V6"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:29.956Z"
+  }
+}

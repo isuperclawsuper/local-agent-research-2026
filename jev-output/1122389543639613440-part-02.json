@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "务回滚保持数据干净            │      │           │\n│  │  │   - DB 配置读取 config/test.yaml               │      │           │\n│  │  │ workflow:                                      │      │           │\n│  │  │   1. 读取测试环境 DB 配置                      │      │           │\n│  │  │   2. 建立真实 DB 连接                          │      │           │\n│  │  │   3. 开启事务                                  │      │           │\n│  │  │   4. 执行测试逻辑                              │      │           │\n│  │  │   5. 回滚事务                                  │      │           │\n│  │  └────────────────────────────────────────────────┘      │           │\n│  └──────────────────────────────────────────────────────────┘           │\n│         │                                                               │\n│         ▼                                                               │\n│  Phase 4: 自动应用                                                       │\n│  ┌──────────────────────────────────────────────────────────┐           │\n│  │ 后续会话中，Skill 被自动匹配和加载                         │           │\n│  │                                                          │           │\n│  │  用户:\n\"帮我给 UserService 写个集成测试\"\n│           │\n│  │      ↓                                                   │           │\n│  │  Agent 匹配到 integration-testing skill                   │           │\n│  │      ↓                                                   │           │\n│  │  自动按 workflow 执行，无需用户再次提醒规则                 │           │\n│  └──────────────────────────────────────────────────────────┘           │\n└─────────────────────────────────────────────────────────────────────────┘\n从记忆到技能的转化，实际上是\n三个递进的学习层次\n：\n层次\n能力\n类比\nAgent 实现\n示例\nL1: 记住事实\n记住用户说了什么\n新员工记笔记\nfeedback/user 类型记忆\n\"用户说过不要用 mock\"\nL2: 总结规则\n从多次事实中提炼规律\n老员工总结经验\n记忆聚合 → 行为约束注入 system prompt\n\"测试规范: 禁mock/真实DB/事务回滚\"\nL3: 形成技能\n规则 + 流程 + 触发条件 = 自动化能力\n专家制定 SOP\n生成 SKILL.md（含 workflow + tools + references）\n完整的集成测试 Skill\n关键区别\n：\n-L1（记忆）是\n被动\n的：只有被检索到才生效，而且可能因为语义不匹配而漏检\n-L2（规则）是\n半主动\n的：注入 system prompt 后每次都生效，但只是约束不是流程\n-L3（技能）是\n全主动\n的：自动匹配触发条件 + 提供完整执行流程 + 按需加载工具\n递进式学习转化\n再来看看\n从纠正到技能的演化过程。\n以下是一个真实场景的示例（\n场景：代码审查规范\n）：\n═══════════════════════════════════════════════════════════════\nWeek 1 — 第一次纠正（L1: 记住事实）\n═══════════════════════════════════════════════════════════════\n用户: 你给的代码变量名太长了，我们团队习惯短变量名\nAgent: [写入 feedback 记忆]\n→\n\"用户团队偏好简短变量名。Why: 团队编码规范。\nHow to apply: 生成代码时使用简短的变量命名风格。\"\n效果: 下次生成代码时，Agent 检索到这条记忆，会注意用短变量名。\n局限: 如果语义检索没命中（比如用户问\"帮我写个函数\"没提到变量），\n可能不会被检索到。\n═══════════════════════════════════════════════════════════════\nWeek 2-3 — 多次纠正积累（L1 → L2: 总结规则）\n═══════════════════════════════════════════════════════════════\n对话5:  \"函数不要超过20行\"        → feedback 记忆\n对话8:  \"不要用 any 类型\"         → feedback 记忆\n对话12: \"每个文件头部加 copyright\" → feedback 记忆\n对话15: \"import 要按字母排序\"     → feedback 记忆\n模式识别: 以上 5 条 feedback 均关于\"代码风格规范\"\n规则聚合: 生成一段结构化约束\n┌─────────────────────────────────────────────┐\n│\n## 代码规范（注入 system prompt）              │\n│ - 变量名简短                                  │\n│ - 函数不超过20行                              │\n│ - 禁止 any 类型                               │\n│ - 文件头部加 copyright                        │\n│ - import 按字母排序                           │\n└─────────────────────────────────────────────┘\n效果: 每次生成代码都会遵守这些规则（因为在 system prompt 中）\n局限: 只有约束规则，没有完整的检查流程和工具支持\n═══════════════════════════════════════════════════════════════\nWeek 4+ — 形成完整技能（L2 → L3: 技能生成）\n═══════════════════════════════════════════════════════════════\n触发条件: 当规则积累到一定数量 + 用户提过相关工具/流程时\n自动生成 Skill:\nskill/code-review/\n├── SKILL.md          ← 完整操作手册\n├── references/\n│   └── style-guide.md  ← 团队编码规范文档\n└── scripts/\n└── lint_check.py   ← 自动检查脚本\nSKILL.md 内容:\n┌─────────────────────────────────────────────┐\n│ name: code-review                           │\n│ description: 代码审查助手，确保代码符合团队规范│\n│ trigger: 用户要求审查代码 / 生成代码后自查    │\n│                                             │\n│\n## 工作流程                                  │\n│ 1. 读取 references/style-guide.md          │\n│ 2. 逐项检查代码是否符合规范                  │\n│ 3. 运行 scripts/lint_check.py 自动扫描     │\n│ 4. 输出检查报告（通过/不通过 + 修改建议）    │\n│                                             │\n│\n## 检查项（从 feedback 记忆中沉淀）          │\n│ - [ ] 变量名是否简短                         │\n│ - [ ] 函数是否超过20行                       │\n│ - [ ] 是否使用了 any 类型                    │\n│ - [ ] 文件头部是否有 copyright               │\n│ - [ ] import 是否按字母排序                  │\n└─────────────────────────────────────────────┘\n效果: 完整的代码审查能力——有触发条件、有执行流程、有工具支持、\n有参考资料。用户说\n\"帮我看看这段代码\"\n就会自动加载执行。\n从记忆到技能的转化方式，目前业界有两种实现路径（\n自动or主动\n）：\n路径一: Agent 自主转化（如 Claude Code 设计方向）\n┌───────────────────────────────────────────────────────┐\n│                                                       │\n│  Agent 在对话中观察到:                                 │\n│\n\"我已经第 3 次提醒类似的事了\"\n│\n│       │                                               │\n│       ▼                                               │\n│  Agent 主动提议:                                      │\n│\n\"我注意到您多次提到测试相关的规范，                    │\n│   是否需要我将这些规则整理成一个固定的工作流程？\"        │\n│       │                                               │\n│       ▼ 用户确认                                      │\n│  Agent 生成 Skill 文件并注册                          │\n│                                                       │\n│  优点: 透明、用户可控                                  │\n│  缺点: 需要用户参与确认                                │\n└───────────────────────────────────────────────────────┘\n路径二: 系统自动转化（如 Mem0 + 自动 SOP 引擎）\n┌───────────────────────────────────────────────────────┐\n│                                                       │\n│  后台定时任务:                                         │\n│  1. 扫描所有 feedback 类型记忆                         │\n│  2. 用 LLM 做主题聚类                                 │\n│  3. 同一主题 ≥ N 条记忆 → 触发技能生成                 │\n│  4. LLM 生成 SKILL.md 草稿                            │\n│  5. 注册到 Skill 系统（或发给用户审批）                 │\n│                                                       │\n│  优点: 全自动，无需用户干预                             │\n│  缺点: 可能过度生成无用 skill，需要置信度过滤           │\n└───────────────────────────────────────────────────────┘\n5）记忆系统的核心挑战与解决思路\n挑战\n问题描述\n业界解决方案\n上下文占用\n记忆注入占 prompt 空间\n渐进式加载、选择性注入、摘要压缩\n相关性检索\n如何找到当前最相关的记忆\nEmbedding 语义检索 + Reranking + 元数据过滤\n记忆过时\n用户偏好会变\n时间戳衰减、冲突检测更新、周期性验证\n矛盾处理\n新旧信息冲突\nLast-write-wins / LLM 仲裁 / 保留两者标记冲突\n安全威胁\n记忆注入攻击\n写入前安全扫描、敏感信息脱敏、审计日志\n首先需要厘清：记忆系统的核心价值不在于\"能存多少\"，而在于\"能否减少用户的重复表达\"。\n对于个人助手场景，几千字符的有界文件记忆往往比复杂的向量检索系统更实用——这是一个反直觉但经过验证的结论。关键在于\n分类要清晰\n（环境事实/用户偏好/行为反馈各有不同的更新策略）、\n安全要前置\n（写入时扫描，而非读取时）、\n演进要有梯度\n（从记住事实 → 总结规则 → 沉淀为技能）。\n记忆解决了对话的连续性问题，但 LLM 能回答的内容仍然局限于它的训练数据。\n要让 agent 具备业务知识，就需要 RAG\n。\n03 RAG 出现：解决信息滞后/缺少业务知识\nRAG（Retrie",
+      "fulltext_obtained": true,
+      "chunk_index": 2,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.04,
+        "transfer_agent": 0.96,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.77,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.21,
+        "2": 0.77,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.24,
+        "1": 0.11,
+        "2": 0.32,
+        "3": 0.16,
+        "4": 0.17,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.07,
+      "probabilities": {
+        "0": 0.54,
+        "1": 0.13,
+        "2": 0.11,
+        "3": 0.16,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.11,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.84,
+        "3": 0.14,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.39,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.04,
+        "2": 0.04,
+        "3": 0.29,
+        "4": 0.6,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.74,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.23,
+        "3": 0.59,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.71,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6704,
+    "outputTokens": 172,
+    "totalTokens": 6876
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.95,
+        "relevance": 0.84,
+        "grounding": 0.28,
+        "decision_action": 0.29,
+        "evidence": 0.89,
+        "actionability": 0.59,
+        "anti_hype": 0.68
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180417680,
+                "endTime": 1791180417859,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000281568",
+      "marketCost": "0.000281568",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000281568",
+      "inferenceCost": "0.000281568",
+      "inputInferenceCost": "0.000281568",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARAM1CE6P8MN4Z0P6G5D2"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:57 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::kl4pq-1791180417652-a9d16f5bf6a1"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.04,
+            "transfer_agent": 0.96,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.77,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.21,
+            "2": 0.77,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.24,
+            "1": 0.11,
+            "2": 0.32,
+            "3": 0.16,
+            "4": 0.17,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.07,
+          "probabilities": {
+            "0": 0.54,
+            "1": 0.13,
+            "2": 0.11,
+            "3": 0.16,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.11,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.84,
+            "3": 0.14,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.39,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.04,
+            "2": 0.04,
+            "3": 0.29,
+            "4": 0.6,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.74,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.23,
+            "3": 0.59,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.71
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6704,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.95,
+            "relevance": 0.84,
+            "grounding": 0.28,
+            "decision_action": 0.29,
+            "evidence": 0.89,
+            "actionability": 0.59,
+            "anti_hype": 0.68
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180417680,
+                    "endTime": 1791180417859,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000281568",
+          "marketCost": "0.000281568",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000281568",
+          "inferenceCost": "0.000281568",
+          "inputInferenceCost": "0.000281568",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARAM1CE6P8MN4Z0P6G5D2"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:57.088Z"
+  }
+}

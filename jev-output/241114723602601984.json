@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "241114723602601984",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "淘天集团自营技术运营算法团队4年2次荣膺 INFORMS“杰出实践奖”决选荣誉：以策略正则化突破DRL在库存管理中的落地瓶颈",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650542682&idx=1&sn=4a56846c13628675c01337e79b01d614",
+      "date": "2026-02-02T09:05:00.966Z",
+      "chars": 7685,
+      "text": "原创\n自营技术团队\n2026-02-02 17:05\n浙江\n2025年10月，淘天集团自营技术运营算法团队的研究成果《DeepStock: Reinforcement Learning with Policy Regularizations for Inventory Management》荣获运筹学与管理科学领域极具声望的 INFORMS “杰出实践奖”决选荣誉。\n2025年10月，淘天集团自营技术运营算法团队的研究成果《DeepStock: Reinforcement Learning with Policy Regularizations for Inventory Management》荣获运筹学与管理科学领域极具声望的 “Daniel H. Wagner 杰出实践奖”（Daniel H. Wagner Prize for Excellence in the Practice of Advanced Analytics and Operations Research）决选荣誉。值得一提的是，这是该团队继 2022 年首次入选该奖项决选名单后，第二次获此殊荣，彰显其在工业级智能决策系统领域的持续领先能力。\n前\n⾔\n本研究创新性地将库存理论中的经典策略直觉融入深度强化学习（DRL）框架，提出“策略正则化”（Policy Regularization）方法，显著提升了 DRL 在复杂库存场景中的训练效率、可解释性与最终性能。\n论文巧妙建模，解决了工业界优化在架率周转等多个计算复杂的核心库存指标而非优化库存成本单一可累加指标的难点。\n目前，该算法已100% 全量部署于淘天集团自营体系（包括天猫超市、国际直营等业务），覆盖超过 100 万 SKU-仓库组合。在有货率（Service Rate）保持稳定的前提下，库存周转天数优化 7%，\n对于每50亿的库存规模，\n年化减少库存货值 3.5亿元，降低库存持有成本约 1500 万元。\n背景：传统两阶段方法的局限与\n端到端智能的兴起\n长期以来，工业界主流的库存优化方案普遍采用“先预测、再决策”的两阶段范式——即先通过需求预测模型估计未来销量，再基于预测结果调用运筹优化或仿真模型生成补货策略。然而，这一方法存在根本性瓶颈：需求预测的精度直接决定了库存策略的性能上限。而现实中，高维上下文数据（如促销、季节性、社交媒体趋\n势、供应链波动等）使得精准预测极为困难。\n尽管经典的库存理论模型（如报童模型）在理想假设下具备解析最优解，但其对需求分布的强依赖在实际业务中往往难以满足，导致效果大打折扣。\n随着海量高维上下文数据的积累，端到端的深度强化学习（DRL）为库存管理提供了新范式——它无需显式预测需求，而是直接从\n历史交互与仿真环境推演中\n学习最优补货策略。然而，DRL 在工业落地中仍面临四大挑战：\n黑箱性与不可解释性：\n一种常用做法是，将多周期库存控制问题笼统建模为通用的序列决策问题，\n直接应用现成的 DRL 方法，\n导致策略难以被业务方理解和信任；\n数据效用：在电商中可用于预测与决策的数据其实十分有限，原因在于经营目标、竞争格局、营销节奏和运营策略快速变化，使大量历史数据失去对未来的预测与泛化能力，因此依赖“大数据 + 大模型 + 大算力”的方法往往难以奏效；\n超参数敏感性：DRL 性能高度依赖超参数调优，过程耗时且成本高昂；\n目标函数错配：学术研究普遍以“最小化缺货与持有成本之和”为奖励函数，但工业界难以准确量化成本参数；实际评估更关注缺货率（Service Rate）和周转天数（Turnover Time）等可操作指标，而这些指标难以分解为每步行动的即时奖励。\n此外，不同品类（如畅销品 vs. 长尾品）、不同供应商在业务目标、需求模式和履约约束上差异显著，导致早期 RL 系统需为每类商品分组训练独立模型，运维成本极高，难以规模化。\n我们提出了策略正则化，将库存理论的一些经典策略或简单直觉融入DRL中，有效\n解决以上问题。\n文献调研：策略正则化、库存领域DS与DRL对比分析、\nDRL大规模线上部署均开创历史先河\n▐\n策略正则化\n许多先前的工作已将库存策略结构编码到RL中。例如，De Moor et al.（2022）通过嵌入启发式库存策略的结构来修改奖励函数，将其作为教师策略；\nQi et al.（2023）使用一种标签方法，捕捉历史观察下最优动态规划解的行为，然后将其作为学习策略的正则化器\n；Maggiar et al.（2025）在目标函数中施加惩罚项，当学习策略违反某些已知的最优策略结构性质时（如文献中所证明）。这些工作通常与我们的不同之处在于将惩罚项纳入目标函数，而非直接限制策略空间。\n最后，注意到我们的策略正则化是问题特定的，不应与RL中常用的通用正则化技术混淆，如熵正则化（\nHaarnoja et al. 2018\n）或信赖域策略优化中使用的正则化\n（Schulman et al. 2015a）\n。\n▐\n可微分仿真器（DS）与传统DRL用于库存\n近年来一些电商平台例如亚马逊\n构建可微分的仿真器来求解库存问题\n，不同于DRL会计算连续周期之间的状态转移，直接计算仿真环境下多周期总成本的梯度，我们简称其为DS算法。\n虽然 Madeka et al.（2022）以及同期的 Alvo et al.（2023）积极推动将 DS 应用于库存管理，并强调了其优势（如调参相对方便、经验效果良好），但这些工作并未对 DS 与传统 DRL 方法进行系统且严格的对比。相比之下，本文在充分进行超参数调优的前提下，对 DS 与传统 DRL 进行了公平而严格的比较。\n我们的实验揭示了DS的一个新缺陷：当没有足够的并行轨迹时，它无法跨时间学习。不过如果给定足够的独立同分布轨迹，DS在人工生成的数据集中仍然表现出色，这与Alvo et al.（2023）的实验发现一致。\n▐\n大规模DRL库存部署\n电商通过深度学习来管理库存变得越来越普遍，包括阿里巴巴（Liu et al. 2023）、亚马逊（Madeka et al. 2022）和京东（Qi et al. 2023）。不同的是，本研究实现了在天猫自营补货场景中所有\n商品\n100%全覆盖。\n核心创新：策略正则化——\n让 DRL 学会“库存常识”\n▐\n库存动态\n设\nT\n、\nP\n和\nL\n为正整数。我们考虑\nt = 1, ..., T\n天的离散时间范围，补货周期为\nP\n，供应商送货到库存到仓时间间隔为\nL\n，即在第\n1+L, P+1+L, ...\n天开始时到达。设\n表示第\nt\n天开始时的库存状态向量，其中\n表示在仓库存，\n表示未来\n天将到达的库存，对所有\n。我们初始化\n。\n如果在第\n天需要订货，我们在第\n天开始时决定数量\n；否则设\n。用户需求为\n，实际销售量为\n，下一天的库存向量更新为：\n▐\n性能指标\n在库存理论中，要最小化的标准损失目标是：\n即在每天\n结束时：如果\n（即库存缺货），则我们被惩罚\nb\n乘以未满足需求\n；否则，我们被惩罚\n乘以剩余库存\n。\n然而，\n不是一个实用的评估指标，因为在实践中量化\nb\n和\nh\n很困难，特别是因为当\n未知时，缺货期间的未满足需求无法直接观察。因此，在阿里巴巴，我们改为评估以下两个指标：\n这里，\"缺货率\"损失\n衡量以缺货结束的天数百分比，惩罚库存过少。另一方面，\"周转时间\"损失\n计算平均日末库存除以平均销售量，衡量一单位库存在手的平均持续时间，惩罚库存过多。\n在我们人工生成数据实验中，我们使用标准目标\n训练和评估策略。我们注意到损失目标\n在时间\n上自然可加，为RL训练期间采取的每个行动提供奖励信号。在阿里巴巴，策略使用\n和\n的加权组合进行训练和评估。我们可以调整相对权重来权衡\n和\n，理想情况下获得\n和\n都下降的帕累托改进。\n▐\nDRL建模\n问题建模我们采用下图的方式。第\nT\n天发起补货动作，将第\nT-1\n期末库存相关特征\n拼接为当前状态。reward设计相对复杂，\n不能精确分解为每周期损失。一种处理方式是将\nreward定义为本次补货到货，到下次补货到货期间的库存指标与库存目标之间的偏差，\n以此近似本次action的即时损失\n，但存在若干问题。\n无法处理送货时长波动大，尤其引发cross order的情况\n；此外\n考虑到需求侧、供给侧都存在不确定性，销量、送货时间、送满率等参数波动大，我们不会关注每一次补货时段的库存指标是否完美，更关注一段时间的综合指标。为此我们设计\n终止态时reward为整段周期指标统计做一个比较大的奖惩，其余reward为0，此外引入shaping reward，中间挑选几个check点给予小的惩罚信号，相应配合在状态中加入时间和历史进销存相关信息。\n▐\n两种关键正则化形式\nDRL方法学习一个由深度神经网络表示的策略\n，该策略可以根据任何状态决定订货行为。在我们的问题中，某个SKU在时间\n的状态包括外生特征\n，由静态属性（如商品类别、需求规模、供应商、送货时长、补货周期、利润率）和随时间演变的动态属性（如即将到来的促销活动、季节性、近期社交媒体趋势）组成。此外，状态还包括关于即将发生的库存转移的内生信息\n，这取决于先前的行动，即先前下发的补货订单。\n当DRL算法直接应用时，策略\n通常是一个单一的神经网络，根据输入状态\n,\n输出订货量\n。\n团队提出策略正则化（Policy Regularization）框架，将库存管理中的经典直觉硬编码进 DRL 策略结构中，而非仅作为软性奖励惩罚。\nBase Stock\n正则化：我们的第一种策略正则化要求订货量采用以下函数形式，\n直\n接嵌入“基础库存”思想，提高策略网络学习稳定性，大幅降低策略搜索空间。\n其中\n是学习到的神经网络，\n表示\n中包含的当前库存水平（包括即将到达的补货量）。这里，Base代表\"基础库存\"，其中\n表示总库存的目标水平，订货量\n等于该目标水平减去我们已有的总库存\n。直觉上，学习到的目标\n应主要取决于预测即将到来需求的外生特征\n，而库存信息\n通过\n项纳入决策。有个容易出错的关键点，在Lost sales背景下，目标库存水平也直接会受\n影响。总体来说\n在Base正则化下，更容易近似\n，因为最佳\n行动\n在不同库存状态\n间是相同或相近的，从而导致\nQ\n目标的更稳定学习。\nCoefficients 正则化：以下为函数形式，系数由神经网络动态生成，提升策略的结构合理性与泛化能力。\n其中\n是一个学习到的具有\n维输出的神经网络，为通过映射\n从\n提取的\n个特征提供系数（Coefficients）。在阿里巴巴，我们设置\n= 5\n，其中\n由近期和远期周期内的4\n个历史和预测需求特征以及一个常数偏置项组成。直觉上，期望的订货量应与这些特征呈正相关关系。将订货量表示为关键特征（如历史/预测需求）的线性组合。\n最后，我们可以\n组合两种策略正则化\n，在这种情况下，我们要求订货量采用以下函数形式：\n其中\n是学习到的具有\n维输出的神经网络。\n▐\n模型训练\n我们通常用\n表示轨迹\n的数据集，我们区分用于训练、验证和测试的数据集，分别用\n、\n和\n表示。对于任何\n和\n，我们定义：\n这是策略\n在轨迹\n上损失\n的平均值。\n对于传统DRL算法，我们主要考虑深度确定性策略梯度（DDPG）和近端策略优化（PPO）。PPO模拟一个随机化的\n并强化在同策略轨迹下产生高奖励的行动，是一种现代策略梯度方法，通过\"裁剪\"更新来防止\n变化过快。DDPG使用目标网络来稳定策略和Q函数更新。最后，我们考虑DS，即通过可微算子计算整个轨\n迹的损失函数，直接求梯度进行网络更新。\nDRL方法指定如何训练\n，与我们的策略正则化结合使用。对于\n和\n,\n（其中None指\"无正则化\"，即\n直接输出订货量）的每种组合，我们用\n表示最终学习到的策略。\n离线实验：\n深度对比策略正则化\n如何帮助 DRL超越DS\n我们固定\nP = 2, L = 1, m = 1\n，并设\nT = 29\n，除非另有说明。人工生成的数据集如下：\nINDEP分布，20个样本轨迹，分割使得\nAR(1)分布，20个样本轨迹，分割使得\nAR(1)分布，10个样本轨迹，分割使得\nIID分布，样本量\n，时间长度\n我们比较\n和\n组合的策略\n，因为\n是一维的所以省略Coeff正则化。使用相同的\n指标进行训练、验证和测试，其中\nb = 0.9\n和\nh = 0.1\n。\n下图1所示，\nBase\n正则化可以显著改进测试损失。\n图2显示了第一组设置下进行超参数试验时每个\n的最佳性能曲线。对于三种DRL方法，超参搜索越复杂，从\n到\n的改进越大，策略正则化降低了DRL效果超越DS的难度。为了解释DDPG和PPO击败DS，我们比较不同设置下的结果。在设置3中（带Base正则化），我们可以看到DS的验证损失比DDPG好但测试损失更差，这表明DS正在过拟合。这是因为DS直接对\n中的轨迹损失采取策略梯度，强制样本内最小化。此外，由于DS不从\n(s, a, r, s')\n转换中学习，它缺乏传统DRL方法核心的跨时间学习，因此DS的样本效率较低。\n为了进一步研究DS的学习行为，我们最后在不同样本量和时间长度下训练DS（带Base正则化）。在图3中，当样本量较小（\n）时，即使在简单的IID分布下\nT = 129\n，测试损失差距仍保持在约8%。这表明增加时间长度\nT\n只能带来有限的改进，突出了DS内部跨时间学习的不足。当\n从5增加到10再到20时，所有时间长度的测试损失整体改善，表明DS确实从跨轨迹（即跨SKU）的元学习中受益，但尽管如此，我们在更长时间长度下没有看到收敛。我们发现在样本数量有限的情况下，DS在验证和测试损失之间表现出较大差距，证明了它对观察轨迹特异性有过拟合的倾向。\n总结，本研究通过严格对照实验发现：\nDS 在样本内表现优异，但存在严重过拟合：因其直接对训练轨迹求梯度，缺乏跨时间步的泛化能力；\nDS 样本效率低下：在轨迹数量有限时（如长尾 SKU），性能显著劣于带正则化的 DRL；\n策略正则化使传统 DRL（如 DDPG、PPO）在同等条件下，带正则化的 DRL 不仅训练更快，最终效果也优于 DS。\n这一发现为工业界在 DRL 与 DS 路线选择上提供了重要实证依据。\n线上效果：\n从试点到全量，实现帕累托改进\n结果1：小规模验证（2024年7月）\n在 10% 的高潜力国际 SKU 上试点，采用双重差分（DiD）分析显示：\n缺货率降低 0.83%\n周转天数减少 9.53 天\n结果2：大规模推广（2025年4月）\n通过我们DRL训练的库存策略推广到100%的国际SKU和87%的国内SKU。此时无法使用DID，我们进行了反事实分析，用工业级别的仿真环境，模拟对比了同时段不同算法效果。缺货率没有明显差异的情况下，周转实现了1-2天的降低，按销量\n的进一步细分如表2所示。周转天数的降低折合可观的金额收益，对于每50亿的库存规模，可带来\n库存货值年化减少3.5亿元，库存持有成本年化降低约1500万。\n结果3：全量稳定运行（2025年10月）\nDRL算法全量上线后我们持续监控库存指标。图4\n展示了2025年7-8月国际SKU的平均周转时间，这段时期涵盖了DRL策略的重新训练，并将其与2024年同期，我们大规模推出DRL之前国际SKU的平均周转时间进行比较。2025年缺货率没恶化的情况下，周转时间大幅减少了20%。它为我们DRL部署的稳定性提供了高层管理信心，因此截至2025年10月，我们的策略已完全部署到自营技术100%超过100万个SKU-仓库对。\n通用补货大模型：一套模型，全域覆盖\n得益于策略正则化，DeepStock 实现了真正的通用补货大模型：\n单一模型适配所有品类，无需分组训练；\n通过状态特征工程与自动化超参优化（田口实验），高效捕捉商品、供应商、渠道的多样性；\n与业务系统深度集成，自动将运营目标（如服务水平、周转要求）转化为奖励权重。\n这不仅大幅降低工程与运维成本，也为 DRL 在复杂供应链场景的规模化应用树立了新标杆。\n论文附录\nLiu, Jiaxi and Lin, Shuyi and Xin, Linwei and Zhang, Yidong, AI vs. Human Buyers: A Study of Alibaba's Inventory Replenishment System.\nINFORMS Journal on Applied Analytics\n, 53(5) 372-387, 2023：\nhttps://pubsonline.informs.org/doi/10.1287/inte.2023.1160\nXie, Yaqi and Hao, Xinru and Liu, Jiaxi and Ma, Will and Xin, Linwei and Cao, Lei and Zhang, Yidong, DeepStock: Reinforcement Learning with Policy Regularizations for Inventory Management (November 21, 2025). Available at SSRN :\nhttp://dx.doi.org/10.2139/ssrn.5784782\n团队介绍：产学研协同共探AI技术新前沿\n淘天集团自营技术运营算法团队长期深耕于天猫超市、国际直营等自营业务的\n供应链计划与物流执行场景\n，在仓网规划、补货调拨、需求预测、订单履约、仓内作业及干线物流等多个关键环节持续发力。团队深度融合运筹优化、深度学习、强化学习与大模型等前沿技术，显著提升决策精准度与系统效率，为业务带来可观的规模化收益。\n秉持“产学研深度融合、创新驱动发展”的理念，团队始终致力于打造世界一流的供应链智能决策技术体系。近年来，已与哥伦比亚大学、康奈尔大学、芝加哥大学、四川大学、浙江大学、上海交通大学等全球顶尖高校建立紧密合作关系，产出多项具有国际影响力的科研成果。此次发布的《DeepStock》研究正是这一合作传统的又一典范——不仅巧妙融合了理论洞察与工程实践，更通过真实业务场景的全量验证，充分展现了AI技术在复杂工业系统中的规模化落地价值。\n面向未来，团队将持续推进“\n链接\n数字世界与物理世界的超级AI”这一战略愿景，聚焦构建可解释、可泛化、可信赖的智能决策基础设施，在大模型、运筹优化、强化学习等方向不断突破算法边界，加速推动前沿技术向产业级应用的深度赋能。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.6,
+        "peripheral": 0,
+        "transfer_agent": 0.04,
+        "transfer_business": 0.36
+      }
+    },
+    "relevance": {
+      "score": 2.48,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.04,
+        "2": 0.24,
+        "3": 0.65,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.79,
+      "probabilities": {
+        "0": 0.31,
+        "1": 0.16,
+        "2": 0.11,
+        "3": 0.28,
+        "4": 0.14,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0.49,
+        "1": 0.01,
+        "2": 0.06,
+        "3": 0.14,
+        "4": 0.17,
+        "5": 0.13
+      }
+    },
+    "evidence": {
+      "score": 4.04,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.02,
+        "4": 0.88,
+        "5": 0.09
+      }
+    },
+    "actionability": {
+      "score": 3.2,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.08,
+        "2": 0.12,
+        "3": 0.18,
+        "4": 0.45,
+        "5": 0.11
+      }
+    },
+    "anti_hype": {
+      "score": 2.29,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.08,
+        "2": 0.34,
+        "3": 0.43,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.86,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8613,
+    "outputTokens": 173,
+    "totalTokens": 8786
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.33,
+        "anti_hype": 0.44,
+        "category": 0.5,
+        "decision_action": 0,
+        "evidence": 0.9,
+        "grounding": 0,
+        "relevance": 0.65
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "digitalocean",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179902123,
+                "endTime": 1791179902510,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000361746",
+      "marketCost": "0.000361746",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000361746",
+      "inferenceCost": "0.000361746",
+      "inputInferenceCost": "0.000361746",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8K4P5GXATB89ESDKTVN7"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:22 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::8l789-1791179901904-d41d46e4b85f"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.2,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.08,
+            "2": 0.12,
+            "3": 0.18,
+            "4": 0.45,
+            "5": 0.11
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.29,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.08,
+            "2": 0.34,
+            "3": 0.43,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.6,
+            "peripheral": 0,
+            "transfer_agent": 0.04,
+            "transfer_business": 0.36
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0.49,
+            "1": 0.01,
+            "2": 0.06,
+            "3": 0.14,
+            "4": 0.17,
+            "5": 0.13
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 4.04,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.02,
+            "4": 0.88,
+            "5": 0.09
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.86
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.79,
+          "probabilities": {
+            "0": 0.31,
+            "1": 0.16,
+            "2": 0.11,
+            "3": 0.28,
+            "4": 0.14,
+            "5": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.48,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.04,
+            "2": 0.24,
+            "3": 0.65,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8613,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.33,
+            "anti_hype": 0.44,
+            "category": 0.5,
+            "decision_action": 0,
+            "evidence": 0.9,
+            "grounding": 0,
+            "relevance": 0.65
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "digitalocean",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179902123,
+                    "endTime": 1791179902510,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000361746",
+          "marketCost": "0.000361746",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000361746",
+          "inferenceCost": "0.000361746",
+          "inputInferenceCost": "0.000361746",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8K4P5GXATB89ESDKTVN7"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:21.739Z"
+  }
+}

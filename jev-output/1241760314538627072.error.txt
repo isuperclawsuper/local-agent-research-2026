@@ -1,0 +1,41 @@
+empts":[{"canonicalSlug":"typesafe-ai/jev","success":false,"providerAttemptCount":2,"providerAttempts":[{"provider":"typesafe-ai","credentialType":"system","success":false,"error":"{\\"error_type\\":\\"max_tokens_exceeded\\"}","startTime":1791180093174,"endTime":1791180093302,"statusCode":400},{"provider":"digitalocean","credentialType":"system","success":false,"error":"Service temporarily unavailable","startTime":1791180093309,"endTime":1791180093411,"providerRequestId":"e68b113d-8ad6-4a94-b3dc-09d0dfe9d1ab","statusCode":503}]}],"totalProviderAttemptCount":2},"generationId":"gen_01M45AEDPM4PY5ZKEWRFECKPPH"}}}',
+    isRetryable: false,
+    data: {
+      error: {
+        message: '{"error_type":"max_tokens_exceeded"}',
+        type: 'AI_APICallError',
+        param: {
+          error: '{"error_type":"max_tokens_exceeded"}',
+          statusCode: 400,
+          name: 'AI_APICallError',
+          message: '{"error_type":"max_tokens_exceeded"}',
+          isRetryable: false,
+          type: 'AI_APICallError'
+        }
+      },
+      providerMetadata: {
+        gateway: {
+          routing: {
+            originalModelId: 'typesafe-ai/jev',
+            resolvedProvider: 'digitalocean',
+            fallbacksAvailable: [Array],
+            canonicalSlug: 'typesafe-ai/jev',
+            modelAttemptCount: 1,
+            modelAttempts: [Array],
+            totalProviderAttemptCount: 2
+          },
+          generationId: 'gen_01M45AEDPM4PY5ZKEWRFECKPPH'
+        }
+      }
+    },
+    [Symbol(vercel.ai.error)]: true,
+    [Symbol(vercel.ai.error.AI_APICallError)]: true
+  },
+  generationId: undefined,
+  isRetryable: false,
+  type: 'internal_server_error',
+  [Symbol(vercel.ai.gateway.error)]: true,
+  [Symbol(vercel.ai.gateway.error.GatewayInternalServerError)]: true
+}
+
+Node.js v22.23.0

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "264920250742472704",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "为OpenClaw配置网盘空间的最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509234&idx=1&sn=37a27184fd66d5d7dcefaf9ec7e094d6",
+      "date": "2026-04-08T10:08:00.016Z",
+      "chars": 2443,
+      "text": "阿里云存储\n2026-04-08 18:08\n浙江\n配置后，OpenClaw 可直接访问网盘文件作为任务素材，也可将生成的文档、图片、视频等保存到网盘供下载使用。\n这是2026年的第\n12\n篇文章\n（ 本文阅读时间：20分钟 ）\n前言\n网盘与相册服务（PDS）为 OpenClaw 提供云端文件存储能力。配置后，OpenClaw 可直接访问网盘文件作为任务素材，也可将生成的文档、图片、视频等保存到网盘供您下载使用。网盘支持多空间隔离和文件级权限管控，确保不同用户间的数据安全。\n网盘在 OpenClaw 中的使用场景\n网盘为 OpenClaw 提供一个可挂载的工作空间，用户和 OpenClaw 能够像访问本地文件一样便捷地访问云端文件；\nWeb、PC、手机多端文件上传：支持本地文件快速上传至网盘，支持上百种主流格式的音视频、图片、文件预览和在线解压缩；\n多空间隔离：不侵扰本地系统和操作权限，用户文件授权上传，不同空间实现权限管控；\n禁止越权访问：支持文件级别的权限管理，不用担心 OpenClaw 越权访问和数据泄露。\n前提条件\n在开始配置前，请确认您已部署 OpenClaw 服务并可登录其所在服务器。\n01\n步骤一：开通并购买网盘\n如果您已拥有网盘实例，可跳过此步骤。\n1.\n开通网盘。\n新用户可\n免费申领 PDS 试用\n，正式购买请参见\n开通与购买\n。了解购买规格说明：\n用户数：网盘支持 5~1000 用户数购买规格。例如购买 5 人 200 GB 规格的网盘，则该网盘最多支持 5 人共享使用 200 GB 空间。\n付费方式：按包年包月计费。网盘到期后请及时在控制台续费，详情请参见\n续费、升级、退订、欠费、到期、降配\n。\n2.\n购买完成后，在控制台将自己绑定为超级管理员。\n使用超级管理员进行后续的登录授权，授权后您的 OpenClaw 会拥有和登录身份一致的相关权限，超级管理员具备最高权限。\n如果不希望 OpenClaw 拥有最高权限，可创建一个新的网盘用户，将该用户的权限配置为基础的预览/上传/下载权限，使用新用户登录授权后，即可与此用户权限保持一致。\n02\n步骤二：在 OpenClaw 中配置网盘\n1.\n配置方式：\n方式一：登录 OpenClaw 部署所在的服务器，通过命令行方式进行以下操作安装\n方式二：通过对话 OpenClaw ，让 OpenClaw 帮助你完成命令执行\n2.\n执行以下命令下载并安装网盘插件：\ncurl\n-fsSL\n\"\nhttps://statics.aliyunpds.com/download/openclaw-pds/install_openclaw_pds.sh\n\"\n| bash\n3.\n执行以下命令登录网盘。将\n<domain_id>\n替换为您网盘的唯一 ID。\nopenclaw pds login\n<\ndomain_id\n>\n说明：domain_id 可在 PDS 控制台获取，如下图所示。例如您的 domain_id 为 bj1506，则执行 openclaw pds login bj1506。\n4.\n在浏览器中打开返回的链接进行认证，或使用浏览器扫码登录授权。\n输入绑定的超级管理员手机号完成验证。\n5.\n登录成功后返回 OpenClaw，即可正常使用网盘 Skills。\n03\n步骤三：使用网盘 Skills\n配置完成后，您可以在 OpenClaw 中通过自然语言指令使用以下网盘能力。\n文件查询与分析\n在对话中描述您的需求，OpenClaw 会自动检索网盘文件并进行分析，也可以将分析和处理后的文件上传到网盘指定目录。\n示例——\n我的网盘里有个视频，你总结一下视频里的内容。\n帮我调研下主流 Agent 工具，将功能、特点、安装方式等信息汇总为一个文档，放到网盘的\"技术调研\"目录中。\n多模态检索\n支持通过自然语言进行文档和图片的检索。\n示例——\n帮我在网盘中找一下滑雪相关的图片。\n04\n步骤四（可选）：安装网盘客户端\n安装网盘客户端后，可以通过图形化界面管理云端文件，无需使用命令行。通过客户端上传的文件同样可被 OpenClaw 访问和分析。\n1.\n在网盘控制台配置页面，单击\nSTEP 2\n下载网盘客户端，根据您的操作系统下载对应安装包。\n2.\n双击安装包，根据界面提示完成安装。\n3.\n打开网盘客户端，完成登录验证。\n4.\n上传本地文件至网盘。在文件列表页面，单击左上方的\n上传文件\n按钮。\n网盘客户端支持以下上传特性：\n特性\n说明\n文件秒传\n同一网盘中已存在相同内容的文件时，再次上传将直接秒传，无需等待完整上传。\n多文件并发上传\n支持同时进行最多 10 个上传任务。\n自定义上传速度\n可设置最大网络带宽，减少对网络带宽的影响。\n分享链接匿名上传\n外部用户可通过网盘分享链接进行匿名上传。\n5.\n配置\n同步备份\n，将本地和云端的文件进行自动同步。\n6.\n配置\n挂载盘\n，将云端存储空间映射为本地驱动器，像访问本地文件一样访问云端文件。\n05\n步骤五（可选）：在 OpenClaw 中升级和卸载网盘\n1.\n配置方式：\n方式一：登录 OpenClaw 部署所在的服务器，通过命令行方式进行以下操作安装\n方式二：通过对话 OpenClaw ，让 OpenClaw 帮助你完成命令执行\n2.\n执行以下命令升级网盘插件：\nopenclaw\nplugins uninstall pds --force\ncurl -fsSL\n\"\nhttps://statics.aliyunpds.com/download/openclaw-pds/install_openclaw_pds.sh\n\"\n| bash\n3.\n执行以下命令卸载网盘插件：\nopenclaw plugins uninstall pds\n--force\n4.\n成功后返回 OpenClaw，再次登录授权后即可正常使用网盘 Skills。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "peripheral": 0.04,
+        "direct_local": 0,
+        "irrelevant": 0.71,
+        "transfer_business": 0,
+        "transfer_agent": 0.25
+      }
+    },
+    "relevance": {
+      "score": 1.4,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.26,
+        "2": 0.57,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.31,
+      "probabilities": {
+        "0": 0.3,
+        "1": 0.15,
+        "2": 0.49,
+        "3": 0.06,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.9,
+      "probabilities": {
+        "0": 0.61,
+        "1": 0.18,
+        "2": 0.02,
+        "3": 0.11,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.66,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.33,
+        "2": 0.66,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.38,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.8,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 0.48,
+      "probabilities": {
+        "0": 0.67,
+        "1": 0.2,
+        "2": 0.12,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.86,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3867,
+    "outputTokens": 173,
+    "totalTokens": 4040
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.63,
+        "relevance": 0.6,
+        "grounding": 0.45,
+        "decision_action": 0.4,
+        "evidence": 0.77,
+        "actionability": 0.58,
+        "anti_hype": 0.68
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179807231,
+                "endTime": 1791179807397,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000162414",
+      "marketCost": "0.000162414",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000162414",
+      "inferenceCost": "0.000162414",
+      "inputInferenceCost": "0.000162414",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5PFFDM6BN21XKH4KN4H4"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:47 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::89xrw-1791179807202-8c239f42a9fa"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "peripheral": 0.04,
+            "direct_local": 0,
+            "irrelevant": 0.71,
+            "transfer_business": 0,
+            "transfer_agent": 0.25
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.4,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.26,
+            "2": 0.57,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.31,
+          "probabilities": {
+            "0": 0.3,
+            "1": 0.15,
+            "2": 0.49,
+            "3": 0.06,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.9,
+          "probabilities": {
+            "0": 0.61,
+            "1": 0.18,
+            "2": 0.02,
+            "3": 0.11,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.66,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.33,
+            "2": 0.66,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.38,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.03,
+            "4": 0.8,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.48,
+          "probabilities": {
+            "0": 0.67,
+            "1": 0.2,
+            "2": 0.12,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.86
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3867,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.63,
+            "relevance": 0.6,
+            "grounding": 0.45,
+            "decision_action": 0.4,
+            "evidence": 0.77,
+            "actionability": 0.58,
+            "anti_hype": 0.68
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179807231,
+                    "endTime": 1791179807397,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000162414",
+          "marketCost": "0.000162414",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000162414",
+          "inferenceCost": "0.000162414",
+          "inputInferenceCost": "0.000162414",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5PFFDM6BN21XKH4KN4H4"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:46.622Z"
+  }
+}

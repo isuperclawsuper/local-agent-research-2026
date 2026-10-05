@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1132646940832468992",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "OpenClaw与Hermes：源码里的 AI Agent 架构知识大复盘",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801805&idx=1&sn=9c7e3936218bba9c8d0ee6c04afb1615",
+      "date": "2026-05-29T09:36:00.904Z",
+      "chars": 6500,
+      "text": " （审批/拒绝 Agent 的执行请求）\n使用场景\n：Codex / Claude Code 等 MCP 客户端需要访问 OpenClaw 管理的 IM 会话时（如在 IDE 里直接测试 QQ Bot 消息收发、CI 完成后通过 OpenClaw 向飞书群发通知等），在客户端配置里加一行\nopenclaw mcp serve\n，就能通过\nconversations_list\n（列出会话）/\nmessages_read\n（读历史）/\nevents_wait\n（等新消息）/\nmessages_send\n（回复）等标准 MCP 工具操作 OpenClaw 的所有 Channel 会话——\ncoding agent 把 OpenClaw 当成\"统一通讯能力扩展\"，一个 MCP server 覆盖所有通道\n。\n路径 2：ACP Server——Agent 粒度\nopenclaw acp\n启动 ACP 协议前端。支持 ACP 的 IDE（Zed, Copilot CLI 等）可以把 OpenClaw 当 Agent 用：\nZed IDE\n↓ ACP 协议（JSON-RPC over stdio）\n↓\nOpenClaw ACP Server (src/acp/server.ts)\n↓ gateway.request(\n\"chat.send\"\n, ...)\n↓\nGateway → agentCommand → runEmbeddedPiAgent\n↓\nLLM 调用 + 工具执行\n↓ ACP 协议事件流\n返回到 Zed\n典型场景\n：用户在 Zed 里有一个聊天面板，里面接的是 OpenClaw 的某个 Agent。用户在 Zed 里发\"帮我把今天 QQ Bot 的对话整理成日报\"——OpenClaw 用自己的 Agent 跑这个任务，结果通过 ACP 协议流回 Zed 显示。\n与 MCP 的区别\n：MCP 是\"暴露几个工具\"，ACP 是\"暴露整个 Agent\"——粒度完全不同。\n路径 3：Gateway HTTP API——系统粒度\nOpenClaw 的 Gateway 本身有完整的 HTTP API（\nsrc/gateway/server-methods/\n），包括\nchat.send\n,\nsession.list\n,\nconfig.get\n等几十个方法。任何能发 HTTP 请求的程序都能调它——curl, Python 脚本, Bot, CI/CD 流水线。\nACP Server 和 MCP Server **本质都是这个 HTTP API 的\"协议前端适配器\"**——把 ACP/MCP 请求翻译成 Gateway HTTP 调用。\n三种路径对比\n路径\n协议\n谁会用\n暴露什么\nMCP Server\nMCP（stdio JSON-RPC）\nClaude Code, Cursor, Zed、自定义 Agent\n9 个具体工具（消息收发、审批管理）\nACP Server\nACP（stdio JSON-RPC）\nZed, Copilot CLI 等 ACP-aware IDE\n整个 Agent 能力（一个聊天 session）\nGateway API\nHTTP REST/RPC\n任何 HTTP 客户端\n所有 Gateway 方法（最底层）\n完整的协议反转图\n把\"OpenClaw 调 CLI\"和\"CLI 调 OpenClaw\"放在一起看：\n方向 A 和方向 B 都用到了 MCP，但角色完全相反——\nA 方向：OpenClaw 是\nMCP Server\n（被自己 spawn 的 Claude CLI 调）\nB 方向：OpenClaw 还是\nMCP Server\n（被用户启动的 Claude Code 调）\n差别只在\n触发者\n——MCP server 不知道也不关心是谁连过来的，它就是个工具暴露面。\n\"双向连接\"的设计意图\nOpenClaw 的选择是\n不试图取代任何现有工具，而是和它们互联\n：\n场景\n谁是主，谁是辅\n用户主要在聊天平台（QQ Bot、飞书）和 Agent 对话\nOpenClaw 是主\n，Claude CLI 是 LLM backend\n用户主要在 Claude Code 里写代码\nClaude Code 是主\n，OpenClaw 是消息通道扩展\n用户在 Zed 里需要一个聊天 Agent\nZed 是主\n，OpenClaw 是 Agent 实现\n外部脚本通过 HTTP 触发任务\n调用方是主\n，OpenClaw Gateway API 是执行入口\nHermes 的对比\n：Hermes 也能处于\"被调\"位置——v0.13 已有\nhermes acp\n命令可作为 ACP server 供 VS Code, Zed, JetBrains 调用。但 OpenClaw 的\"双向\"更彻底——\n同一个进程同时暴露 MCP server + ACP server + HTTP API + WebSocket\n，且和 CLI Backend 模式并存，让它能在主/辅/中间层任意位置运转。\n协议私有不是障碍——只要厂商对外稳定就能适配；而 OpenClaw 不仅消费别人的私有协议，自己还提供 MCP, ACP, HTTP 三层标准化暴露面，让别人也能消费它\n。这种\"既能当主、也能当辅\"的双向连接能力，是微内核架构 + Plugin SDK 抽象的红利在协议层的最直接体现。\n6.5 三级 Compaction 策略\nOpenClaw 的上下文压缩\n不是单一触发点\n，而是分三级响应：\n级别\n触发条件\n位置\n动作\nL1: Pre-request\n会话历史 > 阈值\nrun.ts\n主循环开头\n主动调\ncompaction.ts\n生成摘要\nL2: Timeout-triggered\nLLM 首 token 超时\n且\nprompt > 65% context\nrun.ts\n主循环\n紧急压缩，用缩短的 prompt 立即重试\nL3: Context overflow\nAPI 返回\ncontext_length_exceeded\nrun.ts\n主循环\n三级降级：auto-compact → 截断 oversized tool result → 抛错\nL2 是容易忽视但很巧妙的一层\n——LLM 首 token 慢不一定是服务端慢，很可能是 context 太大导致 prefill 耗时过长。用\"超时 + 大 context\"双条件判断主动压缩后重试，比盲目切换 profile 更经济（不浪费冷却配额）。\nCompaction 本身的实现也比 Hermes 精细一层：\n**\nidentifier-policy\n**：压缩时保留 symbol identifiers（函数名/文件路径）的出现频次\n**\nidentifier-preservation\n**：压缩后验证关键 identifier 没丢\n**\ntool-result-details\n**：专门处理 tool 调用输出的摘要格式\n**\nretry\n**：压缩本身的重试（压缩调用失败时回退到原始 messages，而不是让整个 turn 挂掉）\n6.6 Context Engine 契约——把\"上下文管理\"做成插件\nsrc/context-engine/types.ts\n定义了一个抽象，把\"上下文怎么管\"从 runtime 剥离：\ninterface\nContextEngine {\nbootstrap?(ctx)\n// 会话初始化\ningest(msg)\n// 吸收一条 message\ningestBatch?(batch)\n// 吸收一轮 turn\nafterTurn?(ctx)\n// 一轮结束后做后处理\nassemble(budget)\n// 按 tokenBudget 组装 prompt\ncompact()\n// 压缩\nmaintain?()\n// 分支重写\nprepareSubagentSpawn?()\n// 子 agent 派生前\nonSubagentEnded?()\n// 子 agent 结束后\n}\n为什么这是亮点\n：它不把\"上下文\"当成静态的 message 列表，而是让 engine 自己决定：\nassemble\n时返回哪些 message（支持\n检索型引擎\n——只召回相关的历史，不是全部回放）\nmaintain\n时可以\"分支重写\"（修历史消息的 payload 但保留 id）\nafterTurn\n时 engine 可以主动触发压缩决策\n这为未来接入\nRAG-style 上下文管理\n（GraphRAG, LightRAG 之类）留好了接口——默认实现走\"线性 + compaction\"，高级场景可以换成\"图谱召回\"。\n6.7 Lanes——并发执行的分车道管控\n// src/process/lanes.ts\nexport\nconst\nenum\nCommandLane {\nDefault =\n\"default\"\n,\nNested =\n\"nested\"\n,\n// 内嵌 agent（如 dreaming review）\nSubagent =\n\"subagent\"\n,\n// sessions-spawn 子 agent\nCron =\n\"cron\"\n,\n// 定时任务\n}\nLanes 不是简单的\"线程池\"，而是\n命令调度的隔离通道\n：\n不同 lane 的命令队列独立，互不阻塞——cron 任务堆积不会拖垮用户交互\nNested agent 不继承 cron lane\n——cron 触发的内嵌 review 不应该再占用 cron 执行槽，否则会形成自我递归的死锁\nSubagent lane 有独立的并发预算，不与用户命令竞争\nLane 还是\n权限边界\n——cron lane 的命令看不到交互审批 UI（没有用户在线），走的是预授权路径\n这种\"按调用来源分车道\"的设计在同类 agent 框架里不多见。Hermes 是单一全局队列，所有命令排同一条线。\n6.8 Bootstrap Budget——启动上下文的精细预算\nAgent 启动时加载\nSOUL.md\n/\nUSER.md\n/\nMEMORY.md\n/\nAGENTS.md\n等工作区文件时，不是\"全部读进来\"，而是按预算裁剪：\nmaxChars\n,\ntotalMaxChars\n：单文件与总上限\nBootstrapContextMode\n：\nfull\n或\nlightweight\n（节省 prompt token）\nBootstrapContextRunKind\n：\ndefault\n：正常加载所有 bootstrap 文件\nheartbeat\n：只加载\nHEARTBEAT.md\n（定时心跳不需要完整人格）\ncron\n：默认不加载任何 bootstrap 文件（cron 任务通常只需要特定上下文）\nbootstrap-hooks.ts\n允许 hook\n动态修改 bootstrap 文件列表\n（按时间段注入不同上下文）\nbootstrap-cache.ts\n以\nsessionKey\n为 key 缓存，session 切换自动失效\n这是典型的\"把简单的事做对\"——大多数框架把\"启动加载哪些文件\"写死在代码里，OpenClaw 把它做成可配置、可 hook、可缓存的三层结构。\n6.9 Shell 命令执行与审批\n核心问题\n：Agent 想执行\nbash\n命令时，命令到底在哪台机器上跑？用户怎么审批\"是否允许执行\"？\n两种执行 Host\n同一个\nbash\n工具有\n两种执行路径\n，取决于 Agent 的运行模式：\nHost\n何时使用\n怎么执行\nexec-host-node\nopenclaw chat\n（本地 CLI 模式）\nNode.js\nspawn\n，在 agent 进程内直接执行\nexec-host-gateway\n通过 Gateway 运行（TUI, Control UI, Channel）\n命令经 RPC 送到 Gateway，审批通过后才执行\n为什么要分\n：Gateway host 可以\n跨机器代理执行\n（\nsrc/node-host/\n的 node exec）——Agent 跑在 macOS，shell 命令在远端 Linux 节点上执行。本地 CLI 模式不需要这层间接。\n审批路径\n两种 host 的审批方式不同，但共享同一套安全基线（\nevaluateShellAllowlist\n+\ndetectCommandObfuscation\n+\nresolveApprovalAuditCandidatePath\n）：\nGateway host\n：审批走聊天通道——用户在 QQ Bot、飞书、Telegram 里看到\"是否允许执行\nrm -rf ...\n？\"并点按钮\nNode host\n：审批走本地终端 prompt（TUI 弹窗确认）\nPTY 与脚本预检\nPTY 分支\n（\nbash-tools.exec.ts\n）：需要 TTY 的命令（终端 UI、嵌套 coding agent）走\nusePty=true\n分支，带\npty-keys.ts\n,\npty-dsr.ts\n支持原生键盘事件和光标响应——让 Agent 能真正操控\nhtop\n,\nvim\n,\nclaude-cli\n这样的交互式程序\nScript preflight\n：执行脚本前做静态检查——检测\"脚本内含 shell variable injection\"、\"JS 文件以\nNODE\n开头\"等常见错误，提前拦截\n6.10 Cache Trace——全链路可观测性\nsrc/agents/cache-trace.ts\n把每次 LLM 调用的上下文变化分 7 个阶段（session loaded → sanitized → limited → prompt before → images → stream context → session after）落盘到\n~/.openclaw/state/cache-trace/\n，可以精确定位 prompt cache miss 的原因。这是 production agent 才会关心的运维能力——Hermes 靠\"冻结快照\"兜底，OpenClaw 靠\"全链路可追溯\"定位。\n6.11 Subagent Spawn——深度可控的子 Agent 委派\n与 Hermes\ndelegate_tool\n的\"阻止列表 + 默认深度 1\"不同，OpenClaw 的子 Agent 机制更\"系统化\"，被拆成十几个文件：\n**\nsubagent-announce-*\n**：子 Agent 在父会话里的状态广播（announce-delivery, announce-dispatch, announce-queue, announce-idempotency），父 Agent 可以看到子进度\n**\nsubagent-registry-*\n**：子 Agent 生命周期注册表（completion, cleanup, queries, helpers）\n**\nsubagent-capabilities.ts\n**：子 Agent 可以做什么（哪些工具、能不能访问父的工作区）\nsubagent-control.ts\n：父 agent 对子 agent 的\n控制权限\n——\nsubagentControlScope: \"children\" | \"none\"\n决定父能不能 abort 或 steer 子\n**\nsubagentRole: \"orchestrator\" | \"leaf\"\n**：orchestrator 可以再 spawn 子子 age",
+      "fulltext_obtained": true,
+      "chunk_index": 6,
+      "chunk_count": 18
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.8,
+        "peripheral": 0,
+        "irrelevant": 0.2
+      }
+    },
+    "relevance": {
+      "score": 1.75,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.15,
+        "2": 0.8,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.02,
+      "probabilities": {
+        "0": 0.52,
+        "1": 0.11,
+        "2": 0.24,
+        "3": 0.11,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.83,
+      "probabilities": {
+        "0": 0.45999999999999996,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.15,
+        "4": 0.33,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.62,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.37,
+        "3": 0.63,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.31,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.16,
+        "4": 0.67,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 1.65,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.48,
+        "2": 0.2,
+        "3": 0.24,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.77,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5708,
+    "outputTokens": 172,
+    "totalTokens": 5880
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.75,
+        "relevance": 0.83,
+        "grounding": 0.32,
+        "decision_action": 0,
+        "evidence": 0.74,
+        "actionability": 0.52,
+        "anti_hype": 0.47
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180432537,
+                "endTime": 1791180432707,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000239736",
+      "marketCost": "0.000239736",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000239736",
+      "inferenceCost": "0.000239736",
+      "inputInferenceCost": "0.000239736",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARS4BMPJHV15F0ZHBD6NP"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:12 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::7v6mt-1791180432507-33ca33efc423"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.8,
+            "peripheral": 0,
+            "irrelevant": 0.2
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.75,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.15,
+            "2": 0.8,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.02,
+          "probabilities": {
+            "0": 0.52,
+            "1": 0.11,
+            "2": 0.24,
+            "3": 0.11,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.83,
+          "probabilities": {
+            "0": 0.45999999999999996,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.15,
+            "4": 0.33,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.62,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.37,
+            "3": 0.63,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.31,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.16,
+            "4": 0.67,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.65,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.48,
+            "2": 0.2,
+            "3": 0.24,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.77
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5708,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.75,
+            "relevance": 0.83,
+            "grounding": 0.32,
+            "decision_action": 0,
+            "evidence": 0.74,
+            "actionability": 0.52,
+            "anti_hype": 0.47
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180432537,
+                    "endTime": 1791180432707,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000239736",
+          "marketCost": "0.000239736",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000239736",
+          "inferenceCost": "0.000239736",
+          "inputInferenceCost": "0.000239736",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARS4BMPJHV15F0ZHBD6NP"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:11.930Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1183311209034616832",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "CVPR 2026 | 面向视频扩散模型的局部细节偏好优化方法 LocalDPO",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650544718&idx=1&sn=be61862eec337a27b1355927152046fe",
+      "date": "2026-07-03T08:13:00.194Z",
+      "chars": 4508,
+      "text": "原创\n音视频技术\n2026-07-03 16:13\n浙江\nLocalDPO：CVPR 2026新方法，无需人工标注一键优化视频局部细节，生成更清晰、更稳定！\n本文介绍了\n淘天音视频团队联合外部合作伙伴提出的\nLocalDPO\n方法，成功入选计算机视觉顶会\nCVPR 2026\n（录用率约25%），针对视频生成模型后训练中局部细节优化难、传统DPO依赖高成本多次采样与人工标注的痛点，创新性地以\n高质量真实视频为正样本\n，通过\n局部时空退化自动构造负样本\n，并设计\n区域感知 DPO 损失\n实现细粒度偏好对齐。该方法无需外部打分模型或人工标注，在 CogVideoX、Wan2.1等主流视频模型上显著提升\n视觉质量、时序一致性及人类偏好\n（如纹理清晰度、伪影抑制、运动稳定性），实验表明其在多项自动评测与20人主观评测中均大幅优于 SFT、Vanilla DPO 等基线，为视频生成模型的高效后训练提供了新范式，相关代码与模型已开源。\n论文背景介绍\nCVPR（国际计算机视觉与模式识别会议）是计算机视觉领域最具影响力的顶级学术会议之一，在图像生成、视频理解、视觉大模型和多模态学习等方向具有极高认可度。CVPR 2026共收到16000余篇有效投稿，整体录用率约25%。\n此篇论文入选 CVPR 2026，聚焦视频生成大模型后训练，由淘天音视频团队联合外部合作伙伴共同完成。\n随着视频扩散模型快速发展，如何在后训练阶段生成更清晰、更稳定且更符合人类偏好的视频，成为关键问题。针对现有 DPO 方法依赖多次采样、外部打分模型或人工标注、成本高且难以优化局部闪烁、纹理崩坏和时序不连贯等细节缺陷的问题，团队提出了面向视频扩散模型的局部细节偏好优化框架\nLocalDPO\n：以高质量真实视频为正样本，通过对局部时空区域施加可控退化自动构造负样本，并结合区域感知 DPO 损失，实现对视频局部细节的高效偏好对齐。实验表明，LocalDPO 在视觉质量、时序一致性和人类偏好评测上均显著优于 SFT、Vanilla DPO、DenseDPO 等方法，并在 CogVideoX、Wan2.1等主流视频生成模型上取得稳定提升。\n论文下载链接：\nhttps://arxiv.org/pdf/2601.04068\n代码开源地址：\nhttps://github.com/1170300714/Local-DPO\n论文摘要\n本文提出了\nLocalDPO\n，一种面向文本生成视频扩散模型的细粒度偏好优化方法。针对现有视频DPO后训练依赖多次采样、人工标注或外部评价模型、成本高且难以刻画局部细节问题的不足，LocalDPO 以高质量真实视频为正样本，通过局部时空退化自动构造负样本，并结合基于随机贝塞尔曲线的三维时空掩码、冻结视频扩散模型的局部重绘机制以及区域感知 DPO 损失，在无需额外标注和外部打分模型的情况下，实现了局部细节优化与全局生成稳定性的兼顾。大量实验表明，LocalDPO 在 CogVideoX-2B、CogVideoX-5B 和 Wan2.1-1.3B 等多个视频扩散模型上均取得显著提升，并在视觉质量、纹理细节、时序一致性和人类偏好等方面优于现有后训练方法。\n图1. LocalDPO 与其余方案生成视频结果对比\n具体方法\n在视频生成模型后训练中，如何低成本构造高质量偏好数据，并精准优化影响主观体验的局部细节问题，一直是业界关注的核心挑战。现有视频 DPO 方法虽然取得了一定效果，但普遍存在偏好数据构造成本高、优化目标偏全局化等问题，难以有效处理局部伪影、细节缺失和纹理不稳定等细粒度缺陷。针对这些问题，LocalDPO 从偏好对构造方式和优化目标设计两个层面提出了新的解决方案。\n▐\n核心痛点\n当前主流视频 DPO 方法通常需要针对同一文本提示生成多个候选视频，再通过人工标注或外部奖励模型排序，构造偏好对进行训练。但这一范式存在三方面问题：一是多次采样和标注带来较高成本；二是基于全局打分的监督信号容易产生歧义，难以稳定反映视频在不同维度上的真实优劣；三是忽略了人物五官、手部结构、局部纹理和背景细节等对主观体验影响更大的局部偏好信号。\n针对这些问题，LocalDPO 不再依赖多生成样本之间的全局比较，而是直接以高质量真实视频为基础，构造局部退化负样本，使正负样本差异更加可控、监督信号更加明确，也更符合人类对局部细节质量的偏好判断。\n图2. 传统 DPO 与 LocalDPO 的训练方式以及数据构造开销比较\n▐\n局部偏好对自动构造策略\n为了解决传统 DPO 中偏好数据构造成本高、监督信号不稳定的问题，本文提出了一套高效自动化的偏好对生成流程，其核心思想是：\n正样本：直接使用真实高质量视频\n负样本：对真实视频的局部时空区域施加退化，并由待优化模型进行局部生成恢复，从而形成局部细节变差的版本\n这样得到的正样本在整体质量和局部细节上都天然优于负样本，而且两者在语义和全局结构上高度一致，因此训练信号更加明确。\n高质量真实视频数据构建\n本文遵循现有高质量视频数据构建流程，从真实世界视频中收集并筛选出 63K 高质量视频片段，数据集具备高分辨率、丰富场景多样性和稳定运动表现。同时，利用 VLM 为每个视频生成结构化文本描述，以支持后续文本条件下的偏好训练。\n基于局部退化的负样本生成\n为了构造局部细节退化但整体语义一致的负样本，本文设计了两步机制：首先，利用随机贝塞尔曲线生成 3D 时空掩码，以更自然地模拟视频中的局部遮挡与失真区域；其次，基于冻结的预训练 VDM ，对真实视频进行局部重绘式退化，仅在掩码区域执行恢复，非掩码区域始终保持原始内容不变。\n图3. 基于局部退化的负样本生成流程框图\n通过这种方式，生成的负样本仅在指定局部区域出现纹理失真、细节模糊或时序不一致，其余区域与真实视频保持一致，从而自然形成“真实视频优于局部退化视频”的高置信度偏好对。该设计既避免了传统 DPO 中复杂的排序与奖励建模流程，又使训练信号更聚焦于模型易出错的局部细节区域。\n图4. 基于局部退化的负样本生成与真实视频主观对比\n▐\n区域感知偏好优化目标\n在构建局部偏好对后，本文进一步提出区域感知 DPO 损失，仅在局部退化区域上计算偏好误差，使模型聚焦于被破坏的时空细节。为避免过度强调局部偏好而影响全局结构与运动一致性，本文还结合标准 DPO 损失和 SFT 损失构建混合训练目标，在提升局部细节修复能力的同时保持全局生成稳定性。\n实验论证与结果\n为全面验证 LocalDPO 的有效性，本文在 CogVideoX-2B、CogVideoX-5B 和Wan2.1-1.3B 等主流视频扩散模型上进行了系统实验，并与 Baseline、SFT、Vanilla DPO、DenseDPO 等方法进行比较。评测涵盖 VBench、VideoJAM 等基准，以及美学分、清晰度分、HPSv2、PickScore、Image Reward、Video Align 等多项视觉质量、人类偏好和视频对齐指标。\n▐\n定量评估\n如表1所示，LocalDPO 在多个模型、基准和指标上均取得明显领先，尤其在视觉质量相关指标上的提升更为突出，表明其有效增强了模型对高频纹理、边缘结构和细节真实感的建模能力。\n表1. 定量评估结果，包括VBench（左）和VideoJAM（右）两个评测基准\n▐\n主观评测\n除定量指标外，本文还组织20位评测者，从视觉质量、运动质量、文本对齐和综合质量四个维度进行人工偏好比较。图5展示了 LocalDPO 与最具竞争力的DenseDPO 在多个主流扩散模型上的主观对比结果。\n图5. LocalDPO 与 DenseDPO 在多个主流扩散模型的主观评测结果\n实验结果表明，LocalDPO 在四个维度上均显著更优，尤其在视觉质量和综合质量方面优势更为明显。较高的平均胜率进一步说明，其提升不仅体现在自动评测指标上，也能被人类观察者明显感知。\n▐\n定性评估\n可视化对比（图6-图8）进一步展示了 LocalDPO 的核心优势：\n局部纹理更丰富：人物服饰、动物毛发、背景物体等区域的纹理更细腻，细节层次更丰富\n画面更清晰自然：相比 SFT 和 Vanilla DPO，LocalDPO 生成画面更锐利、观感更高级\n伪影更少：局部崩坏、边缘扭曲、模糊粘连等问题明显减轻\n时序更稳定：在连续帧中，局部物体的外观变化更自然，不易出现闪烁和抖动\n语义对齐更好：能够更准确地呈现 prompt 中描述的主体、动作与风格\n这些结果说明，LocalDPO 不只是简单提升“打分”，而是真正提升了视频生成模型对局部细节的生成能力和对人类主观偏好的贴合程度。\n图6. LocalDPO 与其余方案在 CogVideoX-2B 的可视化结果比较\n图7. LocalDPO 与其余方案在 CogVideoX-5B 的可视化结果比较\n图8. LocalDPO 与其余方案在 Wan2.1-1.3B 的可视化结果比较\n总结与展望\n本文提出了面向视频扩散模型的细粒度偏好优化方法 LocalDPO。与传统依赖多次采样、外部打分模型和人工标注的 DPO 方法不同，LocalDPO 以真实视频作为正样本，通过局部时空退化自动构造负样本，并结合区域感知 DPO 损失，实现了对视频局部细节偏好的高效建模与优化。大量实验表明，该方法在 CogVideoX、Wan2.1 等多个主流视频生成模型上显著提升了视觉质量、时序一致性和人类主观偏好。\n总体来看，LocalDPO 为视频生成模型的偏好对齐提供了一种高效、稳定且细粒度的新思路。未来，团队将进一步结合 Grounding DINO、SAM 等视觉基础模型，引入更具语义感知能力的局部掩码，提升对关键目标区域的生成质量控制能力，并为多模态生成模型的人类偏好对齐研究带来更多启发。\n团队介绍\n该工作由淘天音视频技术团队与高校合作完成。音视频技术团队服务于国民 app 淘宝中直播、逛逛、首页信息流、商品详情等核心视频业务场景，长期聚焦技术创新与应用落地，致力于持续提升用户内容消费体验。团队成员来自海内外知名高校，多次在 MSU 世界编码器大赛，CVPR NTIRE 视频增强超分竞赛这样的权威赛事上夺魁，并重视与学界的合作与交流。\n团队主导设立了淘天博士后工作站，持续强化前沿技术研发与高层次人才培养能力。自成立以来，已累计招收十余位博士后，发表高水平论文近20篇，多项成果已在淘宝核心业务场景规模化落地。\n团队兼顾算法创新与工程应用，围绕视频生产、视频修复与生成、视频编码等完整链路持续深耕，保障视频、图片相关业务的流畅度和音画质体验，并在多媒体 AIGC 方向积累了多模态理解、图像生成与编辑、可控视频生成等关键能力，为直播、信息流、搜索推荐等业务场景提供技术支撑。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0,
+        "peripheral": 0.01,
+        "irrelevant": 0.98
+      }
+    },
+    "relevance": {
+      "score": 0.78,
+      "probabilities": {
+        "0": 0.43,
+        "1": 0.37,
+        "2": 0.2,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.28,
+      "probabilities": {
+        "0": 0.86,
+        "1": 0.06,
+        "2": 0.03,
+        "3": 0.04,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.09,
+      "probabilities": {
+        "0": 0.94,
+        "1": 0.05,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.86,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.03,
+        "3": 0.01,
+        "4": 0.93,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.15,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.05,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.59,
+        "5": 0.12
+      }
+    },
+    "anti_hype": {
+      "score": 0.57,
+      "probabilities": {
+        "0": 0.62,
+        "1": 0.23,
+        "2": 0.13,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6024,
+    "outputTokens": 173,
+    "totalTokens": 6197
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.96,
+        "relevance": 0.48,
+        "grounding": 0.81,
+        "decision_action": 0.94,
+        "evidence": 0.9,
+        "actionability": 0.28,
+        "anti_hype": 0.62
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179882723,
+                "endTime": 1791179882885,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000253008",
+      "marketCost": "0.000253008",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000253008",
+      "inferenceCost": "0.000253008",
+      "inputInferenceCost": "0.000253008",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A806J9PEDR04Y3E88D8AS"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:02 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::jlblm-1791179882674-49735630c646"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0,
+            "peripheral": 0.01,
+            "irrelevant": 0.98
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.78,
+          "probabilities": {
+            "0": 0.43,
+            "1": 0.37,
+            "2": 0.2,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.28,
+          "probabilities": {
+            "0": 0.86,
+            "1": 0.06,
+            "2": 0.03,
+            "3": 0.04,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.09,
+          "probabilities": {
+            "0": 0.94,
+            "1": 0.05,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.86,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.03,
+            "3": 0.01,
+            "4": 0.93,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.15,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.05,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.59,
+            "5": 0.12
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.57,
+          "probabilities": {
+            "0": 0.62,
+            "1": 0.23,
+            "2": 0.13,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6024,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.96,
+            "relevance": 0.48,
+            "grounding": 0.81,
+            "decision_action": 0.94,
+            "evidence": 0.9,
+            "actionability": 0.28,
+            "anti_hype": 0.62
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179882723,
+                    "endTime": 1791179882885,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000253008",
+          "marketCost": "0.000253008",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000253008",
+          "inferenceCost": "0.000253008",
+          "inputInferenceCost": "0.000253008",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A806J9PEDR04Y3E88D8AS"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:02.120Z"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "239531901074543616",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "自建一个 Agent 很难吗？一语道破，万语难明",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558093&idx=1&sn=3d4fa83eec6c4c882927ce9aac4bb121",
+      "date": "2026-01-29T00:32:00.976Z",
+      "chars": 15378,
+      "text": "原创\n凉信\n2026-01-29 08:32\n浙江\n最近花了一周左右的时间给内部的一个传统研发平台接入了 Agent 开发的能力，很多同学对 Agent 的底层实现非常感兴趣，所以此篇给大家介绍下我是怎么做的，希望能对想自建 Agent 的同学有所启发。\n因人力原因，有些细节方案问题没太做深度评测，而是直接选择业界实践较多的成熟方案。主要参考思路和上下文管理的过程。\n文中用到了一些内部平台的基础能力，比如 rag、代码管理、deepwiki等，外部开发者如需使用需要自行寻找替代品。\n背景简介\n奥德赛研发平台是 ICBU 买家技术的 TQL（淘宝基于开源 GraphQL 的定制版本） 研发平台，大量开发者会在上面通过编写 TQL 脚本来实现 BFF 接口。\n近一年 AI Coding 工具层出不穷，在深度使用了 cursor、claude code 等顶尖产品后，大量解放了自己在前端的生产力，所以就在想让团队的后端兄弟（还有姐妹）们也吃好点，告别纯手搓代码，这不，BFF 的 Agent 模式（小 D 同学）来了～\n技术选型\n原来的平台长这样，开发者在上面可以完成编码、调试、发布等工作：\n要在现有的平台内集成一个 Agent ，且能感知前台页面的环境，甚至对页面进行操作，一般有三种方式（默认都采用 AI 辅助 Coding）：\n如果只是一般的对话 Agent，直接用一些开放的应用平台搭建就完事了，不必自己写。\n综合考量了三种方案后，我们决定优先保证用户体验&开发效率，选择了第三种。\n宿主页面 Iframe 嵌入 Agent\n整体的数据流转概要：\n1. 宿主页面暴露 脚本内容、请求参数、调试结果 等上下文信息，以及脚本执行、脚本 Diff 预览等操作页面的工具接口给 Agent。\n2. Agent 感知宿主页面上下文环境，然后请求服务，并推送内容编辑、脚本执行等工具执行 action 给宿主页面。\n流程概要图如下：\n应用框架选择\n应用框架选择上不做过多对比，直接给出我的选择，不一定最好，但是一定很契合我当前的场景。\n集团 Faas 基建\n简介：FaaS（Function as a Service，函数即服务）平台是一个面向研发人员的全托管、事件驱动、弹性伸缩的 Serverless 计算基础设施，其核心目标是让开发者\n只关注业务逻辑代码\n本身，无需操心服务器运维、资源扩缩容、中间件对接等底层细节。\n划重点，Faas 可以让你只关注代码，免运维。这正是当前这种轻量 Agent 需要的。\nNext.js + React\n前后端应用框架我选择了\nNext.js + React\n，为什么？\n1. 集团有前后端一体化的框架可以直接用。\n2. 前后端共用一套开发语言（Nodejs、JavaScript），并集成在一个应用中，AI Coding 非常友好，谁用谁知道。可以真正做到只关注功能，AI 帮你做实现。\nLangGraph\nLangChain\n[1]\n团队在 WorkFlow/Agent 领域摸爬滚打了几年，高度抽象了 Agent 的开发模式。\nLangGraph\n其巧妙设计让你可轻松构建一个状态图，你可以只关注 系统提示词、工具节点（通常是 mcp）就可轻松实现一个会自主决策的 Agent。手残党友好。\n方案落地\n应用框架初始化\n如上文所述，结合当前场景，把 LangGraph 抽象出来的状态图展开，替换成自己的工具，就得到这样一个图和伪代码：\n此处了解个大概就可以了，稍后会详解工具\nBFF Agent 状态图：\n伪代码：\nimport\n{\nStateGraph\n,\nEND\n,\nSTART\n}\nfrom\n'@langchain/langgraph'\n;\n// 创建状态图\nconst\nagentGraph =\nnew\nStateGraph\n({\nchannels\n: {\nmessages\n: {\nreducer\n:\n(\nprev, next\n) =>\n[...prev, ...next],\ndefault\n:\n() =>\n[],\n},\n},\n});\n// 添加节点\nagentGraph.\naddNode\n(\n'agent'\n,\nasync\n(state) => {\nconst\nresponse =\nawait\nmodel.\ninvoke\n(state.\nmessages\n);\nreturn\n{\nmessages\n: [response] };\n});\nagentGraph.\naddNode\n(\n'tools'\n,\nasync\n(state) => {\nconst\nlastMsg = state.\nmessages\n[state.\nmessages\n.\nlength\n-\n1\n]\nas\nAIMessage\n;\nconst\ntoolMessages = [];\nfor\n(\nconst\ntoolCall\nof\nlastMsg.\ntool_calls\n|| []) {\nconst\nresult =\nawait\ntools\n.\nfind\n(\n(\nt\n) =>\nt.\nname\n=== toolCall.\nname\n)\n.\ninvoke\n(toolCall.\nargs\n);\ntoolMessages.\npush\n(\nnew\nToolMessage\n({\ncontent\n: result,\ntool_call_id\n: toolCall.\nid\n}),\n);\n}\nreturn\n{\nmessages\n: toolMessages };\n});\n// 设置边\nagentGraph.\naddEdge\n(\nSTART\n,\n'agent'\n);\nagentGraph.\naddEdge\n(\n'tools'\n,\n'agent'\n);\n// 条件边：根据是否有 tool_calls 决定路由\nagentGraph.\naddConditionalEdges\n(\n'agent'\n,\n(\nstate\n) =>\n{\nconst\nlastMsg = state.\nmessages\n[state.\nmessages\n.\nlength\n-\n1\n]\nas\nAIMessage\n;\nreturn\nlastMsg.\ntool_calls\n?.\nlength\n>\n0\n?\n'tools'\n:\nEND\n;\n},\n{\ntools\n:\n'tools'\n, [\nEND\n]:\nEND\n},\n);\n// 编译图\nconst\ngraph = agentGraph.\ncompile\n();\n参考 LangGraph 的官方文档的介绍，用 Cursor 可以轻松实现上述一个基础的有向、有环状态图，至此，BFF Agent 服务的基础骨架就好了。模型选择上，由于需要生码，我还是直接使用了 Claude （Claude-4.5-haiku）的模型。\n那么接下来的重点就是从能用到好用，后续的内容非常关键。也就是上下文工程的优化，接下来的优化是不分顺序的，因为上下文工程是一个综合命题，比如你往往需要在系统提示词优化完成后，发现某些工具调用不符合预期，又回过头来优化系统提示词。不同类型的上下文往往是交叉影响的，要根据具体场景做甄别。\n系统提示词优化\nAnthropic 官方推荐了\n提示词优化\n[2]的诸多技巧，非常有效！下面介绍我高频用到的几个基础技巧，更多技巧真的强烈建议直接学习原文。\n1. 角色设定\n角色设定可以显著提高模型的性能（参考Qwen 的 MOE 机制），并改进模型的注意力，发现更多的关键问题。\n2. 使用 XML\nAnthropic 官方推荐\n使用 XML 构建提示词\n[3]\n，有诸多好处，实测非常有效。遇到模型不遵循指令，或上下文过长，出现遗忘/幻觉时，试试更换提示词格式为 XML。\n3. 使用示例\n也就是 few-shot ，给少量准确的示例，尤其对输出内容改善上有重大帮助。还有，一篇\nresearch\n[4]\n有介绍，尽量直接给\n模型正例而不是反例\n，保护模型的注意力。（比如我告诉你不要去想一会要吃什么，你反而会刻意去想如何不要去想这件事情，就浪费了你的注意力）\n上述三个技巧是非常简单且行之有效的方法，全程指导了我去优化提示词，来看具体怎么用的\n👇\n角色设定 & 使用 XML\n淘宝的 TQL 本质上是一种 GraphQL 的方言，ICBU 还又在 TQL 的基础上做了定制，大模型是不可能会写的：\n模型不了解私域知识这个问题，在自建 Agent 的时候往往是一个共性问题，所以才需要大量的提示词 & 工具 & 知识库。强如 Claude ，公司自己的 Qwen ，都不知道 TQL 的含义。\n好在，模型不用从 0 开始，它会写 GraphQL，那么只需要阐述清楚二者的区别。不只是提示词，后续的知识库也是尽力在给模型解释私域知识。小 D 的提示词摘要：\n<\nrole\n>\n你是小 D 同学，一个专业的 TQL 脚本编写助手，TQL 是淘宝基于 GraphQL 扩展的查询语言，你只会写 TQL 语法，不会任何其它脚本。你的任务是帮助用户基于企业知识和用户输入，编写高质量的 TQL 脚本。\n</\nrole\n>\n<\ninstructions\n>\n<\ninstruction\n>\n你非常欠缺 TQL 知识，但好在系统内置了很多工具，你可以充分使用这些工具来辅助你完成任务。\n</\ninstruction\n>\n<\ninstruction\n>\n系统在开源 GraphQL 的基础上，扩展了很多自定义的指令，如果你遇到不确定或无法实现的需求，可充分用工具查询相关知识\n</\ninstruction\n>\n<\ninstruction\n>\n回答要专业、友好、有条理。使用 Markdown 格式输出。\n</\ninstruction\n>\n<\ninstruction\n>\n在编写 TQL 脚本时，要确保语法正确、查询结构清晰、字段选择合理。\n</\ninstruction\n>\n</\ninstructions\n>\n角色设定上，让模型更多关注 GraphQL 方向的知识，并且申明 TQL 和 GraphQL 是有区别的，让模型谨慎操作。\ninstructions（命令）上，第一条命令比较有意思，在没有这条命令之前，模型会过于自信（即便\n已经是最严谨状态 temperature=0），拿到用户需求后，直接开始上手写\nGraphQL ，出现了与 TQL 非常不相符的代码。用第一条指令弱化了模型的信心，模型才开始谨慎地调用知识库了解更多上下文信息。\nTQL 在 GraphQL 的扩展内容部分，为了防止提示词内容爆炸，我做了一轮精简，只保留基础介绍部分（索引知识），放在提示词中，并引导模型在使用到具体能力的时候，\n动态通过工具查询具体知识\n，从而保护了模型的注意力。\n自定义指令：\n<\ndirectives\n>\n非常重要！系统有大量的扩展指令，具体用法需要通过工具查询相关知识，\n在使用这些指令时，一定要先学习指令的用法，不要盲目使用\n。\n指令一般紧挨着字段或函数， fieldA\n@指令名\n或 funcA(xx)\n@指令名\n这样使用\n。\n以下是常用指令（格式:\n\"指令名\"\n:\n\"描述|参数\"\n）:\n<!\n[\nCDATA\n[{\n\"转换类\"\n:{\n\"unwrap\"\n:\n\"解包/对象拍平/对象解构\"\n,\n\"toBool\"\n:\n\"转布尔|not\"\n,\n\"encode\"\n:\n\"编码|protocol=http\"\n,\n\"wrap\"\n:\n\"包装\"\n,\n\"toInt\"\n:\n\"转整数|offset\"\n,\n\"toUpperCase\"\n:\n\"转大写\"\n,\n\"decode\"\n:\n\"解码|protocol=http\"\n,\n\"autoflat\"\n:\n\"自动扁平化\"\n},\n\"字符串操作\"\n:{\n\"suffix\"\n:\n\"添加后缀|value\"\n,\n\"prefix\"\n:\n\"添加前缀|value\"\n},\n\"条件过滤\"\n:{\n\"hide\"\n:\n\"隐藏字段\"\n,\n\"filterBy\"\n:\n\"表达式过滤|spel,aviator\"\n,\n\"include\"\n:\n\"条件包含|if!\"\n,\n\"skip\"\n:\n\"条件跳过|if!\"\n,\n\"default\"\n:\n\"默认值|value\"\n},\n\"列表操作\"\n:{\n\"index\"\n:\n\"取元素|offset\"\n,\n\"ascBy\"\n:\n\"升序|path\"\n},\n\"逻辑脚本\"\n:{\n\"mapping\"\n:\n\"映射|func\"\n,\n\"const\"\n:\n\"常量|value,beforeExecute=false\"\n},\n\"高级扩展\"\n:{\n\"medusa\"\n:\n\"Medusa服务|url,language\"\n,\n\"diamond\"\n:\n\"Diamond服务|url\"\n}\n}]]\n>\n</\ndirectives\n>\n全局函数：\n<\nTQLFunctions\nname\n=\n\"系统内置的全局函数\"\n>\n<\ndescription\n>\n以下是 TQL 脚本中可直接使用的内置函数，详细用法请通过知识库查询。\n</\ndescription\n>\n<![CDATA[\n【字符串处理】\n- QL_concat: 拼接三个字符串（a, b, c参数）\n- QL_string_replace: 字符串替换（replaceText, searchString, replaceString）\n- QL_stringToList: 字符串按分隔符转列表（data, delimiter）\n- QL_stringToJSON: 字符串转JSON对象\n- QL_jsonStringify: JSON对象转字符串\n- QL_joinStringByPath: 通过JSON Path提取属性并拼接（object, path, delimiter）\n- QL_urlDecode: URL解码\n- QL_addHttpsSchema: 自动添加或转换为https协议头\n- QL_addUrlParam: 给URL添加参数（url, param）\n【数值计算】\n- QL_sumLong: 两数相加（addition1, addition2）\n- QL_subtraction: 两数相减（minuend, subtrahend）\n- QL_divideInt: 整数除法向下取整（dividend, divisor）\n- QL_random_int: 生成指定范围随机整数（min, max）\n【条件判断】\n- QL_if: 三元条件判断（condition, output, orElse）\n- QL_conditional: 复杂条件表达式，支持#env.get()获取变量（exp, params）\n- QL_defaultIfBlank: 空值时返回默认值（str, defaultValue）\n- QL_timestampComparator: 判断当前时间是否在指定时间戳范围内\n【AB测试】\n- QL_abTest: AB实验分流，返回命中的实验桶标识（experiment）\n- QL_batchAbTest: 批量执行多个AB实验\n【数据处理】\n- IDs_fromString: 从字符串解析ID对象，支持商品/类目/供应商/公司/国家（ids）【重要】\n- QL_mergeList: 合并两个列表（aim主列表, tail尾部项）\n- QL_subList: 截取列表子集（base, from, to）\n【国际化】\n- QL_medusa: 美杜莎翻译，获取国际化文案（key）【所有文案必须使用】\n- QL_countryFlag: 获取国家国旗链接（country）\n【数据脱敏】\n- QL_desensitization: 数字脱敏，末位补0（value）\n【输出与重命名】\n- TQL_output: 输出固定对象，包括布尔值、数字、数组、对象（object）\n- 字段重命名: 使用GraphQL别名 或 @hide指令隐藏原字段\n]]>\n</\nTQLFunctions\n>\n使用示例\n至于示例部分，虽然上面讲到了要给模型一些正例，但我非常不建议一上来就瞎给模型一堆示例，先让模型发挥，在后续调试过程中，对模型容易出错的部分，直接给出正确引导。\n比如我一开始遇到模型总是将请求参数硬编码在脚本中，没有抽离成查询参数，我就给了这样的示例：\n<rule>\n<title>参数分离原则</title>\n<content>\n建议将 GraphQL 请求的参数单独放在 variables\n中，但要以实际需求为主。如果用户明确要求将参数写死在脚本中，或者参数是固定的常量值，可以直接写在脚本中。\n当需要参数分离时：\n- 脚本中使用变量定义（\n$variableName\n） - 参数值通过 editVariables 工具设置到\nvariables 中\n- 使用 editScript 和 editVariables 两个工具分别更新脚本和变量 示例（参数分离）：\n脚本：query(\n$userId\n: String!) { user(\nid\n:\n$userId\n) { name } }\n参数：variables：{\n\"userId\"\n:\n\"12345\"\n}\n这样做的好处：脚本可复用，参数和逻辑分离，便于维护和调试。\n</content>\n</rule>\n类似的例子很多，不再展开讲，还是那句话，建议全文背诵\nAn\nthropic 官方的优化教程\n[2]\n，有的技巧可能初识的时候不以为然也不要紧，但是当你遇到真正问题的时候，就能快速联想到，让你少走弯路。\n知识库建设\n紧接上文，系统提示词给了部分私域知识片段后，TQL 的详细用法（全局指令、函数）、服务端内部可用的查询接口字段、线上运行中的成熟脚本等等海量的知识，不可能一次性交给模型，Rag 目前最成熟的知识管理方式。小 D 的知识库主要分为下面三大类：\n线上热门脚本\n通过对线上脚本调用量监控的采集，提取出了 top 100 的脚本。然后分别用 qwen 的小大模型，对脚本做一个初步的理解（wiki），生成一份格式化的文档，帮助模型快速理解脚本含义，简单示例：\nRag 的分片策略很大程度上直接影响了召回的质量。\n所以我预先对脚本做了切分，每个脚本独立一个文档，再直接导入到 kbase（内部 Rag 平台） 中使用。\n（kbase 是 aone 工程团队自建的知识库平台，支持嵌入和通过 mcp 召回知识）\n系统内置字段\n包括 TQL & ICBU 在 GraphQL 上扩展的 TQL 指令、全局函数，以及服务端的领域模型字段。GraphQL 是一门支持自省的语言，（服务端用注解标注了这些字段，所以上述信息都可以被扫描出来）。然而这几年的膨胀，自省的内容已经长达 600w+ 字符。为了让 Rag 的召回效果好，对数据做了大量的清洗工具，包括：\n扫描出全局指令、全局函数、领域模型的全集，然后和线上脚本进行匹配，只保留高频（出现 3 次以上）使用的部分，语义相似的内容，人工介入做区分；功能相同语义不通的部分，选择性保留。\n剔除标注废弃的内容。\n和热门脚本一样，预先对文档对拆分，全局指令、函数独立文档，内置领域模型适当合并。\n清洗的过程非常耗时，需要有细心且耐心，可以借助 cc 的 skills ，帮你写脚本处理数据。\n系统内置字段也可用文档管理，方便导入到 Rag 中。\n服务端代码理解\n上述梳理出来的知识更多是结果，为了帮助模型从源头理解字段背后的含义，TQL 对应的服务端源码也是很好的输入。这部分已经有成熟能力可以直接使用了，如内部 code 平台的 search 工具，还有内部的 deepwiki 平台。由于此前已经在 deepwiki 上解析过服务端应用（winterfell）的源码，且实测下来其 codebase 效果比较理想（不是拉踩哈，建议自行实践），所以选择了它提供的能力做代码片段召回。（据说是因为 deepwiki 使用了 openai 最好的文本嵌入模型。）\n工具接入\n回过头再来看看 Agent 的工具设计，分为两部分，本地工具和远程（MCP ）工具：\n远程（MCP）工具：\nkbase 的 mcp server\ndeepwiki 的 mcp server\n远程工具主要用来召回上文知识库建设的内容，由于其提供的工具比较全，而我实际只会用到其中的部分，所以在系统中设计了\n白名单机制，只加载白名单内的工具，还是那句话节约上下文，保护注意力。\nbtw，mcp 的鉴权认证需要自行参考官方文档，不做赘述。\n本地工具\n编辑脚本（editScript）\n功能\n：\n编辑/更新 GraphQL 脚本内容\n输入\n：\nscript\n(string) - 完整的 GraphQL 脚本代码\n输出\n：\n返回更新状态\n编辑变量（editVariables）\n功能\n：\n编辑/更新 GraphQL 请求变量（mock 参数）\n输入\n：\nvariables\n(string) - 完整的 variables JSON 字符串\n输出\n：\n返回更新状态\n执行脚本（executeScript）\n空方法，用于引导模型择机执行 GraphQL 脚本，实际的实现在前端宿主页面上。\n验证结果（validateResult）\n功能\n：\n验证 GraphQL 脚本的执行结果\n输入\n：\nprompt\n(string) - 验证要求描述\ncurrentScript\n(string, optional) - 当前脚本\ncurrentVariables\n(string, optional) - 当前变量\n执行结果通过闭包注入（不在参数中传递）\n输出\n：\n返回结构化验证结果（passed、summary、problems、suggestions、needMoreContext、contextQueries 等）\n工具调用链路\n注册注册到 Agent 中后，常规的工具调用链路如下：\n服务端内部的工具调用比较好理解，但服务端的工具调用是怎么触发前端 UI 侧的工具调用呢？\n比如 Agent 在调用【执行脚本】的方法时，本质上还需要前端页面响应，点击执行按钮后，然后把执行结果回传给 Agent，Agent再继续处理。\n聪明的你肯定想到了：前后端用全双工通信，维护一个长连接，服务端调用 runScript 时，实际上什么也不做，就等待前台页面执行完工具后，将结果传回服务端，服务端再继续后续的状态流转链路。\n是的，确实如此，很多带 GUI 的工具也确实是这么处理的（在 LangGraph 中称之为中断，也就是人们常说的 HITL（human in the loop））\n遗憾的是，Faas 的设计之初是不支持长连接的：\ndef 上函数能设置的最长保活时间是 300s（默认 50s）。\n所以我们肯定得曲线救国了～ 允许我先卖个关子\n😁\n上下文管理\n其实有了上面能力建设，现在已经有了一个可以帮助用户编写脚本，执行，验证的智能体了，但是面临两个非常现实的问题：\n1. 模型本身不支持连续对话，会话需要自己做持久化管理\n2. 尽管在前期做了大量节约上下文窗口的优化工作，但真正要处理一个复杂脚本的时候，模型上下文窗口会快速膨胀，导致模型注意力变得稀疏，出现幻觉，准确率下降，用户体验下降。\n一轮简单的对话，只要包含工具调用，就会耗掉 1/4 （5w）的 token。因为在默认的设计中，每个节点的返回消息，都是默认拼接到 LLM 消息列表中的。\n连续对话\n先来处理简单的，连续对话实现非常简单。也可以参考 LangGraph\ncheckpoint\n[5]\n的设计，可以从任意节点重新开始。BFF Agent 暂时没用到这个能力。\n在用户开始一次新对话时，创建一个 sessionId，用来记录存储消息列表，在消息列表每次发生变化的时候，持久化存储起来（这里我用的 tair），用户有新输入时，直接 sessionId 记录的历史消息列表做拼接，合并发给大模型，就可以实现连续对话了。\nUI 工具是如何调用的\n在支持连续对话的基础上，就有了一个非常巧妙的设计\n1. Agent 的接口设置为 SSE 的方式，服务端在收到请求后，流式向前端推送分片消息，同时，将每轮消息持久化存储起来。（SSE 的方式只支持服务端单向给客户端推送消息）\n2. 当调用到需要前台 UI 响应的工具时，在把工具调用信息输出给前端后，直接退出 LangGraph 的状态流转，结束此次请求。\n是的，直接结束\n。\n3. 前端特殊处理该类工具调用后，（含 diff 脚本，接受或拒绝 Agent 的修改，执行脚本等），增加一条\n隐藏消息\n（如：【脚本执行成功，结果是xxx，请继续处理】）重新调用 Agent 的流式接口，接口内部取出之前持久化的消息内容，拼接上隐藏消息，从头开始初始化 AgentGraph 的调用。\n用户在前台看到的：\n实际上发送给模型的：\n至此，就实现一个可以自己执行、验证、修复、再执行的智能体。\n对应的，会话中断恢复也就不难处理了，因为在服务端完整缓存了会话内容，中断后，只需要发送新消息，接口内部就自动拼接上之前的会话，重新走进 Agent 的状态流转。\n会话压缩\n解决了连续对话的问题，上下文超长的问题怎么办呢？\n现在答案是\n压缩\n，只保留摘要信息。（不知道以后模型是否可以自行处理～）\n压缩工具响应结果\n既然调用外部工具如此废 token，那么如果先将工具的调用结果缓存起来，再用一个工具函数去精准检索内容，并只把检索后的内容放到消息列表中，就能极大的缓解问题了。\n于是，我在 Agent 内部增加了工具结果缓存 + 检索详情的 tool （summaryToolResult)，在工具调用结束后，增加如下机制：\n当然，summaryToolResult 的任务非常明确，普通的模型也有不错的据实回答问题的能力，所以这里选择更轻量的 Qwen 模型做检索召回，还能省不少钱～\n为了尽可能让 summaryToolResult 在回答时结构化且保留原始信息，我对工具的提示词作了优化，使用 xml 格式响应。\n是的，还是 anthropic 优化提示词的那一招。\n<?xml version=\n\"1.0\"\nencoding=\n\"UTF-8\"\n?>\n<\nprompt\n>\n<\nrole\n>\n你是一个数据提取助手。你的任务是从给定的工具调用结果中，根据用户的查询需求，提取并返回相关的事实信息。\n</\nrole\n>\n<\nextractionRules\n>\n<\nrule\n>\n只返回与查询高度相关的事实信息\n</\nrule\n>\n<\nrule\n>\n保持信息的准确性，不要编造内容\n</\nrule\n>\n<\nrule\n>\n如果找不到相关信息，明确说明\n</\nrule\n>\n</\nextractionRules\n>\n<\nspecialRules\n>\n<\ndescription\n>\n当提取的内容涉及以下类型的功能说明时，必须使用对应的 XML 结构详细输出完整的用法信息：\n</\ndescription\n>\n<\nfeatureType\nname\n=\n\"全局函数\"\n>\n<\nxmlTemplate\n>\n<![CDATA[\n<function>\n<name>函数名称</name>\n<description>函数功能说明</description>\n<parameters>\n<param required=\"true/false\">\n<name>参数名</name>\n<type>参数类型</type>\n<default>默认值（如有）</default>\n<description>参数说明</description>\n</param>\n<!-- 更多参数... -->\n</parameters>\n<returns>\n<type>返回值类型</type>\n<description>返回值说明</description>\n</returns>\n<example>使用示例代码</example>\n</function>\n]]>\n</\nxmlTemplate\n>\n</\nfeatureType\n>\n<\nfeatureType\nname\n=\n\"领域模型字段\"\n>\n<\nxmlTemplate\n>\n<![CDATA[\n<field>\n<name>字段名称</name>\n<type>字段类型（标量/复合）</type>\n<description>字段描述</description>\n<arguments>\n<arg required=\"true/false\">\n<name>参数名</name>\n<type>参数类型</type>\n<default>默认值（如有）</default>\n<description>参数说明</description>\n</arg>\n<!-- 更多参数... -->\n</arguments>\n<subFields>\n<subField>\n<name>子字段名</name>\n<type>子字段类型</type>\n<description>子字段说明</description>\n</subField>\n<!-- 更多子字段... -->\n</subFields>\n<example>使用示例代码</example>\n</field>\n]]>\n</\nxmlTemplate\n>\n</\nfeatureType\n>\n<\nfeatureType\nname\n=\n\"内置指令\"\n>\n<\nxmlTemplate\n>\n<![CDATA[\n<directive>\n<name>@指令名称</name>\n<description>指令功能说明</description>\n<locations>\n<location>FIELD</location>\n<location>QUERY</location>\n<!-- 可应用的位置：FIELD, QUERY, FRAGMENT_SPREAD, INLINE_FRAGMENT 等 -->\n</locations>\n<arguments>\n<arg required=\"true/false\">\n<name>参数名</name>\n<type>参数类型</type>\n<default>默认值（如有）</default>\n<description>参数说明</description>\n</arg>\n<!-- 更多参数... -->\n</arguments>\n<notes>\n<note>注意事项或限制</note>\n<!-- 更多注意事项... -->\n</notes>\n<example>使用示例代码</example>\n</directive>\n]]>\n</\nxmlTemplate\n>\n</\nfeatureType\n>\n<\nfeatureType\nname\n=\n\"自定义标量类型\"\n>\n<\nxmlTemplate\n>\n<![CDATA[\n<scalarType>\n<name>类型名称</name>\n<description>类型说明</description>\n<format>取值范围或格式要求</format>\n<example>使用示例</example>\n</scalarType>\n]]>\n</\nxmlTemplate\n>\n</\nfeatureType\n>\n</\nspecialRules\n>\n<\noutputFormat\n>\n<\nrule\n>\n涉及功能用法时，必须使用上述对应的 XML 结构输出\n</\nrule\n>\n<\nrule\n>\n可以在 XML 结构前后添加简要的文字说明\n</\nrule\n>\n<\nrule\n>\n如果有多个同类型功能，每个功能使用独立的 XML 块\n</\nrule\n>\n<\nrule\n>\nXML 中的示例代码直接写入 example 标签内\n</\nrule\n>\n<\nrule\n>\n如果某个字段没有值，可以省略该标签或留空\n</\nrule\n>\n</\noutputFormat\n>\n<\noutputHint\n>\n如果查询内容不涉及上述特殊功能类型，则按照常规方式简洁输出关键信息，无需使用 XML 格式。\n</\noutputHint\n>\n</\nprompt\n>\n这样 qwen 模型也能高质量输出结构化的信息，工具输出示例，包含具体字段的名称、描述、类型、出入参数等：\n<\nfield\n>\n<\nname\n>\nfreight\n</\nname\n>\n<\ntype\n>\n复合类型\n</\ntype\n>\n<\ndescription\n>\n物流模型\n</\ndescription\n>\n<\narguments\n>\n<\narg\nrequired\n=\n\\\n\"\nfalse\n\\\">\n<\nname\n>\ndispatchCountryCode\n</\nname\n>\n<\ntype\n>\nString\n</\ntype\n>\n<\ndescription\n>\n发货地代码\n</\ndescription\n>\n</\narg\n>\n<\narg\nrequired\n=\n\\\n\"\nfalse\n\\\">\n<\nname\n>\nneedAlibabaGuaranteed\n</\nname\n>\n<\ntype\n>\nBoolean\n</\ntype\n>\n<\ndescription\n>\n是否返回半托管物流信息，false不返回，null 或 true均返回\n</\ndescription\n>\n</\narg\n>\n<\narg\nrequired\n=\n\\\n\"\nfalse\n\\\">\n<\nname\n>\nmoqType\n</\nname\n>\n<\ntype\n>\nString\n</\ntype\n>\n<\ndescription\n>\nMOQ档位，实验推全，全部第一档 first\n</\ndescription\n>\n</\narg\n>\n</\narguments\n>\n</\nfield\n>\n对工具响应做优化后，同样一个问题，主 Agent 的上下文窗口占用只需要花不到原来 1/10 的 token 就能解决问题了。（从 5w 下降到 4k）\n上下文压缩\n但即便是对工具响应进行了压缩，也还是会有窗口超限的问题，为什么 cursor 、cc 等产品好像从来没给用户暴露过这类问题呢？\nGitHub 上有个 cc 的逆向工程，秘密就藏在上下文自动压缩的机制里\nClaude-Code-Reverse\n[6]\n。\n比较靠谱的说法是，有两个触发自动压缩的时机：\n1. 上下文窗口即将超限。（据传 cc 是窗口超过 82% 时触发自动压缩）\n2. 新对话与历史对话毫无关联。\n因为当前场景，Agent 的负担还算比较轻，所以我只选择了第一种压缩机制，就足够用了。\n因为上下文压缩实际上是有损的，一旦触发压缩，Agent 就似乎忘记了之前的任务，所以 CC 在压缩的时候非常的谨慎：\n所以 BFF Agent 也直接复用了这份提示词做压缩。在这个基础之上，为了使用户近期的对话被完整保留，避免一旦压缩节点就瞬间遗忘的现象，压缩时我默认会完整保留自用户近 3 轮开始对话后的消息列表。\n最终的线上配置为：\n{\nenabled\n:\ntrue\n,\n// 启用压缩\ndangerThreshold\n:\n80\n,\n// 1-100 当上下文窗口使用超过 80% 时触发压缩\nkeepRecentRounds\n:\n3\n,\n// 保留最近 3 轮用户对话开始之后的消息不被压缩\n}\n消息压缩图示：\n到这里，基础的优化工作就基本结束了，后续更多的优化工作，就需要采集用户的 bad case ，再不断优化提示词/工具/知识库。文章有点长，对熟练的同学来说有很多废话，但还是希望能帮助到大家～\n材料链接：\nAnthropic 的提示词优化技巧：\nhttps://platform.claude.com/docs/zh-CN/build-with-claude/prompt-engineering/overview\n模型的自省现象：\nhttps://www.anthropic.com/research/introspection\nCC 逆向工程：\nhttps://github.com/Yuyz0112/claude-code-reverse\n参考链接：\n[1]\nhttps://docs.langchain.com/oss/javascript/langgraph/overview\n[2]\nhttps://platform.claude.com/docs/zh-CN/build-with-claude/prompt-engineering/overview\n[3]\nhttps://platform.claude.com/docs/zh-CN/build-with-claude/prompt-engineering/use-xml-tags\n#xml\n[4]\nhttps://www.anthropic.com/research/introspection\n[5]\nhttps://docs.langchain.com/oss/javascript/langgraph/use-time-travel\n#2\n-identify-a-checkpoint\n[6]\nhttps://github.com/Yuyz0112/claude-code-reverse\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

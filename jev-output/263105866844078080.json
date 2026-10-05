@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "263105866844078080",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Ingress Nginx已退役，Higress如何平滑替代",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509228&idx=1&sn=4476daa440189938b650711128ac5225",
+      "date": "2026-04-03T10:03:00.572Z",
+      "chars": 2254,
+      "text": "Higress\n2026-04-03 18:03\n浙江\nHigress加入CNCF\n近期，\nHigress已正式通过TOC投票表决，加入云原生计算基金会（CNCF）Sandbox项目，成为CNCF生态的一员\n。\n01\nHigress是什么？\nHigress是一款基于Envoy和Istio构建的AI原生、高性能API网关。它将流量网关、微服务网关与AI网关统一于单一控制面，降低云原生与AI工作负载的运维复杂度。\nHigress诞生于阿里巴巴内部大规模生产实践，为CNCF生态带来企业级稳定性与WebAssembly（Wasm）扩展能力。\n目前，其核心能力聚焦\n两大方向\n：\nIngress Controller与Gateway能力：\nHigress是成熟的Kubernetes Ingress Controller，同时完整支持GatewayAPI及其Inference Extension。随着Nginx Ingress计划于2026年退役，Higress可作为安全、即插即用的替代方案——兼容主流Nginx Ingress注解，以xDS控制面与Wasm沙箱替代脆弱的配置注入模式，消除传统架构中的安全风险。无论是继续使用Ingress还是迁移至Gateway API，Higress均提供统一、可扩展的流量治理能力。\nAI原生网关能力：\nHigress将AI流量视为一等公民，原生支持LLM调用、Model Context Protocol（MCP）及AI推理场景，提供基于Token的限流、多模型Fallback、RAG检索、模型感知路由与智能负载均衡等能力，标准化云原生应用消费大语言模型的方式，使Higress成为AI Agent与LLM流量的标准入口。\n02\nHigress企业案例\n目前，Higress已在多种不同的环境中展现出了足以投入生产的可靠性，企业采用者包括\n阿里巴巴集团、蚂蚁集团、携程、大疆创新、国泰产险、唯品会、Boss 直聘、快手、Sealos\n等，覆盖互联网、金融、旅游出行、硬件、娱乐、创新企业等多个行业和领域。\n这些企业既使用了Higress云原生网关的能力，也将其AI网关能力部署到企业Agent应用或MCP服务上。\n此外，在Higress的基础上，还延伸出诸多AI相关的创新开源项目，包括HiMarket、HiClaw等。\n03\n为什么申请加入CNCF？\n事实上，Higress加入云原生计算基金会（CNCF），是其发展进程中的关键一步，主要源于以下三方面的考量：\n首先，CNCF汇聚了包括Kubernetes、Envoy等在内的众多核心开源项目。Higress基于Envoy和Istio构建，其技术基因与云原生环境天然契合。\n成为CNCF的一员，意味着Higress能够更深入地与这些顶级项目协作，共同定义技术标准，确保其在云原生架构中的兼容性和领先地位。\n其次，开源项目的长期健康发展依赖于一个\n多元且活跃的贡献者社区\n。\n依托CNCF的中立地位和成熟的治理框架，Higress可以吸引更多来自不同组织的开发者、用户和企业参与贡献，避免项目发展受单一厂商意志的影响。这种开放的社区模式将加速技术创新，使Higress能够更敏捷地响应全球用户不断演进的需求。\n最后，加入CNCF还有助于推动\nAI网关技术的标准化和普及\n。\n随着AI应用的爆发，市场迫切需要专门针对AI场景优化的基础设施。Higress凭借其在AI代理（Agent）、多模型统一管理等方面的领先实践，有望在CNCF的平台上推动AI网关相关标准的建立。\n04\n后续规划：长期兼容与生态共建\n展望未来，该项目将围绕两大核心方向持续演进。\n一是长期兼容Ingress，\n支持完善的Gateway API及其Inference Extension，同时提供完善的Nginx Ingress迁移方案：持续支持并兼容Ingress与Nginx Ingress注解，与Gateway API双栈共存；强化对Gateway API及Inference Extension核心版本与能力的适配与稳定供给，为云原生网络与AI应用提供可持续的开源基础设施选择；提供完善的Ingress迁移方案，无论用户选择迁移至Gateway API还是继续使用Ingress，均能获得平滑、可落地的迁移路径。\n二是持续推进AI能力建设，\n深化对Model Context Protocol（MCP）的支持，使Higress成为AI Agent与LLM流量的标准入口；引入「Higress Agent」实现自主流量治理；支持AI场景的实时通信需求；构建Skill渐进式披露与安全管理能力；持续完善基于Token的限流、多模型Fallback、智能负载均衡等AI原生能力。\n05\nSandbox只是起点\n加入CNCF Sandbox是起点，而非终点。\n后续，Higress社区将持续投入治理、文档与社区建设。接下来我们将继续向CNCF Incubation（孵化）阶段迈进。\n感谢CNCF技术监督委员会、更广泛的云原生社区，以及所有支持Higress的贡献者与采用方；期待与CNCF生态携手共建安全、可扩展、AI友好的云原生基础设施。\n预告：Higress将参与KubeCon EU 2026，分享Higress未来的详细规划。Gateway as a Service。\n*了解更多:\nhigress.ai\n|\nGitHub\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "peripheral": 0.26,
+        "irrelevant": 0.68,
+        "transfer_business": 0,
+        "transfer_agent": 0.05,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.49,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.21,
+        "2": 0.64,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.22,
+      "probabilities": {
+        "0": 0.8,
+        "1": 0.19,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.1,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.97,
+        "2": 0.02,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.62,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.22,
+        "2": 0.42,
+        "3": 0.16,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.25,
+      "probabilities": {
+        "0": 0.78,
+        "1": 0.19,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3562,
+    "outputTokens": 173,
+    "totalTokens": 3735
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.6,
+        "relevance": 0.66,
+        "grounding": 0.85,
+        "decision_action": 0.93,
+        "evidence": 0.98,
+        "actionability": 0.49,
+        "anti_hype": 0.83
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179808169,
+                "endTime": 1791179808429,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000149604",
+      "marketCost": "0.000149604",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000149604",
+      "inferenceCost": "0.000149604",
+      "inputInferenceCost": "0.000149604",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5QC4V96SP52127DYQAKK"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:48 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::kbftk-1791179808124-cdce866767bc"
+    },
+    "body": {
+      "answers": {
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        },
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "peripheral": 0.26,
+            "irrelevant": 0.68,
+            "transfer_business": 0,
+            "transfer_agent": 0.05,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.49,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.21,
+            "2": 0.64,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.22,
+          "probabilities": {
+            "0": 0.8,
+            "1": 0.19,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.1,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.97,
+            "2": 0.02,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.62,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.22,
+            "2": 0.42,
+            "3": 0.16,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.25,
+          "probabilities": {
+            "0": 0.78,
+            "1": 0.19,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3562,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.6,
+            "relevance": 0.66,
+            "grounding": 0.85,
+            "decision_action": 0.93,
+            "evidence": 0.98,
+            "actionability": 0.49,
+            "anti_hype": 0.83
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179808169,
+                    "endTime": 1791179808429,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000149604",
+          "marketCost": "0.000149604",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000149604",
+          "inferenceCost": "0.000149604",
+          "inputInferenceCost": "0.000149604",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5QC4V96SP52127DYQAKK"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:47.655Z"
+  }
+}

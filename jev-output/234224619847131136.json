@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "234224619847131136",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "火山引擎日志服务-AI时代的数据存储分析底座",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247517962&idx=1&sn=931e2c5cebbe272ce3ba186307a457a9",
+      "date": "2026-01-14T09:12:00.180Z",
+      "chars": 5360,
+      "text": "原创\n火山引擎存储\n2026-01-14 17:12\n北京\n引言\n火山引擎日志服务（TLS）是 Log、Trace、Metric、Event 等泛文本数据的一站式存储分析平台，包含采集、存储、检索分析、加工、消费、投递、监控告警、可视化等功能。围绕企业在云原生服务与 AI 时代的核心需求，日志服务 TLS 作为数据分析底座，已服务多种典型业务场景：\n运维可观测：\n统一采集存储各基础设施、网络、云产品、业务系统、应用程序、大模型、Agent 等各层面的 Log/Trace/Metric 观测数据，提升故障定位与问题排查效率。\n业务日志分析：\n打通系统 Log/Trace 数据与业务日志数据，用日志驱动运营分析与业务洞察，让日志系统从“成本中心”升级为“业务价值洞察源头”。\n统一数据管道：\n面向大数据/AI 数据湖场景，提供 Log/Metric/Trace 等泛文本类数据的统一采集、加工与消费/投递能力，顺畅对接 Flink、Spark、Kafka、对象存储、LAS 数据湖等下游系统。\n安全审计分析：\n支持跨账号/跨域的日志汇聚、分析与归档，并可与云审计、安全产品及第三方 SIEM（如 Splunk SIEM）集成，满足合规与安全审计需求。\n在 AI 浪潮的背景下，可观测数据正在成为支撑智能体应用迭代的关键基座。本文将以\n运维可观测场景\n为例，介绍在 AI 时代下，日志服务 TLS 如何提供统一的可观测数据存储与分析底座能力。\nAI 浪潮下的可观测新挑战\n随着以大语言模型（LLM）为代表的生成式 AI 技术席卷全球，企业正以前所未有的速度将 AI 融入核心业务流程。从智能客服、代码助手到复杂的业务决策支持，AI 应用的广度和深度都在急速扩张。然而，这场技术变革也带来了全新的挑战，尤其是在系统的“可观测性”层面。\n传统的可观测体系在面对大模型时显得力不从心。模型的复杂性、不确定性以及与业务场景的深度耦合，对观测数据的\n广度、深度和处理能力\n提出了严苛要求。企业决策者和开发者正面临三大核心痛点：\n痛点一：观测与评测链路割裂\nAI 应用的优化依赖于“数据飞轮”——即线上真实数据反哺模型进行迭代。然而，多数企业的现状是，应用观测（Observability）与模型评测（Evaluation）是两个独立的环节，数据无法顺畅回流形成闭环。这导致模型精调（Fine-tuning）缺乏高质量、场景化的真实数据集，迭代效率低下。\n痛点二：多模态数据观测缺失\n未来的 AI 应用必然是多模态的。除文本（Text）外，语音（Audio）、图像（Image）、视频（Video）等非结构化数据的处理与分析将成为常态。传统的日志、指标、链路（Logs, Metrics, Traces）“可观测性三件套”难以有效承载和分析这些多媒体数据，导致对多模态 AI 应用的观测存在巨大盲区。\n痛点三：数据安全与合规风险\nAI 应用（特别是面向 C 端用户的应用）处理着大量敏感数据。如何在整个数据生命周期（采集、传输、存储、分析、回流）确保数据的安全与合规，成为悬在每个企业头上的“达摩克利斯之剑”。全链路的数据加密、精细化的访问控制和可靠的密钥管理，是业务持续发展的生命线。\n面对这些挑战，构建一个能够适应 AI 时代的、统一且强大的可观测存储分析底座，已不再是“锦上添花”，而是决定 AI 战略成败的“关键基石”。\n火山引擎一体化可观测&评测方案\n为了帮助企业应对上述挑战，火山引擎提供了一套从底层存储到上层应用的一体化产品组合方案，其核心目标是打通观测与评测的“任督二脉”，驱动 AI 应用高效、安全地迭代。\n底座：数据存储分析基座 TLS\n日志服务 TLS 作为火山引擎 AI 时代数据存储分析底座的核心基石，它不仅支持 Log/Metric/Trace 三类传统可观测数据的统一存储、检索分析与 ETL 处理，还能管理多模态数据（如图片、音频、视频）的观测与关联分析；同时作为数据回流枢纽，可将清洗标注后的高质量数据安全高效地回流至模型训练平台，打通观测、评测、精调的全链路闭环，为 AI 应用的持续迭代提供核心数据支撑。此外，TLS 还通过端到端加密、精细化访问控制、动态脱敏等能力，保障数据全生命周期的安全合规。\n中间层：观测&评测层\n应用性能监控全链路版（APMPlus）负责采集 Agent 全生命周期运行、模型训练 / 推理全链路产生的可观测数据，并上报至日志服务 TLS 进行标准化存储与管理；Cozeloop 则聚焦于大模型的多维度评测与效果分析，依托 TLS 沉淀的高质量观测数据，对模型响应的准确性、业务相关性、合规性及用户满意度等核心维度展开效果评估。\n上层：Agent&模型\n➤\nAgent：\n用户可通过 Coze、AgentKit 等轻量化框架快速构建面向业务场景的 AI 应用，如智能代码助手、数据分析助手、多模态交互机器人等。\n➤\n模型：\n用户可依托火山引擎方舟平台（Maas 服务）完成模型精调，或通过 MLP 平台开展自定义模型训练，并基于训练后的模型进行在线推理。\n在 Agent 的全生命周期运行与模型的训练 / 推理过程中，会持续产生海量异构的可观测数据（包括传统的 Log/Metric/Trace，以及图片、音频等多模态数据）。这些数据是理解 AI 应用运行状态、诊断问题、优化模型效果的关键依据，也是构建 AI 应用 “数据飞轮” 不可或缺的核心要素。\n在这套体系中，\n日志服务 TLS 承担了三大关键角色：\n统一数据入口：\n打破数据孤岛，将分散在各处的、异构的观测数据统一存储分析。\n数据回流枢纽：\n作为数据闭环的核心，支撑观测数据安全、高效地回流至模型训练平台，为自动化评测和精调提供数据支撑。\n安全合规的保障：\n提供从端到端的加密、脱敏和访问控制能力，确保 AI 应用全生命周期的数据安全。\n日志服务 TLS：数据存储分析基座\n区别于传统日志系统，火山引擎日志服务 TLS 围绕 AI 应用的典型场景，构建了面向未来的差异化能力。它不再仅仅是“日志的终点”，更是“智能的起点”。\n统一存储分析：打破数据边界\n随着多模态模型与多模态 Agent 在智能交互、内容生成等场景的快速落地，其可观测性的内涵已从传统的 “文本日志追踪” 全面扩展至 “多模态数据全链路洞察”。多模态推理过程中产生的图片、音频、视频等流媒体数据，不再仅是辅助信息，而是直接成为排查问题、理解用户行为的核心依据。\n日志服务 TLS 支持Log/Metric/Trace 统一采集存储，并在Log/Metric/Trace中定义流媒体元数据格式。当开发者使用TLS分析多模态可观测数据时，TLS会自动识别流媒体、引导用户授权、展示流媒体数据，帮助开发者非常直观地分析流媒体数据，这意味着：\n问题排查更直观：\n当一个 AI 绘图应用出现异常时，开发者不仅能看到错误日志和调用链，还能直接在 TLS 中回溯生成的原始图片和用户指令，实现“像素级”诊断。\n用户行为分析更完整：\n对于一个语音交互机器人，可以将用户的音频、识别出的文本、模型的响应和用户的满意度评分作为一个整体进行分析，全面评估交互质量。\n打通观测、评测、精调：加速模型迭代\n模型效果的持续优化，依赖于真实、场景化的数据。日支服务 TLS 通过与火山方舟平台的深度集成，构建了从“观测”到“精调”的自动化数据闭环。\n整个流程如下：\n全场景观测数据采集：\n无论是火山方舟 Maas 应用实验室中的应用开发、MLP 平台上的模型训练/推理，还是基于 AgentKit 的智能体开发，所有环节产生的观测数据都被统一输送到 TLS。\n数据回流与数据集构建：\n通过 TLS 强大的检索分析、ETL能力，分析、清洗、标注、聚合原始数据，并回流形成高质量的数据集。\n对接评测：\n生成的数据集可对接 Cozeloop 等评测工具，针对模型响应的准确性、相关性、合规性、用户满意度等核心维度进行评估。\n对接模型精调：\n生成的数据集可以被火山方舟平台消费，用于模型的持续精调（Fine-tuning）。开发者无需在不同平台之间手动迁移和转换数据，极大提升了迭代效率。\n全链路安全可信：护航数据资产\n数据是 AI 时代的核心资产，其安全性至关重要。TLS 提供了覆盖数据全生命周期的安全保障体系。\nKMS 集成：\n支持与密钥管理服务（KMS）无缝集成，允许企业使用自己的密钥对存储在 TLS 中的数据进行加密，实现最高级别的数据掌控。\n全链路加密与脱敏：\n从 Agent 采集、数据传输、到最终存储，数据全程加密。同时，提供强大的数据脱敏能力，可在数据写入或查询时动态脱敏，有效保护用户隐私。\n精细化访问控制：\n提供日志主题级别的权限控制，确保不同角色（如开发者、运维、数据分析师）只能访问其职责所需的最少数据，有效防止数据泄露。\n强化学习轨迹分析：从 rollout 到评测闭环\n强化学习（Reinforcement Learning, RL）是提升大模型与人类价值观对齐的关键技术。其核心过程，即智能体（Agent）与环境的交互，被记录为“轨迹（Trajectory）”。通过轨迹分析不仅能监控训练过程、诊断问题，更能指导算法设计、提升策略可靠性，是连接 RL 理论研究与实际应用的关键桥梁。\n在典型的 RL 框架（如 GRPO/PPO）中，一个完整的迭代闭环通常包含以下步骤：\nRollout（展开/推演）：\n基于给定的 Prompt（环境状态），模型生成一系列响应（动作序列）。\n打分（Reward Modeling）：\n一个独立的奖励模型或人工评估者，为 Rollout 的结果打分，量化其质量。\n评测与学习：\n根据 Reward 分数，更新策略模型，使其在下一轮迭代中生成更高质量的响应。\n这个过程产生的轨迹数据，不仅包含了模型的完整输出，还包含了每一步的得分、耗时、状态等关键信息。日志服务 TLS 与火山方舟平台ServerlessRL深度集成，为这一复杂过程提供了开箱即用的轨迹分析能力。\n为了实现高效分析，TLS 与方舟平台定义了一套标准化的轨迹日志格式，其核心字段包括：\n轨迹与任务标识：\ntrajectory_id\n（单次 rollout 的唯一 ID）、\nmodel_customization_job\n（所属的精调任务信息）。\n过程与阶段：\nstep/phase\n（训练的步骤与阶段），\nstart_time/end_time\n（轨迹的起止时间）。\n交互内容：\nsample\n（输入的提示或样本）、\ncompletions\n（模型生成的多轮对话或完整响应）。\n评估与指标：\nreward\n（最终得分）、\nreward_details\n（各维度得分详情）、\nmetrics\n（系统与自定义指标，如耗时、响应长度等）。\n状态与错误：\nstatus\n（成功/失败/丢弃）、\nerror\n（失败时的具体原因）。\n基于这套方案，方舟平台的用户可以直接在精调任务的详情页中，获得由 TLS 驱动的内嵌式分析视图：\n轨迹列表与筛选：\n快速浏览当前任务下的所有轨迹，并支持按 Reward 分数、耗时 进行排序，或通过\ntrajectory_id\n精准搜索。\n轨迹详情时间线（Timeline）：\n点击任一轨迹，可深入查看其从\nsample\n输入、多轮\ncompletion\n生成，到最终\nreward\n打分的完整生命周期，快速定位问题环节。\n得分分布直方图：\n通过 Reward 分数的直方图，宏观掌握模型在当前数据集上的整体表现，识别效果边界。\n面向未来\n展望未来，日志服务 TLS 将继续围绕 AI 时代的业务需求，在三个方向上深化其能力：\n内置向量索引与分析能力：\n随着模型的普及，基于向量的相似度搜索将成为核心分析手段。TLS将支持原生向量索引，使开发者能直接在观测数据上进行语义搜索、异常检测和聚类分析，例如快速找到所有“用户不满意的对话”或“风格相似的回答”。\n正式推出多模态观测方案：\n将内部成熟的多模态数据支持能力产品化，为公有云客户提供开箱即用的多模态观测解决方案，覆盖从采集、存储、关联分析到可视化的全链路。\n探索智能化分析（AIOps）：\n在海量观测数据的基础上，利用机器学习算法自动发现异常、定位根因、预测风险，将可观测性从“被动查询”升级为“主动洞察”，进一步解放生产力。\n在 AI 定义软件的时代，可观测性体系的演进是必然趋势。火山引擎日志服务 TLS 正致力于成为这个时代最值得信赖的存储分析底座，帮助企业构筑坚实的数据驱动力，在激烈的市场竞争中占得先机。\n本文聚焦于\n运维可观测场景\n进行展开，以期帮助读者更直观地理解日志服务 TLS 在 AI 时代中的能力与价值。后续，我们还将围绕\n业务日志运营分析、统一数据管道、安全审计分析\n等更多场景陆续推出系列文章，系统介绍 TLS数据分析底座，  在不同业务场景下，如何服务AI时代的业务需求 及 将AI与数据分析结合的最佳实践与落地经验。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "peripheral": 0.21,
+        "transfer_agent": 0.31,
+        "irrelevant": 0.47,
+        "direct_local": 0,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.8,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.17,
+        "2": 0.78,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.65,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.35,
+        "2": 0.33,
+        "3": 0.2,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.99,
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.07,
+        "2": 0.27,
+        "3": 0.06,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.35,
+      "probabilities": {
+        "0": 0,
+        "1": 0.65,
+        "2": 0.35,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.38,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.12,
+        "2": 0.39,
+        "3": 0.32,
+        "4": 0.13,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.33,
+      "probabilities": {
+        "0": 0.72,
+        "1": 0.24,
+        "2": 0.04,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6660,
+    "outputTokens": 173,
+    "totalTokens": 6833
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.34,
+        "relevance": 0.84,
+        "grounding": 0.42,
+        "decision_action": 0.34,
+        "evidence": 0.76,
+        "actionability": 0.47,
+        "anti_hype": 0.78
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179939529,
+                "endTime": 1791179939708,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00027972",
+      "marketCost": "0.00027972",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00027972",
+      "inferenceCost": "0.00027972",
+      "inputInferenceCost": "0.00027972",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9QNRQCDQAE204X4JBJR1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:59 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::lplml-1791179939479-0120aec1f9d2"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "peripheral": 0.21,
+            "transfer_agent": 0.31,
+            "irrelevant": 0.47,
+            "direct_local": 0,
+            "transfer_business": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.8,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.17,
+            "2": 0.78,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.65,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.35,
+            "2": 0.33,
+            "3": 0.2,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.99,
+          "probabilities": {
+            "0": 0.55,
+            "1": 0.07,
+            "2": 0.27,
+            "3": 0.06,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.35,
+          "probabilities": {
+            "0": 0,
+            "1": 0.65,
+            "2": 0.35,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.38,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.12,
+            "2": 0.39,
+            "3": 0.32,
+            "4": 0.13,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.33,
+          "probabilities": {
+            "0": 0.72,
+            "1": 0.24,
+            "2": 0.04,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6660,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.34,
+            "relevance": 0.84,
+            "grounding": 0.42,
+            "decision_action": 0.34,
+            "evidence": 0.76,
+            "actionability": 0.47,
+            "anti_hype": 0.78
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179939529,
+                    "endTime": 1791179939708,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00027972",
+          "marketCost": "0.00027972",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00027972",
+          "inferenceCost": "0.00027972",
+          "inputInferenceCost": "0.00027972",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9QNRQCDQAE204X4JBJR1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:58.944Z"
+  }
+}

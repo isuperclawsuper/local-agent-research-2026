@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1205354710559653888",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "真武 AI 芯片 T-Head SAIL® 软件栈正式开源开放",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510380&idx=1&sn=f7d2327132fef5bdb38d1639cb652337",
+      "date": "2026-07-18T04:40:00.280Z",
+      "chars": 2029,
+      "text": "平头哥半导体\n2026-07-18 12:40\n浙江\n平头哥开发者社区网站现已上线\n今天，真武AI芯片软件栈 T-Head SAIL\n®\n正式开源，\n向全球开发者开放高效、开放的AI算力基础设施核心能力。\n作为自主算力新标杆，真武AI芯片凭借卓越算力与数据中心系统级全栈协同生态，高效助力将AI算力落地为生产力，为千行百业的智能化进程注入动能\n。\nT-Head SAIL 是平头哥为真武系列 AI 芯片打造的软件栈，拥有自主知识产权、全面兼容主流 AI 生态。软件栈覆盖 OS 层、SDK 层与接口层的完整链路——向下释放真武硬件算力，向上承接上层应用需求。\n截至今年4月，真武 AI 芯片已累计出货56万片，服务20多个行业400多家客户。\n真武 AI 芯片及 T-Head SAIL 软件栈已在阿里云及多家头部客户的真实生产环境中历经深度打磨，扛过大规模流量、复杂场景以及严苛 SLA 的多重考验。\n今天，这套经过严苛生产验证的 T-Head SAIL 软件栈方案将面向整个开发者社区开放。\nT-Head SAIL 软件栈 - 真武AI芯片开发完整基座\n从底层驱动到上层工具，T-Head SAIL软件栈由五层完整的技术栈组成，致力为开发者提供完整、可靠、开箱即用的开发体验。\n1.Driver与Runtime层\n：\nPPU Driver分为内核态的KMD与用户态的UMD，配合PPU Runtime提供统一的设备管理和内存管理接口。\n2.编程语言层\n：\n完整支持C/C++与Python，开发者无需学习新的语言或编程范式，支持现有代码资产平滑迁移。\n3.编译器层\n：\n包含Compiler与Debugger两大组件，构建完整的开发闭环。\n4.高性能库层\n：\n全面覆盖主流计算需求，\n为各类计算场景提供对应的高性能实现。\n计算库涵盖acBLAS、acDNN、acFFT、acRAND、acSOLVER、acSPARSE六大核心数学库，\n为大模型训练与推理提供支撑\n；\n编解码库覆盖HGDEC、HGENC、HGJPEG与HGPP\n，满足多模态数据处理的高吞吐需求\n；\n集合通信库包含PCCL与sailSHMEM，\n专为多卡、多机分布式训练设计，助力突破通信瓶颈\n；\n此外配备acext扩展库与HGML机器学习库，\n拓展丰富功能边界。\n5.开发者工具层\n：\n丰富相应配套工具\n，赋能从单卡调试到千卡运维的全链路掌控。\nAsight Compute支持算子级精细性能分析，帮助定位微观瓶颈；\nAsight Systems面向系统级全栈Profiling，提供宏观视角；\nPPU-SMI实现设备实时监控与管理；\nPPU-DCGM支撑集群级别的资源智能调度。\n面向开发者体验的软件栈\n从第一行代码的创建开始，T-Head SAIL的建设始终秉持“以开发者体验为中心”的核心理念。\n通过零代码修改迁移、同频生态适配与全量框架覆盖三大核心能力，T-Head SAIL助力开发者实现三大“无需妥协”，致力于将开发过程中的效率提升与成本节约转化为可量化、可感知的业务增长。\n无需重写代码，让既有资产无缝延续\nT-Head SAIL兼容主流AI生态，主流模型即开即用，算子库完整对标，主流编程模型高度兼容。开发者过去积累的经验、代码、调优技巧，在 T-Head SAIL上都能直接复用，业务迁移仅需极少量代码适配修改、平滑顺畅。\n无需等待适配，与前沿生态同频演进\nAI技术迭代日新月异，平头哥自研推理引擎提供开箱即用的生产级性能，同时T-Head SAIL已完善建立与主流社区同频的响应机制，框架跟进、新模型适配速度迅捷极速。目前主流AI推理框架，T-Head SAIL平均适配时间<7天，开发者无需额外适配和调优，即可使用前沿最新的算子、特性与优化手段。\n无需绑定框架平台，为开发提供灵活选择\nT-Head SAIL 已全面适配PyTorch、TensorFlow、vLLM、SGLang等260余个主流训练与推理框架，开发者获取源码后即可直接编译运行，无需额外适配。T-Head SAIL支持按需灵活选用工具链，不绑定任何特定技术路线，保障技术选型的自主与开放。\n智算无界，共行致远\n平头哥开发者社区网站现已上线，汇聚 T-Head SAIL 全栈技术文档，\n提供 SDK 软件包、内核驱动、性能分析和调试工具\n下载，为开发者提供一站式服务。\n社区地址：\nhttps://developer.t-head.cn/home\n在即将推进的二期建设中，通信库相关软件、v2.2版本Docker与PIP源将开源开放，同时开发者社区网站将上线开发者论坛板块，搭建起真武与社区、开发者与开发者之间的常态化交流平台；三期将进一步开源计算加速库和推理引擎软件，并开放v2.3版本Docker与PIP源。未来，还将有更多更新与社区活动上线，敬请关注。\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "transfer_agent": 0.01,
+        "transfer_business": 0,
+        "irrelevant": 0.46,
+        "peripheral": 0.53,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 0.73,
+      "probabilities": {
+        "0": 0.51,
+        "1": 0.26,
+        "2": 0.23,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.17,
+      "probabilities": {
+        "0": 0.84,
+        "1": 0.16,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.01,
+      "probabilities": {
+        "0": 0.99,
+        "1": 0.01,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.08,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.89,
+        "2": 0.09,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.37,
+      "probabilities": {
+        "0": 0.38,
+        "1": 0.2,
+        "2": 0.18,
+        "3": 0.13,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.04,
+      "probabilities": {
+        "0": 0.97,
+        "1": 0.03,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.86,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3607,
+    "outputTokens": 174,
+    "totalTokens": 3781
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.42,
+        "relevance": 0.52,
+        "grounding": 0.89,
+        "decision_action": 0.99,
+        "evidence": 0.93,
+        "actionability": 0.09,
+        "anti_hype": 0.97
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179795610,
+                "endTime": 1791179795738,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000151494",
+      "marketCost": "0.000151494",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000151494",
+      "inferenceCost": "0.000151494",
+      "inputInferenceCost": "0.000151494",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5B43Y7CFYGXYRY5QX3MR"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:35 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::czh42-1791179795575-04fe1dd9ddeb"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "transfer_agent": 0.01,
+            "transfer_business": 0,
+            "irrelevant": 0.46,
+            "peripheral": 0.53,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.73,
+          "probabilities": {
+            "0": 0.51,
+            "1": 0.26,
+            "2": 0.23,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.17,
+          "probabilities": {
+            "0": 0.84,
+            "1": 0.16,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.01,
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.08,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.89,
+            "2": 0.09,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.37,
+          "probabilities": {
+            "0": 0.38,
+            "1": 0.2,
+            "2": 0.18,
+            "3": 0.13,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.04,
+          "probabilities": {
+            "0": 0.97,
+            "1": 0.03,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.86
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3607,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.42,
+            "relevance": 0.52,
+            "grounding": 0.89,
+            "decision_action": 0.99,
+            "evidence": 0.93,
+            "actionability": 0.09,
+            "anti_hype": 0.97
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179795610,
+                    "endTime": 1791179795738,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000151494",
+          "marketCost": "0.000151494",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000151494",
+          "inferenceCost": "0.000151494",
+          "inputInferenceCost": "0.000151494",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5B43Y7CFYGXYRY5QX3MR"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:34.971Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "264550218418092032",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI数据工程师在应用中如何\"返璞归真\"",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559430&idx=1&sn=73b361c0a8ad5623a48b67da01dae3fc",
+      "date": "2026-04-08T00:31:00.630Z",
+      "chars": 6822,
+      "text": "原创\n崇言\n2026-04-08 08:31\n浙江\n阿里妹导读\n本文反思了“知识库+Prompt工程+工具调用”这一轻量级Agent构建模式的局限性，指出其难以应对真实业务场景中的知识质量、语义理解与规模化维护挑战。（本文内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。）\n一、引言：Agent热潮下的实践反思\n回顾过去2–3年，AI演进速度堪比代码提交频率——快的甚至让人来不及写“注释”。在这波浪潮中，“AI Agent”迅速从学术圈的热词，变为企业转型的标配。无论是开源社区的 Demo，还是行业战略蓝图、企业产品更迭，“如何快速构建XX Agent以实现业务提质提效”成为行业共识命题。\n在此背景下，我们早期也自研数据Agent，试图用轻量级方式验证“智能体”的构建路径。彼时朴素认知是：\n“知识库 + Prompt Engineering（PE）+ Function Calling + Few-shot 示例这四件套拼在一起，就能召唤出一个能答会算的 AI 小助手。”\n这套组合拳确实见效快，一度让我们产生了“人人皆可成为 Prompt Engineer”的幻觉。\n但现实很快给了我们一记温柔而坚定的耳光。\n比如对话：\n“焕新补贴季活动中品牌表现如何？”\n你发现取数工具还没cover到xx指标，“焕新补贴季”是个啥语义没ready……此刻，像极了产品经理在周五下班前发来的“小改动”需求，表面温和，实则致命。\n我们意识到：Agent 不是乐高，它更像一辆自动驾驶汽车，光有方向盘（Prompt）远远不够，还得有高精地图（上下文）、传感器融合（工具链）和实时决策系统（推理闭环）\n二、轻量级Agent构建模式的“甜蜜陷阱”\n2.1 知识质量不可控：RAG 不是万能胶，乱贴会掉渣\n早期普遍采用“原始文档切片 → 向量索引 → 重排序检索”的知识注入方式，虽能快速跑通端到端流程，但存在缺陷：\n幻觉：模型基于不完整或错误上下文生成看似合理但事实不符的回答；\n语义断裂：“优惠券叠加规则”被切成三片，每片单独看都合理，合起来逻辑崩坏，像极了if-else 嵌套超过三层的代码。切片粒度过细导致上下文逻辑割裂，影响推理连贯性；\n召回缺失：关键信息因切分策略或嵌入偏差未能有效召回，造成答案遗漏。\n2.2 元数据语义鸿沟：数据表看得见，但 AI 读不懂“黑话”\n沉淀于ODPS、Hologres、数据湖等引擎中的元数据（如表字段、血缘关系、业务口径、指标定义），本质上是面向机器而非人类语言的符号系统。若直接用于RAG或工具调用，常导致模型“看得见数据，读不懂含义”。\n要将其转化为AI可理解的语义资产，需进行深度语义对齐、本体建模与上下文增强，而这一过程高度依赖人工梳理与领域知识注入，\n初期人工成本较\n高。\n我们不是缺数据，是缺“能让 AI 看懂的数据说明书”。\n2.3 Prompt Engineering 的规模化瓶颈\n尽管PE被视为Agent开发的“第一生产力”，其效能却严重依赖工程师经验，实践中呈现两极分化：\n高阶实践：通过结构化配置文件（如\nagent_skills.md\n、\ntool_xxx.md\n）管理子Agent职责、工具接口规约、示例模板，实现提示词的模块化、版本化与可复用；\n初级实践：将所有逻辑硬编码在单一Prompt中，导致迭代时需多链路同步修改，维护成本陡增且一致性难以保障。\n2.4 Agent 链路过简：防御式设计 vs 开放性悖论\n为了防幻觉、保稳定，一些Agent加了“安全带”：前置意图识别、输入过滤、结果校验、CoT 强引导……甚至限制用户提问自由度。效果是稳了，但 Agent 也变得“死板”了——像极了客服机器人：“亲，您的问题已记录，请稍后联系人工.....”\n简化链路虽能短期控险，却牺牲了 Agent 最宝贵的泛化能力与探索精神。真正的智能，应该在可控与开放之间走钢丝。——By AI\n三、范式跃迁：从Prompt-Centric走向Context-Aware\n上述问题共同指向一个核心认知转变：以Agent应用为中心的开发范式正在经历双向演进。\n3.1 向左延伸：从“Prompt驱动”到“上下文工程”\n不再仅依赖提示词，而是构建高质量、结构化、可追溯的上下文语料体系，涵盖：\n业务术语库：标准化黑话、缩写、指标别名等等如“尖货”“焕新补贴”“分层GMV”等黑话的官方解释\n数据语义图谱：融合元数据、血缘、口径、使用场景，形成可推理的知识网络；\n合规约束规则：明确哪些事能做、哪些红线不能碰，让 Agent 真正“懂边界”。\n3.2 向右深化：从“搭积木组装”到“全链路闭环”\n需建立覆盖以下环节的系统化能力：\n数据合成与微调（SFT/RLHF）：让模型学会“正确提问”和“正确取数”；\n工具集成标准化：统一接口协议，避免每个 Agent 自己造轮子；\n效果评估体系：不仅看“能不能答”，更要看“答得准不准”“业务价值高不高”，并建立幻觉检测、任务完成率、指标关联等量化指标。\nAgent 的终极目标，不是“会说话的工具”，而是“懂业务、守规则、能扛事的数字员工”。\n四、MktAI知识体系建设：让 AI “读懂”数字\n基于上述认知，我们将重心转向以 Context-Aware 知识库体系建设。目标是：为大模型注入高信噪比、结构化、可推理的领域知识，使其在复杂中具备精准理解、可靠推理与高效生成的能力，降低系统性“幻觉”，提升AI决策的可解释性。\n4.1 结构化数据的语义层增强\n4.1.1 构建元数据知识体系：从“What”到“How & When”\n不再满足于“这个字段叫什么”，而是回答：\n怎么算？（例如：“商家公域到手价 = 基础价 - 可叠加优惠 + 排他规则校验”）\n在哪用？（适用于活动全周期分析，不适用于单品粒度）\n别乱用！（警示：此字段不含退款剔除，慎用于最终结算）\n字段级语义富化成为标配，每个字段附带：\n计算逻辑\n值域特征（枚举/范围）\n典型场景\n常见误用反例\n更进一步，引入正反例对比学习：\n正例：\nSELECT brand, score FROM brand_tone_score WHERE activity='...' AND score=6 ORDER BY score DESC, brand ASC LIMIT 5\n反例：\n...WHERE score='6分'\n（枚举值匹配失败）\n让模型在“对与错”的边界上学会判断。\n4.1.2 血缘关系的语义化扩展\n显式建模字段间的业务因果链，比如：\n“优惠券ID → 影响 → 订单折扣金额”\n“活动商品标识 → 关联 → 尖货池”\n并支持跨表语义推理：当用户问“尖货商品的支付金额”，系统能自动关联商品表、活动表、订单表，避免因表隔离导致逻辑断裂。\n4.1.3 元数据治理：开发即治理，AI 辅助评审\n元数据AI代理评审：当新增或修改元数据（如定义一个新的“价格口径”字段）时，让7*24小时的AI助手帮你审核\n校验新定义是否与已有体系冲突\n其计算口径是否严谨\n并给出修订建议\n从而在源头上保证知识质量。\n4.1.4 数据保鲜：变更感知 + AI 自动填充\n构建变更感知流程，监听 MaxCompute / Hologres 的 DDL/DML 变更，让AI帮你：\n触发元数据同步流程\n调用 LLM 基于上下文自动生成初步语义解释\n待人工确认后入库\n终于不用每次改个字段都要手动更新了——程序员的幸福感，有时候就这么简单。\n4.1.5 模块化分析框架：把专家经验沉淀为“可加载插件”\n将数科、运营专家分析经验进行知识下沉，形成可复用的分析模块，供不同Agent按需加载。\n4.1.6 效果论证：准确率从 86% → 95%\n我们以营销活动场景生成350+评测集。通过DataAgent引入元数据与黑话后，泛化取数（兜底）准确率从86%提升至95%。\n提升的不仅是数字，更是同学对 AI 的信任度\n典型评测示例（含黑话，350+）\n准确率\n统计2025年\n焕新补贴季\n活动中品牌调性分为6分的品牌名称及对应分值，按分值降序、品牌名顺序取Top5品牌\n86%->95%\n统计2024年\n双旦活动\n期间各品牌的累计支付金额和支付订单数，按支付金额排序\n统计2024年\n女王节抢先购现货\n活动期间\n尖货\n且为\n活动商品\n的支付金额总和、订单数，按金额排序，取Top5\n统计2025年\n双十一期间\n每个\n商家分层\n的累计支付GMV和支付订单数，按GMV降序排列，取Top5分层\n4.2 RAG 升级：从 Vector-Based 到 Reason-Based\n面对 70% 的非结构化知识（文档、流程图、截图），继续探索RAG提升方案（Reason-Based RAG 架构）。\n阶段1：层次化索引构建 —— 把文档变成 LLM 能“翻”的书\n多模态理解：调用多模态模型自动解析图表、截图，生成结构化描述并回填原文；\n结构化解析：基于Md等符号构建 ToC Tree，智能跳过代码块中的伪标题；\n树形瘦身：合并低 Token 子树，避免碎片化；\n智能摘要：长文本由 LLM 生成摘要，强制高亮关键词（活动名、Toolcode、角色职责），输出两份视图：\nsearch_tree\n（仅摘要）→ 用于召回\nfull_tree\n（摘要+原文）→ 用于生成\n阶段2：LLM 驱动的推理式召回 —— 让模型自己“翻目录找答案”\n抛弃向量相似度，改由 LLM 扮演“文档专家”：\n在\nsearch_tree\n中推理出最相关的N个节点；\n支持跨章节关联、隐含语义匹配；\n若信息不足，可生成“扩展计划”（向上/向下/横向导航），构建完整推理链；\n多文档并发检索，仅 Top-K 进入生成阶段，控制成本。\n这不是检索，这是“AI 主动阅读 + 推理”。\n方案优势与效果验证\n在相同营销知识语料场景下进行对比评测：Reason-Based RAG在58条涵盖前N、预售、官方立减等子域评测集中表现相对更优。\n维度\n表现\n人工好评率\n98%（vs 传统Vector-Based RAG ≈30%）\n精准性\n提升准确回答定义类、规则类问题，避免无关干扰\n完整性\n提升跨文档、跨段落复杂查询，构建完整推理链\n鲁棒性\n对长尾问题、表达差异大的Query具备更好召回能力\n4.3 构建本体：从“猜谜”到“学理”的范式革命\n如果说前文所述的结构化语义增强（4.1）和推理式RAG（4.2）是为AI Agent配备了高精度的“望远镜”和“显微镜”，那么\n本体\n，就像是为它绘制一张完整的、可导航的“世界地图”。这张地图的目的，不是让AI去“猜”业务规则，而是让它能像一个受过专业训练的新人一样，系统性地“学习”和“理解”这个数字世界的运行法则。\n为什么前两种方案仍是“治标不治本”？\n想象一下，一个新入职的运营同学，如果只给他看无数个Excel报表（数据实例）和几百份活动SOP（非结构化文档），他可能会成为一个熟练的“操作工”，但很难成为一个能独立思考、举一反三的“分析师”。因为他缺少一个贯穿始终的\n概念框架\n——即，什么是“品牌”？什么是“活动”？“补贴”和“优惠券”是什么关系？“尖货”是如何被定义和圈选的？这些核心概念之间的逻辑关系构成了业务世界的“骨架”。\n没有这个骨架，AI面对“焕新补贴季活动中品牌表现如何？”这样的问题时，依然需要在海量的、孤立的知识碎片中进行拼凑和猜测。它知道“焕新补贴”是个活动，“品牌”是个实体，但它无法真正理解“活动”这个概念是如何作用于“品牌”这个实体的，也无法推导出“表现”背后可能涉及的指标体系（如GMV、订单数、调性分等）。这就是“数字世界已经是结果，但对于回答‘为什么’是不足的”这句话的深刻含义。\n本体论：为AI构建业务世界的“公理系统”\n源自哲学，意指“关于存在的学问”。在计算机科学和AI领域，它被引申为\n对特定领域内概念、实体、属性、关系及其约束的正式、明确的描述\n。我们可以将其理解为一个领域的“公理系统”或“概念共识”。\n在MktAI知识库实践中，本体建设并非凭空创造，而是将散落在各个业务系统、数据表、文档中的隐性知识，进行\n结构化、标准化、形式化\n的沉淀。我们和架构师一起将本体要素进行抽象：\n1.对象类型：\n这是业务世界中的“名词”，代表具有唯一标识的实体。例如\nIt\ne\nm\n（商品）、\nBrand\n（品牌）、\nActivity\n（活动）、\nComparisonPool\n（比价池）....。每个对象类型都有其主键（Primary Key）和一组属性（Properties），如\nItem\n的\nbase_item_id\n、\nitem_title\n、brand_id\n等。这超越了传统元数据仅描述“字段名”，而是定义了“实体”本身。\n2.关系类型：\n这是连接不同对象的“动词”或“介词”，描述实体间的结构化关联。例如\nItemComparesWithItem\n（商品A与商品B进行比价）、\nItemUsesDiscountTool\n（商品使用了某个优惠工具）。关系不仅有方向和基数，还可以携带自己的属性（如比价状态、使用时期），从而形成一张富含语义的\n知识图谱\n。\n3.动作类型：\n这是业务世界中的“操作”或“函数”，代表可执行的计算或流程。例如\nQueryComparisonStatus\n（查询比价状态）这个动作，其输入参数是\nComparisonPool\n这个对象。\n这确保了所有操作都根植于本体之上，而非游离在外的黑盒。\nAction的定义包含了详细的计算逻辑、SQL模板和重要规则，使得AI不仅能“理解”要做什么，还能“知道”怎么做。\n通过这三者的有机结合，我们构建了一个\n自洽、可推理、可执行\n的数字业务模型。当用户提问时，Agent的任务不再是模糊的“找答案”，而是精确的“在本体图谱上进行查询、分析和执行”。\n本体驱动的AI Agent：从“问答机”到“数字员工”\n有了本体这张地图，AI Agent的能力实现了质的飞跃：\n精准理解：\n面对“焕新补贴季”这个短语，Agent能立刻识别出这是一个\nActivity\n类型的实例，并能关联到其包含的\nItem\n、使用的\nDiscountTool\n等。\n可靠推理：\n当被问及“尖货商品的支付金额”时，Agent能通过\nItem\n->\nis_featured_item\n(属性) 或\nItem\n->\nBelongsTo\n->\nFeaturedPool\n(关系) 找到尖货，再通过\nItem\n->\nHasOrder\n->\nOrder\n(关系) 找到支付金额，整个过程基于预定义的逻辑链路，杜绝了臆测。\n高效执行：\n当需要生成复杂查询时，Agent可以直接调用\nQueryComparisonStatus\n这样的Action，传入正确的\nComparisonPool\n对象，即可获得格式化、合规的结果，无需再进行脆弱的Prompt工程。\n效果验证与持续演进\n我们在300+的评测集上对本体驱动的Agent进行了验证，结果如下：\n评测场景\n指标\n当前最佳值（%）\n购后价格场景评测集\n归因合理性\n89%\n本体召回率\n82%\n推理完整性\n89%\n大促价格管控场景评测集\n归因合理性\n94%\n本体召回率\n90%\n推理完整性\n92%\n实践证明，本体化方法提升了在复杂业务场景下\n快速冷启\n的推理能力，同时\n通过白盒化本体路径\n推理和约束，也有效抑制了模型“幻觉”和修正。这条路，我们仍需坚定地探索验证下去。\n五、结语：返璞归真，回归AI数据工程的本质\n回望这段从“Prompt-Centric”到“Context-Aware”，再到“Ontology-Driven”的探索历程：\nAI应用的繁荣，尤其数据同学要深刻重视知识工程的深厚土壤。\n现实告诉我们，没有高质量、结构化、可推理的领域知识作为基石，再强大的大模型也如同在流沙上建塔，终将陷入幻觉与不可靠的泥潭。\n如今，我们正将对数据模型的理解、对业务方法论的抽象——重新注入到AI应用的底层。不再仅仅是Prompt的调优者，更是数字&现实世界的建筑师。我们构建的不仅是知识库，更是一个能让AI自主学习、可靠推理、高效执行的数字孪生业务环境。\n展望未来：与后训练、评测等技术的协调融合\n这些经过验证的、高信噪比的结构化知识语料，天然具备更高的准确性与合规性，能进一步加速模型训练数据/评测数据的自动化合成，从而减少对复杂推理链路的依赖。\n这，便是我们在AI浪潮中所追寻的“返璞归真”——回归到数据与知识的本源，以工程化的严谨，探索值得信赖的智能。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.26,
+        "transfer_agent": 0.66,
+        "peripheral": 0,
+        "irrelevant": 0.07,
+        "direct_local": 0.01
+      }
+    },
+    "relevance": {
+      "score": 2.53,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.44,
+        "3": 0.53,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.81,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.06,
+        "2": 0.23,
+        "3": 0.38,
+        "4": 0.29,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.25,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.11,
+        "2": 0.34,
+        "3": 0.35,
+        "4": 0.08,
+        "5": 0.02
+      }
+    },
+    "evidence": {
+      "score": 3.93,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.04,
+        "4": 0.93,
+        "5": 0.01
+      }
+    },
+    "actionability": {
+      "score": 3.81,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.04,
+        "3": 0.17,
+        "4": 0.66,
+        "5": 0.11
+      }
+    },
+    "anti_hype": {
+      "score": 3.67,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.24,
+        "4": 0.71,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7795,
+    "outputTokens": 172,
+    "totalTokens": 7967
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.57,
+        "relevance": 0.67,
+        "grounding": 0.48,
+        "decision_action": 0.34,
+        "evidence": 0.94,
+        "actionability": 0.72,
+        "anti_hype": 0.77
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179845444,
+                "endTime": 1791179845603,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00032739",
+      "marketCost": "0.00032739",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00032739",
+      "inferenceCost": "0.00032739",
+      "inputInferenceCost": "0.00032739",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6VSJSVX5Z2WZDFDZS8K8"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:25 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::f9m8l-1791179845127-8af2e17969d1"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.26,
+            "transfer_agent": 0.66,
+            "peripheral": 0,
+            "irrelevant": 0.07,
+            "direct_local": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.53,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.44,
+            "3": 0.53,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.81,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.06,
+            "2": 0.23,
+            "3": 0.38,
+            "4": 0.29,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.25,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.11,
+            "2": 0.34,
+            "3": 0.35,
+            "4": 0.08,
+            "5": 0.02
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.93,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.04,
+            "4": 0.93,
+            "5": 0.01
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.81,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.04,
+            "3": 0.17,
+            "4": 0.66,
+            "5": 0.11
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.67,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.24,
+            "4": 0.71,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7795,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.57,
+            "relevance": 0.67,
+            "grounding": 0.48,
+            "decision_action": 0.34,
+            "evidence": 0.94,
+            "actionability": 0.72,
+            "anti_hype": 0.77
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179845444,
+                    "endTime": 1791179845603,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00032739",
+          "marketCost": "0.00032739",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00032739",
+          "inferenceCost": "0.00032739",
+          "inputInferenceCost": "0.00032739",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6VSJSVX5Z2WZDFDZS8K8"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:24.834Z"
+  }
+}

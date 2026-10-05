@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1309526250770956289",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "实现高质量数据闭环，RoboFlywheel驱动具身智能自衍进",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511604&idx=2&sn=e86e3982aecd1e77775c6759f38c5a17",
+      "date": "2026-09-28T10:54:00.007Z",
+      "chars": 2096,
+      "text": "阿里数据\n2026-09-28 18:54\n浙江\n以下文章来源于：阿里数据\n阿里数据\n了解阿里数据动态，数据助力商业成长！\n为具身智能建了一张开放的数据底座。\n中国具身智能正在加速迈向真实世界：更完备的供应链、更成熟的制造能力，以及不断开放的产业场景，让机器人拥有了更强的“身体”。但当硬件逐渐趋同、部署能力不断成熟，真正拉开企业差距的，已不只是机器人能否完成一次漂亮的演示，而是它能否在多变环境中持续学习、稳定进化。\n决定这一能力上限的，正是其背后可训练、可验证、可复用的高价值数据。\n数字智能的突破，背后依赖的是互联网长期积累的数据底座：文本、图像和代码可以低成本复制、规模化汇聚，再通过逐渐成熟的训练范式持续转化为模型能力。\n而具身智能面对的却是物理世界。数据与本体、任务和场景紧密耦合；更重要的是，模型架构、训练方法和评测体系仍在快速探索。此时，采集量不等于有效训练量，真正决定能力的，是采什么、留什么、怎样组合、如何训练和验证——也就是数据配方。\n在刚刚结束的云栖大会上，阿里巴巴携手清华大学、上海交通大学发布 RoboFlywheel。\n项目围绕数据生产、处理、验证与复用，建设具身智能开放数据基础设施，让更多实践能够被比较、复现和继续迭代。\n四项基础能力，让数据从一次投入变成持续积累。\n官网链接：\nroboflywheel.com\n01\nRoboFlywheel-Sim\n让物理世界可以生成，也可以验证\n具身智能最终要进入物理世界，仿真则提供了进入真机前的数字试验场：规模化构造长尾和高风险场景，更早验证能力边界、发现问题。RoboFlywheel-Sim 建设生成式资产底座，首批覆盖 52 万刚体资产、40 万铰链资产和 10 万柔性资产，为系统性验证提供丰富的物理资产。\n围绕统一资产格式、跨引擎资产编译、自然语言场景构建与声明式评测 Harness，同一套资产、场景和任务可以在不同引擎中复现，支撑规模化压力测试、失败诊断和版本回归。仿真不替代最终的真机检验，而是让更多问题在进入物理世界之前被更早发现。\n02\nRoboFlywheel-Bench\n从模型能力到具身系统的完整测评\nRoboFlywheel-Bench 既评模型，也评模型之外决定具身系统能否落地的关键能力。首发的 WholeBodyBench 聚焦模型能力，从基础单元、单元组合到高层组合逐级提升任务复杂度，同时考察组合泛化、场景泛化，以及成功与安全。\n在模型评测之外，系列评测还将覆盖真机与仿真的数据采集效率、机器人构型能力边界等方向。评测不只是排榜，也要把模型、数据与本体暴露出的能力缺口，重新反馈给数据生产与配方设计。\n03\nRoboFlywheel-Recipe\n把数据经验编译成可执行的配方\n具身数据真正昂贵的，不只是采集。哪些数据该留下、怎样去重和混配、在哪个训练阶段使用，往往散落在一次性脚本和人工经验里。能跑通一次，却难以复现；得到一个结果，也很难追溯究竟是哪一步起了作用。\nRoboFlywheel-Recipe 不是一个配方目录，而是一套 Episode-native 的高性能具身数据框架。它由 Recipe/Harness、Operator/Skill 和 Distributed Engine 三层组成，把数据选择、质量检测、时空对齐、语义标注、增强与训练优化编排成可追踪、可复现、可规模化执行的数据配方。\n首批 20+ 官方算子覆盖数据接入与转换、质量检测与清洗、时空对齐与动作提取、语义标注、数据增强和训练数据优化。底层支持分布式执行、IO 优化、断点续跑、算子融合与高效重配方缓存，让配方不仅能写下来，也能在大规模数据上高效跑起来。\n每一份配方都可以完整记录“数据—处理—训练—权重—评测”链路，并替换数据、算子或模型开展对照实验。\n首批配方探索将以可复现的结果回答：什么样的数据，才能真正转化为模型能力。\n04\nRoboFlywheel-Dataset\n让开放数据更容易被使用和继续建设\n已有开源框架与数据集持续涌现，下一步是让不同来源的数据能够进入同一套处理与验证链路。RoboFlywheel-Dataset 首批接入 40+ 数据集，覆盖多构型真机、无本体与仿真数据。\n通过统一 Schema 和接入规范，平台补齐格式转换、基础质量检测与元数据，并记录数据来源、许可、处理算子、质量报告和版本变化。社区不仅可以贡献数据集，也可以提交算子、配方和评测任务，让一次成果成为下一轮探索的起点。\n05\n让更多真实实践\n共同跑出有效的数据配方\n具身智能仍在寻找自己的 scaling 路径。这个阶段需要的不只是各自扩大数据规模，更要让不同方法能够被验证、比较和复用，在真实反馈中加快技术路线收敛。\nRoboFlywheel 期待与机器人企业、高校、研究机构和开发者共同建设：贡献数据与资产，复现并改进数据配方，用统一评测检验能力边界，再把结果带回下一轮数据建设。\nRoboFlywheel，为具身智能建一张开放的数据底座。\n欢迎留言一起参与讨论~\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0,
+        "peripheral": 0.06,
+        "transfer_agent": 0.29,
+        "irrelevant": 0.65
+      }
+    },
+    "relevance": {
+      "score": 1.22,
+      "probabilities": {
+        "0": 0.24,
+        "1": 0.3,
+        "2": 0.46,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.58,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.45,
+        "2": 0.04,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.22,
+      "probabilities": {
+        "0": 0.89,
+        "1": 0.04,
+        "2": 0.05,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.45,
+      "probabilities": {
+        "0": 0,
+        "1": 0.57,
+        "2": 0.4,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.99,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.27,
+        "2": 0.26,
+        "3": 0.26,
+        "4": 0.1,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.54,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.3,
+        "2": 0.51,
+        "3": 0.06,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3755,
+    "outputTokens": 173,
+    "totalTokens": 3928
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "grounding": 0.61,
+        "decision_action": 0.85,
+        "evidence": 0.7,
+        "actionability": 0.2,
+        "anti_hype": 0.58,
+        "category": 0.55,
+        "relevance": 0.47
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179782626,
+                "endTime": 1791179782864,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00015771",
+      "marketCost": "0.00015771",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00015771",
+      "inferenceCost": "0.00015771",
+      "inputInferenceCost": "0.00015771",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A4Y8KHBEVRWN5FGHB02YP"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:22 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::4rh7g-1791179782394-e65d2fac3a11"
+    },
+    "body": {
+      "answers": {
+        "grounding": {
+          "type": "score",
+          "score": 0.58,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.45,
+            "2": 0.04,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.22,
+          "probabilities": {
+            "0": 0.89,
+            "1": 0.04,
+            "2": 0.05,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.45,
+          "probabilities": {
+            "0": 0,
+            "1": 0.57,
+            "2": 0.4,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.99,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.27,
+            "2": 0.26,
+            "3": 0.26,
+            "4": 0.1,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.54,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.3,
+            "2": 0.51,
+            "3": 0.06,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        },
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0,
+            "peripheral": 0.06,
+            "transfer_agent": 0.29,
+            "irrelevant": 0.65
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.22,
+          "probabilities": {
+            "0": 0.24,
+            "1": 0.3,
+            "2": 0.46,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3755,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "grounding": 0.61,
+            "decision_action": 0.85,
+            "evidence": 0.7,
+            "actionability": 0.2,
+            "anti_hype": 0.58,
+            "category": 0.55,
+            "relevance": 0.47
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179782626,
+                    "endTime": 1791179782864,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00015771",
+          "marketCost": "0.00015771",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00015771",
+          "inferenceCost": "0.00015771",
+          "inputInferenceCost": "0.00015771",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A4Y8KHBEVRWN5FGHB02YP"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:22.094Z"
+  }
+}

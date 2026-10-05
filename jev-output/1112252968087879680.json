@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1112252968087879680",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Qoder 1.0正式发布！从AI IDE迈向智能体自主开发工作台",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509360&idx=1&sn=6d017a91cc184f80d2fc5642702d4ab8",
+      "date": "2026-05-15T06:22:00.802Z",
+      "chars": 1540,
+      "text": "Qoder\n2026-05-15 14:22\n浙江\n全面接管代码生成、验证和交付流程\n今天，阿里发布Qoder 1.0，从AI IDE升级为智能体自主开发工作台，用户只需专注需求定义，Agent团队即可“自动驾驶”，自主完成执行、验证和交付全流程任务。目前，Windows、macOS和Linux系统用户均可下载使用。\n01\nQuest独立视窗，\nAgent-first开发台\nQuest从IDE内的一个模式升级为独立视窗，集成任务管理、状态追踪、产物审查和知识调用等能力，成为面向Agent-first工作范式的开发工作台。开发者定义目标后，执行、验证和交付均由Agent在工作台内完成。\nQuest视窗的UI交互和前端体验也做了全面升级，文件目录、代码变更、终端输出、浏览器预览等工程信息均支持按需展开，开发者无需离开当前任务上下文，即可随时深入查看项目细节。\nQuest与Editor作为两个独立窗口并行运行，开发者可在任务委派与协同编程两种工作方式之间自由切换，上下文无缝衔接。\n02\n跨项目多任务并行：\n一屏掌握全局\nQoder 1.0将并行范围扩展至跨项目、跨代码库维度，开发者可在多个Workspace中同时运行不同项目的Agent任务，通过统一面板，实时追踪所有任务的动态。\n每个Quest任务拥有独立的状态标签（运行中/等待确认/已完成），进度一目了然。开发者无需逐一切换窗口，一屏即可掌握全局进展。任务完成后，系统自动生成Summary交付清单，涵盖任务进展、产物文档和代码变更，供快速审查。\n03\n越懂项目，代码越准\n团队共享的知识引擎\n1.0版本将此前分散的记忆、Repo Wiki和知识卡片整合为统一的团队级知识引擎。这是全球首次实现团队知识共享机制。记忆系统记录用户的表达习惯、技术偏好、团队规范和历史决策；Repo Wiki与Knowledge Cards从代码仓库中自动构建架构知识、模块关系、编码规范和技术栈知识。\n三类知识统一管理，Agent在执行任务时可持续调用。实测数据显示，知识引擎上线后，代码保留率提升11%，输入Token消耗降低40%，对话轮次减少33%。\n基于代码仓库，每位成员都可以贡献知识、修正知识，由智能体对知识进行持续优化。知识在云端统一存储，企业可以统一维护，并实现过程审计。个人的经验变成了组织的持续成长能力。\n04\n专家团入驻Quest，\n且支持打造专属Agent团队\nExperts专家团模式上线以来用户反馈积极。但此前仅支持在Chat侧边栏中使用，1.0版本将其正式引入Quest视窗。开发者可在Quest内自由选择单Agent模式或Experts专家团模式。专家团由规划、调研、编码、审查、测试五类专家组成，以流水线方式协同交付。\n同时，1.0版本新增自定义专家能力。开发者可创建专属Agent团队，为其配置领域知识、任务技能和外部工具接口，打造贴合自身业务场景的Agent团队。\n上述产品升级的背后，是底层Agent Harness的系统性重构。模型提供智能，Harness决定这份智能能否转化为可用交付。Qoder 1.0在此层沿两条路径完成升级：将传统聊天对话升级为结构化的任务运行时（Task Runtime），将分散的上下文供给收敛为贯穿运行时的知识工程（Knowledge Engineering）。\nQoder是面向全球开发者的智能体编程平台，旗下产品包括Qoder IDE、Qoder CLI、Qoder JetBrains 插件、Qoder移动端、QoderWork、QoderWake。自2025年8月上线以来，Qoder已服务全球超过500 万用户。\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.64,
+        "irrelevant": 0.21,
+        "transfer_business": 0,
+        "peripheral": 0.15,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.71,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.19,
+        "2": 0.75,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.09,
+      "probabilities": {
+        "0": 0.2,
+        "1": 0.6,
+        "2": 0.13,
+        "3": 0.06,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.7,
+      "probabilities": {
+        "0": 0.73,
+        "1": 0.08,
+        "2": 0.02,
+        "3": 0.13,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.49,
+      "probabilities": {
+        "0": 0,
+        "1": 0.57,
+        "2": 0.39,
+        "3": 0.01,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.66,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.32,
+        "2": 0.35,
+        "3": 0.16,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.15,
+      "probabilities": {
+        "0": 0.87,
+        "1": 0.12,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.86,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3149,
+    "outputTokens": 172,
+    "totalTokens": 3321
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.54,
+        "relevance": 0.8,
+        "grounding": 0.67,
+        "decision_action": 0.53,
+        "evidence": 0.67,
+        "actionability": 0.45,
+        "anti_hype": 0.9
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179805661,
+                "endTime": 1791179805845,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000132258",
+      "marketCost": "0.000132258",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000132258",
+      "inferenceCost": "0.000132258",
+      "inputInferenceCost": "0.000132258",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5MXZEVGNASDM0DAB1ACM"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:45 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::tpp9n-1791179805620-6cc7dd4e1f61"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.64,
+            "irrelevant": 0.21,
+            "transfer_business": 0,
+            "peripheral": 0.15,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.71,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.19,
+            "2": 0.75,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.09,
+          "probabilities": {
+            "0": 0.2,
+            "1": 0.6,
+            "2": 0.13,
+            "3": 0.06,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.7,
+          "probabilities": {
+            "0": 0.73,
+            "1": 0.08,
+            "2": 0.02,
+            "3": 0.13,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.49,
+          "probabilities": {
+            "0": 0,
+            "1": 0.57,
+            "2": 0.39,
+            "3": 0.01,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.66,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.32,
+            "2": 0.35,
+            "3": 0.16,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.15,
+          "probabilities": {
+            "0": 0.87,
+            "1": 0.12,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.86
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3149,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.54,
+            "relevance": 0.8,
+            "grounding": 0.67,
+            "decision_action": 0.53,
+            "evidence": 0.67,
+            "actionability": 0.45,
+            "anti_hype": 0.9
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179805661,
+                    "endTime": 1791179805845,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000132258",
+          "marketCost": "0.000132258",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000132258",
+          "inferenceCost": "0.000132258",
+          "inputInferenceCost": "0.000132258",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5MXZEVGNASDM0DAB1ACM"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:45.078Z"
+  }
+}

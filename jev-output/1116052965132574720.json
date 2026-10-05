@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1116052965132574720",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "重新定义Skill开发：保姆级教程&一站式开发助手发布",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560111&idx=1&sn=d90140ce9a63a953c990c1696a01beef",
+      "date": "2026-05-18T00:30:00.922Z",
+      "chars": 14654,
+      "text": "原创\n凜一\n2026-05-18 08:30\n浙江\n阿里妹导读\n从入门到蒸馏，20 分钟以内学会创建、管理和发布你的第一个 Skill —— 让 AI Agent 真正成为你的超级助手。（文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。）\n零、写在最前：Skill 会替代我吗？\n每当我向同事介绍 Skill 时，最常被问到的一个问题是：\n\"你把自己的工作流写进 Skill，让 AI 自动跑——那以后还需要你吗？还需要我吗？\"\n这其实是同一道题的两面：\n当 AI 学会了我们的\"流程\"，我们的\"价值\"还在哪里？\n黄仁勋在那段访谈里给了一个非常性感的回答——\n任务（Task）会被自动化，但体验（Experience）和判断（Judgment）不会\n。AI 看片子比放射科医生准，结果放射科医生不降反升，因为医生的工作从\"看片子\"升级成了\"诊断疾病\"。\n把这个逻辑放回 Skill 的语境里：\n❌ Skill 替代的不是\"你\"，而是替代你身上那些重复、冗长、易错、本来就不该占用大脑的\"任务\"。\n✅ Skill\n替代不了的\"你\"\n，是你生成的Skill在\n体验\n上的丝滑和你对Skill执行的准确性的\n判断\n成为你新的价值。\n💡 **你需要焦虑的不是\"被 Skill 替代\"，而是\"还没学会用 Skill\"**。当别人开始用 Skill 把自己的经验沉淀、复用、放大时，你还在反复手工执行同一套流程——这才是差距的开始。\n至于\"那以后到底还需要做什么？\"，\n这个问题我会在最后一章 《六、其实你只要一个 Skill》 给出我的解答\n。先别急着翻到最后，先跟着这份指南把 Skill 的本质看明白，再回头看那个答案，会更有体感。\n接下来，让我们从「\n什么是 Skill\n」开始 👇\n一、一分钟了解什么是 Skill（推荐看）\n💡\n一句话说清楚\nSkill 是一份\n结构化的指令文档\n，它告诉 AI Agent「在什么场景下、按什么步骤、用什么工具、完成什么任务」。你可以把它理解为 Agent 的\n「技能卡」\n—— 插上就能用，拔掉就没有。\n类比理解\n想象你是新入职的员工刘一航（化名），公司给了你一本《阿里开发操作手册》：\n现实世界\nSkill 世界\n阿里开发操作手册\nSKILL.md\n文件\n手册封面（标题 + 简介）\nYAML frontmatter（\nname\n+\ndescription\n）\n开发操作步骤\nMarkdown 正文中的工作流指令\n附录（Aone、语雀、中间件等）\nBundled Resources（\nscripts/\n/\nreferences/\n/\nassets/\n）\n你按开发手册干活\nAgent 按 Skill 执行任务\nSkill 的三级加载机制\nSkill 并不是一股脑全部塞给 Agent 的，它采用\n渐进式加载\n策略，按需提供信息：\n💡\n为什么要分级加载？\nAgent 的上下文窗口是有限的。如果所有 Skill 的全部内容都一次性加载，会迅速耗尽上下文空间。分级加载让 Agent 只在需要时才读取详细指令，既节省资源又保证精准执行。\n二、三分钟安装使用 Skill（可以不看）\n2.1 Skill 平台介绍\nSkill 平台是 Skill 的\n发布、搜索与安装中心\n，类似于应用商店。你可以在平台上浏览他人发布的 Skill、一键安装到本地，也可以将自己编写的 Skill 发布出去供他人使用。\n平台\n渠道\n简介\n搜索方式\n速度\n规模\n认证\n⚪ skills.sh[1]\n外部\n开源工作流自动化，快速安装\nCLI:\nnpx skills find\n⚡ 快速\n~千级\n❌ 无需\n⚪ ClawHub[2]\n外部\n社区驱动，支持版本管理与发布\nCLI:\nclawhub search\n⚡ 快速\n社区级\n⚠️ 可选\n⚪ SkillsMP[3]\n外部\n最大数据库，AI 语义搜索，适合细分/研究场景\nREST API\n🐢 5–15s\n283K+\n✅ 需要\n⚪ alphashop\n内部\n跨境电商场景社区 Skill 中心，聚焦 1688 选品 / 找商 / 素材处理 / 店铺管理 / 智能营销 / 数据分析等电商工作流\n平台 UI 分类浏览\n⚡ 即时\n社区级\n⚠️ 可选\n🟡\nAone Skills\n内部\n阿里内部 Skill 发布与安装平台，与 Aone Copilot 深度集成，内网安全可控、即装即用\n平台 UI 搜索\n⚡ 即时\n内部\n✅ 内网\n2.2 Agent 平台中的 Skill\n除了专门的 Skill 平台，各类 Agent 工具也原生支持 Skill 的加载与使用。以下是常见 Agent 平台的 Skill 使用方式：\nAgent 平台\n定位\nSkill 使用方式\nAone Copilot\n阿里内部 IDE AI 编程助手，深度集成 Aone DevOps 全链路\n将 Skill 目录放入\n~/.aone_copilot/skills/\n，或从 Aone Skills 市场一键安装，Agent 自动识别加载\nAccioWork\n阿里内部通用办公 Agent 平台，支持多场景任务自动化\n内置Skill直接安装，自定义Skill需要安装包上传安装\nQCoder\n轻量级 AI 编码助手，专注代码生成与补全\n将 Skill 文件夹放入项目级\n.skills/\n目录，随项目仓库一起管理\n悟空\n阿里内部多模态 Agent 平台，支持浏览器操作与视觉理解\n通过平台 UI 上传 Skill 文件，或在系统提示词中加载 Skill 指令\n2.3 快速安装 Skill（以 Aone Copilot 为例）\n方式一：从 Skill Market 一键安装\n访问 Aone Skill Market\n搜索你需要的 Skill，点击「安装」\nSkill 自动下载到本地 ~/.aone_copilot/skills/目录，立即生效\n方式二：下载 zip 手动安装\n从 Aone Skills 市场或其他平台下载 Skill 的 zip 包后，解压到对应平台的 Skill 目录：\n# Aone Copilot\nunzip\nmy\n-skill.zip -d ~\n/.aone_copilot/s\nkills/\n# QCoder（项目级）\nunzip\nmy\n-skill.zip -d .skills/\n# 其他平台参考各平台文档，将解压后的目录放入对应 Skill 目录即可\n方式三：使用 aone-kit CLI 安装（推荐）\naone-kit 是阿里内部的 Skill 管理命令行工具，支持从 Aone Skills 市场一键搜索、安装和管理 Skill。\n第 1 步：安装 aone-kit\n前提：需要 Node.js 18 或以上版本\nnpm install -\ng\n@ali\n/aone-kit --registry=\nhttps\n://registry.anpm.alibaba-inc.com\n第 2 步：安装 Skill\n在项目目录下执行以下命令，Skill 默认安装到项目下的\n.agents/skills/{name}/\n目录：\naone-kit skill install\n<\nskill-name\n>\n常用参数：\n参数\n说明\n示例\n--location <path>\n指定安装目录\n--location ~/.aone_copilot/skills\n--global\n全局安装到\n~/.agent\ns\n/skills/\naone-kit skill install <name> --global\n第 3 步：查看已安装 Skill\naone-kit skill list\n方式三：直接创建\n在\n~/.aone_copilot/skills/\n下新建一个文件夹，创建\nSKILL.md\n文件，写入 Skill 内容即可。详见第三章。\n2.4 验证安装成功\n安装完成后，直接在 Aone Copilot 查看Skill模块或者在输入中用\"/\"唤起。\n三、五分钟创建你的第一个 Skill（可以不看）\n别紧张，跟着下面的步骤走，5 分钟就能搞定你的第一个 Skill 🎉\n3.1 准备工作\n创建 Skill 推荐使用\nskill-creator\n（一个专门用来创建 Skill 的 Skill 🤯）。当然，你也完全可以手动创建。\n🎯\n使用 skill-creator 的好处\n它会引导你完成意图确认、草稿编写、测试用例设计和迭代优化的完整流程，就像有一位经验丰富的 Skill 工程师在旁边手把手教你。只需对 Agent 说：\n\"帮我创建一个 Skill，用来 xxx\"\n，skill-creator 就会自动接管。\n3.2 Skill 的目录结构\n一个 Skill 本质上就是一个文件夹，最简单的情况下只需要一个文件：\nmy-awesome-skill/\n├──\nSKILL\n.md          ← 唯一必需的文件！\n└── (可选) 附加资源\n├── scripts/      ← 可执行脚本（Python、Node.js、Shell 等）\n├── references/   ← 参考文档（按需加载到上下文）\n└── assets/       ← 静态资源（模板、图标、字体等）\n3.3 编写 SKILL.md\n这是 Skill 的灵魂文件。它由两部分组成：\nYAML 头部\n和\nMarkdown 正文\n。\nYAML 头部（frontmatter）\n---\n# 必需字段\nname: dingtalk-webhook-skill\ndescription: 通过钉钉自定义机器人 Webhook 发送群消息。当用户提到钉钉、机器人、webhook、群消息、通知、dingtalk、发消息时触发。\n# 可选字段（按需添加）\nlicense: MIT\ncompatibility:\n- claude-3.5+\n- aone-copilot\nallowed-tools: Read Bash WebFetch\nmetadata:\nauthor: zefei.szf\nversion: 1.2.0\ncategory: communication\ntags: [dingtalk, webhook, notification]\n---\n字段\n是否必需\n说明\nname\n必需\nSkill 的唯一标识符。\n最长 64 字符\n，仅允许小写字母/数字/连字符，如\ndingtalk-webhook-skill\ndescription\n必需\nSkill 的触发描述。这是 Agent 判断是否使用该 Skill 的\n核心依据\n，\n最长 1024 字符\n，务必写清「做什么」和「什么时候用」\nlicense\n可选\n许可证名称或对 LICENSE 文件的引用，如\nMIT\n、\nApache-2.0\ncompatibility\n可选\n适配的 Agent / 平台 / 模型范围，如\nclaude-3.5+\n、\naone-copilot\nallowed-tools\n可选\n预授权工具白名单，空格分隔，如\nRead Edit Bash\nmetadata\n可选\n任意 KV 元数据，常用子字段：\nauthor\n（作者）、\nversion\n（语义化版本，如\n1.0.0\n）、\ncategory\n（分类）、\ntags\n（标签数组）\n📖\n字段规范来源\n：以上字段遵循 Anthropic Agent Skills[4] v0.1 开源规范（业界事实标准），同时兼容 skills.sh / ClawHub / Aone Skills 等主流平台。其中\nname\n和\ndescription\n是所有平台都强制要求的核心字段，其余按需添加。\n⚠️\ndescription 是触发的关键\nAgent 目前倾向于「少触发」而非「多触发」。因此，description 要写得\n稍微「积极」一些\n，多列举可能的触发关键词和场景。例如：\n❌ 不够好：\n发送钉钉消息的技能\n✅ 推荐写法：\n通过钉钉自定义机器人 Webhook 发送群消息。当用户提到钉钉、机器人、webhook、群消息、通知、dingtalk、发消息时触发。\nMarkdown 正文\n正文就是你给 Agent 的「操作手册」，通常包含以下部分：\n1.快速开始 / 使用示例\n— 给出 1-2 个典型的用户输入示例，让 Agent 快速理解使用场景\n2.参数列表\n— 用表格清晰列出每个参数的名称、是否必需、默认值和说明\n3.工作流 / 执行步骤\n— Skill 的核心，用分步骤的方式描述 Agent 应该如何执行任务\n4.错误处理\n— 列出常见的错误场景和对应的处理方式\n5.附加资源引用\n— 如果有\nscripts\n/ 或\nreferences/\n，明确指出何时、如何使用\n3.4 Skill规范与最佳实践\n创作思维\n在动笔写 SKILL.md 之前，先按下面的四步思考，能让你的 Skill 结构更清晰、触发更精准、行为更可控：\n1.确定触发时机\n：先想清楚\"用户在什么场景会用到\"，把关键词、口令、上下文条件梳理出来 —— 这直接决定\ndescription\n怎么写。\n2.确定输入与输出\n：明确\nSkill\n需要哪些参数、最终交付什么产物，避免后续流程发散。\n3.确定大致流程\n：把核心步骤、调用的工具、依赖的外部资源用 3-7 步串起来，先骨架后细节。\n4.补充细节与规则\n：补全边界情况、错误处理、约束条件，并准备好示例或模板，让 Agent 在执行时有据可依。\n💡\n顺序很重要\n：很多人一上来就写第 3 步流程，结果触发不准（缺第 1 步）或者交付不稳（缺第 2 步）。务必从「触发时机」开始倒推。\n写作原则\n📝\n用祈使句\n— 直接告诉 Agent 该做什么，而不是描述性地说明\n✅\n从用户输入中提取 webhook_url 参数\n❌\nAgent 应该从用户输入中提取参数\n🎯\n解释「为什么」\n— 与其堆砌 MUST / SHOULD，不如解释原因，让 Agent 理解意图后自主决策\n✅\n使用 --headed 模式打开浏览器，因为会议室平台会检测 headless 环境并拒绝访问\n📏\n控制篇幅\n— SKILL.md 正文建议控制在\n500 行以内\n。超出时，将详细内容拆分到\nreferences/\n目录，在正文中用链接引用\n🌍\n保持通用性\n— Skill 应该是通用的，不要过度绑定到特定的示例。用理论指导代替硬编码的特例\ndescription 编写技巧\ndescription\n是 Skill 被触发的唯一入口，它的质量直接决定了 Skill 的可用性。\n写法\n问题\n❌\n帮助用户处理工单\n太笼统，Agent 不知道什么时候该触发\n✅\n工单批量预处理技能。当用户提到\"处理所有工单\"、\"排查所有工单\"、\"批量处理工单\"、\"我的工单有多少\"、\"帮我看看工单\"时，立即触发此技能。\n关键词丰富，触发场景明确\n资源组织模式\n当 Skill 需要支持多个变体（如不同框架、不同平台）时，推荐按变体组织 references：\ncloud-deploy/\n├──\nSKILL\n.md              ← 通用工作流 + 变体选择逻辑\n└── references/\n├── aliyun.md         ← 阿里云部署指南\n├── aws.md            ← AWS 部署指南\n└── azure.md          ← Azure 部署指南\nAgent 会根据用户的实际需求，只读取相关的 reference 文件，避免无关信息占用上下文。\n脚本编写建议\n零依赖优先\n：脚本尽量使用语言标准库，避免需要额外安装依赖\n多语言 fallback\n：提供 Python → Node.js → Shell 的降级方案，适配不同环境\n结构化输出\n：脚本输出 JSON 到 stdout，方便 Agent 解析结果\n明确退出码\n：成功返回 0，失败返回非 0，让 Agent 能判断执行结果\n💡\n脚本的妙用\nscripts/\n目录下的脚本可以\n不加载到上下文就直接执行\n。这意味着你可以把复杂的、确定性的操作（如签名计算、数据格式转换）封装成脚本，Agent 直接调用即可，既省上下文又保证准确性。\n3.5 一个完整的Skill示例\n让我们来看一个真实的 Skill 示例 —— 一个用于发送钉钉群消息的 Skill：\n---\nname: dingtalk-notifier\nversion: 1.0.0\ndescription: 通过钉钉机器人发送群消息通知。当用户提到\"发钉钉消息\"、\n\"钉钉通知\"、\"群消息\"、\"webhook\"时触发。\n---\n#\n钉钉群消息通知\n通过钉钉自定义机器人 Webhook 发送群消息。\n#\n# 快速开始\n用户输入示例：\n>\n帮我发一条钉钉消息到部署群，内容是：v2.1.0 已发布上线\n#\n# 参数列表\n| 参数 | 必需 | 默认值 | 说明 |\n|------|------|--------|------|\n| webhook_url | 是 | - | 机器人的 Webhook 地址 |\n| message | 是 | - | 消息正文 |\n| msg_type | 否 | markdown | 消息类型 |\n#\n# 工作流\n#\n## Step 1：解析参数\n从用户输入中提取 webhook_url、message 等参数。\n缺少必要参数时，友好地向用户询问。\n#\n## Step 2：发送消息\n执行 scripts/send.py 发送消息：\npython3 scripts/send.py --url URL --msg \"消息内容\"\n#\n## Step 3：确认结果\n检查返回的 errcode，向用户报告发送结果。\n#\n# 错误处理\n| 错误 | 处理方式 |\n|------|---------|\n| token 无效 | 提示用户检查 Webhook 地址 |\n| 签名错误 | 提示用户检查加签密钥 |\n🎉\n恭喜！\n如果你跟到了这里，你已经掌握了创建 Skill 的核心知识。接下来我们来看看如何让你的 Skill 写得更好。\n四、十分钟学会管理我的 Skill（可以不看）\n一个 Skill 从诞生到被广泛使用，需要经历完整的生命周期：发布、更新、安装。\n4.1 管理流程总览\n✏️ 编写  →  🧪 测试  →  📤 发布  →  📥 安装  →  🔄 更新  →  📊 反馈迭代\n4.2 发布到 Aone 开放平台\n为什么选择 Aone 平台发布 Skill\n🔗\n打\n通 Code 平台、关联 Git 仓库，开发体验友好\n：创建 Skill 时自动生成对应的 Git 仓库，本地 push 即可触发发布，告别\"压 zip → 上传 → 替换\"的繁琐流程，写代码与发版无缝衔接。\n🏷️\n自动版本管理，无需手动维护版本号\n：平台基于 Git commit 自动生成版本信息，不用自己在 Skill 文档里手动改号。\nAone 平台的 Skill 发布分为 2 种方式：git 仓库发布、zip 发布。\n推荐使用 git 仓库发布，方便做后续的版本管理。Aone 创建 Skill 时会自动生成对应的 git 仓库，你只需将你本地待发布的 Skill 代码 push 到该仓库。\n💡\n特别注意！！！\nAone Skill 的 git 仓库默认的主分支（发布分支）是\nmain\n分支而不是\nmaster\n。\ngit 仓库上传后，回到 Aone 的 Skill 页面，点击发布，审核通过后即发布成功，在你项目目录下自动生成 package.json 文件做版本控制。\n4.3 更新 Skill\n重复上述发布流程即可。\n五、阶段性总结（推荐看）\n一个正常的教程应该到这就结束，我们仿佛已经学完了完整的 Skill 发布、管理流程，但我们明显不正常，一切才刚刚开始...\n坦诚地说，Skill 生态还在早期阶段，你在后续的迭代过程中可能会遇到一系列的疑惑和痛点。\n😤 痛点一：跨平台、跨模型一致性\n不同平台对 Skill 的解析行为有差异。\n只要严格按\nname\n+\ndescription\n+\n正文的标准结构写，至少 80% 的内容天然可移植\n，问题出在那 20% 的\"平台增量语法\"。\n三种常见的\"污染\"\n污染类型\n例子\n干扰\n平台语法污染\nAccio Work 的\n@团队成员\n、Aone Copilot 的\n/cmd\n、Claude Code 的\n!bash\n不识别的平台当成普通文本，或被 LLM 误解（如\n@\n当成邮件抄送）\n工具命名污染\n写死\nBash\n、\nWebFetch\n、\nRead\n不同平台工具名不同（Claude=\nBash\n、Codex=\nShell\n、Cursor=\nTerminal\n），写死会导致工具找不到\n路径环境污染\n硬编码\n~/.claude/skills/\n、\nprocess.env.ACCIO_*\n仅在特定平台生效\nbadcase：\n应对：三纯净 + 注释隔离 + 三检测\n写作期：「三纯净」原则\n1.正文纯文本\n：不写任何平台特定的\n@\n、\n/\n、\n!\n触发符。必须提及就用引号当例子讲，而不是当指令用。\n2.工具用能力描述\n：写「调用 shell 命令执行 xxx」而非「调用\nBash\n工具」，让平台自己映射。\n3.路径不写死\n：用相对路径或\n~/<workspace>/\n占位。\n隔离期：用 HTML 注释隔离平台增量\n<!-- platform: accio-work -->\n当任务需要团队协作时，使用 `@团队成员` 触发分配。\n<!-- /platform -->\n<!-- platform: aone-copilot -->\n当任务需要工单流转时，使用 `/ticket assign` 命令。\n<!-- /platform -->\n<!-- platform: default -->\n当任务需要分配时，输出\"建议指派给：\n<\n候选人\n>\n\"，由用户手动操作。\n<!-- /platform -->\n支持的平台按需渲染，不支持的平台 LLM 通常会忽略注释。\n发布期：「三检测」清单\n检查项\n通过标准\n跨平台冒烟\n至少在 2 个目标平台跑一遍（如 Aone Copilot + Accio Work），输出一致\n降级路径\n每段平台特定能力都有\"另一平台没有时怎么办\"的兜底\ndescription 中性化\ndescription 不出现具体平台名（除非 Skill 本就只服务某一平台）\n兜底原则：确定性逻辑下沉到\nscripts/\n把\"必须确定执行\"的逻辑放进\nscripts/*.py\n——\nPython 脚本天然跨平台\n，只要平台支持 shell 就能跑，避免靠 LLM 在不同平台\"复述\"指令。这是 Anthropic Skill spec 反复强调的\ndeterminism through code\n原则。\nAnthropic 已于 2025-12 把 SKILL.md 格式开源为 Agent Skills v0.1[5] 标准，目前 16+ 平台已对齐（Claude Code、Cursor、Codex、Gemini CLI、Copilot、Aone Skills、Accio Work 等）。优先遵循该标准，是降低跨平台成本的最佳起点。\n😤 痛点二：版本管理和更新分发\nSkill 生态目前没有 npm/pip 那样的成熟包管理，发布与分发链路上有两个突出问题。\n问题一：发布严肃性不足\n写一个 SKILL.md push 一下就发版了，\n没有 CR、灰度、SPE 评审、自动化测试\n。在阿里内部应用发布场景这些都是默认配置，但 Skill 长期处于\"个人项目\"状态——一个错别字、一个被污染的指令，可能直接打到全公司用户。\n阶段\n做法\n业内参考\n仓库治理\nSkill 仓强制 PR + 至少 1 人 CR；保护\nmain\n；CODEOWNERS 锁核心 SKILL.md\nJFrog: Agent Skills are New AI Packages[6]\n自动化校验\nCI 跑 schema 校验、关键词扫描、prompt-lint、\nscripts/\n单测\nskill-eval[7]\n评测门禁\nskill-creator\n跑回归 eval，通过率不低于上一版才能合入\nAnthropic skill-creator\n灰度发布\n平台支持 channel 时优先发\nbeta\n，验证后升\nstable\nClaude Code plugin marketplace channels[8]\nSPE/安全扫描\nSkill 仓当代码资产接入扫描：注入风险、敏感信息、越权工具\nJFrog Xray、Snyk for AI\n核心观念转变\n：把 Skill 当\"代码包\"而不是\"文档\"。Skill 一旦被加载就拥有类工具的执行能力，理应享受与代码同等的发布严肃度。\n问题二：已安装用户无法自动感知更新\nSkill 更新后，已装用户\n不会自动收到推送\n。同一个 Skill 在生态里长期存在多个\"僵尸版本\"，bug 修了但用户用的还是旧版。\n阶段\n做法\n业内参考\n显式 version\n在\nmetadata.version\n标语义化版本号，每次发布同步更新\nAnthropic spec\n平台自动更新\n用支持\nmanifest + auto-update\n的渠道（Aone Skills、Claude Code Plugin Marketplace）；自托管时配\ngit fetch\n定时拉取\nClaude Code plugin marketplaces[9]\nCHANGELOG + 订阅\n仓内维护\nCHANGELOG.md\n，团队 IM 建\"Skill 发版机器人\"，tag 触发推送\nGitHub Releases webhook\n弃用与告警\n旧版在\ndescription\n加\n[DEPRECATED] 请升级到 vX.Y\n，触发时立即可见\nnpm\ndeprecate\n锁版本兜底\n团队/项目级支持锁版本（pin commit SHA / 语义版本），避免上游强制更新破坏稳定性\nClaude Code v2.1.14+ commit pin\n社区正在推进 Skill Package Manifest RFC[10]，目标对齐 npm 的 \"manifest + lockfile + registry\" 模型，预计 2026 年内更多平台会原生支持。\n😤 痛点三：开发和调试的效率低\n创建 Skill 很快，\n但调试与迭代很慢\n。常见反模式：改一行 SKILL.md → 跟 Agent 说\"重新加载\" → Agent 没加载到 → 手动重启会话 → 复测一次……一个小修改 5–10 分钟。**真正的瓶颈不在写，在\"改完之后让 Agent 看到改完的版本\"**。\n社区已把这归纳为\nSkill local-dev-loop\n问题，2025 H2 起出现了一批方案。\n做法\n说明\n业内参考\nHot Reload\n用支持热加载的平台（Claude Code 2.1+），改完无需重启\nClaude Code 2.1 hot-reload[11]\nSymlink 软链\nln -s\n把开发中的 Skill 仓链到平台 skill 目录，编辑器改的就是平台读的\nasm link[12]\nLocal Dev Loop 模板\n一键搭\"hot reload + 自动测试 + 文件 watcher\"的开发环境\nexa-local-dev-loop[13]\nEval-Driven Dev\nskill-creator\n预设回归用例，每次改完跑一遍，\n通过率不达标自动阻断\nAnthropic skill-creator\n双窗口对照\n一个会话开 dev 版、一个开 prod 版，并排对比同一指令的输出，快速定位是 Skill 还是 LLM 问题\n社区调试技巧\n跑通这套环，单次迭代从 5–10 分钟压到 30 秒以内——Reddit 上 Claude Code 2.1 用户报告的 \"24x faster iteration\" 就是这么来的。\n进阶：让 Skill 自我进化\n前面 5 项解决的是\"\n人快速迭代 Skill\n\"。2026 年业内出现了更激进的方向——\n让 Skill 自己迭代自己\n：每次执行记录成功/失败信号，用反思机制提炼\"经验补丁\"，再回写到 SKILL.md。\n4 步反馈闭环\n执行 Skill →\nBinary\nEval 自动打分 → 失败时 Reflection Agent 提炼修复 patch → 通过 eval 复测 → 自动 git\ncommit\n业内代表性方案\n方案\n机制\n出处\nClaude Skills 2.0\n每次执行后 A/B 测试 + eval 自动调优 SKILL.md\nClaude Skills 2.0[14]\nBinary Evals + Self-Improving Loop\n二元（pass/fail）评估器替代主观打分，failure case 自动触发改 Skill\nMindStudio (2026-03)[15]\nSingularity Claude\n开源 self-evolving skill engine，支持 auto / manual 两种评分\nShmayro/singularity-claude[16]\nCognee\n把执行 trace 喂给知识图谱，从失败案例归纳新规则反写 SKILL.md\nCognee Self-Improving Skills[17]\nAGENTS.md 元指令法\n在 SKILL.md 嵌\"调试后请自更新本文件\"的元指令，会话结束自动反思修订\nLinkedIn 案例[18]\n学术：RL + Skill Library\n强化学习训 Agent 自主管理 Skill 库（增/删/改）\narXiv 2512.17102 (2026-03)[19]\n穷人版落地（不需要复杂基建）\n1.SKILL.md 末尾加元指令\n：\n## 自我进化机制\n每次执行完本 Skill 后：\n1.\n评估输出是否达成目标（pass / fail）\n2.\nfail 时反思失败原因，在 diary/YYYY-MM-DD.md 追加「失败案例 + 修复建议」\n3.\n某条修复建议在最近 3 次执行中被反复提及时，提炼为正式规则，提交 PR 修改本 SKILL.md\n2.配\nscripts/log-execution.py\n：每次触发自动记录 prompt + 输出 + 用户反馈到 JSONL。\n3.\n用\nskill-creator eval\n做兜底\n：\n自我修改后必须通过既有回归用例才能 commit，避免\n自我退化\n。\n⚠️\n风险\n：没有 eval 兜底的自我修改 = 慢性自杀——Agent 可能为通过单个 case 而引入与其他场景冲突的规则，越改越烂。务必配套 binary eval + 版本快照 + 关键节点人工 review。\nAnthropic 已在 Claude Code 2.x roadmap[20] 中暗示原生支持\nskill auto-evolution\n，预计 2026 H2 落地。在那之前，\"元指令 + binary eval + git 兜底\"是最稳过渡方案。\n六、其实你只要一个 Skill（必须看）\n讲了这么多，到目前为止我们的文章还是限定在原有的人类思维中，即学习工具然后使用工具。然后扪心自问，AI时代技术井喷式发展，你真的能学得过来，也许你学会了上述的所有内容，可是明天可能还没等你去实践，技术已经更新换代。\n所以回到我们开头聊的，我们应该把我们的价值放到\n体验（Experience）\n和\n判\n断（Judgment）\n，无论你是大神还是小白，关于目前的 Skill 技术，你应该需要更好的使用体验，只需做出自己宝贵的判断。因此，以上关于 Skill 的内容，一个 SKill 就可以搞定：skill-dev-aio：一站式Skill开发助手\n产品理念（一站式Skill开发闭环）\n功能演示\n功能一演示：快速创建Skll\n功能二演示：一键发\n功能三演示：优跑分\n功能四演示：检查询\n功能五演示：跨平台迁移\n功能六演示：批更新\n相关链接：\n[1]\nhttps://www.skills.sh/\n[2]\nhttps://clawhub.ai/skills\n[3]\nhttps://skillsmp.com/\n[4]\nhttps://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview\n[5]\nhttps://agentskills.io/\n[6]\nhttps://jfrog.com/blog/agent-skills-new-ai-packages/\n[7]\nhttps://github.com/anthropics/claude-code\n[8]\nhttps://code.claude.com/docs/en/plugin-marketplaces\n[9]\nhttps://code.claude.com/docs/en/plugin-marketplaces\n[10]\nhttps://github.com/agentskills/agentskills/discussions/210\n[11]\nhttps://paddo.dev/blog/claude-code-21-pain-points-addressed\n[12]\nhttps://github.com/luongnv89/asm\n[13]\nhttps://tessl.io/registry/skills/github/jeremylongshore/claude-code-plugins-plus-skills/exa-local-dev-loop\n[14]\nhttps://medium.com/@reliabledataengineering/claude-skills-2-0-the-self-improving-ai-capabilities-that-actually-work-dc3525eb391b\n[15]\nhttps://www.mindstudio.ai/blog/self-improving-ai-skills-binary-evals-claude-code/\n[16]\nhttps://github.com/Shmayro/singularity-claude\n[17]\nhttps://www.cognee.ai/blog/deep-dives/building-self-improving-skills-for-agents\n[18]\nhttps://www.linkedin.com/posts/lawrencewu920_day-3-of-my-claude-code-daily-tips-series-activity-7427735749086752768-ASH5\n[19]\nhttps://arxiv.org/html/2512.17102v2F\n[20]\nhttps://github.com/anthropics/claude-code/issues/15858\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.04,
+        "transfer_agent": 0.6,
+        "irrelevant": 0.16,
+        "peripheral": 0.2,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.87,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.12,
+        "2": 0.85,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.42,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.1,
+        "2": 0.25,
+        "3": 0.24,
+        "4": 0.27,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.95,
+      "probabilities": {
+        "0": 0.54,
+        "1": 0.16,
+        "2": 0.16,
+        "3": 0.09,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.55,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.43,
+        "3": 0.52,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.89,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.04,
+        "4": 0.83,
+        "5": 0.09
+      }
+    },
+    "anti_hype": {
+      "score": 3.34,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.03,
+        "2": 0.07,
+        "3": 0.39,
+        "4": 0.5,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 11911,
+    "outputTokens": 172,
+    "totalTokens": 12083
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.51,
+        "relevance": 0.89,
+        "grounding": 0,
+        "decision_action": 0.37,
+        "evidence": 0.67,
+        "actionability": 0.8,
+        "anti_hype": 0.56
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179835371,
+                "endTime": 1791179835602,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000500262",
+      "marketCost": "0.000500262",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000500262",
+      "inferenceCost": "0.000500262",
+      "inputInferenceCost": "0.000500262",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6HY3JHXJFMS3N3X6FQT7"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:15 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::879h2-1791179835230-f884e84b2554"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.04,
+            "transfer_agent": 0.6,
+            "irrelevant": 0.16,
+            "peripheral": 0.2,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.87,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.12,
+            "2": 0.85,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.42,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.1,
+            "2": 0.25,
+            "3": 0.24,
+            "4": 0.27,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.95,
+          "probabilities": {
+            "0": 0.54,
+            "1": 0.16,
+            "2": 0.16,
+            "3": 0.09,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.55,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.43,
+            "3": 0.52,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.89,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.04,
+            "4": 0.83,
+            "5": 0.09
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.34,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.03,
+            "2": 0.07,
+            "3": 0.39,
+            "4": 0.5,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 11911,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.51,
+            "relevance": 0.89,
+            "grounding": 0,
+            "decision_action": 0.37,
+            "evidence": 0.67,
+            "actionability": 0.8,
+            "anti_hype": 0.56
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179835371,
+                    "endTime": 1791179835602,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000500262",
+          "marketCost": "0.000500262",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000500262",
+          "inferenceCost": "0.000500262",
+          "inputInferenceCost": "0.000500262",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6HY3JHXJFMS3N3X6FQT7"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:14.821Z"
+  }
+}

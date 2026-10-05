@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1197884143279513600",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "让搜索更懂用户：Viking AI 搜索如何用个性化提升转化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247520810&idx=2&sn=425e0a64545b3e7b9b8f39c2671ed7b8",
+      "date": "2026-07-13T10:00:00.152Z",
+      "chars": 2182,
+      "text": "Viking工程师\n2026-07-13 18:00\n北京\n以下文章来源于：VikingAI搜索\nVikingAI搜索\n火山引擎 Viking AI 搜索，助力企业快速打造多模态检索、个性化推荐和对话 Agent 能力！\n对很多个人开发者和中小企业开发团队来说，搜索功能一开始往往只是“能搜到”：用户输入关键词，系统返回相关商品、内容或素材。但业务真正跑起来之后，一个更现实的问题会出现：同样搜索“羽绒服”，南方用户可能更想看轻薄款，北方用户可能更关注保暖厚款；同样搜索“通勤包”，有人偏爱简约百搭，有人更在意品牌和容量。\n如果搜索结果只按文本相关性排序，就很容易出现一种尴尬：结果是相关的，但不一定是用户最想点、最想买、最愿意继续浏览的。Viking AI 搜索的个性化搜索能力，就是为了解决这个问题。\n它的核心思路很朴素：先保证结果与搜索词相关，再结合“物品热度”和“用户兴趣”调整召回与排序，让搜索结果既不跑题，又更贴近当前用户的偏好。\n搜索个性化总流程\n在 Viking AI 搜索里，搜索体验大体可以理解为四个阶段：召回、排序、重排和运营干预。召回负责从物品库里找出候选结果，排序负责决定候选结果谁排前面，重排和运营规则则处理更精细的业务策略。基础版的个性化能力主要影响前两个环节：一是开启个性化召回，二是配置物品热度参与排序。\n千人一面与千人千面对比\n先看物品热度。\n热度排序解决的是“大家普遍更认可什么”。系统会根据应用内上传的用户行为数据计算物品热度，比如点击、加购、购买、评论、收藏、分享等正反馈行为越多，物品热度越高。在搜索结果已经相关的基础上，热门商品或趋势内容可以获得更好的排序机会。\n这对电商、内容社区、素材平台都很实用。比如用户搜索“露营灯”，结果里既有完全匹配关键词但长期无人问津的旧商品，也有近期点击、收藏、购买都很高的新款。只看相关性时，后者未必一定排到前面；引入热度后，系统就能更自然地把被更多用户验证过的物品展示出来，帮助用户更快发现“大家正在喜欢”的内容。\n再看个性化召回。\n热度回答“群体偏好”，个性化召回答案则更进一步：这个用户可能更喜欢什么？\nViking AI 搜索会基于用户行为数据生成兴趣标签，这些标签通常可以覆盖品类、品牌、风格等维度。例如，一个用户近期频繁点击、收藏、加购“运动鞋”“Adidas”“通勤风”相关商品，系统就可以逐步形成对这个用户偏好的理解。之后当他搜索“鞋”或“外套”时，搜索不再只是机械地匹配关键词，而是会额外关注与这些兴趣标签匹配的物品。\n这里有一个重要原则：个性化不是把不相关内容硬塞给用户。它是在搜索相关性的基础上，增加一条“用户兴趣召回”通道。也就是说，系统仍然会尊重用户输入的 query，只是在候选池里额外保障与用户兴趣标签匹配的物品有机会被召回，并在排序阶段获得适当加权。\n热度与个性化机制图\n从机制上看，这条链路并不复杂。开发者或企业先上传用户行为数据集，系统根据行为数据推理和计算用户兴趣标签；同时，需要把物品数据中用于承载兴趣的字段配置为可过滤字段，例如品类、品牌、风格等。配置完成后，就可以在控制台开启个性化召回，并选择干预档位。\n目前个性化召回提供强、弱两种干预方式。弱干预更保守，仍然让关键词匹配、语义匹配占据主要权重，只是轻度提升兴趣相关物品的机会；强干预则会给兴趣标签匹配更高权重，让更符合用户画像的物品更容易排到前面。对于刚开始接入的团队，建议先用弱干预做体验验证，再根据点击率、转化率、停留时长等指标逐步调整。\n这套能力的特点可以概括成三个词：\n简洁、有效、可控。\n简洁\n，\n是因为它不要求开发团队一开始就训练复杂的 CTR 模型或自研排序系统。对个人开发者和中小团队来说，最难的往往不是理解“个性化很重要”，而是缺少足够的人力和算法工程能力去落地。Viking AI 搜索把行为数据、兴趣标签、热度分、召回和排序融合到平台能力中，开发者只需要完成数据上传、字段配置和策略开关，就能把搜索体验从“千人一面”推进到“因人而异”。\n有效\n，\n是因为它抓住了搜索转化里的关键变量：用户偏好。用户每一次点击、收藏、分享、加购、购买，都是在表达自己对某类商品或内容的兴趣。当系统能持续捕捉这些信号，并把它们反馈到搜索结果里，用户就更容易在前几屏看到“我确实想要的东西”。这会直接影响搜索点击率、商品转化率，也会影响用户对产品的长期感受：这个应用好像越来越懂我。\n可控\n，\n是因为热度和个性化都不是黑盒式“一开就不可调”。控制台可以单独开启物品热度参与排序，也可以开启个性化召回并选择干预档位。开发团队可以在体验页面先验证不同策略下的搜索效果，再更新配置应用到正式服务。对于业务来说，这种“先体验、再发布”的方式更适合渐进式优化，而不是一次性把搜索结果完全交给算法决定。\n如果你正在做电商小程序、垂直内容社区、素材检索、企业知识库或商品导购类应用，搜索很可能是用户最重要的入口之一。用户不是只想“搜到”，而是想“更快找到适合自己的”。Viking AI 搜索的个性化能力，正是把用户行为沉淀为偏好理解，再把偏好反哺到召回和排序中。\n当搜索结果同时兼顾相关性、热度和个人兴趣，搜索就不再只是一个工具入口，而会变成提升转化和用户粘性的关键体验层。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.38,
+        "transfer_agent": 0.12,
+        "transfer_business": 0.05,
+        "peripheral": 0.45
+      }
+    },
+    "relevance": {
+      "score": 1.59,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.3,
+        "2": 0.6,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.42,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.38,
+        "2": 0.39,
+        "3": 0.07,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.71,
+      "probabilities": {
+        "0": 0.6,
+        "1": 0.16,
+        "2": 0.18,
+        "3": 0.05,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.45,
+      "probabilities": {
+        "0": 0,
+        "1": 0.56,
+        "2": 0.44,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.95,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.06,
+        "2": 0.16,
+        "3": 0.42,
+        "4": 0.33,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.19,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.28,
+        "2": 0.42,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3967,
+    "outputTokens": 174,
+    "totalTokens": 4141
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.32,
+        "relevance": 0.69,
+        "grounding": 0.49,
+        "decision_action": 0.53,
+        "evidence": 0.7,
+        "actionability": 0.52,
+        "anti_hype": 0.42
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179917738,
+                "endTime": 1791179917872,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000166614",
+      "marketCost": "0.000166614",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000166614",
+      "inferenceCost": "0.000166614",
+      "inputInferenceCost": "0.000166614",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A92CV9V9MPH4K61PXDJNY"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:37 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::gmfh5-1791179917700-b5f39ead0f2a"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.38,
+            "transfer_agent": 0.12,
+            "transfer_business": 0.05,
+            "peripheral": 0.45
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.59,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.3,
+            "2": 0.6,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.42,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.38,
+            "2": 0.39,
+            "3": 0.07,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.71,
+          "probabilities": {
+            "0": 0.6,
+            "1": 0.16,
+            "2": 0.18,
+            "3": 0.05,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.45,
+          "probabilities": {
+            "0": 0,
+            "1": 0.56,
+            "2": 0.44,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.95,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.06,
+            "2": 0.16,
+            "3": 0.42,
+            "4": 0.33,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.19,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.28,
+            "2": 0.42,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3967,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.32,
+            "relevance": 0.69,
+            "grounding": 0.49,
+            "decision_action": 0.53,
+            "evidence": 0.7,
+            "actionability": 0.52,
+            "anti_hype": 0.42
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179917738,
+                    "endTime": 1791179917872,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000166614",
+          "marketCost": "0.000166614",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000166614",
+          "inferenceCost": "0.000166614",
+          "inputInferenceCost": "0.000166614",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A92CV9V9MPH4K61PXDJNY"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:37.118Z"
+  }
+}

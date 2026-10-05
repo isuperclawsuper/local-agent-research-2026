@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "269609616836395009",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "腾讯云开源OpenAI、Manus同款Agent底座",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695342&idx=2&sn=e20b805f235b3a75eee749714e9dccf5",
+      "date": "2026-04-22T01:31:00.288Z",
+      "chars": 2726,
+      "text": "腾讯云开发者\n2026-04-22 09:31\n广东\n今天，腾讯云宣布正式开源\nCube Sandbox。\n一套面向 AI Agent 的执行环境底座，也是业内首个兼顾\n硬件级隔离\n与\n亚百毫秒启动\n的开源沙箱服务。\n🌟项目主页：\nhttps://github.com/TencentCloud/CubeSandbox\n在当前主流的 Agent 架构中，SandBox 这类执行环境已经成为“标配组件”。\n无论是 Manus、OpenAI Agents SDK，还是 Perplexity、Hugging Face 等产品，底层都依赖类似的\n“虚拟电脑”\n来承载代码执行与工具调用——并逐渐收敛到统一的接口标准\nE2B\n。\n这也是 Cube Sandbox 此次开源\n的\n意义\n所在\n。它原生兼容 E2B 接口标准，开发者无需改动业务代码，\n只需更改一个环境变量，就可以将现有 Agent 应用从海外闭源方案平滑迁移到 Cube Sandbox。\n在此基础上，Cube Sandbox 不仅支持单次代码执行与工具调用，还可以连续支撑\nAgent 的“思考—执行—反馈”循环（Harness Loop）\n，覆盖从 Agent 应用到 Agent RL 训练的完整场景。\n根据我们的严格测试，Cube的性能表现强劲，冷启动\n<60\n毫秒，比行业均值提升\n2.5~50\n倍；单实例内存开销\n<5MB\n，单台服务器可同时运行\n2000+\n个沙箱实例。\n这些\n性能\n背后\n，\n凝聚了腾讯云上大规模的生产级验证。\nCube Sandbox 诞生于腾讯云 Serverless 体系，承载过百亿级调用，支撑元宝等亿级用户产品稳定运行；在更复杂的场景中，也支持了\nMiniMax\n在 Agentic RL 训练下实现分钟级调度数十万沙箱实例。\n每一项你关心的指标，\nCube\n都能打👇\n/\n/\n安全：每个 Agent，一台独立\n“\n电脑\n”\n传统 Agent 沙箱\n大部分\n基于 Docker 容器\n构建\n，\n启动快、占资源少，但所有容器共享同一个操作系统内核。\n一旦 Agent 执行的代码触发内核漏洞，就可能穿出容器、波及整台机器。\nCube Sandbox 没有走这条路。每个沙箱都运行在一套完整、独立的操作系统内核之上，在硬件层面实现彻底隔离——单个沙箱的异常，不会影响其他沙箱和宿主机。\n网络层面也配有独立机制：Agent 能访问哪些地址、不能访问哪些地址，由开发者自行定义、精细控制。\n//性能：\n目前最快的60ms\n过去，\n“\n更安全的沙箱\n”\n往往意味着\n“\n更慢的沙箱\n”\n——传统虚拟机启动通常需要数秒。\n但 Agent 是按次调起、按毫秒计费的，启动慢一秒，就是成本和体验的双重损失。\nCube Sandbox 通过\n资源池化预置、快照克隆、底层锁优化\n等一整套技术，把一个带完整内核的安全沙箱，冷启动压缩至 60 毫秒以内。50 并发场景下平均 67 毫秒，P95 稳定在 90 毫秒。\n为什么要分毫必争？\nC\nube\n的\n专家\n工程师\n金峰\n说\n，\n在单次任务执行上，60ms和200ms可能对用户体验差距不大，但对于连续任务执行和大规模的并发，每一毫秒都影响着成本\n和体验\n。\n//规模：一台机器，跑上千个 Agent\n启动快之外，大规模部署的单位成本同样关键。\n传统虚拟机单实例内存开销 20MB 起步，Cube Sandbox 通过\nRust 底层重写、CoW 内存复用、reflink 磁盘共享\n三项关键技术，把这一开销压至 5MB 以内。\n一台 96 核物理服务器，可同时运行 2000 多个沙箱。\n这套能力已在腾讯内部经历大规模生产验证——元宝 AI 编程场景迁移至 Cube 后，资源核时消耗降低\n95.8%\n。\nCube Sandbox 测试数据说明：其中，启动速度项基于裸\n金属环境测试，单并发下为 60ms，50 并发场景下平均 67ms（P95 90ms，P99 137ms），整体保持在百毫秒级。内存开销项基于 ≤ 32GB 规格沙箱实测，更大规格下开销会略有上升，但幅度极小。\n//兼容：无缝接入现有 Agent 体系\nCube Sandbox 对 E2B 接口的兼容是 Drop-in 级别的——无论基于 Manus 技术栈、OpenAI Agents SDK，还是其他 E2B 生态框架构建的 Agent 应用，都可以在不修改业务代码的前提下，直接指向 Cube 完成运行。\n极简部署示例\n👇\n设置环境变量\nCUBE_TEMPLATE_ID\n、\nE2B_API_URL\n、\nE2B_API_KEY\n后运行：\nimport os\nfrom e2b_code_interpreter import Sandbox\nwith Sandbox.create(template=os.environ[\"CUBE_TEMPLATE_ID\"]) as sandbox:\nresult = sandbox.run_code(\"print('Hello from Cube Sandbox!')\")\nprint(result)\nGitHub 仓库中还提供了 OpenAI Agents SDK 接入 Cube 的三个可运行\n示例\n，覆盖\n命令执行、Python 脚本、数据分析与图表生成\n等典型场景，开箱即跑。\n希望开源的这一小“块”，能帮助更多Agent安心运行。\nCube Sandbox 也在持续扩展生态能力，与主流 Agent 框架及开源社区共同建设兼容与集成方案。\n事件级快照回滚能力\n也即将开源——百毫秒级的状态回滚，为 Agent 的不可预测行为提供额外的保障。\n欢迎来 GitHub 给 Cube Sandbox 点个 Star🌟。\n我们欢迎任何形式的贡献，无论是提交 Bug、改进文档，还是为一个新的 AI 框架编写接入插件。\n戳👉\n发现BUG\nhttps://github.com/tencentcloud/CubeSandbox/issues\n戳👉\n有新想法\nhttps://github.com/tencentcloud/CubeSandbox/discussions\n戳👉\n查看我们的\n贡献指南\n，\n了解如何提交Pull Requst\nhttps://github.com/TencentCloud/CubeSandbox/blob/master/CONTRIBUTING.md\n扫👉\n添加CubeGirl\n小助手\n，\n加入\nC\nube\nS\nandBox\n官方\n交流群\n-End-\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0,
+        "peripheral": 0.56,
+        "transfer_agent": 0.24,
+        "irrelevant": 0.2
+      }
+    },
+    "relevance": {
+      "score": 1.86,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.11,
+        "2": 0.87,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.36,
+      "probabilities": {
+        "0": 0.7,
+        "1": 0.25,
+        "2": 0.04,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.32,
+      "probabilities": {
+        "0": 0.83,
+        "1": 0.09,
+        "2": 0.03,
+        "3": 0.03,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.41,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.2,
+        "3": 0.05,
+        "4": 0.71,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.16,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.05,
+        "2": 0.08,
+        "3": 0.16,
+        "4": 0.61,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 0.94,
+      "probabilities": {
+        "0": 0.46,
+        "1": 0.17,
+        "2": 0.35,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3845,
+    "outputTokens": 174,
+    "totalTokens": 4019
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.42,
+        "anti_hype": 0.37,
+        "category": 0.45,
+        "relevance": 0.91,
+        "grounding": 0.76,
+        "decision_action": 0.79,
+        "evidence": 0.6
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180019209,
+                "endTime": 1791180019347,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00016149",
+      "marketCost": "0.00016149",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00016149",
+      "inferenceCost": "0.00016149",
+      "inputInferenceCost": "0.00016149",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AC5FS1PEAQK8SVKV2NNRS"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:19 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::2jfx5-1791180019198-11f03e138325"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.16,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.05,
+            "2": 0.08,
+            "3": 0.16,
+            "4": 0.61,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.94,
+          "probabilities": {
+            "0": 0.46,
+            "1": 0.17,
+            "2": 0.35,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        },
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0,
+            "peripheral": 0.56,
+            "transfer_agent": 0.24,
+            "irrelevant": 0.2
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.86,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.11,
+            "2": 0.87,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.36,
+          "probabilities": {
+            "0": 0.7,
+            "1": 0.25,
+            "2": 0.04,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.32,
+          "probabilities": {
+            "0": 0.83,
+            "1": 0.09,
+            "2": 0.03,
+            "3": 0.03,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.41,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.2,
+            "3": 0.05,
+            "4": 0.71,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3845,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.42,
+            "anti_hype": 0.37,
+            "category": 0.45,
+            "relevance": 0.91,
+            "grounding": 0.76,
+            "decision_action": 0.79,
+            "evidence": 0.6
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180019209,
+                    "endTime": 1791180019347,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00016149",
+          "marketCost": "0.00016149",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00016149",
+          "inferenceCost": "0.00016149",
+          "inputInferenceCost": "0.00016149",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AC5FS1PEAQK8SVKV2NNRS"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:18.594Z"
+  }
+}

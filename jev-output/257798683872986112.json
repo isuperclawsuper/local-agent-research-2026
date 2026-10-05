@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "257798683872986112",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "英伟达GPU全系列硬核科普手册：一文读懂NVIDIA芯片的定位、规格与应用场景",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800902&idx=1&sn=38323b9e55613e92145c904cb1eae74c",
+      "date": "2026-03-20T09:37:00.969Z",
+      "chars": 1749,
+      "text": "原创\n腾讯程序员\n2026-03-20 17:37\n广东\n图解英伟达\n作者：nickycao\nH20、L20、A800、RTX 50 系…… 英伟达 GPU 家族庞大又难记？游戏、设计、AI 训练、推理到底该选哪款？别再被型号绕晕！这篇全网最全图解指南，从入门到旗舰、从消费级到数据中心，一次性讲清 NVIDIA 全系列 GPU 的区别与用法，看完秒变选型高手。\n这篇文章是一份\n英伟达 GPU 全系列的硬核科普手册\n：从游戏显卡到 AI 超级芯片，覆盖 消费级 GeForce（RTX 5090 ～ RTX 3090）、工作站 RTX Pro（RTX 6000 Ada / RTX A6000）、推理卡 L/T 系列（L40S / L4 / T4）、训练卡 B/H/A 系列（B200 / H200 / H100 / A100）以及中国特供版（H20 / L20 / RTX 4090D）五大产品线。\n核心逻辑只有三条：\n显存\n决定模型装不装得下，\n算力\n决定算得快不快，\n互连带宽\n决定多卡扩不扩得动。\n如果你只想快速选型——游戏创作看 GeForce，专业设计看 RTX Pro，推理部署看 L/T，训练研发看 H/B，国内合规看中国特供版。\n🧭0.阅读导图与学习路径\n这篇不是一口气必须读完的论文，而是一份按需查阅的 GPU 百科；先抓住产品线主线，再按你的角色和场景深入感兴趣的板块。\n🏗️1.架构演进史\nNVIDIA 每隔约 2 年推出新一代 GPU 架构，每一代都带来计算能力的质变。\n🔤2.GPU 命名规则解读\n看似复杂的型号其实藏着清晰逻辑。学会「拆字」，一眼识别定位。\n💡3.核心概念扫盲\n搞懂这些关键术语，后面的参数不再陌生。\n🎮4.消费级 GPU（GeForce 系列）\n面向游戏玩家与创作者。性价比高、驱动生态丰富，支持光追和 DLSS。\n🖥️5.专业工作站 GPU\n面向 CAD/CAE、影视特效、科学可视化。大显存 ECC、ISV 认证、长周期驱动。\n⚡6.推理加速卡（数据中心）\n专为 AI 推理优化，追求高吞吐、低延迟和低功耗。承担 ChatGPT 等服务的实际运算。\n🔥7.训练旗舰（数据中心）\nAI 大模型训练核心。GPT-4、Llama 等大模型背后靠成千上万张这类卡协同工作。\n🇨🇳8.中国特供版 GPU\n📋受美国出口管制限制，NVIDIA 为中国市场定制的合规版本。核心规格有所调整，但仍是国内 AI 产业的主力芯片。\n出口管制背景\n：\n自 2022 年起，美国陆续限制高端 AI 芯片对华出口。NVIDIA 通过降低互连带宽（NVLink）、削减 CUDA 核心数或限制算力精度等方式，推出符合管制要求的「中国特供版」。这些芯片在中国 AI 大模型训练和推理中仍发挥关键作用。\n命名规律\n：\n数据中心卡在原型号数字修改为 「800」（如 A100→A800、H100→H800），或推出全新编号（H20、L20）；\n消费级在型号后加 「D」（如 RTX 4090D）。\n📊9.横向对比总表\n一张表快速对比关键参数差异。\n📈10.性能可视化\n图形直观感受关键指标差异。\n⚡11.GPU 算力指标对比与排行\n算力是衡量 GPU 实力的核心指标。这里将所有主流 GPU 的关键算力数据汇总排列，涵盖从消费级到数据中心的完整图谱。\n排名按 FP16 Tensor Core 算力（稀疏加速峰值）降序排列。H800/A800 算力与原版相同（仅互连降速），故单独列出。B200 FP16 数据为 Blackwell 双芯架构峰值。\n🎯12.应用场景推荐\n根据你的实际需求，找到最适合的 GPU。\n🧮13.模型参数 × GPU 选择对照\n不同参数规模的大模型（LLM），在推理和训练场景下对 GPU 显存的需求差异巨大。掌握估算方法，精准匹配硬件。\n🧭14.选购决策指南\n不知道选哪张卡？跟着这棵决策树走一遍。\n📝  本文数据整理自 NVIDIA 官方资料及公开报道，参考价格为发布时建议零售价（MSRP），实际价格因市场供需而异。\n🇨🇳  中国特供版信息基于公开报道整理，部分规格可能因出口管制政策调整而变化。\n📝  仅供科普参考，不构成购买建议。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.53,
+        "direct_local": 0,
+        "transfer_agent": 0,
+        "peripheral": 0.47,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 0.42,
+      "probabilities": {
+        "0": 0.63,
+        "1": 0.32,
+        "2": 0.05,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.2,
+      "probabilities": {
+        "0": 0.83,
+        "1": 0.15,
+        "2": 0.02,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.17,
+      "probabilities": {
+        "0": 0.89,
+        "1": 0.05,
+        "2": 0.06,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.8,
+      "probabilities": {
+        "0": 0.21,
+        "1": 0.79,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.54,
+      "probabilities": {
+        "0": 0.3,
+        "1": 0.16,
+        "2": 0.26,
+        "3": 0.25,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.76,
+      "probabilities": {
+        "0": 0.47,
+        "1": 0.31,
+        "2": 0.21,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.85,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3431,
+    "outputTokens": 173,
+    "totalTokens": 3604
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.4,
+        "relevance": 0.72,
+        "grounding": 0.87,
+        "decision_action": 0.89,
+        "evidence": 0.86,
+        "actionability": 0,
+        "anti_hype": 0.49
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179977265,
+                "endTime": 1791179977417,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000144102",
+      "marketCost": "0.000144102",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000144102",
+      "inferenceCost": "0.000144102",
+      "inputInferenceCost": "0.000144102",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAWH3PX12JYMNAZS6WSWT"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:37 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::m8wjb-1791179977245-ee0bb782fd7b"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.53,
+            "direct_local": 0,
+            "transfer_agent": 0,
+            "peripheral": 0.47,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.42,
+          "probabilities": {
+            "0": 0.63,
+            "1": 0.32,
+            "2": 0.05,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.2,
+          "probabilities": {
+            "0": 0.83,
+            "1": 0.15,
+            "2": 0.02,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.17,
+          "probabilities": {
+            "0": 0.89,
+            "1": 0.05,
+            "2": 0.06,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.8,
+          "probabilities": {
+            "0": 0.21,
+            "1": 0.79,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.54,
+          "probabilities": {
+            "0": 0.3,
+            "1": 0.16,
+            "2": 0.26,
+            "3": 0.25,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.76,
+          "probabilities": {
+            "0": 0.47,
+            "1": 0.31,
+            "2": 0.21,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.85
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3431,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.4,
+            "relevance": 0.72,
+            "grounding": 0.87,
+            "decision_action": 0.89,
+            "evidence": 0.86,
+            "actionability": 0,
+            "anti_hype": 0.49
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179977265,
+                    "endTime": 1791179977417,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000144102",
+          "marketCost": "0.000144102",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000144102",
+          "inferenceCost": "0.000144102",
+          "inputInferenceCost": "0.000144102",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAWH3PX12JYMNAZS6WSWT"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:36.670Z"
+  }
+}

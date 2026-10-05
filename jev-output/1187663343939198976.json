@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1187663343939198976",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AutoResearch-LLM：让 Agent 接手 LLM 训练优化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561366&idx=1&sn=d50229e8d5ebdc40a628493d218f43ab",
+      "date": "2026-07-06T00:30:00.377Z",
+      "chars": 17937,
+      "text": "原创\n吉梦林\n2026-07-06 08:30\n浙江\n阿里妹导读\n本文是一份 LLM 微调 AutoResearch 落地实战。作者把过去几个月在电商场景（Query 改写 / 同款判定 / 重排打分）上做 Qwen3 微调时的完整流水线沉淀成一个由 Agent 驱动的三阶段框架：场景诊断 → 方案设计 → 自动化实验，同时把踩过的坑（PyTorch 2.6 vs DeepSpeed、Qwen3 thinking mode 让 BLEU 掉到个位数、多队列 OSS endpoint 差异）一并写成 SKILL.md 交给 Agent 执行。文章适合关注 AI Coding、Agent for ML、LLM 微调工程化的同学阅读。文中提到的部分平台/工具（如星云、TuningFactory、TAO/Pailitao-AutoResearch）为公司内部命名，思路和方法本身与平台无关，读者可类比到 PAI、SageMaker、Slurm 等外部环境。（文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。）\n前言\n两个月前写完《多模态检索 TBStars_VL_Emb 指令遵循微调》文章之后，结尾留了一句话：\n可构建完整的 \"请求 → 召回 → 曝光/点击/成交 → 样本反馈 → 模型训练 → 线上服务 → 请求\" 优化迭代闭环。\n当时只是有个朦胧的想法 —— \"如果训练这一环也能自动化，整个闭环就能转起来\"。但真正落地谁来推动？怎么落地？没想清楚。\nKarpathy 把\nAutoResearch\n这个名字带火（他的思路是：让 Agent 按照一份 SKILL 文件驱动的实验清单，自主完成从假设到验证的循环），紧接着又陆续读到主搜团队的\nTAO-AutoResearch\n和拍立淘团队的\nPailitao-AutoResearch\n，发现 \"Agent 接管训练优化迭代\" 这件事已经被这两份工作在工业级跑通了——当时留的那句话，已经有人替我做完了一半。\n但这两份工作都和它们所在的业务、训练平台耦合比较深。对于 1688 这边在星云平台上训 LLM 的同学，还需要一套接地气的版本：\n底层换成团队里大量在用的 TuningFactory —— 它是内部对开源\nLLaMA-Factory\n的 Fork，把 ODPS 数据源、内部存储、多队列适配等都做了封装\n训练平台换成星云（内部通用训练平台，支持多种 GPU 队列），全 API 拉日志，不用开浏览器\n把过去几个月在数据接入 / 镜像 / 分布式训练上踩过的坑全部沉淀进 SKILL.md\n本文\nAutoResearch-LLM\n：\n章节 1 讲来由和定位\n章节 2 是流水线设计\n章节 3 是工程实现\n章节 4 是踩坑实录\n章节 5 是和已有工作的横向对比\n读者可自行查阅感兴趣的章节。给外部读者一个阅读建议：\n只想看\"Agent 怎么把 LLM 调参这件事跑起来\"：直接看 §2 流水线设计\n关心 LLM 微调工程化的踩坑：直接看 §4 踩坑实录（PyTorch 2.6 vs DeepSpeed、Qwen3 thinking mode 拉低 BLEU 是通用问题，与平台无关）\n想在自己环境（K8s / Slurm / PAI / 云商方案）复用这套框架：§3 工程实现要点里的思路是可搬的，把星云 API 换成你们平台的 API 即可\n1. 背景\n1.1 缘起\n两个月前那篇 TBStars 文章里画了一张闭环图：\n请求\n→\n召回\n→\n曝光\n/点击/\n成交\n→\n样本反馈\n→\n模型训练\n→\n线上服务\n→\n请求\n▲\n│\n这一环最难自动化\n数据回流、特征生成、上线发布这几环 1688 都有相对成熟的工程基建。但模型训练这一环始终是手工活：算法同学盯着 eval_loss、改 LR、重提任务、看日志、再改 LR，一天下来真正的 \"研究时间\" 很少。\nCV 分类领域我之前做过一版\nauto_research_cv_cls_demo\n（下文简称 \"前作 CV demo\"），在 CIFAR-10 上跑通了 \"Agent 按 SKILL 跑实验\" 的小闭环，最终拿到 +1.22% 的提升。\n不过 CV 分类还是太简单：单文件训练入口、本地数据集、单机训练。要把这套思路搬到 1688 的 LLM 微调场景，要解决的事情多得多：\n维度\nCV demo\nLLM 实战\n训练框架\n手写\nmain.py\nTuningFactory（LLaMA-Factory 的内部 Fork）\n数据\nCIFAR-10 本地 tar\nODPS 表（百万行起步；ODPS 即 MaxCompute，阿里云的大数据仓）\n模型\nResNet18~50\nQwen3-1.7B ~ 35B-A3B（含 MoE）\n并行\n单卡\nDeepSpeed ZeRO-2/3 + Megatron Turbo\n训练时长\n30~60 分钟\n1~24 小时\n评估\nacc 直接打出来\n还要再起一轮 generate + BLEU/ROUGE\n平台\n星云\n星云\n1.2 参考的两份工作\n写这个项目之前认真读了两份公司内部同学做过的\nAutoResearch\n落地：主搜团队的\nTAO-AutoResearch\n和拍立淘团队的\nPailitao-AutoResearch\n。这两份工作都是各自业务线上把 Agent 接进召回/排序模型训练迭代闭环的完整实践，思路很接近：\nTAO-AutoResearch\n：4 个专职子 Agent（分析 / 训练 / 评测 / 压测）+ Git Worktree 实验隔离 + 三平台可插拔后端，跑了 20 轮迭代，hitrate@20 +3.05%；功能最完整，工程化程度也最高\nPailitao-AutoResearch\n：三阶段流水线（理解分析 / 改进方案 / 实验验证）+ Git 分支隔离，附带一个最小可跑的 demo 仓库；门槛低，适合作为新人理解 AutoResearch 思想的入口\nauto_research_llm\n的演化路径是这样的：先从 Pailitao demo 学到三阶段骨架 → 在 CIFAR-10 上做了一版前作 CV demo（CV 分类验证可行）→ 这次再把同一套三阶段、单 Skill、易上手的结构搬到 LLM 微调上，针对 1688 场景做了几处升级：\n升级点\n前作 CV demo\nauto_research_llm\n任务领域\nCV 分类（CIFAR-10）\nLLM 微调（1688 电商三类任务：Query 改写、同款判定、重排打分）\n训练框架\n单文件\nmain.py\n（PyTorch）\nTuningFactory（submodule 引入）+ ROLL（阿里开源的 RL 训练框架）\n数据源\n本地 tar 数据集\nODPS 三件套 + OSS JSON 备选\n训练方式\n单一训练循环\nSFT 全参 / SFT LoRA / SFT LoRA MoE / DPO LoRA + 离线数据蒸馏（DashScope 生成 + SFT，已验证）+ 在线 KD（\n--stage distill\n，配置就绪未验证）+ RL/GRPO（接入了 ROLL，未验证）\n并行\n单卡\nDeepSpeed ZeRO-2/3 / Megatron Turbo + EP（MoE）\n平台对接\n星云 API 拉日志\n同样 API 化，新增 ODPS / MOS（内部对象存储，用于超大模型 ckpt）/ 多队列 endpoint 适配\n评估\nacc 直接打出来\nTrainer 内置\npredict_with_generate\n自动出 BLEU/ROUGE\n调参清单\nCV 14 项\nLLM 调参清单按 6 级优先级分层（LR/LoRA → batch → 训练策略 → 数据 → 分布式 → 评估），外挂三类业务指标（BLEU / F1 / NDCG）\n所以四者的相对位置大致是：\n入门 ─────────────────── 进阶 ─────────────────── 更完整\nPailitao demo  →  前作 CV demo  →  auto_research_llm  →  TAO-AutoResearch\n（最简骨架）       （CV 验证可行）    （1688 LLM 接地气版）     （多 Agent + 多平台）\n第一次接触 AutoResearch 思想，可以先看 Pailitao 的 demo 或前作 CV demo 跑一遍流程；刚好在 1688 用 TuningFactory 训 LLM，可以直接用本项目；如果你的研究规模更大（需要多平台调度、多 Agent 协作、长周期连续优化），那 TAO 是最合适的参考。\n1.3 目前做到什么程度\n维度\n能力\n训练方式\n已端到端验证\n：SFT 全参 / SFT LoRA / SFT LoRA MoE / DPO LoRA / 离线数据蒸馏（大模型生成 → SFT）；\n配置就绪未验证\n：在线 KD（TuningFactory\n--stage distill\n）/ RL（GRPO，基于 ROLL）\n场景\n1688 电商 Query 改写 / 同款判定 / 重排打分\n基座\nQwen3 系列（1.7B / 8B / 32B）+ Qwen3.6-35B-A3B（MoE）\n数据\nODPS（主）+ OSS JSON（小数据备选）\n存储\nOSS（<14B）/ MOS（≥14B）/ NAS（产物）\n分布式\nDeepSpeed ZeRO-2/3 / Megatron Turbo + EP（MoE）\n评估\nTrainer 内置\npredict_with_generate\n自动出 BLEU-4 / ROUGE-L\n1.4 仓库结构\nauto_research_llm/\n├── SKILL.md                        ← Agent 主入口（Pipeline / 参数 / Debug 全在这）\n├── submit.sh / kill.sh             ← 任务提交与终止\n├── user_info.json                  ← 个人凭证（已 gitignore）\n├── configs/                        ← 训练/推理配置（一文件一方式）\n│   ├── sft_lora.sh                 单卡 LoRA\n│   ├── sft_lora_multi.sh           多卡 LoRA + DeepSpeed\n│   ├── sft_full.sh                 全参 + DeepSpeed\n│   ├── sft_lora_moe.sh             MoE + Megatron Turbo\n│   ├── distill.sh                  KD Loss 蒸馏\n│   ├── dpo_lora.sh                 DPO\n│   ├── rl_roll.sh                  GRPO（基于 ROLL）\n│   ├── infer.sh                    单独推理（zero-shot baseline / 评估别人 ckpt）\n│   ├── ds_zero2.json / ds_zero3.json\n│   └── cluster.json / cluster_2gpu.json / cluster_multigpu.json\n├── scripts/\n│   ├── sync_to_tuning_factory.sh   submodule 实验分支自动 push\n│   ├── prepare_distill_data.py     蒸馏数据生成（走 DashScope，即阿里云百炼的大模型 API）\n│   └── convert_to_hf.sh            ckpt 转 HF 格式\n├── scenarios/\n│   ├── query_rewrite/{README,odps_ddl.sql,sample_data.json,eval_metrics.py}\n│   ├── same_product/...\n│   └── reranking/...\n├── TuningFactory/                  ← submodule（分支 openlm）\n├── experiment_logs/                ← 自动下载的训练完整日志\n└── experiment_results.csv          ← 实验记录入口（自动追加）\n2. 流水线设计\n整体沿用 TAO / Pailitao 的三阶段写法，每个阶段都有明确的产出物，方便 Agent 在长上下文里 \"接力\" ：\n[用户输入]\n研究目标 + 数据样例 + 预算\n│\n▼\n[阶段 1]\n场景理解与基线分析\n├─\n7\n维诊断（基座 / 数据质量 / Prompt / 训练方式 / Eval / Baseline 复盘 ...）\n├─ 跑 baseline → 拿到 eval_loss & 任务指标\n└─ 产出 analysis_report\n.md\n（同时锁定 MODEL_NAME）\n│\n▼\n[阶段 2]\n实验方案设计\n├─ 从技术候选库（\n15\n+ 技术点）匹配候选\n├─ 按一级/二级/三级/四级/五级/六级参数清单展开\n└─ 产出 improve_guide\n.md\n│\n▼\n[阶段 3]\n自动化实验验证\n├─ 单变量探索 → 正交组合 → 数据维度兜底\n├─ 每个实验：生成 config → push 实验分支 → submit → 监控 → 评估 → 入 csv\n└─ 产出 experiment_results\n.csv\n（实验级） + final_report\n.md\n（研究级）\n2.1 第一阶段：场景理解与基线分析\n不上来就调参，先做体检。Agent 会按七个维度把当前任务过一遍，前六维在 baseline 跑之前完成，第七维是 baseline 跑完之后的复盘：\n#\n维度\n何时检查\n诊断问题\n薄弱信号\n1\n基座模型\nbaseline 前\n规模/能力是否匹配任务？\n简单分类用 72B → 浪费；长上下文任务用短窗口模型 → 切更大基座\n2\n数据质量\nbaseline 前\n随机抽 20~50 条人审，明显错标比例多少？\n错标 >10% → 先清洗再训\n3\n数据规模\nbaseline 前\n独立样本数对当前任务是否充分？\n生成 <5K / 分类 <1K → 先做离线蒸馏扩数据\n4\nPrompt 模板\nbaseline 前\ninstruction 是否表达清楚任务边界、给出格式约束？\n输出格式混乱 / 答非所问 → 改 instruction 通常 +5~10%\n5\n训练方式选型\nbaseline 前\n现有数据形态匹配 SFT / 蒸馏 / DPO / RL 哪一种？\n只有 (q, a) → SFT；有 teacher → 蒸馏；有偏好对 → DPO；有可编程 reward → RL\n6\nEval 配置\nbaseline 前\neval 集、eval_steps、任务指标 parse 都配好了吗？\n漏配 eval → 无法选最优 ckpt；漏 predict_with_generate → 没有 BLEU/ROUGE\n7\nBaseline 复盘\nbaseline 后\nLR 是否合理？是否过拟合？LoRA rank 是否到位？\neval_loss 震荡 → LR 偏大；train_loss→0 但 eval 不降 → 过拟合；rank=8 不再下降 → 升 rank 或换全参\n注意：基座模型在本阶段就要锁定。后续整个实验序列里，\nMODEL_NAME\n不再是一个可调变量。Agent 不允许擅自换基座；如果出现 \"LoRA 全跑过仍饱和\" 等信号，会专门起一节 \"需要决策\" 提示用户，由用户拍板。\n这块和 TAO 的 LOCKED 参数思路是一致的：把 \"不该让 Agent 动\" 的东西显式标出来，避免 Agent 越界探索。\n2.2 第二阶段：实验方案设计\n把 \"我能做什么\" 写成清单，把 \"应该先做什么\" 写成优先级。这里只贴一级参数，二到六级详见\nSKILL.md\n：\n一级（直接影响效果）\n参数\n取值范围\n备注\nlearning_rate\nLoRA: 1e-4 ~ 5e-4；\n全参:\n5e-6 ~ 5e-5；DPO: 5e-7 ~ 5e-6\n最敏感\nl\nora_rank\n/\nlora_alpha\n8/16/32/64/128（alpha=2×rank）\n表达力\nlora_target\nq_proj,k_proj,v_proj,o_proj\n/\nall-linear\nall-linear 参数 ×3\nnum_train_epochs\nSFT 2 ~ 5 / DPO 1 ~ 3\n/ 蒸馏\n1 ~ 3\n真实训练用这个\nPrompt 模板\ninstruction 文本改写\n通常 +5~10%\ncutoff_len\n1024 / 2048 / 4096 / 8192\n序列长度，吃显存\n技术候选库（参考 TAO 的 46 项知识库，针对 LLM 微调精简到 15+）。需要说明的是，下表「业内经验区间」一列是业内常见报道值，不是本项目实测；本项目目前仅在 Query 改写 SFT LoRA 这一条路径上做过比较充分的实验，其它路径的数字仅供方向参考：\n类别\n技术\n适用条件\n业内经验区间\nSFT\nLoRA rank 8/32/64\n由低到高试\n+1~5%\nSFT\nLoRA target=all-linear\nQKV 不够\n+1~3%\nSFT\n全参\nLoRA 到天花板\n+2~5%\n蒸馏\n大模型 hard label + SFT\n数据不足\n视场景，常显著\n蒸馏\n在线 KD Loss\n有 teacher\n待验证（配置就绪）\nRL\nGRPO\n有可编程 reward\n待验证（已接入 ROLL）\n数据\nPrompt 模板优化\n输出乱\n+2~10%\n数据\n清洗/筛选\n标注差\n+3~8%\n2.3 第三阶段：自动化实验验证\n2.3.1 实验分支管理\n每个实验对应 TuningFactory 的一个分支，命名\nexperiment-{编号}-{场景}-{方式}-{变量}\n，例如\nexperiment-03-qr-sft-lora32-prompt-v2\n。\nscripts/sync_to_tuning_factory.sh\n自动做三件事：\n在 submodule 里基于\nopenlm\n拉一个新分支\n把\nconfigs/*\n复制到\nTuningFactory/scripts/\ncommit + push 到远端\n实验隔离基于 submodule worktree 多分支，多个实验互不干扰，可并行可串行。\n2.3.2 任务提交与监控\n提交一行：\nbash\nsubmit.sh experiment-\n03\n-qr-sft-lora32-prompt-v2\n# 输出 task_id（32 位 hex）\n监控全走星云的 HTTP API，不用打开浏览器（下面\n<meta-api>\n/\n<log-download-api>\n是内部平台的域名占位符；这套调用结构本身跟平台无关，用\nK8s / Slurm / PAI\n的读者可以对照替换成自己平台的元信息 & 日志接口）：\n# 状态 + application_id + job_name\ncurl\n-s\n\"https://<meta-api>/nebula/meta?task_id=\n$\n{TASK_ID}\"\n# 实时 stdout / stderr\ncurl\n-s\n\"https://<meta-api>/nebula/log?task_id=\n$\n{TASK_ID}&rank=0&stream=stdout&bufferSize=102400\"\ncurl\n-s\n\"https://<meta-api>/nebula/log?task_id=\n$\n{TASK_ID}&rank=0&stream=stderr&bufferSize=102400\"\n# 训练完成后下载完整日志 zip\nAPP_ID=\n$\n(\ncurl\n-s\n\"https://<meta-api>/nebula/meta?task_id=\n$\n{TASK_ID}\"\n| python3\n-c\n\"import sys,json;print(json.load(sys.stdin)['data']['application']['application_id'])\"\n)\ncurl\n-L\n-o\nexperiment_logs/\n$\n{EXP}.zip\n\"https://<log-download-api>/logview/logs/download/\n$\n{APP_ID}\"\n不用\nAgent\n手搓\nwhile\n循环，直接用\nAgent\n自带的\n/loop\n能力做循环验证——例如\n/loop 15m 检查 task_id ${TASK_ID} 状态，完成后提取 BLEU/ROUGE 写入 csv\n，到点自动唤起、自动收尾，省心也省 token。\n2.3.3 自动指标提取\n训练完之后 Agent 自动从日志里正则提取\neval_loss\n/\npredict_bleu-4\n/\npredict_rouge-l\n，写入\nexperiment_results.csv\n：\ncurl\n-s\n\"https://<meta-api>/nebula/log?task_id=\n${TASK_ID}\n&rank=0&stream=stdout&bufferSize=204800\"\n| python3 -c\n\"\nimport sys,json,re\nd=json.load(sys.stdin)\nfor log in d.get('logs',[ ]):\nif log['role']=='worker':\nc=log['result']['data']['content']\nfor m in re.finditer(r'predict_(\\w+)\\s+=\\s+([\\d.]+)', c):\nprint(f'  {m.group(1)}: {m.group(2)}')\nbreak\n\"\n补充说明阶段三的产出物粒度（沿用前作 CV demo 的规约）：\nexperiment_results.csv\n：\n每个实验追加一行\n，列包括方案编号 / 场景 / 训练方式 / 基座模型 / 核心变量 / eval_loss / 任务指标 / 运行状态 / 任务ID / 备注\nfinal_report.md\n：\n每轮研究跑完后\n由 Agent 汇总一次，对比各方案的相对增益、给出下一轮建议或终止结论\n也就是说，csv 是实验级的明细，final_report.md 是研究级的总结，两者粒度不同。\n3. 工程实现要点\n3.1 数据接入\n1688 业务侧的样本/日志大多沉淀在 ODPS（MaxCompute，阿里云的大数据仓）表里，所以训练数据源默认对接 ODPS。Alpaca 三字段 schema：\nCREATE\nTABLE\nauto_research_llm_query_rewrite (\ninstruction STRING,\ninput\nSTRING,\noutput STRING\n) PARTITIONED BY (ds STRING) LIFECYCLE\n90\n;\nTuningFactory 的字段映射通过三个参数告诉框架：\n--prompt\n=instruction\n# 哪个字段作为 prompt\n--query\n=input\n# 哪个字段作为 query\n--response\n=output\n# 哪个字段作为 label（SFT 必填）\n提交到星云时，ODPS 三件套缺一不可：\n--tables\n=\n${INPUT}\n,\n${EVAL_INPUT}\n--odps_project\n=\n${ODPS_PROJECT}\n--access_id\n=...  --access_key=...\n3.2 训练配置脚本\n配置\n适用\nconfigs/sft_lora.sh\n单卡 LoRA，最快\nconfigs/sft_lora_multi.sh\n多卡 LoRA + DeepSpeed ZeRO-2\nconfigs/sft_full.sh\n全参 + DeepSpeed\nconfigs/sft_lora_moe.sh\nQwen3.6-35B-A3B 等 MoE，Megatron Turbo + EP\nconfigs/distill.sh\nKD Loss 蒸馏\nconfigs/dpo_lora.sh\nDPO\nconfigs/rl_roll.sh\nGRPO（需单独 clone ROLL）\nconfigs/infer.sh\n单独推理（zero-shot baseline / 评估别人 ckpt）\n每个脚本头部都有一段统一格式的 \"输入区\"，要起新实验，复制一份改这块就够。以\nsft_lora_multi.sh\n为例：\n# === 模型配置 ===\nMODEL_NAME\n=\n\"Qwen/Qwen3-8B\"\nPROMPT_TEMPLATE\n=\n\"qwen3\"\n# === 任务配置 ===\nSCENARIO\n=\n\"query_rewrite\"\nEXP_NAME\n=\n\"lora16_ds_2gpu\"\nJOB_NAME\n=\n\"auto_research_${SCENARIO}_${EXP_NAME}\"\n# === 数据源 ===\nODPS_PROJECT\n=\n\"<your_project>\"\nINPUT\n=\n\"odps://${ODPS_PROJECT}/tables/auto_research_llm_${SCENARIO}/ds=20260624\"\nEVAL_INPUT\n=\n\"odps://${ODPS_PROJECT}/tables/auto_research_llm_${SCENARIO}/ds=20260624\"\n# === 训练超参 ===\nLR\n=\n2\ne-\n4\n脚本下半部分是固定模板（拼出给 TuningFactory 的训练参数 + 给星云\nnebulactl\n（即星云 CLI）的提交参数），起新实验只需要改顶部这十几行变量。\nconfigs/*.sh\n本身不是在本地执行的，它的完整生命周期是：\nconfigs/sft_lora_multi.sh                                    ← 主仓里改这一份\n↓ scripts/sync_to_tuning_factory.sh 拷贝\nTuningFactory/scripts/sft_lora_multi.sh （实验分支副本）        ← submodule 上 push 到远端\n↓ submit.sh 把\n\"分支名 + 脚本路径\"\n告诉 llm_cli\n星云容器拉 git 仓库 → 执行 bash scripts/sft_lora_multi.sh    ← 真正运行在训练节点\n↓ 脚本里调 nebulactl run mdl --user_params=...\n任务被调度到训练队列\n所以\nconfigs/*.sh\n同时承担三个角色：本地是研究员动手改的那一份、submodule 实验分支里是被同步过去的提交入口、远端容器里是真正被执行的训练启动脚本。改一处就够，剩下都是脚本自动同步。\n3.3 自动评估\n最初的流程是训练完手动起一个推理任务，跑 generate → 写脚本算 BLEU。后来发现 TuningFactory 的 Trainer 自带\n--predict_with_generate=True\n，训完直接打 BLEU/ROUGE：\n--do_predict --predict_with_generate=\nTrue\n--enable_thinking=\nFalse\n加了这三行，训练完日志里就有：\n****\n* predict metrics\n****\n*\npredict\n_bleu-4              =    46.3219\npredict_rouge-1             =    70.2381\npredict\n_rouge-2             =    37.7778\npredict_rouge-l             =    63.5714\npredict\n_runtime             =    0:00:17.71\npredict_samples\n_per_\nsecond  =      0.282\n省掉一整轮推理脚本。\n--enable_thinking=False\n是关 Qwen3 thinking mode 的开关，原因详见 4.2。\n3.4 effective_batch 经验\neff_batch 公式：\neff_batch\n= world_size × per_device_train_batch_size × gradient_accumulation_steps\n任务\n推荐 eff_batch\nSFT 7B\n64~128\nSFT 35B+\n32~64\nDPO/SimPO\n32~64\n蒸馏 KD\n64~256\nRL GRPO\n8~16 prompt × n rollouts\n调参顺序：先把\nper_device_train_batch_size\n调到显存极限 → 再用\ngradient_accumulation_steps\n凑 eff_batch → LR 按 √eff_batch 微调。\n3.5 平台问题：星云 skill 兜底\n这一节是本项目的一个方法论：\n平台级问题外挂给平台官方 skill，业务级问题留在项目 skill\n。放到任何有官方 skill 的训练平台上都成立，读者可以类比。\n训练任务在星云上出错，绝大部分错误模式（OOM / NCCL / 镜像安装失败 / 队列额度 / OSS endpoint / pod 调度异常 ……）都在星云官方维护的\nnebula-support\nskill 里覆盖了。本项目 SKILL.md 显式声明依赖它（\na1\n是内部 skill 包管理器，功能类似\npip\n）：\na1 skill install nebula-support\n--agent\nclaude\n--global\n装上之后，Agent 遇到平台级报错会自动调起\nnebula-support\n来诊断、生成\nnebula-cli\n指令、检索官方文档；我们自己的 SKILL.md 只维护项目专属的 Debug 表（比如 4.1 的 DeepSpeed ckpt、4.2 的 Qwen3 thinking、4.3 的 oss_endpoint）。\n平台问题交给平台 skill，业务问题留在项目 skill——下面第 4 章列的也都是这一层级的踩坑沉淀。\n4. 踩坑实录\n这部分是流水线最重要的 \"沉淀物\"，对应过去几次的失败任务。\n4.1 PyTorch 2.6 +\nDeepSpeed ZeRO\n+ load_best 撞在一起\n4.1.1 错误现象\nstderr 关键栈：\nWeightsUnpickler\nerror\n:\nUnsupported\nglobal\n:\nGLOBAL\ndeepspeed.\nruntime\n.\nfp16\n.\nloss_scaler\n.\nLossScaler\nwas not an allowed\nglobal\nby\ndefault\n.\nPlease\nuse\n`torch.serialization.add_safe_globals(...)`\nor\n`torch.serialization.safe_globals`\nto allowlist\nthis\nglobal\nif\nyou trust\nthis\nclass\n/\nfunction\n.\nWeights\nonly load failed.\nRe\n-running\n`torch.load`\nwith\n`weights_only=False`\nwould likely\nsucceed, but it can result\nin\narbitrary code execution.\n4.1.2 根因\nPyTorch 2.6 默认\nweights_only=True\n，DeepSpeed 序列化的\nLossScaler\n对象不在白名单里，反序列化时直接拒绝。\n更糟的是这个错有两个触发点：\nTrainer auto-resume\n：output_dir 里有上一次的\ncheckpoint-N\n，新一轮训练默认会 \"接着练\"，加载时炸；\n训练结束\n_load_best_model()\n：开了\n--load_best_model_at_end=True\n之后，结束时会再次反序列化 best ckpt 的优化器状态。\n4.1.3 修复\n必做\n禁用\n--overwrite_output_dir=True\n不可用\n--load_best_model_at_end=True\n全参再加\n--save_only_model=True\n—\n需要 best ckpt 时，按\ntrainer_state.json\n里的\nbest_model_checkpoint\n字段手动定位：\ncat\n/data/oss_bucket_0/.../checkpoint-100/trainer_state.json | python3 -c\n\"\nimport sys, json\nprint(json.load(sys.stdin)['best_model_checkpoint'])\n\"\n4.2 predict BLEU 异常低（<5）\n4.2.1 错误现象\n训练完打开日志：\n****\n* predict metrics\n****\n*\npredict\n_bleu-4              =     1.8214\npredict_rouge-l             =     5.1218\neval\n_loss                   =     0.0042   ← 这俩居然能并存\neval_loss 明明只有 0.004，BLEU 怎么这么差？把\ngenerated_predictions.jsonl\n拉出来看了一眼：\n{\n\"label\"\n:\n\"男士夏季透气运动鞋\"\n,\n\"predict\"\n:\n\"<think>\n\\n\n用户输入是「夏天透气男鞋」，需要规范化为更标准的电商搜索词。考虑同义词替换......\n\\n\n</think>\n\\n\\n\n男士夏季透气运动鞋\"\n}\n4.2.2 根因\nQwen3 默认开了 thinking mode，generate 时会先吐一大段\n<think>...</think>\n再给答案。BLEU 拿这段思考内容跟 reference 算，分数当然惨。\n训练时为什么不会出问题？因为 TuningFactory 的\nqwen3\n模板（\nReasoningTemplate\n）会在训练阶段自动给 label 包一层\n<think>\\n\\n</think>\\n\\n{output}\n，loss 是基于这个完整序列算的——也就是说训练时模型学的是 \"先输出空 think 再输出答案\"。但推理时\nenable_thinking\n默认 True，模型就把空 think 填满了。\n4.2.3 修复\n所有\nconfigs/*.sh\n默认带上\n--enable_thinking=False\n。实测：关闭前\npredict_bleu-4 = 1.82\n，关闭后\npredict_bleu-4 = 46.32\n，\npredict_rouge-l = 63.57\n。\nSKILL.md\n的 Debug 表也补了一行：\n| predict BLEU 异常低（<5） | predict 输出含\n<\nthink\n>\n标签 | Qwen3 thinking mode 未关。加 --enable_thinking=False |\n4.3 oss_endpoint 格式因队列而异\n这一节的具体队列/endpoint 是我们内部环境的例子，读者关注结论即可：\n同一 region 的 OSS，在不同 GPU 队列（不同 IDC 线路）下白名单规则可能不同\n，切换队列时要顺手确认 endpoint 写法。\n队列\n正确格式\nMI308X\ncn-hangzhou.oss.aliyuncs.com\nH20 / H200\noss-cn-hangzhou-internal.aliyuncs.com\nMI308X 上写\noss-cn-*\n直接被白名单卡掉，报 \"域名白名单/域名不能是oss-cn-\"。切换队列时同步修改 endpoint。\n5. 同期工作横向对比\n把同期看到的几个项目放在一张表里，按入门门槛由低到高排列，方便选型：\n项目\n入门门槛\n适用领域\n训练框架\n平台\n并行隔离\nkarpathy/autoresearch\n最低\n单文件 train.py 实验\n任意\n本地 GPU\n—\nPailitao-AutoResearch\n低\n多模态排序 / 通用 demo\n自研\n星云\nGit 分支\n前作 CV demo\n低\nCV 分类\nPyTorch\n星云\nGit Worktree\nauto_research_llm（本文）\n中\n1688 LLM 微调\nTuningFactory + ROLL\n星云全队列\nSubmodule 分支 / Worktree\nTAO-AutoResearch\n高\n搜索召回/排序\n自研 + AOP（内部算法在线平台）\n多平台\nGit Worktree（4 子 Agent）\n简单的选型建议：\n想 5 分钟内跑通一个 demo 理解概念：先看 Karpathy 原版或 Pailitao 的 demo\nCV 分类调参：前作 CV demo\n1688 LLM 微调（SFT / DPO / 离线数据蒸馏已端到端验证；在线 KD / RL 已接入配置就绪，正在打通中）+ 星云平台：欢迎试用本项目\n多平台 / 多 Agent / 长周期生产环境：直接用 TAO-AutoResearch\n6. 还没做好的几块\n写到这里，必须诚实承认还有几块工程没填上：\nAgent 调参循环还不够智能\n：现在是按预设优先级跑（一级 → 二级 → 数据维度），没有根据中间结果剪枝。理想状态是类似 Hyperband / Successive Halving，或者借鉴 TAO 的 \"压测子 Agent + 外部 LLM 独立审查\" 机制\n跨场景知识不流通\n：Query 改写学到的 Prompt 优化经验，目前没办法自动迁移给同款判定。打算搞一个\nlessons.jsonl\n累计踩坑库（呼应 TAO 提到的 \"团队共享调优知识资产\"），但 schema 还没定\n在线蒸馏未端到端验证\n：TuningFactory 原生支持\n--stage distill\n，\nconfigs/distill.s\nh\n已经配好 student（Qwen3-8B）+ teacher（Qwen3-32B）+ forward KL 蒸馏目标，但还没真正提交任务跑通；teacher 在线推理的显存占用还需要实测\n离线蒸馏（logit caching）TuningFactory 不支持\n：希望 \"teacher 离线 dump top-k logits → student 训练时直接读 cache\" 这套省显存方案。代码侦察发现 TuningFactory 只对 teacher 文本再 tokenize，不读 logits 字段，整条 data pipeline / collator / trainer / hparams 校验都要改。短期可以先用前一种离线数据蒸馏（DashScope hard label 生成 → SFT）兜底\nRL 流水线没接进 submit.sh\n：当前 RL 走的是 ROLL 框架，按官方文档单独 clone（不是 submodule），独立配置 + 独立提交入口，没和 SFT/蒸馏的\nsubmit.sh\n流程统一\n本地评估缺失\n：训完只有 BLEU/ROUGE，业务真正关心的同款判定 F1、重排 NDCG@10 还需要离线再跑一遍 parse + 算分。\nscenarios/{}/eval_metrics.py\n只是骨架\nMOS 实测较少\n：14B 以下都用 OSS，MOS 路径只在文档里走过，还没真正跑通过 35B 模型的端到端 ckpt 加载\n多 Agent 协作\n：当前还是单 Agent + Skill 的形式，没有像 TAO 那样拆出分析 / 训练 / 评测 / 压测四个子 Agent。下一版考虑改造\n7. 写在最后\n回到开头那张 \"请求 → 召回 → ... → 模型训练 → 线上服务\" 的闭环图。\n两个月前写下那句话的时候，我以为 \"训练自动化\" 是一个遥远的工程目标。现在回头看，主搜、拍立淘的同学已经把骨架搭起来了，前作 CV demo 在 CIFAR-10 上跑通过一次，本文的 LLM 实战版又把 1688 这边的细节填上。下一步是把 \"模型训练\" 这一环和 \"样本反馈 / 线上服务\" 接上——这部分还在 SKILL.md 的 TODO 列表里。\n整个项目的初衷只是 \"把自己干活的步骤写成脚本\" ，做着做着发现 Agent 拉进来之后，重复但容易出错的部分（写配置、提交、监控、抓日志、算指标）确实可以让出来，自己专注于需要判断的部分（数据怎么洗、Prompt 怎么改、什么时候换基座）。\n参考资料\n[1] TAO-AutoResearch：Agent 接管模型训练优化全流程（内部技术分享）\n[2] Pailitao-AutoResearch Skill（内部技术分享）\n[3] auto_research_cv_cls_demo（前作 CV 版，内部仓库）\n[4] 多模态检索 TBStars_VL_Emb 指令遵循微调（内部技术分享）\n[5] 星云平台：离线训练 & 离线推理文档\n[6] TuningFactory（LLaMA-Factory 的内部 Fork）\n[7]\nROLL 官方文档:\nhttps://github.com/alibaba/ROLL\n[8]\nKarpathy autoresearch:\nhttps://github.com/karpathy/autoresearch\n[9]\nLLaMA-Factory（TuningFactory 上游开源项目）:\nhttps://github.com/hiyouga/LlamaFactory\n千问云\n-\n为\nAgent\n而生，驱动\nAI\n生产力\n扫描下方二维码，直达千问云体验\n点击阅读原文即可体验！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.28,
+        "peripheral": 0,
+        "transfer_business": 0.04,
+        "direct_local": 0,
+        "transfer_agent": 0.68
+      }
+    },
+    "relevance": {
+      "score": 1.89,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.06,
+        "2": 0.9,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.05,
+      "probabilities": {
+        "0": 0.34,
+        "1": 0.09,
+        "2": 0.08,
+        "3": 0.18,
+        "4": 0.3,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 1.53,
+      "probabilities": {
+        "0": 0.52,
+        "1": 0.02,
+        "2": 0.03,
+        "3": 0.28,
+        "4": 0.14,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 3.58,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.37,
+        "4": 0.61,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.32,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0.64,
+        "5": 0.35
+      }
+    },
+    "anti_hype": {
+      "score": 3.97,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.05,
+        "4": 0.93,
+        "5": 0.02
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 13178,
+    "outputTokens": 172,
+    "totalTokens": 13350
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.6,
+        "relevance": 0.91,
+        "grounding": 0,
+        "decision_action": 0,
+        "evidence": 0.72,
+        "actionability": 0.74,
+        "anti_hype": 0.95
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179824471,
+                "endTime": 1791179824663,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000553476",
+      "marketCost": "0.000553476",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000553476",
+      "inferenceCost": "0.000553476",
+      "inputInferenceCost": "0.000553476",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A679W0VXTA9B6EAFAV4D5"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:04 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::b5rq7-1791179823724-f4b831417a08"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.28,
+            "peripheral": 0,
+            "transfer_business": 0.04,
+            "direct_local": 0,
+            "transfer_agent": 0.68
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.89,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.06,
+            "2": 0.9,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.05,
+          "probabilities": {
+            "0": 0.34,
+            "1": 0.09,
+            "2": 0.08,
+            "3": 0.18,
+            "4": 0.3,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.53,
+          "probabilities": {
+            "0": 0.52,
+            "1": 0.02,
+            "2": 0.03,
+            "3": 0.28,
+            "4": 0.14,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.58,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.37,
+            "4": 0.61,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.32,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0.64,
+            "5": 0.35
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.97,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.05,
+            "4": 0.93,
+            "5": 0.02
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 13178,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.6,
+            "relevance": 0.91,
+            "grounding": 0,
+            "decision_action": 0,
+            "evidence": 0.72,
+            "actionability": 0.74,
+            "anti_hype": 0.95
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179824471,
+                    "endTime": 1791179824663,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000553476",
+          "marketCost": "0.000553476",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000553476",
+          "inferenceCost": "0.000553476",
+          "inputInferenceCost": "0.000553476",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A679W0VXTA9B6EAFAV4D5"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:03.905Z"
+  }
+}

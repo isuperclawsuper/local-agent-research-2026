@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1234262770652839936",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "参数化 Memory 漫谈（纯干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511041&idx=1&sn=037ffb3529df30ea5b8b30b966a526bf",
+      "date": "2026-08-07T10:18:00.229Z",
+      "chars": 6500,
+      "text": "不一定适合所有任务。\n第二，LoRA 的插入位置主要靠经验选择。当前很大程度依赖 heuristic 来选择应用 LoRA 的 weight matrices。\n第三，LoRA 本身没有提供 Memory 生命周期管理。它能保存参数增量，但它不负责：\n何时写入\n写入哪些经验\n如何去重\n如何处理冲突\n如何忘记\n如何验证写入是否改善未来行为\n5.3 QLoRA：让低秩参数记忆进入大模型规模\nQLoRA: Efficient Finetuning of Quantized LLMs\n，NeurIPS 2023 把冻结基座量化到 4-bit，再把梯度传到 LoRA adapter 中。(\narXiv\n)\n1.\n把基座模型 W 以 4-bit NF4 形式存储。\n2.\n前向 / 反向时，将量化权重 dequantize 到计算数据类型。\n3.\n不更新 W。\n4.\n只训练 LoRA 参数。\n公式上仍然是 LoRA：\n它降低训练成本，并没有改变 LoRA 的表达形式；效果强依赖数据质量、任务匹配和评价方式。\n不过值得一提的是，小参数增量天然适合“多记忆并存”，因为参数化 Memory 经常需要同时维护多个状态：\n用户\nA\n的偏好\n用户\nB\n的偏好\n项目\nX\n的代码风格\n项目\nY\n的领域术语\n任务 Z 的输出格式\n某次实验沉淀出的修复策略\n全量 fine-tuning 会让这些状态混在一份模型里。PEFT 提供了更清楚的分离方式：\nθ + φ_user_A\nθ + φ_user_B\nθ + φ_project_X\nθ + φ_domain_Y\n总之，LoRA/QLoRA 的意义在于，它给“经验压缩成参数”提供了一个明确形状（提供了一种方法）：\n如果一个任务 / 用户 / 领域的适配只需要少数关键方向，那么低秩增量就足以承载这类经验。这个思想和我们文章里说的压缩即智能主题高度一致：\n经验不是原样存储。\n经验被压缩成少数可训练方向。\n这些方向在基座模型的特征空间中放大某些行为倾向。\nLoRA 的低秩假设对很多任务有效，但它有任务边界。复杂领域迁移、跨语言迁移、高精度工具使用、长链路推理、持续个性化，可能需要更高 rank、更复杂模块，或者外部 Memory 与参数增量混合。因此：\n低秩增量适合承载某些稳定的适配方向（比如一些长期的记忆），但是会有损模型的泛化性；当经验本身高度离散、冲突频繁或需要可追溯证据时，外部记忆仍然必要。\n06\n小参数量还是很难，如果参数不变时，\n模型是否仍在“学习”？\n前面几章的 Memory 都要动参数：MAML 动初始化、LoRA 动一小撮增量、ROME/MEMIT 直接改 FFN 的某一层权重。到本章，问题变成：如果一个字节的参数都不改，只是往 context 里塞进几个示例，模型的预测就变好了——这算不算\"学习\"？发生在哪里？\nin-context learning（ICL）就是这件事。GPT-3 论文里它是\"few-shot\"：给几个 (输入, 输出) 示例，模型不更新权重就能做新任务。(\nNeurIPS\n) 我将分别从两个角度拆开它：\n它在做什么模式？ → induction heads（Olsson et al., 2022）(\nTransformer Circuits\n)\n它在跑什么算法？ → 隐式梯度下降 / 岭回归（Akyürek et al., 2023 (\narXiv\n)；von Oswald et al., 2023 (\nPMLR\n)）\n6.1 为什么大模型能 In-context Learning？\n来自 Anthropic 的论文\nIn-context Learning and Induction Heads\n（Olsson et al., Anthropic, 2022），是 Transformer Circuits Thread 的一篇长文，机制可解释性路线的代表作。核心是一个大胆假设。作者的原话是：\n\"we present preliminary and indirect evidence for a tantalizing hypothesis: that induction heads might constitute the mechanism for the actual majority of all in-context learning in large transformer models. 我们为一项引人入胜的假设提供了初步且间接的证据：归纳头可能构成了大型Transformer模型中所有上下文学习的实际主要机制。\"\n注意用词是 \"preliminary and indirect evidence\"（初步、间接证据）。整篇文章的证据来自对 34 个 Transformer 训练全程的分析，包含 超过 50,000 次注意力头消融。\n6.1.1 Induction Head 是什么\n先介绍下 induction head（归纳头）。induction head 是一种注意力头，它实现了一个极简算法：完成 [A][B] … [A] → [B] 这样的序列补全。看到当前 token 是 A，就回头找上一次 A 出现的地方，看它后面跟的是什么（B），然后预测 B。\n机制上它需要两个头跨层组合（显然，至少 two layer attention-only 的模型才能支持实验）（注意：这里的 head 指的是 attention head）：\n第 1 层：previous-token head（前一个 token 头）。把“前一个 token 的信息”拷贝进入第二个 head 所在的当前位置。如图所示，假设第一次出现的 A 对应的是“node”，那么它就会把“struction”这个信息拷贝下来。\n第 2 层：induction head（归纳头本体）。依赖上一步拷贝来的信息，去 attend \"上次出现 A 之后的那个 token\"再把它 copy 到输出、抬高对应 logit。\n因此，我们可以归纳出 induction head 的两个 actions 的定义（在重复的随机 token 序列上测试）：\nprefix matching（前缀匹配）：这个头会 attend 回那些“其后跟着当前 token”的历史位置。即，确定第一、二个“struction”的位置。\ncopying（复制）：这个头的输出会抬高它 attend 到的那个 token 的 logit。即，把“struction”这个信息复制到第二个“struction”的位置上去。\n值得注意，induction head 不是在背 n-gram 统计表。规则\n[A][B]…[A]→[B]\n对任意 A、B 都成立，A 和 B 高度解耦。这意味着它能在分布外工作，也为\"抽象版模式匹配\"埋下伏笔。我们后续会讲到。\n6.1.2 ICL score 怎么定义\n机制被定义后，接下来的问题是：我们如何评估模型 in-context learning 的能力、效果？再往下深挖一层，何谓 ICL？ICL 本质是说：模型在 context 里看到一些示例后，能更好地预测后续 token（也就是 induction head 的含义）。这也是 Learning 的含义，那么这里必然存在一个不等关系。想到这一点，那 ICL 的具体评估策略就不难制定了。\n在论文中，很简单，他们用一个简单启发式量化 ICL（宏观视角，跟 Kaplan et al. 一脉，看 loss 随 token 位置的下降）(\narXiv\n)。原文定义逐字为：\n\"In-context learning score: the loss of the 500th token in the context minus the average loss of the 50th token in the context, averaged over dataset examples.\"\n即\nICL score = loss(第 500 个 token) − loss(第 50 个 token)\n（注意方向，通常是负值，绝对值越大说明越靠后的 token 预测得越好）。符合我们的直觉：模型如果真的在用（真的学习了） context 的话，那么应该是——越靠后 loss 越低。其中，500 选在长度 512 的 context 末尾，50 选在\"文本基本属性已确立、但仍靠前\"的位置。\n我们只需要记住，ICL score 表达的是 in-context learning 的强度，越负说明模型越会用 context。\n6.1.3 phase change（相变）——本文引擎\n现在，我们有了计算 loss 的方式，也有了衡量 ICL 的指标。接下来，我们可以做洞察实验了。通过查找训练 checkpoints 的表现，发现训练早期有一个\n突变窗口\n：\n窗口大约在\n2.5×10⁹ 到 5×10⁹ token\n（对大模型约是训练的 1–2%）。\nICL score 对应的 loss 差从相变前的\n< 0.15 nats\n跳到相变后的\n≈ 0.4 nats\n，然后\n整个后续训练里基本恒定，且跨模型尺寸恒定\n（从 2 层玩具模型到 13B 大模型都一样）。\n训练 loss 曲线上出现可见的\n\"bump\"（induction bump）\n：多层模型的轨迹在这里明显偏离 1 层模型。\n同时，induction heads 在这个窗口里形成。\n例外：1 层模型定义上做不出 induction head，也就永远不发生相变、几乎没有 ICL。\n一个有意思的推论（作者列为 \"unexplained curiosity\"）：\nICL 像是\"有或没有\"的开关技能，不是可以持续打磨的\n。相变之后 ICL score 不再涨，大模型相对小模型的优势全在\"预测靠前 token\"上，而不是\"更会用 context\"。\n还有下面这些结论：\n我还很好奇，如果我提出了一种 induction head 的变体，比如 coding induction head，那，这些结论依旧成立吗？不得而知。\n此外，作者也做了更多的实验，得出了下面的结论：\n1.小型 attention-only 模型：induction heads 贡献了 ICL 的\n大部分\n，有\n强因果证据\n（消融 + 机制逆向工程）。\n2.带 MLP 的大模型：只能给\n中等强度的相关证据\n，可能有混淆因素。\n在小模型上高度相关（因果 + 机制），在大模型上只是强相关（correlational），模型尺寸越大，相关性越弱。\n6.1.4 per-token loss analysis\n平时说的 loss 是一个数，对一大堆 token 的负对数似然取了平均。平均会抹掉信息——你只知道整体变好，不知道是哪些 token 变好。平均磨平了很多局部特征。\nOlsson 的做法：固定一批探针 token（论文用了一万个，来自固定文本）。训练过程中每隔一段存一个 checkpoint，对这一万个 token 逐个算 loss，拼成一个一万维向量：\ncheckpoint t 的状态：\n第\n个\n快\n照\n下\n，\n第\n个\n的\n训练全程 = 这个向量随 t 移动，在一万维空间里画出一条曲线，每个点是一个 checkpoint。\n然后用 PCA 降维，把这一万个维度的向量投到二维平面，看训练轨迹的形状（横轴是 checkpoint 的编号）。因此，相变在这个空间里表现为轨迹的突然转向。\n轨迹转向说明\"学的东西变了\"。于是取相变窗口前后两个快照，对一段真实文本逐 token 算 Δloss = loss(后) − loss(前)，按 Δ 给每个 token 上色。\n经典的例子是《哈利·波特》的开头：\"The Dursleys\" 重复出现符合\n[A][B]…[A]→[B]\n，相变后这段 loss 骤降；而 \"Mrs. Dursley…Mrs. Potter\" 违反该模式，这意味着 loss 不变——说明就是 induction head 在压 loss。\ncase\n1\n（符合 induction 模式）：\n前文出现过\n\"Mrs. Dursley\"\n后文再次出现\n\"Mrs.\"\n→ 下一个真实 token 是\n\"Dursley\"\n匹配 [A][B] … [A] → [B]，A =\n\"Mrs.\"\n，B =\n\"Dursley\"\n→ 相变后这个\n\"Dursley\"\n的 loss 大幅下降\ncase\n2\n（违反 induction 模式）：\n前文出现过\n\"Mrs. Dursley\"\n后文出现\n\"Mrs.\"\n→ 下一个真实 token 却是\n\"Potter\"\ninduction 会押\n\"Dursley\"\n，押错\n→ 相变前后这个\n\"Potter\"\n的 loss 基本不动\n相变期间的收益，精确集中在\"induction 规则能猜对\"的 token 上；规则会猜错的位置没有任何改进。这就把宏观的 ICL 跳变和 induction 这个具体机制对上了号——改进的分布形状，和该机制预测的形状吻合。当然这仍属相关证据，只是定位精度很高。\n6.1.5 抽象模式匹配：不仅仅只是 [A][B] … [A] → [B]\n作者提出，模型足够大、表示足够抽象时，同一批 induction head 会从\"精确 token 复制\"升级成\n[A*][B*]…[A]→[B]\n，其中 A_≈A、B_≈B 在某个嵌入空间里相近，我理解是表征空间（也就是 latent representation space）。举例：A 和 A* 是同一个词的不同语言，于是这个头能逐词翻译。这是\"fuzzy / nearest-neighbor 版模式补全\"，也是从 induction head 通向\"一般 ICL\"的桥。\n机制上还是那套两跳电路（previous-token head 搬信息 + 第二层做匹配复制），不同之处在于：QK 回路的匹配从 token 身份变成表示相似，OV 回路的复制从恒等变成一个非平凡映射。两处的几何性质都来自预训练。\n举例示意（词对齐做了简化）：\ncontext: … le chat … the ?\nA  = the（当前 token）\nA* = le  （表示空间里 the ≈ le，同一功能词的两种语言形式）\nB* = chat（A* 的下一个词）\nB  =\ncat\n（输出端\ncat\n≈ chat）\n→ 该头在\n\"the\"\n处 attend 到\n\"chat\"\n，经 OV 映射抬高\n\"cat\"\n的 logit\n同一个电路（circuit，不是电路的意思）骨架，靠嵌入几何就能做逐词翻译这种表面上完全不同的活，也就是机器翻译。这就是 attention 的强大之处：\n它能把表示空间的几何性质映射到输出空间的几何性质\n。\n现在，我们回过头来就能理解 为什么说它是通向一般 ICL 的路 。因为 few-shot prompt 的结构就是：\n套上抽象版归纳模式匹配，这就是我们在这篇论文里看到的东西：\n匹配：在表示空间里找与 xq 最像的 xi\n取值：attend 到对应的 yi\n复制：输出与 yi 同类的答案\n这等于在 context 内部做了一次 soft nearest-neighbor：attention 的 softmax 权重天然给出对多个邻居的软加权，比严格 1-NN 更接近核回归。相似度度量存在权重里（预训练学的），训练样本存在 context 里（当场给的）。\n我们从实验上，系统地解释了：为什么我们输入一段 Prompt 进去，模型就能在 co",
+      "fulltext_obtained": true,
+      "chunk_index": 4,
+      "chunk_count": 11
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.41,
+        "transfer_agent": 0.54,
+        "peripheral": 0.05,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.17,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.64,
+        "2": 0.26,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.09,
+      "probabilities": {
+        "0": 0.94,
+        "1": 0.04,
+        "2": 0.02,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.13,
+      "probabilities": {
+        "0": 0.9,
+        "1": 0.07,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.65,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.17,
+        "2": 0.15,
+        "3": 0.06,
+        "4": 0.5,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.37,
+        "2": 0.2,
+        "3": 0.12,
+        "4": 0.2,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.65,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.11,
+        "2": 0.17,
+        "3": 0.52,
+        "4": 0.15,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.7,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6456,
+    "outputTokens": 172,
+    "totalTokens": 6628
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.43,
+        "relevance": 0.76,
+        "grounding": 0.94,
+        "decision_action": 0.91,
+        "evidence": 0.09,
+        "actionability": 0.2,
+        "anti_hype": 0.55
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180414818,
+                "endTime": 1791180414997,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000271152",
+      "marketCost": "0.000271152",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000271152",
+      "inferenceCost": "0.000271152",
+      "inputInferenceCost": "0.000271152",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AR7SNEVDZQZ27C05QTZC9"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:54 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::vt7j2-1791180414720-b683b1be4e2a"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.41,
+            "transfer_agent": 0.54,
+            "peripheral": 0.05,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.17,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.64,
+            "2": 0.26,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.09,
+          "probabilities": {
+            "0": 0.94,
+            "1": 0.04,
+            "2": 0.02,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.13,
+          "probabilities": {
+            "0": 0.9,
+            "1": 0.07,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.65,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.17,
+            "2": 0.15,
+            "3": 0.06,
+            "4": 0.5,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.37,
+            "2": 0.2,
+            "3": 0.12,
+            "4": 0.2,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.65,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.11,
+            "2": 0.17,
+            "3": 0.52,
+            "4": 0.15,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.7
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6456,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.43,
+            "relevance": 0.76,
+            "grounding": 0.94,
+            "decision_action": 0.91,
+            "evidence": 0.09,
+            "actionability": 0.2,
+            "anti_hype": 0.55
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180414818,
+                    "endTime": 1791180414997,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000271152",
+          "marketCost": "0.000271152",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000271152",
+          "inferenceCost": "0.000271152",
+          "inputInferenceCost": "0.000271152",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AR7SNEVDZQZ27C05QTZC9"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:54.231Z"
+  }
+}

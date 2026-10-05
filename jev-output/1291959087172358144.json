@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1291959087172358144",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "agent优化之GEPA——一种提示词自进化的优化方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650545973&idx=1&sn=01a23266cadd126c68a1a14dd0db544a",
+      "date": "2026-09-16T06:12:00.925Z",
+      "chars": 14670,
+      "text": "原创\n营销&交易技术\n2026-09-16 14:12\n浙江\nGEPA实现提示词零配置自进化\n本文基于GEPA（Genetic-Pareto，Reflective Prompt Evolution）[1]算法，设计并实现了一套Prompt 自进化系统，解决当前Prompt优化依赖人工经验导致的盲目性高、难以复制、缺乏权衡机制等痛点。该系统构建\"推理→评分→反思→选择\"的自动化闭环，通过数据驱动的反思式变异机制，让LLM自动分析Badcase、归因至Prompt具体规则、生成候选变体，并基于帕累托前沿进行多目标择优，避免单点优化引发的指标对抗性退化\n[1]\n。系统采用任务无关架构，支持二分类、多分类、评分等多种场景，通过零配置设计实现自动数据集分析与配置推断，同时提供可解释的优化过程。GEPA将Prompt优化从人工试错转变为有量化依据的自动化寻优，显著提升与人工标注及线上业务效果的对齐能力，为AI评估器提供可持续进化的技术底座。\n背景：为什么要做这件事\n▐\n1.1 现状痛点：prompt缺乏自进化的调优闭环\n目前 LLM Judge / 被评测Agent 的 Prompt 优化主要依赖\n人工经验驱动\n，存在四个核心问题：\n盲目性高：\n人工修改 Prompt 缺乏数据支撑，优化方向靠直觉试错，无法量化验证\n伪自动化：\n现有的 Prompt 优化（如用更强模型做静态扫描）本质是浅层迭代，缺乏深度的\"反思-修正\"逻辑（Self-Reflection），无法形成真正的智能进化闭环\n难以复制：\n调优经验沉淀在个人，没有标准化流程，无法规模化推广到多个业务场景\n无权衡机制：\n诊断方向单向，缺什么补什么，补完往往一边好一边坏；单点改动缺乏多目标博弈能力，无法在对抗指标间显式保留权衡面（Pareto Frontier）\n▐\n1.2 业务挑战：评估器存在两大对齐难题\n在实际业务中，LLM Judge 作为“裁判”，其判断标准如果发生偏移，整个评测体系就会失效。因此，我们面临两大核心对齐目标：\n评估器与人工标注对齐\n— LLM Judge 的输出要和人工标注的 Ground Truth 一致，确保离线评测具备基本的准确性底座。\n评估器与线上业务效果对齐\n— LLM Judge 的判断要和线上实际业务指标（CTR、转化率等）一致，确保离线高分的 Prompt 上线后不会“翻车”。\n这两大对齐问题广泛存在于我们AI项目各场景中。若沿用1.1人工经验驱动范式执行对齐，将陷入以下困境：启发式盲调收敛效率极低；静态扫描无法弥合深层语义错位；单点修补易引发多目标对抗性退化，顾此失彼；且专家经验难以跨域复用，新业务需反复经历试错循环。\n▐\n1.3 技术调研：从论文到方案\n基于上述痛点，我们深入调研了 Reflective Prompt Evolution 类前沿工作。其中，ICLR 2026 收录的《\nGEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning\n》 提供了核心技术路径。该论文提出反思式变异（Reflective Mutation）机制，构建持续进化闭环：LLM 自动分析 Badcase -> 归因至 Prompt 具体规则 -> 生成候选变体 -> 基于帕累托前沿（Pareto Frontier）多目标择优\n[1]\n。其中，GEPA 隶属于斯坦福大学提出的\nDSPy（Declarative Self-improving Python）\n[2] 生态，旨在将大模型应用开发从手工提示工程转化为系统化的算法优化范式。\n图1 GEPA迭代进化与帕累托采样流程[1]\n该论文的启发：\n1）用“数据驱动闭环”替代“经验盲调”\nGEPA的反思式变异机制表明，Prompt优化可以交由算法基于实测数据反馈，来自动归因与生成变体，让我们将人工直觉试错，转化为有量化依据、可收敛的自动化寻优过程。\n2）用“帕累托择优”弥补“无权衡机制”\n传统单点修补容易导致指标振荡。如上图1所示，GEPA的帕累托采样机制表明，我们无需始终选择表现最优的单一候选进行变异，以避免陷入局部最优，而是从各任务最优候选集中筛选采样来确保多样性，在指标振荡中保留最优权衡面\n[1]\n。\n3）如何实现从“学术原型”到“业务引擎”的工程跨越\n原生的框架缺乏对复杂业务流的支持，这启示我们不能仅作浅层调用，必须构建和任务无关的适配层，将诊断先验与通用接口沉淀为标准流水线，\"每个场景都要写代码\"变成\"填配置就能用\"，解决规模化复用难题。构想如下：\n图2 基于GEPA的prompt自进化架构图\n目标\n▐\n2.1 核心目标\n给 AI 一条提示词和一份标注数据，它还你一条更好的提示词。\n具体而言：\n自动化\n— 建立标准化的 Prompt 自动迭代流程，替代人工调优\n通用性\n— 任务无关（Task-agnostic）架构，覆盖二分类、多分类、评分、对比、聚类等多种任务类型\n零配置\n— 用户只需提供标注数据 + 任务目标，系统自动推断配置\n可解释\n— 每轮优化有明确的错误归因和改进方向，非盲目搜索\n▐\n2.2 可覆盖的场景\n常见任务类型举例如下（可拓展）：\n任务类型\n场景举例\n输出形式\n对齐目标\n二分类\n内容安全审核\npass / block\n人工标注\n客服意图识别\n正确 / 错误\n人工标注\n多分类\n主题分类\n服饰 / 数码 / 食品 / ...\n人工标注\n评分\n策略有效性评分\n1-5 分\n人工标注\n规则判定\nRubric Judge（多维检查清单）\n每条规则 pass / fail → 汇总裁决通过率\n人工标注\n聚类\n相似商品聚合\n同类商品簇 ID\n人工标注\n对比\nPairwise Judge\nchosen / rejected\n人工标注\n整体架构设计\n▐\n3.1 GEPA主循环系统架构总览\nGEPA 的优化主循环由四个核心环节组成，形成\"推理 → 评分 → 反思 → 选择\"的闭环：\n图3 GEPA优化主循环示意\n图\n[1]\n各环节详细说明：\n① 种子提示词\n职责：提供优化的起点\n实现细节：用户提供的初始 prompt，或由 Inspector 自动生成的 suggested_system_prompt。支持从文件加载或内联文本\n② LLM 推理\n职责：用当前 prompt 执行任务\n实现细节：任务模型对训练集批量推理：将 system_prompt + user_message 发送给 LLM，获取原始输出 raw_response[]。温度 = 0.0 保证结果可复现。支持批量并发调用\n③ 评分器\n职责：量化输出质量\n实现细节：先通过输出解析器提取结构化结果（JSON 字段提取 / 正则匹配），再按任务类型选择评分函数计算得分，例如二分类用 Precision / Recall / F1，评分类用 Cohen's Kappa / Spearman 相关系数 / MAE，聚类用配对 F1 / 兰德系数（ARI）等\n④ 反思与变异\n职责：分析错误并生成改进 prompt\n实现细节：分两步完成闭环：\na) 错误归因\n：对错误样本调用 LLM Judge 做三维分析，(1) 错误定位 (2) Prompt 归因 (3) 改进建议，生成结构化反馈文本；\nb) Prompt 变异\n：反思模型（建议比任务模型更强，温度 0.7）接收反思数据集（输入 + 输出 + 分数 + 反馈），分析错误模式并生成改进后的 prompt 候选，通过 Pareto 前沿选择保留多目标最优解\n什么是 Pareto 前沿选择？\n在 prompt 优化中，我们通常要同时优化多个指标（如精确率和召回率）。假设有 4 个候选 prompt：GEPA 保留前沿上的所有候选（A、B、D），而不是只选“综合得分最高”的一个，因为不同业务场景可能需要不同的权衡策略。\n三个模型的角色分工：\n任务模型\n默认模型：可选 · 温度=0.0\n职责说明：用当前 prompt 执行任务（分类/评分/聚类），追求快速、确定性输出\nJudge 模型\n默认模型：可与任务模型相同或独立\n职责说明：分析错误样本：(1) 错误定位 (2) Prompt 归因 (3) 改进建议。独立模型可提供更客观的第三方视角\n反思模型\n默认模型：可选 · 温度=0.7\n职责说明：接收所有反馈，生成改进后的 prompt 候选。建议比任务模型更强，鼓励创造性变异\n▐\n3.2 核心工作流设计（五步法）\n最初我们为每个业务场景单独编写 Adapter，n个场景n套代码，每接入一个新场景，需要从零写 Adapter（数据加载、输出解析、评分函数、反馈生成全部定制），无法复用。在2.0版本，GEPA Service 将共性逻辑抽象为 n 种任务类型，通过配置驱动，不再需要为每个场景写 Adapter。具体工作流如下：\n图4 GEPA使用流程示意\n▐\n3.3 代码架构\n分层设计思路：\n层级\n职责\n关键文件\n配置层\n回答\"这个任务该怎么跑\"。用 Pydantic 模型定义所有配置项，并通过\nbuild_config()\n自动对齐输出 schema、答案提取方式、评分方式三者，避免手动配置出错\nconfig.py\n— 定义 TaskConfig 等配置模型\nconfig_factory.py\n—\nbuild_config()\n按任务类型自动生成完整配置\n引擎层\n回答\"怎么把任务跑起来\"。对外暴露三个核心函数（\nrun_optimize\n/\nrun_evaluate\n/\nvalidate_config\n），对内负责数据加载、适配器组装、模型构建的编排\nengine.py\n— 对外入口，暴露三个核心 API\nadapter.py\n—\nGenericGEPAAdapter\n，连接 GEPA 框架和具体任务\nrun.py\n— 内部编排，准备数据和构建模型\n组件层\n回答\"具体怎么做每一步\"。可插拔的功能模块，通过 Protocol 协议扩展，新场景只需实现对应接口\nparsers.py\n— 从 LLM 输出中提取结构化结果\nscorers.py\n— 各种评分函数（精确匹配/F1/加权等）\nfeedback.py\n— 生成反馈（规则层 + LLM Judge 深度层）\nllm.py\n— 统一 LLM 调用（批量/重试/多 Provider）\nevaluate.py\n— 按任务类型计算评估指标\ninspector.py\n— 自动分析数据集，推断任务配置\n服务层\n回答\"怎么让用户用上\"。提供多种使用方式：CLI 命令行、HTTP API、Claude Code Skill\napi.py\n— FastAPI HTTP 服务\njobs.py\n— 任务管理器（持久化到文件系统）\nprogress.py\n— 实时进度输出（JSONL，供 Claude 读取）\n具体代码架构如下所示：\ngepa-service/\n├── SKILL.md\n# Skill 定义\n├── README.md\n# 项目文档\n├── CLAUDE.md\n# Claude Code 项目指引\n├── requirements.txt\n# Python 依赖\n│\n├── .claude/\n│   └── skills/gepa/SKILL.md   → symlink → ../../SKILL.md\n│\n└── scripts/\n# 核心代码\n├── __init__.py\n# 公开 API 导出\n├── __main__.py\n# CLI 入口（python -m scripts）\n│\n│  ─── 配置层 ───\n├── config.py\n# Pydantic 配置模型（TaskConfig 等）\n├── config_factory.py\n# 安全配置构建器（build_config）\n│\n│  ─── 核心引擎层 ───\n├── engine.py\n# 核心引擎（run_optimize / run_evaluate / validate_config）\n├── adapter.py\n# GEPA 适配器（GenericGEPAAdapter，编排中枢）\n├── run.py\n# 内部编排（数据准备 / 模型构建）\n│\n│  ─── 组件层 ───\n├── data.py\n# 数据加载 / 切分 / 格式化\n├── inspector.py\n# 数据集智能分析（零配置推断）\n├── llm.py\n# LLM 客户端（批量调用 / 重试 / 多 Provider）\n├── parsers.py\n# 输出解析（JSON / 正则 / Schema 校验）\n├── scorers.py\n# 评分函数（精确匹配 / F1 / 加权 / 数值接近度）\n├── evaluate.py\n# 评估指标计算（二分类 / 多分类 / 规则判定 / 评分 / 对比 / 聚类）\n├── feedback.py\n# 反馈引擎（规则 + LLM Judge 深度分析）\n├── protocols.py\n# 扩展协议和基类（可插拔组件接口）\n│\n│  ─── 服务层 ───\n├── progress.py\n# 进度输出（JSONL 文件）\n├── jobs.py\n# 任务管理器（文件系统持久化）\n└── api.py\n# FastAPI HTTP 服务\n技术实现细节\n按 3.3 的分层架构，逐层说明每层解决的关键问题与设计取舍。\n▐\n4.1 配置层：让人“配不错”\n4.1.1 配置模型（\nconfig.py\n）\n配置顶层是\nTaskConfig\n，向下聚合各环节的子配置：\n配置模型\n职责\nTaskConfig\n顶层配置，聚合所有子配置\nModelConfig\nLLM 模型配置（任务模型、反思模型、Judge 模型、API 端点）\nDataConfig\n数据配置（路径、格式、标注字段、切分策略）\nPromptConfig\n提示词配置（system_prompt、user_template）\nInputConfig\n输入配置（文本/多模态、图片字段）\nOutputConfig\n输出配置（schema 定义、答案提取方式）\nScoringConfig\n评分配置（方法名、参数、批次/样本模式）\nFeedbackConfig\n反馈配置（Judge prompt、截断长度）\nOptimizationConfig\n优化配置（最大调用次数、停止条件、反思批量大小）\nEvaluationConfig\n评估配置（指标类型：binary/multiclass 等）\n4.1.2 安全配置构建器（\nconfig_factory.py\n）\n三者之间存在隐式耦合：输出 schema 的字段类型、答案提取方式、评分函数必须互相匹配。我们不让用户逐项填，而是由\nbuild_config()\n按任务类型套预设，一次性把三者对齐：\n任务类型\nSchema 主字段\n提取方式\n优化评分（GEPA 目标）\n对齐指标（输出 vs 标注）\n二分类 binary\nresult: bool\njson_field / bool\nexact_match\nPrecision / Recall / F1 / Accuracy + 混淆矩阵\n多分类 multiclass\nresult: str\n（enum）\njson_field / str\nexact_match\nAccuracy + 各类别 Precision / Recall / F1\n评分 scoring\nresult: float\njson_field / float\nnumerical_closeness\nMAE / RMSE / Spearman 秩相关 / 加权 Kappa（QWK）\n对比 comparison\nresult: str\n（a / b）\njson_field / str\ncomparison\nAccuracy + 分侧准确率 + 位置偏差分数\n聚类 clustering\nresult: str\n（簇 ID）\njson_field / str\npair_f1\n兰德系数（ARI）/ Cohen's Kappa + 配对 P / R / F1\n▐\n4.2 核心引擎层：把任务跑起来\n4.2.1 核心引擎（\nengine.py\n）\n对外暴露三个核心 API：\nAPI\n功能\n返回\nrun_optimize(config, run_dir)\n执行完整的 prompt 优化循环\nOptimizeResult\n（best_prompt、best_score、迭代次数等）\nrun_evaluate(config, prompt, split)\n评估指定 prompt 在某个数据切片上的表现\nEvalResult\n（metrics、per_sample 详情）\nvalidate_config(config)\n只校验配置有效性，不跑优化\n(valid, error_message)\nrun_optimize\n的内部编排：准备数据（train/val/holdout）→ 组装适配器 → 构建反思模型 → 设置停止条件（连续无提升 / 达到目标分数）→ 进入 GEPA 主循环 → 保存最优 prompt → 在 holdout 上复评泛化能力。\n4.2.2 通用适配器（\nadapter.py\n）\n适配器\nGenericGEPAAdapter\n是全流程的编排中枢，它把 GEPA 框架的一次“候选评估”翻译成四步：\n批量推理\n— 把候选 prompt（自动拼上输出格式指令）与用户消息发给任务模型\n解析输出\n— 从原始回复中提取结构化答案（json_field / regex / full_text / 自定义）\n批次评分\n— 计算批次级分数，这就是 GEPA 的优化目标\n生成反思轨迹（仅反思轮需要）\n— 逐样本打分，满分样本给一句确认，错误样本交给 LLM Judge 做深度归因\n反思轨迹最终整理成 GEPA 能读的四元组——\n输入、模型原始输出、样本分数、反馈文本\n——这也是反思模型改写 prompt 的全部依据。\n4.2.3 内部编排（\nrun.py\n）\n提供引擎层内部的三个构建函数：\n函数\n职责\nprepare_data(config)\n加载数据集 → 校验格式 → 分层切分 → 模板格式化 → 返回 train/val/holdout\nbuild_adapter(config)\n根据配置构建 LLMClient（任务模型 + Judge 模型）→ 组装 GenericGEPAAdapter\nbuild_reflection_lm(config)\n构建反思模型的 callable（温度 0.7，支持 DashScope 特殊参数）\n▐\n4.3 组件层：可插拔的六个模块\n4.3.1 数据加载与切分（\ndata.py\n）\n流水线：加载（json / jsonl / csv）-> 按任务类型严格校验标注 -> 分层切分（train 50% / val 30% / holdout 20%）-> 模板格式化 -> 转成 GEPA 的 DataInst 格式。\n两处细节值得一提：切分按标签分层（二分类按 true/false、多分类按各类别、连续值先分位数分桶再分层），保证各切片分布一致；校验采用严格模式，在跑之前就发现数据问题。\n4.3.2 零配置推断（\ninspector.py\n）\n传统框架需要用户手动配置十余项参数，Inspector 能自动分析数据集结构。工作流程如下图所示：\n图5 数据集智能分析示意工作流\n它先给每个字段做画像（数据类型、唯一值数量、是否二值/分类/长文本/URL、平均长度、缺失率），再据此并行推断三件事：\n哪个字段是标注、这是什么任务、哪些字段是输入，\n最后给出一个置信度评估，\n产物是\nDatasetProfile\n，包含任务类型、字段划分、建议模板、建议种子提示词、枚举值/分数范围等完整配置建议。\n4.3.3 模型调用与输出解析（\nllm.py\n/\nparsers.py\n）\nllm.py\n基于\nlitellm\n统一多 Provider 调用（按 api_base 自动识别 DashScope / OpenAI / Anthropic / Moonshot / 智谱），并处理工程上的脏活：批量并发、指数退避重试（2s → 4s → 8s，最多 3 次）、单请求失败不拖垮整批、每次调用都带结构化\n的\nsuccess\n/\nerror\n而不静默吞异常。\nparsers.py\n负责把 LLM 的自由文本变成可比对的值：先清洗，再按配置选择 json_field / regex / full_text / 自定义策略提取。\n若配置了\nOutputSchema\n，还会校验字段类型、enum 范围、数值上下界；\n同时由\nbuild_format_instruction()\n从 schema 反向生成输出格式说明，追加到 system_prompt 末尾，让「要求的格式」和「校验的格式」永远同源。\n4.3.4 评分函数与评估指标（\nscorers.py\n/\nevaluate.py\n）\n评分分两级，服务两个不同目的：\n样本级\n（给反思轨迹用，回答「这一条错在哪」）：如 exact_match、contains、numerical_closeness（按误差线性/平方惩罚）、weighted_binary（对 FP / FN 不对称惩罚）。\n批次级\n（给 GEPA 当优化目标，回答“这个候选整体好不好”）：如 f1_score 做平衡优化；precision_recall 做约束优化——精确率达标时直接返回召回率，未达标则\n乘以\n(precision/target)²\n惩罚，用来表达「精确率不低于 80% 的前提下最大化召回」这类业务诉求。\nevaluate.py\n则按任务类型自动选指标体系：二分类用 Precision / Recall / F1 / Accuracy；多分类叠加每类指标；评分任务用 MAE / RMSE / Spearman / Cohen's Kappa（衡量与主观打分的一致性）；对比任务额外算位置偏差分数；聚类任务转成 pair-level 标签后算 Pair P/R/F1 与兰德系数（ARI）等。\n4.3.5 反馈引擎（\nfeedback.py\n）\n反馈是驱动 GEPA 反思进化的燃料，采用双层设计：\n规则层\n用模板快速给出事实性反馈（正确 / 解析失败 / 答错，各自附上模型输出与正确答案）；\n深度层\n只对错误样本调用 Judge 模型，做三问归因：\n你是 prompt 优化分析专家。分析以下 AI agent 的错误输出。\n（输入：当前 System Prompt / 输入 / Agent 输出 / 正确答案，各自按上限截断）\n## 分析要求（200字以内）\n1.\n错误定位: agent 在哪个推理步骤出了问题？\n2.\nPrompt 归因: 当前 prompt 的哪条规则导致或未能阻止这个错误？\n3.\n改进建议: prompt 应该如何调整？\n关键在于第 2 问\n：它把“模型答错了”翻译成“prompt 的哪一条规则有问题”，让反思模型拿到的是带归因的诊断而不是一堆错误样本，从而把盲目搜索变成定向改写。\n4.3.6 扩展协议（\nprotocols.py\n）\n用 Python Protocol + ABC 基类为四个环节留出扩展位——数据准备（\nDataPreparer\n）、输出解析（\nOutputParser\n）、评分（\nScorer\n）、反馈生成（\nFeedbackGenerator\n）。遇到内置能力覆盖不了的场景，用户只需实现对应协议，在 config 里写上类路径即可动态注入，不必改动引擎代码。\n▐\n4.4 服务层：三种用法\n同一套引擎对外提供三种入口：\nCLI\n（本地调试）、\nHTTP API\n（平台集成）、\nClaude Code / Qoder Skill\n（对话式使用）。\napi.py\n基于 FastAPI，围绕“任务”组织端点：提交、列表、查状态、看进度、取结果、取消运行中的任务，另有一次性评估、配置校验、数据上传与健康检查。\njobs.py\n的任务状态全部落在文件系统上，每个任务一个\nruns/jobs/{job_id}/\n目录，内含五个文件：\n文件\n内容\nconfig.json\n任务配置\njob_state.json\n运行状态（pending / running / completed / failed / cancelled）\nprogress.jsonl\n实时进度事件\nbest_prompt.txt\n优化出的最优提示词\nresult.json\n完整 GEPA 结果\n状态外部化带来三个好处：任务可后台线程运行、可通过取消令牌中断、也可在运行中途或结束后随时回查与追溯历史。\nprogress.py\n把优化事件写成 JSONL 追加流，Skill 侧\ntail\n一下就能实时汇报进度。\nSkill 使用流程和提升效果\n▐\n5.1 安装\n# 1. 安装依赖\npip install -r requirements.txt -i xxx\n# 2. 配置 API Key\nexport\nDASHSCOPE_API_KEY=\n\"your-key-here\"\n# 或 OPENAI_API_KEY\n▐\n5.2 执行示例\n使用方式：Claude Code /qoder/codex等，直接对话，我想优化提示词，有标注数据，Skill 会引导你完成五步流程：\n收集信息\n— 提供带标注的数据集 + 一句话任务目标\n分析数据\n— Inspector 自动推断任务配置（任务类型、字段、模板）\n确认配置\n— 调整评分方式和参数，确认数据切分比例\n执行优化\n— 后台运行约 15-30 分钟，通过 JSONL 实时报告进度\n报告结果\n— 展示得分提升、优化后提示词、与原始提示词的差异、后续建议\n下面是输入部分和输出部分的示例，以某需求为例。\n5.2.1 输入说明\nGEPA 的输入分为两部分：需要准备的文件和交互式用户输入。\n用户需要准备的数据至少包括 raw/ 文件夹下的两个文件：数据集和提示词。模型解析后输出三类文件：\njsonl 格式的数据集\n（data/），\n规范化后的提示词\n（prompts/）以及\n运行配置\n（config/）。\n1. 带标注的数据集\n数据集包含\n模型输入字段\n和\n正确答案\n。命名最好与提示词中的变量名对应。\n数据集字段要求：\n字段类型\n说明\n示例\n输入字段\n模型需要分析的文本/数值内容\ntitle\n、\ncontent\n等\n答案字段\n正确标注（必须每条都有）\nanswer\n、\nlabel\n、\nresult\n等\n图片字段\n（可选）\n图片 URL，字段名含\nimage\n/\nimg\n/\nurl\n时自动识别\nimageUrl\n、\nskuImage\n等\n2. 初始提示词\n初始提示词是优化的起点，也称为\"种子提示词\"。如果已有在用的 prompt，从它开始优化比从零开始更快。如果没有提示词，GEPA 的 inspector 会根据数据集自动生成一个种子提示词。\n提示词需要包含两部分：\n组成\n组成\n文件示例\nsystem_prompt\n定义角色、规则、输出格式约束\nprompts/system_prompt.txt\nuser_template\n数据注入模板，用\n{fieldName}\n占位\nprompts/user_template.txt\n3. 交互式用户输入\n触发 Skill 后，系统会逐步收集以下信息：\n图6 和skill交互示意图\n数据与任务\n信息\n说明\n示例\n数据集路径\nJSONL/JSON/CSV 文件路径\ntasks/my_task/data/dataset.jsonl\n任务目标\n一句话说明模型要做什么\n\"判断两个商品 SKU 是否xxxxx\"\n提示词与评判偏好\n信息\n说明\n默认行为\n现有提示词\n已有的 system prompt 文件路径\n由 inspector 自动生成种子提示词\n评判偏好\n误判和漏判哪个更严重，优化准确率或者召回率\n使用 F1 平衡评分\n可选配置\n信息\n默认值\n说明\n模型名称\n推理/反思模型：如\nqwen3.6-flash\n可替换为其他模型\n输入字段\ninspector 自动检测\n可手动指定使用哪些字段\n是否包含图片\ninspector 自动检测\n支持图文多模态\n5.2.2 实际提升效果\n优化完成后，GEPA 在\nrun_dir\n目录下产出以下文件，示例：\nruns/job_20260727_195205/\n├── best_prompt.txt\n# 最优提示词（纯文本）\n├── optimize_result.json\n# 完整优化结果（JSON）\n├── result.json\n# GEPA 引擎原始结果\n├── candidates.json\n# 所有候选提示词及评估详情\n├── candidate_tree.html\n# 候选树可视化（浏览器打开）\n├── progress.jsonl\n# 优化进度日志（JSONL，每行一个事件）\n├── run_log.txt\n# 运行日志（纯文本）\n├── run_log.json\n# 运行日志（JSON 格式）\n├── run_log_stderr.txt\n# 错误输出日志\n├── gepa_state.bin\n# GEPA 引擎状态二进制快照\n└── generated_best_outputs_valset/\n# 最优提示词在验证集上的逐条输出\n├── task_0/\n│   └── iter_0_prog_0.json\n# 第 0 条数据的模型输出\n├── task_1/\n│   └── iter_0_prog_0.json\n└── ...\n# 每条验证集数据一个目录\n并且在聊天框内输出简略报告结果：\n图7 优化完毕后模型会输出报告，包括验证集和测试集指标，后者用来反映泛化能力。模型还会输出提示词的主要优化点，并提出后续建议。\n▐\n5.3 评判偏好速查表\n根据业务需求选择合适的评分策略举例：\n分类任务：\n用户表述\n评分方式\n参数\n\"不要误判\" / \"准确率重要\"\n加权二分类\n{\"fp_penalty\": 0.0, \"fn_penalty\": 0.5}\n\"不要漏\" / \"召回率重要\"\n加权二分类\n{\"fp_penalty\": 0.5, \"fn_penalty\": 0.0}\n\"F1 平衡\"\nF1 分数\n{}\n\"精确率到 80% 以上再说召回\"\n精确率-召回率\n{\"precision_target\": 0.8}\n无特别偏好\n精确匹配\n{}\n评分任务：\n用户表述\n评分方式\n参数\n\"平均误差要小\"\n数值接近度\n{\"penalty\": \"linear\"}\n\"大错不能犯\"\n数值接近度\n{\"penalty\": \"quadratic\"}\n对比任务：\n用户表述\n评分方式\n参数\n\"准确率要高\"\n精确匹配\n{}\n\"不能有位置偏差\"\n对比评估\n{\"check_bias\": true}\n聚类任务：\n用户表述\n评分方式\n参数\n\"一致性要高\"\nCohen's Kappa，ARI\n{}\n\"不能过度合并\"\n配对精确率\n{\"focus\": \"precision\"}\n\"不能漏合并\"\n配对召回率\n{\"focus\": \"recall\"}\n未来展望与思考\n▐\n6.1 冻结区：不是所有内容都该被改\nGEPA 默认将整段 prompt 交给反思模型重写，这意味着硬性约束、工具调用协议、输出 Schema 都处于可被改动的范围内。这带来一个反直觉的风险：有时候删掉一条约束往往能提分。 约束的本质是限制行为空间，去掉它，模型就少犯一类\"做多了\"的错。若有人工标注兜底，这类篡改尚能被发现；但在纯规则评分下，它本质上就是奖励黑客（reward hacking）。\n因此，正确的防御方式是从结构上禁止改动，而非事后靠扣分来补救。具体做法是将 prompt 划分为两个区域：\n区\n内容\n参与变异\n冻结区\n硬性约束、工具调用协议、输出 Schema\n否\n可变区\n判断优先级、决策倾向、异常处理、表达方式\n是\nGEPA 支持多 component 结构，让选择器只返回可变区，冻结段就不会进入反思上下文。\n▐\n6.2 提示词膨胀：目标是\"更准，且不更长\"\n反思模型有一种天然倾向：不断补充说明。十几轮迭代下来，prompt 从几百字膨胀到几千字，而每一轮的分数都在涨，不会有任何信号提示你出了问题。真正的代价是隐性的：\n关键约束被淹没：核心指令埋在冗长的补丁堆里，模型注意力被稀释；\n推理成本线性上涨：token 数翻倍，延迟和费用同步翻倍；\n人无法接管：prompt 长到读不懂，一旦需要人工回滚或调试，根本无从下手。\n抑制手段：可以把长度作为帕累托的第三个目标（而非加权惩罚，避免与主目标抵消），并设硬上限门禁。\n▐\n6.3 无 Ground Truth 场景的prompt自进化\n一开始我设想的GEPA定位是在judge align上，这部分对齐标准靠人工标注。但真正值得优化的往往是被评测 agent 自己的 prompt，难点在于部分agent做策略生成，没有正确答案，只有事后的业务效果。我想到了两点：\n变异方向\n：原生 GEPA 自由探索偏随机。接上离线评测指标/线上业务效果汇总的归因分析作文本梯度，再补一层 prompt 结构缺陷诊断，把\"业务上错在哪\"翻译成\"哪一段该改\"，即变为定向变异，方向更明确。\n对错判据\n：一是用已有的离线评测指标当 judge，把候选跑出的结果算成分数，构造对抗双目标（该做的没做 / 不该做的做了）；二是历史策略回溯预测，把候选决策溯源到历史相似场景，对比同类最优历史的业务指标。回溯预测只用于排序与否决，不回流反思，否则“改得越少 -> 匹配越多 -> 分越高”会把搜索拖向保守。\n图8 双通道GEPA优化框架设想\n参考文献\n[1] AGRAWAL L A, TAN S, SOYLU D, 等. GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning[EB/OL]. arXiv:2507.19457, 2025.\nhttps://arxiv.org/abs/2507.19457\n.\n[2] KHATTAB O, SINGHVI A, MAHESHWARI P, 等. DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines[EB/OL]. arXiv:2310.03714, 2023.\nhttps://arxiv.org/abs/2310.03714\n.\n团队介绍\n本文作者诗咏，来自淘天集团-营销&交易技术团队。本团队承担淘天电商全链路交易技术攻坚，致力于通过技术创新推动业务增长与用户体验升级。过去一年主导了多个高价值项目，包括：支撑618、双11、春晚等亿级流量洪峰、构建业界领先的全网价格力体系、承接淘宝全面接入微信支付、搭建集团最大的AI创新平台-ideaLAB，支撑淘宝秒杀等创新业务的高速增长。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.8,
+        "transfer_business": 0.05,
+        "irrelevant": 0.15,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.92,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.1,
+        "2": 0.86,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.98,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.22,
+        "2": 0.19,
+        "3": 0.2,
+        "4": 0.19,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.97,
+      "probabilities": {
+        "0": 0.53,
+        "1": 0.13,
+        "2": 0.24,
+        "3": 0.06,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.75,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.27,
+        "3": 0.7,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.39,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.53,
+        "5": 0.45
+      }
+    },
+    "anti_hype": {
+      "score": 3.31,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.07,
+        "3": 0.48,
+        "4": 0.43,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 12767,
+    "outputTokens": 172,
+    "totalTokens": 12939
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.75,
+        "relevance": 0.9,
+        "grounding": 0.09,
+        "decision_action": 0.36,
+        "evidence": 0.79,
+        "actionability": 0.66,
+        "anti_hype": 0.63
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179872788,
+                "endTime": 1791179872972,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000536214",
+      "marketCost": "0.000536214",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000536214",
+      "inferenceCost": "0.000536214",
+      "inputInferenceCost": "0.000536214",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7PG19X734A7Z571CQFV6"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:52 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::jmnxt-1791179872520-612dfdee01c0"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.8,
+            "transfer_business": 0.05,
+            "irrelevant": 0.15,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.92,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.1,
+            "2": 0.86,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.98,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.22,
+            "2": 0.19,
+            "3": 0.2,
+            "4": 0.19,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.97,
+          "probabilities": {
+            "0": 0.53,
+            "1": 0.13,
+            "2": 0.24,
+            "3": 0.06,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.75,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.27,
+            "3": 0.7,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.39,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.53,
+            "5": 0.45
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.31,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.07,
+            "3": 0.48,
+            "4": 0.43,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 12767,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.75,
+            "relevance": 0.9,
+            "grounding": 0.09,
+            "decision_action": 0.36,
+            "evidence": 0.79,
+            "actionability": 0.66,
+            "anti_hype": 0.63
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179872788,
+                    "endTime": 1791179872972,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000536214",
+          "marketCost": "0.000536214",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000536214",
+          "inferenceCost": "0.000536214",
+          "inputInferenceCost": "0.000536214",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7PG19X734A7Z571CQFV6"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:52.208Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1147132582870097920",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "你的 Agent 每次都“失忆”？这个工具彻底治好了我的前端开发焦虑",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247520252&idx=1&sn=965325b6e00360e3d3bd90f561598f17",
+      "date": "2026-06-08T09:08:00.396Z",
+      "chars": 5143,
+      "text": "原创\nOpenViking\n2026-06-08 17:08\n北京\n凌晨一点，你刚和 Agent 把要设计的前端页面风格敲定——采用深色科技风格的背景，页面字体一致——然后关掉会话去睡觉。\n第二天一早，你重新开一个窗口，输入「帮我继续做数据看板」。\n然后 AI 给你吐出了\n一张白色卡片，文字忽大忽小，五花八门的字体看得你眼花缭乱\n。\n那一刻你意识到：你不是在用一个 AI 工具——你是在喂养一条\n每天早上失忆的金鱼\n。你所有的心血，在会话关闭的那一刻就已经全部清零。\n你的 Agent 额度用完了，想换个工具接着干，却遇到了更糟心的事：用 Trae 对齐了交互逻辑，切到 Codex 继续开发又要从头解释；换 Claude Code 调 Bug，还是得重新交代一遍设计规范。你那份精心整理的组件文档、沉淀下来的历史决策，就像散落在各个聊天框里的碎纸片，到头来还是得对着新工具再讲一遍来龙去脉。\n这种折磨有着共同的特性：\n缺乏可结构化、可召回、可跨会话跨 Agent 流通的长期记忆底座\n。Agent 越用越笨，用户越用越崩溃，根源就在这里。\nOpenViking 是什么？\nOpenViking 是连接你和所有 AI Agent 工具之间的「记忆中枢」\n。它以 MCP / 插件 / CLI 工具的形式接入 Trae、Codex、Claude Code 等工具，在你每次与 AI 协作的过程中，悄悄提炼、存储你说过的一切重要规范与决策——并在下次需要时，精准召回。你不再需要重复表述，AI 也不再需要从零开始。\nOpenViking 有哪些价值？\n一. 形成个人长期设计规范\n记忆提取\n跟 AI 协作设计页面时，我们往往会在对话过程中不断补充细节：\n这些零散的信息包含了重要的上下文：我们的审美倾向、布局偏好、组件要求等等。\nOpenViking 要做的，就是在对话过程中持续捕捉这些有效信息，把它们从分散的对话里提取出来，沉淀成可复用的结构化记忆。\n这些记忆不会被简单堆在一起，而是会按照不同语义类型进行存储：\nentities：\n被反复提及的组件\nevents\n：关键决策事件，例如某次背景颜色调整\npreferences：\n可复用的偏好规则，例如配色、布局、字体、交互风格\nprofile：\n项目级画像，包括整体风格和长期约束\n这样一来，原本散落在对话里的设计要求，就会被整理成可检索、可复用、可持续更新的上下文资产。\n记忆召回\n记忆存储好了，怎么高效用起来？\nOpenViking 的召回策略并不是简单粗暴的关键词搜索，而是采用了一套更接近人类思考方式的方法：\n意图分析 + 层级检索\n。\n第一阶段，是先理解用户到底想做什么。\n当你输入一个与ui设计相关的 query 时，OpenViking 不会直接基于原始文本做关键词匹配。它会先借助 LLM 对用户请求进行意图识别，判断这句话背后真正需要调用的是哪一类上下文信息：是用户过往沉淀的设计偏好，还是可复用的组件模板，或者是某套已经固化下来的操作技能。\n换句话说，它不会一上来就把所有记忆混在一起搜，而是先判断：\n这次任务，到底应该去哪里找答案\n。\n在完成意图分析后，系统会把用户输入拆解成带有类型标注的子查询。每个子查询都带着明确的检索目标，也知道自己应该进入哪个召回目录。\n这样做的好处是，召回不再是对原始 query 的粗粒度匹配，而是先理解任务，再拆解问题，最后把不同类型的检索需求分别路由到对应的记忆空间。\n第二阶段，是在记忆树里一层层缩小范围。\nOpenViking 的记忆库，不是一个把所有信息堆在一起的大仓库。\n它更像一棵按语义路径生长出来的记忆树。不同类型的记忆，会被放到不同的层级和目录里。这样一来，系统在检索时就不需要从头到尾翻一遍，而是可以先利用这棵树的结构，快速缩小搜索范围。\n召回时，OpenViking 会先做一次全局向量检索，找到和当前请求最相关的起始目录。\n确定记忆搜索的“入口”之后，系统不会继续暴力遍历整棵记忆树，而是采用递归搜索策略：从相关性评分最高的节点开始，优先向下展开进行检索。\n这套机制的价值在于，OpenViking 不是在记忆库里“大海捞针”，而是沿着最可能正确的路径逐层深入。\n二. 跨会话记忆延续\n前端设计这类长链路任务，通常会拆分为不同会话。\n问题在于，如果每个会话都只记得自己那一段，协作就很容易断层。比如，前端开发过程中突然出现了新的 Bug，但当初记录设计规范的旧会话已经找不到了。你可能需要翻聊天记录、重新描述项目背景，甚至把所有规范再讲一遍。\nOpenViking 想解决的，就是这种跨会话上下文断裂的问题。\n未接入 OpenViking 时，新会话中历史记忆丢失。\n接入 OpenViking 后，新会话承接历史记忆。\n它会让同一项目下的多个会话共享一份长期记忆。在新的会话中，Agent 无需从零开始，而是能基于已有的项目背景继续推进后续任务。\n三. SubAgent 记忆共享\n当我们使用 Codex 这类 Agent 工具时，引入多个 SubAgent 协作，往往能提升开发效率。\n比如，\n需求 Agent\n负责拆解任务，\n代码 Agent\n负责实现功能，\n审查 Agent\n负责检查结果。分工清楚之后，复杂任务就可以被拆成多个更容易处理的环节。\n如果在这个流程中加入 OpenViking 做上下文管理，各个 SubAgent 就不只是“各做各的”，而是可以围绕同一份项目记忆协同工作。\n有了 OpenViking，多个 SubAgent 不再只是按顺序完成任务，而是可以共享同一份项目上下文：前一个 Agent 的输出，会成为后一个 Agent 的依据；后一个 Agent 的反馈，也会继续沉淀进项目记忆中。\n四. 跨平台 Agent 记忆共享\n前端设计工作通常不是一个工具走到底：用 Codex 生成底图、切换 Trae 添加功能、再换 Claude Code 修 bug，充分利用各个 Agent 工具的优势是很常见的开发方式。\n但问题也随之而来：如果每个工具各自为政，上下文对不上，最后大概率是「同一个组件，三种实现，三套风格」——你花在统一和返工上的时间，远远超过了多工具带来的效率增益。\nOpenViking 让三者接入同一份项目记忆——\n在 Codex 里沉淀的颜色规范，Trae 直接可见；Trae 写入的页面布局决策，Claude Code 接手时照样能召回\n。你在任何工具里「教」过 AI 的东西，都不会消失。\n未接入 OpenViking 时，在 Trae 中对齐的规范无法被 Claude Code 继承。\n接入 OpenViking 后，Trae 和 Claude Code 不再各说各话，而是基于同一份记忆继续协作。\n案例展示\n说了这么多原理，不如直接上 case。我们以「搭建产品 Playground 网页」为例，完整走一遍 OpenViking 与 Agent 的协作流程——从规范沉淀，到精准召回，再到复刻新页面，每一步都有据可查。\n阶段一：与 Agent 多轮协作，规范自动沉淀\n在搭建 Playground 页面的过程中，你与 Agent 反复确认布局、配色、组件细节……每一轮交互里涌现的设计决策，OpenViking 都在后台悄悄提炼、归类、写入记忆库。\n阶段二：开启新项目，一句话召回全部规范\n新项目开始，新会话打开。你只需要说一句「帮我复现上个 Playground 的风格」，OpenViking 立刻完成语义检索，把配色、布局、组件规范、历史决策一并注入 Agent 的初始上下文。\nAgent 收到的不是一个空白起点，而是一套完整的「项目记忆包」。页面从第一行代码起，就已经在规范之内了。\n阶段三：追加新规范，后续自动遵守\n项目迭代过程中，你可能随时需要调整或补充规范，OpenViking 会把这条新规范写入记忆，与既有内容合并。\n不需要重新提醒 Agent，不需要在每轮对话里重新声明。新生成的 Playground 页面，会严格遵循包含增量更新在内的完整历史规范。\n阶段四：效果展示，接不接 OpenViking，效果到底差多少？\n最直观的问题是：接入 OpenViking vibe coding 出来的页面，和没接入的比，差距到底在哪？\n这是我们初始 vibe coding 出的网页：\n然后我们重新开启一个全新的会话，只输入一句非常简单的需求：\n“根据历史代码规范，用 React + Vite 做一个视频知识库 Playground 网页，包含初始页面、核心能力、Agent 接入和体验区几个模块。”\n没有额外补充设计稿，也没有逐步描述交互细节，只给出一个方向性的产品需求。随后我们分别对比了接入OpenViking 前后的生成效果：\n差距非常明显！\n未接入 OpenViking 的效果：\n接入 OpenViking 的效果：\n第一眼看背景和气质变了。接入版\n本保留了米白底色和细网格纹理，大面积留白，一眼看上去还是熟悉的页面风格——干净、有技术产品感。\n未接入版\n本换成了常规灰白后台背景，网格消失，打开的第一秒就已经不像同一个产品了。\n再看按钮和组件。接入版\n本沿用了黑白主按钮、胶囊标签、演示窗口、右下角悬浮助手——这些历史交互中所沉淀下来的关键组件，一个没少。\n未接入版\n本的按钮全换成了蓝色实心，进度条变绿色，悬浮助手消失不见。组件不算少，但已经是另一套体系的组件了。\n最后是标题的「力度」。接入版\n本延续了超大字号、极重字重，大标题依然保持了原规范里的视觉冲击力；\n未接入版\n本的标题字号缩水、字重变轻，整体更像一个功能 Demo，而不是一个有产品感的展示页面。\n背景、按钮、标题，接入 OpenViking 的版本每一处都有据可依——因为你之前说过的每一个偏好，它都记着呢。\n快速开始\n下面以 Trae 为例，可以参考攻略完整走一遍 OpenViking 接入流程——步骤不多，五分钟内可以跑通。\n第一步：连接 Trae 与 OpenViking\n1.打开 MCP 配置入口\n在 Trae 中点击 设置 → MCP，进入 MCP 服务管理页面。\n2.手动添加 MCP 工具：OpenViking\n点击 添加 → 手动配置，将以下 MCP 配置粘贴进去：\n{\n\"mcpServers\"\n:\n{\n\"openviking\"\n:\n{\n\"url\"\n:\n\"\nhttp://127.0.0.1:1933/mcp\n\"\n}\n}\n}\n3.启动 OpenViking-server\n在本地启动 OpenViking-server 服务。回到 Trae 的 MCP 页面，状态变为连接成功即完成。此时可以自主选择哪些智能体启用 OpenViking 的能力。\n第二步：配置检索规则，让 Agent 主动调用记忆\n接入成功后，建议为 Trae 配置一段规则作为调用指引\n1.新建规则\n点击 设置 → 规则 → 创建，根据作用范围选择「全局」或「项目」。\n2.\n粘贴规则内容\n将以下规则复制进去，可按需微调：\n和用户的每一轮对话时，判断该用户的询问有没有需要用到 \"ui历史记忆/偏好/规范\" 的意图，有的话则优先\n利用 OpenViking 的\nsearch\n召回记忆。\n如果用户在对话中添加新模块，需要用 OpenViking 的\nsearch\n召回历史规范记忆并严格遵守。\n判断用户对话中有没有需要提取沉淀的记忆\n/\n偏好\n/\n规范，有的话则利用 openviking 提取记忆，使用 remember，\n记住以后不用验证和查看。\n记住每轮对话的 UI 设计规范偏好和代码。\n3.保存，立即生效\n点击「保存」后，规则在对应权限范围内即时生效。\n别再用「金鱼记忆」的 AI 搞开发了。\n真正的 AI 协作，应该是越用越懂你\n而不是每次都要重新认识你。\n如果这篇文章有帮到你，\n转发给还在跟 AI 重复说话的朋友\n↓\n加入我们，共建 Agent 上下文的未来！\n🌟\n给个 Star\n：访问我们的 GitHub 仓库 github.com/volcengine/OpenViking，你的 Star 是我们前进的最大动力！\n🚀\n上手试用\n：访问官网\nhttps://openviking.ai/，将你的\nAgent 接入 OpenViking，收获更丝滑、更流畅的交互体验。\n💬\n加入社区\n：扫描下方飞书二维码，加入官方交流群，和更多开发者一起探讨 Agent 上下文的未来。\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.11,
+        "peripheral": 0.01,
+        "transfer_agent": 0.88,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.72,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.19,
+        "2": 0.76,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.99,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.03,
+        "2": 0.1,
+        "3": 0.55,
+        "4": 0.28,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.74,
+      "probabilities": {
+        "0": 0.62,
+        "1": 0.2,
+        "2": 0.05,
+        "3": 0.11,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.97,
+      "probabilities": {
+        "0": 0,
+        "1": 0.05,
+        "2": 0.94,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.82,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.92,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.14,
+      "probabilities": {
+        "0": 0.88,
+        "1": 0.11,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6240,
+    "outputTokens": 172,
+    "totalTokens": 6412
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.88,
+        "anti_hype": 0.91,
+        "category": 0.84,
+        "relevance": 0.81,
+        "grounding": 0.62,
+        "decision_action": 0.5,
+        "evidence": 0.96
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179922071,
+                "endTime": 1791179922211,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00026208",
+      "marketCost": "0.00026208",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00026208",
+      "inferenceCost": "0.00026208",
+      "inputInferenceCost": "0.00026208",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A96M99NMP8EDN18S42J8F"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:42 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::vxvm5-1791179922052-aa6c0d94a206"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.82,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.92,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.14,
+          "probabilities": {
+            "0": 0.88,
+            "1": 0.11,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.11,
+            "peripheral": 0.01,
+            "transfer_agent": 0.88,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.72,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.19,
+            "2": 0.76,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.99,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.03,
+            "2": 0.1,
+            "3": 0.55,
+            "4": 0.28,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.74,
+          "probabilities": {
+            "0": 0.62,
+            "1": 0.2,
+            "2": 0.05,
+            "3": 0.11,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.97,
+          "probabilities": {
+            "0": 0,
+            "1": 0.05,
+            "2": 0.94,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6240,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.88,
+            "anti_hype": 0.91,
+            "category": 0.84,
+            "relevance": 0.81,
+            "grounding": 0.62,
+            "decision_action": 0.5,
+            "evidence": 0.96
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179922071,
+                    "endTime": 1791179922211,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00026208",
+          "marketCost": "0.00026208",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00026208",
+          "inferenceCost": "0.00026208",
+          "inputInferenceCost": "0.00026208",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A96M99NMP8EDN18S42J8F"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:41.439Z"
+  }
+}

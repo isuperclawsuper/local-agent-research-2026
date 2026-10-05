@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1108977670990856192",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "从零设计生产级 Multi-Agent Harness：架构、评估、记忆、成本与 MCP 工具接入全拆解",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695544&idx=1&sn=865fb183130b2851900b9f4eda62da9c",
+      "date": "2026-05-13T00:46:00.764Z",
+      "chars": 8445,
+      "text": "原创\n李伟山\n2026-05-13 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n注：本文有使用 AI 进行辅助写作，特此说明。\n引言：Agent 很热闹，生产现场很骨感\n过去一年，几乎每个团队都做过 AI Agent。\n一个输入框，一个大模型，几个工具，一段写得很漂亮的 System Prompt，再配上一个炫酷的前端，看起来就像一个能干活的“数字员工”。演示会上效果惊艳，老板拍板，业务兴奋，研发也觉得：这事，稳了。\n然后真正进入生产，麻烦就开始了。\nAgent 为什么会反复调用同一个工具？为什么一个简单任务能烧掉几十万 Token？为什么某个子 Agent 失败后，整条链路都挂了？为什么最终结果看似正确，但中间过程一片黑盒？为什么接入一个新工具要改十几处胶水代码？为什么业务来一句“这个结论怎么得出来的”，系统就只能沉默？\n这就是 Demo 和生产之间的鸿沟。\n很多人以为，跨过这条鸿沟靠的是更强的模型，或者更精妙的 Prompt。错。真正决定 Multi-Agent 系统能否落地的，是背后那个常常被忽略的运行时底座——Multi-Agent Harness（多智能体执行框架）。\n它负责编排、调度、记忆、状态、工具治理、预算控制、可观测性、安全边界。它是 Agent 的“操作系统”，也是 AI 工程化的真正主战场。\n本文用一篇长文，从零开始拆解：一个生产级 Multi-Agent Harness，到底应该怎么设计？ 包括架构、评估、记忆、成本和 MCP 工具接入五大核心模块，配以完整的 PlantUML 图示，帮你建立一张可落地的全景地图。\n01\nHarness 是什么：Agent 的“操作系统”，不是“多 Prompt 拼盘”\n先解决一个概念问题：Harness 到底指什么？\n在英文语境里，Harness 原意是“挽具、束缚、收束”，引申为“把多种力量统一约束并驱动的装置”。在 AI Agent 领域，Multi-Agent Harness 指的是把多个 Agent 的能力、工具、状态、通信、编排、监控统一收束在一个运行时之内的框架。\n它和我们熟悉的几个概念有什么区别？\n它不只是 Prompt 模板。 Prompt 解决的是“怎么让模型理解任务”，Harness 解决的是“怎么让模型可靠地完成任务”。\n它不只是 Orchestrator（编排器）。 Orchestrator 解决“顺序”，Harness 还要解决“资源、记忆、成本、安全、可观测”。\n它不只是 Agent Framework（如 LangGraph、AutoGen）。 框架是积木，Harness 是把积木拼成生产建筑的工程方案。\n可以用一个类比理解：\nPrompt 是台词，Agent 是演员，工具是道具，模型是大脑，而 Harness 是整个舞台的导演、灯光、调度系统、安全规章和票务系统。\n没有舞台系统，演员再好也只是即兴表演；有了舞台系统，才能稳定地一晚演两场，连演一年。\n这就是为什么 Multi-Agent 在 Demo 阶段“拼几个 Agent”就够了，而生产阶段“没有 Harness 寸步难行”。\n下面这张图先建立一个总体认知：一个生产级 Multi-Agent Harness 由哪些模块组成。\n接下来，我们逐一拆解最关键的五个模块：架构编排、工具治理、状态与记忆、评估体系、成本控制，最后再单独讲 MCP 工具接入。\n02\n架构编排：让 Agent 出主意，让 Harness 拿决定\nMulti-Agent 系统最常见的失败模式，不是 Agent 不够聪明，而是 决策权交错了人。\n很多团队的写法是这样：让 Planner Agent 自己决定调用哪个 Agent、是否继续、是否重试、是否结束。短期看很灵活，长期看很危险。因为大模型本质上不是一个可靠的调度器。它没有天然的成本意识、并发意识、权限意识、全局一致性意识。\n生产级原则只有一句话：\nAgent 负责局部智能，Harness 负责全局控制。\n具体来说，Orchestrator 必须独占以下五项决策权。\n第一，任务生命周期。 每个任务从创建、规划、执行、审查、完成、失败，都要有明确的状态机，而不是一个模糊的“它好像还在跑”。\n第二，执行计划裁决。 计划可以来自静态 DAG，也可以来自 Planner Agent，但计划一旦生成，必须由 Orchestrator 接管。每一步是否能跑、是否并行、是否超预算，由它判断。\n第三，Agent 路由。 不是每个 Agent 都能处理每个任务。一个 Coder Agent 不该处理财务审批，一个 Research Agent 不该写数据库。路由要结合任务类型、Agent 能力、权限、历史质量评分。\n第四，失败处理。 某个 Agent 失败后是重试、降级、跳过还是终止？这绝不能让出错 Agent 自己说了算。\n第五，硬终止条件。 必须有 max_steps、max_tokens、max_duration、max_tool_calls 四道硬闸，否则 Agent 容易陷入循环。\n下面这张时序图，展示了一个任务从进入 Harness 到返回结果的完整调度过程。\n这里还有一个工程师容易忽略的细节：Planner 应该输出“声明式计划”，而不是“命令式调用”。\n声明式：\n{step: 1, intent: \"research\", agent: \"researcher\", input: \"...\"}\n命令式：直接\nawait researcher.run(\"...\")\n声明式的好处是 Harness 可以介入：可以重排顺序、可以并行优化、可以拒绝某些步骤、可以在执行前做安全审查。命令式则相当于把方向盘交给了 Agent。\n别让 Agent 开车，让 Agent 当导航。\n03\n工具治理：Tool Registry 是 Agent 的安全边界\nAgent 的能力，绝大部分来自工具。\n没有工具，Agent 只是会聊天。\n有了工具，Agent 才能查数据库、跑代码、读文件、调接口、生成工单、检索知识库、操作系统。\n但工具越强，破坏力越大。\n一个能读文件的 Agent，可能读到不该读的；\n一个能写数据库的 Agent，可能误删生产数据；\n一个能跑代码的 Agent，可能直接造成事故；\n一个能调外网的 Agent，可能把敏感信息发出去。\n所以生产级 Harness 中，工具不能是普通函数，必须是受治理的资源。一切工具调用都要经过 Tool Registry 这个统一关口。\n一个合格的 Tool Registry，每个工具都至少要登记九项元信息：\n工具名称（唯一标识）\n工具描述（给 LLM 看的说明）\n输入参数 JSON Schema（用于校验）\n允许调用的 Agent 列表（RBAC）\n调用超时与速率限制\n风险等级（低/中/高）\n是否需要人工确认\n输出结果结构\n审计日志策略（保存什么、保留多久、谁能看）\n这背后的思维转变其实很关键：\n工具不是函数调用，而是生产资源的对外授权点。\n你给 Agent 一个工具，等于给它一把权限钥匙。这把钥匙能开多少门、有没有时限、留不留痕、谁能审计——这些事必须从 Day 1 就想清楚。\n下面这张图展示了一次工具调用从发起到落地的完整治理链路。\n很多团队会问：MVP 阶段是不是可以先不上这些？\n强烈不建议。\n工具治理不是装饰层，而是结构层。如果一开始没有统一入口，后面每个 Agent 都各自调用工具，系统会迅速演化成一团“散落的特权代码”，再想收回来代价极高。\n正确的做法是：哪怕你只有 3 个工具，也从第一天起强制走 Tool Registry。先有规矩，后扩规模。\n04\n状态与记忆：让 Agent 记住该记的，忘掉该忘的\nMulti-Agent 系统中，“记忆”是一个被严重浪漫化的词。\n很多文章会说 Agent 要像人一样积累经验。但生产环境里，记忆首先不是浪漫问题，而是工程问题。它有四种典型的失败方式：\n记得太少：每次都像第一次，无法复用经验。\n记得太多：上下文膨胀，检索噪声大，成本爆炸。\n不分层：临时数据和长期知识混在一起。\n不遗忘：过期信息长期污染决策。\n正确的做法是把“状态”和“记忆”分开。\n状态（State） 是当前任务运行所需的数据，生命周期短，关心一致性。\n记忆（Memory） 是跨任务复用的经验和知识，生命周期长，关心相关性。\n状态可以分三层：\nWorking State：当前步骤的临时上下文，任务结束即丢。\nSession State：一次会话里多个 Agent 共享的信息，放 Redis，设 TTL。\nExecution Log：不可变执行日志，不一定参与推理，但必须用于审计、回放、评估。\n记忆可以分两类：\nEpisodic Memory（事件记忆）：踩过的坑、用户偏好、某类问题处理经验。\nSemantic Memory（语义记忆）：领域概念、业务规则、工具约束。\n下面这张图展示了一个 Agent 在执行任务时如何分层检索记忆，以及任务完成后如何巩固。\n记忆系统中有两个被严重低估的设计点。\n第一是注入时机（Retrieval Timing）。\n任务前自动注入，简单稳定但费 Token。\n按需检索，省钱但 Agent 可能忘记调用。\n生产推荐：混合模式——前置注入少量高置信记忆 + 提供\nmemory_search\n工具供 Agent 主动调用。\n第二是遗忘机制（Memory Forgetting）。\n听起来反直觉，但极其关键。一个只增不删的记忆系统会随时间退化：检索越来越慢、相关性越来越差、过期信息污染新决策。\n应基于访问频次、创建时间、重要性、最近使用计算保留分数：\n低分记忆 → 直接删除\n中分记忆 → 压缩为摘要\n高分记忆 → 保留原文\n记忆不是仓库，而是花园。需要定期修剪。\n05\n评估体系：不要只看答案，要看轨迹\nMulti-Agent 系统的评估，是目前被低估最严重的环节。\n单 Agent 评估很简单：输入一个问题，比对输出是否正确。Multi-Agent 完全不一样——它有计划、有中间步骤、有工具调用、有 Agent 协作、有重试、有反思、有最终合成。\n如果只看最终答案，会漏掉很多危险信号：\n最终报告对了，但中间用了未授权的数据源。\n最终代码能跑，但 Agent 调用了十几次无意义工具。\n最终回答完整，但关键事实来自错误检索。\n某次结果成功，只是因为重试撞上了正确答案。\n生产级 Eval Pipeline 应至少分四层。\n第一层 Component Eval（组件评估）： 单 Agent 是否选对工具、参数是否合规、输出是否符合角色职责。\n第二层 Trajectory Eval（轨迹评估）： 步骤是否必要、顺序是否合理、是否重复调用、是否陷入循环。这一层是 Multi-Agent 最大的创新点。\n第三层 Task Completion Eval（任务完成度）： 是否满足用户目标、是否覆盖必要信息、是否存在事实错误。\n第四层 End-to-End Eval（端到端业务效果）： 用户是否采纳、人工返工率、处理时长、单位任务成本。\n这里要特别强调一点：LLM-as-Judge 不是万能药。\n它适合评估表达完整性、推理连贯性、总结质量等开放式输出。但对事实正确性、代码可运行性、SQL 结果、权限合规——应该优先用确定性检查。\n成熟的 Eval 必然是混合的：\n单元测试检查代码\nSchema 校验结构化输出\n规则引擎检查安全约束\n检索对齐校验引用来源\nLLM-as-Judge 评开放式表达\n人工抽检校准 Judge 偏差\n线上反馈验证业务效果\n更重要的是，Eval 必须进入 CI。每次改 Prompt、换模型、加工具、调参数，都要跑回归。对 Agent 系统来说，Prompt 就是代码，工具 Schema 就是接口，执行轨迹就是日志，Eval 就是测试体系。没有它，每次优化都是“凭感觉调参”。\n06\n成本控制：Token Budget 是生产级 Agent 的生命线\n很多团队第一次跑通 Agent 时，最惊讶的不是模型能力，而是账单。\n为什么 Multi-Agent 这么烧钱？\n每个 Agent 都有 System Prompt。\n每个 Agent 都需要上下文。\n工具结果会被塞回模型。\nPlanner 生成计划，Worker 执行步骤，Reviewer 审查输出。\n失败后还要重试。\n多轮协作让历史不断复制膨胀。\n如果没有成本控制，Agent 系统会从“智能助手”一夜变成“预算黑洞”。\n生产级 Harness 必须有 Token Budget——它不是事后统计，而是实时调度。\n核心逻辑是：根据任务复杂度分配预算，执行中实时监控，触发不同等级的降级策略。\n成本控制有三个核心策略。\n策略一：Model Routing（模型路由）。\n不是所有步骤都需要最强模型。\n分类、摘要、格式转换 → 小模型即可\n复杂推理、最终合成 → 用强模型\n高风险审查 → 强模型 + 规则校验双保险\n低价值重试 → 禁止使用高价模型\n目标不是一味省钱，而是在质量和成本之间找到可控平衡。\n策略二：Context Compression（上下文压缩）。\n多数 Token 浪费来自历史膨胀。有效做法是保留最近几轮原文 + 把更早历史压缩成结构化摘要，摘要中只保留关键事实、决策、未解决问题、工具结果引用。\n但要注意：事实型任务必须保留原始引用，合规型任务关键证据不可压缩。 压缩策略不能一刀切。\n策略三：Budget 分级降级。\n绿区（>50%）：正常执行\n黄区（20%–50%）：压缩上下文\n红区（5%–20%）：切小模型 + 跳过 CoT\n熔断区（<5%）：强制收束，返回 partial result\n生产环境至少要监控这些指标：\n单任务 Token 总量\n单 Agent Token 占比\n工具结果 Token 占比\n重试 Token 占比\n不同路由策略下的成本与成功率\n预算熔断次数\n单位业务结果成本（每完成一个合格任务多少钱）\n当你能精准回答最后一项时，Agent 系统才真正进入了可运营阶段。\n07\nMCP 工具接入：标准化是趋势，但不能裸奔\n最后单独讲一下 MCP（Model Context Protocol，模型上下文协议）——目前最值得关注的工具生态变量。\nMCP 解决的核心问题是什么？ 在 MCP 出现之前，每接入一个工具都要为不同 LLM 写不同适配器，工具开发者和模型集成方都很痛苦。MCP 把这层标准化了：工具一次实现，所有支持 MCP 的 LLM 应用都能调用。\n类比：MCP 之于 AI 工具，如同 USB-C 之于充电接口。\n它对 Multi-Agent Harness 的意义有三点：\n快速扩展能力：通过 MCP Server，Agent 可以一键接入文件系统、数据库、Git、Slack、Jira、内部 API 等海量能力。\n生态可复用：业界形成的 MCP Server 可以直接拿来用，而不是每个团队各写一套。\n解耦工具与模型：工具实现不绑定特定 LLM，未来切换模型成本更低。\n但标准化不等于安全。恰恰相反，工具越容易接入，越需要 Harness 在中间做安全网关。\n下面这张图展示了 MCP 工具从注册到调用，经过 Harness 安全治理的完整链路。\n接入 MCP 的几个最佳实践：\n第一，永远不要把 MCP Server 直接暴露给 Agent。 必须经过 Tool Registry。MCP 提供的是“能力”，Harness 提供的是“治理”。\n第二，给每个 MCP Server 单独配额。 一个流氓 MCP Server 不应该拖垮整个系统。\n第三，对工具做白名单而不是黑名单。 哪怕 MCP Server 暴露了 50 个工具，也只把业务真正需要的几个开放给特定 Agent。\n第四，高风险工具一律走 Human-in-the-Loop。 文件写入、删除、代码执行、数据库写、外部支付——这些不能让 Agent 自动执行。\n第五，所有 MCP 调用都要打 Trace。 工具来源、参数、结果、调用者必须可追溯。\n可以这样总结：MCP 让工具接入变得便宜，Harness 让工具调用变得可信。 两者必须搭配，不可偏废。\n08\n可观测性与落地路线：从 MVP 到规模化\n最后讲两件常被忽略的事：可观测性和落地节奏。\n可观测性：没有 Trace，就没有生产级 Agent\n传统后端出问题时，我们看日志、看指标、看链路。Agent 系统更需要这些，因为 Agent 的错误往往不是异常，而是过程偏移：\n> 它可能调用了错误工具。\n可能读取了错误记忆。\n可能误解了用户目标。\n可能因为压缩丢了关键约束。\n可能因为预算不足提前收束。\n可能因为路由用了能力不够的小模型。\n落地路线：分三阶段演进，别想一步到位\nPhase 1 — MVP：跑通一条端到端业务闭环。最小 Orchestrator + Tool Registry + 简单状态 + 基础 Trace + 评估数据集。不要一开始就上动态 Planner、十个 Agent、复杂长期记忆。先把一条链路跑稳。\nPhase 2 — Hardening：把 Demo 变成可控系统。增加 Budget、权限、重试、压缩、轨迹评估、审计、回归测试。重点解决“为什么错、哪里贵、哪里慢、哪里不安全”。\nPhase 3 — Scale：支撑更多场景与并发。引入分布式队列、多租户隔离、动态模型路由、Agent 质量排行榜、A/B 测试、长期记忆治理、统一 MCP 接入平台、成本看板。\n技术选型上的几条务实建议：\n小团队：LangGraph 或自研轻量状态机 + FastAPI + Redis + PostgreSQL/pgvector + Langfuse/OpenTelemetry + LiteLLM 网关。\n企业团队：必须更重视权限、审计、多租户、成本中心、数据治理。MCP 作为接入标准，但不允许直连 Agent。\n研究团队：可以探索动态 Planner、自反思、自动 Eval、长期记忆压缩，但务必区分研究效果和生产 SLA。\n最后一个组织层面的提醒：Multi-Agent Harness 不是纯算法项目，而是系统工程。它需要算法、后端、平台、安全、业务专家的多角色协同。如果团队只让一个“会写 Prompt 的同学”负责全部，几乎一定卡在 Demo 阶段。\n09\n结语：未来的竞争，不是“谁的 Agent 更多”，而是“谁的 Harness 更稳”\nMulti-Agent 的想象空间确实很大。\n它可以像一支小团队一样协作，把复杂任务拆成多步专业流程，让模型使用工具，把知识、流程、系统连接起来。它代表了一种从聊天式 AI走向执行式 AI的方向。\n但越接近生产，越会发现：真正难的不是让 Agent 开口说话，而是让 Agent 在边界内稳定行动。\n能不能控成本？\n能不能追踪过程？\n能不能评估质量？\n能不能限制工具权限？\n能不能管理状态和记忆？\n能不能在失败时优雅降级？\n能不能回答“为什么这个结果可信”？\n这些问题的答案，最终都落在 Multi-Agent Harness 上。\n如果说 Prompt 是 Agent 的台词，工具是它的手脚，模型是它的大脑，那么 Harness 就是它的骨架、神经系统和安全带。\n没有 Harness，Multi-Agent 只是热闹；有了 Harness，Agent 才可能成为生产力。\n对今天准备落地 Agent 的团队来说，最好的起点不是堆十个 Agent，也不是追逐最新框架，而是先画清楚自己的 Harness：\n任务怎么进来？谁负责拆解？谁负责调度？工具怎么接？状态放哪里？记忆怎么检索？预算怎么控制？轨迹怎么评估？失败怎么处理？审计怎么保留？\n把这十个问题回答清楚，你就已经越过了大多数 Agent Demo 的边界。\n下一个问题留给你：你的团队，已经走到了哪一阶段？\n-End-\n原创作者｜李伟山\n感谢你读到这里，不如关注一下？\n👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。5月20日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_agent": 0.94,
+        "irrelevant": 0.05
+      }
+    },
+    "relevance": {
+      "score": 2,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.92,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.52,
+      "probabilities": {
+        "0": 0.2,
+        "1": 0.39,
+        "2": 0.19,
+        "3": 0.13,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.42,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.01,
+        "2": 0.35000000000000003,
+        "3": 0.22,
+        "4": 0.26,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.55,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.07,
+        "2": 0.3,
+        "3": 0.61,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.03,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.19,
+        "4": 0.57,
+        "5": 0.24
+      }
+    },
+    "anti_hype": {
+      "score": 3.98,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.06,
+        "4": 0.88,
+        "5": 0.06
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8679,
+    "outputTokens": 172,
+    "totalTokens": 8851
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "grounding": 0.38,
+        "decision_action": 0.27,
+        "evidence": 0.69,
+        "actionability": 0.71,
+        "anti_hype": 0.91,
+        "category": 0.93,
+        "relevance": 0.94
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180016160,
+                "endTime": 1791180016370,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000364518",
+      "marketCost": "0.000364518",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000364518",
+      "inferenceCost": "0.000364518",
+      "inputInferenceCost": "0.000364518",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AC2GCYPCTT7FD3YBHK2ED"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:16 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::vcl2k-1791180015939-4457aac7fcb8"
+    },
+    "body": {
+      "answers": {
+        "grounding": {
+          "type": "score",
+          "score": 1.52,
+          "probabilities": {
+            "0": 0.2,
+            "1": 0.39,
+            "2": 0.19,
+            "3": 0.13,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.42,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.01,
+            "2": 0.35000000000000003,
+            "3": 0.22,
+            "4": 0.26,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.55,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.07,
+            "2": 0.3,
+            "3": 0.61,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.03,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.19,
+            "4": 0.57,
+            "5": 0.24
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.98,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.06,
+            "4": 0.88,
+            "5": 0.06
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_agent": 0.94,
+            "irrelevant": 0.05
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.92,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8679,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "grounding": 0.38,
+            "decision_action": 0.27,
+            "evidence": 0.69,
+            "actionability": 0.71,
+            "anti_hype": 0.91,
+            "category": 0.93,
+            "relevance": 0.94
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180016160,
+                    "endTime": 1791180016370,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000364518",
+          "marketCost": "0.000364518",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000364518",
+          "inferenceCost": "0.000364518",
+          "inputInferenceCost": "0.000364518",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AC2GCYPCTT7FD3YBHK2ED"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:15.613Z"
+  }
+}

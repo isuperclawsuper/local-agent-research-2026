@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1300386108118401024",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "边开飞机边换引擎：Harness如何解决验证难题",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697613&idx=1&sn=4c178e5576c825739bb225fc8b4ab87e",
+      "date": "2026-09-22T00:45:00.233Z",
+      "chars": 9883,
+      "text": "原创\n贾曼鑫\n2026-09-22 08:45\n广东\n关注腾讯云开发者，一手技术干货提前解锁👇\n开发者公众号专属群聊\n扫码加入获取更多一手教程、科技前沿报告\n01\n背景\nAI 写代码已经成为日常开发中的常见能力，但在大型系统改造中，代码生成并不是交付的最后难点。真正容易阻塞进度的，往往是验证。\n本次项目需要在约两个月内完成一套大型项目登录系统的替换，同时正常需求开发不能停止。可以把它理解为：\n一边开着飞机，一边升级飞机内部系统。\n登录系统是核心基础能力，涉及正常登录、Token 刷新、退出登录等主链路，也依赖 Redis、数据库等基础设施。尤其在 Redis 不可用、DB 不可用等异常情况下，系统是否能正确降级，直接关系到登录服务的稳定性。\n但这类场景在公共环境中几乎无法验证。公共环境服务于数百人的开发协作，主动停止 Redis、断开数据库或修改关键配置，都可能影响其他同学的开发进度。另一方面，机器和运维资源有限，开发者也不一定熟悉 Kubernetes 的\nNamespace\n、\nDeployment\n、\nPod\n、\nConfigMap\n等概念。即使知道要验证什么，也常常被“环境起不来、依赖配不齐、没有权限动公共资源”卡在最后一公里。\n预发环境的验证路径同样偏长。一次变更通常需要先合入公共分支，再协调相关同学完成审批，等待云端构建镜像和流水线执行，最后部署到预发环境。从发起到可验证通常需要\n30 分钟至 1 小时\n。对于仍在快速试错、需要频繁验证边界条件的登录系统改造来说，这个反馈周期过长。\n当登录挂了之后， 预发环境压力非常大。会有成百上千个企微消息轰炸你。\n因此，我们希望解决的不是“让 AI 再多写一点代码”，而是：\n让每位开发者都能低成本获得一套可控、隔离的验证环境，并在其中自主完成关键故障场景验证。\n整体流程图：\n02\n过程与方法\n2.1\n使用工具与模型\nAI 助手\n：通过预置 Skill 调用标准化构建流程，避免临时拼接复杂 Docker 命令。\nMakefile\n：固化镜像编译、构建与推送流程。\nDocker\n：构建服务镜像。\nCSGHub\n：承载镜像等研发资产。\nHelm\n：沉淀服务部署配置。\nKubernetes\n：承载独立验证环境。\n小 TKE\n：团队自建的轻量化 K8s 管理平台，通过前端界面管理镜像、Workload、ConfigMap 等资源。\n2.2\n思路：AI 不替代验证，而是润滑验证链路\n最初，一个看似直接的思路是：让 AI 按需执行 Docker、Helm、kubectl 命令，完成构建和部署。\n但实际使用中，我们发现这种方式并不理想：\n不同服务的 Dockerfile、构建上下文、镜像名称和标签规则不同；\n部分服务涉及多架构镜像；\nAI 临时拼接命令虽然可行，但不够稳定、难以审查，也不利于团队长期复用；\nK8s 部署本身仍然要求使用者理解大量概念和命令。\n因此，我们没有让 AI 成为“自由执行命令的操作员”，而是将高频、关键且易错的操作\n固化为受约束的工作流\n。\n核心原则是：\n给 AI 一个可复用、可审查、边界清晰的操作入口，而不是让它每次从零生成一串命令。\n2.3\n第一步：用 Makefile 固化“代码到镜像”的路径\n我们将镜像构建和推送流程沉淀到 Makefile 中。开发者或 AI 不需要记忆完整的 Docker 构建参数，只需调用约定好的目标即可，例如：\nmake\nlogin\nmake\nidsvc\nmake\nkeycloak-bridge\nmake\nkeycloak-clusterless\n每个目标统一完成以下动作：\n使用指定 Dockerfile 和固定构建上下文构建镜像；\n按统一规则生成镜像 Tag；\n推送镜像到 CSGHub 镜像仓库；\n输出可用于部署的镜像地址和 Tag。\n对于存在多架构要求的服务，构建流程也在 Makefile 中统一处理，避免开发者或 AI 在临时操作中遗漏架构、标签等细节。\n在此基础上，我们为 AI 编写 Skill，让 AI 在明确约束下调用 Makefile。这样，AI 的作用不是“猜应该执行什么命令”，而是帮助开发者快速触发标准动作、读取构建结果，并在失败时辅助分析日志和定位问题。\n这里我们刻意没有先搭建一套完整的镜像构建流水线。当前项目真正需要的是开发者能快速、独立地构建并验证变更，而不是引入新的共享构建机、流水线维护成本和排队等待。因此，我们选择了朴实的 Makefile：本地构建、统一入口、直接推送镜像仓库。它不一定最“平台化”，但在当前阶段足够可靠，也更贴合开发节奏。\n不过，在把 AI 嵌入工作流时，我们也遇到了一个很现实的问题：\nAI 的响应可能较慢，执行也存在不稳定性；当 Skill 描述仍然模糊、使用者又不了解相关知识时，单靠对话式操作并不可靠。\n例如，团队新人刚开始使用 AI 协助部署时，AI 曾误创建多个 Namespace。由于环境中同时存在多套 K8s 集群，新人在让 AI 执行测试时，也容易进入错误的集群。\nNamespace\n、集群、Workload、Pod、ConfigMap 等大量术语会迅速淹没不熟悉 K8s 的使用者。新人无法判断 AI 当前操作的目标和影响范围，只能在出现问题后再寻求协助。\n这让我们明确了一点：Skill 适合承载已经收敛、边界明确的标准动作，但不应该把所有复杂性都暴露给使用者。对于高频、确定的部署与验证操作，\n一个简单直观的工具界面，往往比模糊的 Skill 和多轮对话更可靠。\n2.4\n第二步：用小 TKE 降低 K8s 环境使用门槛\n镜像构建完成后，下一步是部署验证环境。\n如果直接要求每位开发者使用原生 K8s 或完整 TKE 平台，需要理解 Namespace、Deployment、Pod、Service、ConfigMap 等概念。对于不熟悉 K8s 的同学，学习和排障成本很高；而项目采用两个月倒排计划，团队没有充足时间让所有人先补齐完整的容器编排知识。\n因此，我们基于已有的 Docker、Helm 和 K8s 资产，结合 CSGHub + AI 快速搭建了轻量化管理平台“小 TKE”。\n小 TKE 通过前端页面提供：\n镜像选择与版本管理；\nWorkload 部署和更新；\nHelm Chart 部署；\nConfigMap 等配置资源管理；\n多集群接入与资源查看。\n小 TKE 架构：公共平台统一操作，资源仍部署在个人 DevCloud\n小 TKE 本身是部署在一台公共机器上的轻量化平台，负责提供统一的操作页面和部署入口；它不承载开发者实际要验证的业务资源。\n平台通过接入每位开发者 DevCloud 环境对应的 Kubernetes\nkubectl\nAPI，代表开发者执行查询、部署和更新等受控操作。最终的 Workload、Pod、Service、ConfigMap 以及 Redis、DB 等依赖资源，仍然部署在各自的 DevCloud 机器中，并与其他开发者的环境保持隔离。\n开发者浏览器\n↓\n公共机器上的小 TKE 平台\n↓  调用对应 DevCloud 的 Kubernetes kubectl API\n开发者个人 DevCloud 机器\n↓\n个人独立的 Namespace / Workload / Pod / 配置 / 依赖资源\n这种架构将“平台入口统一”和“验证资源按人隔离”结合起来：开发者无需直接面对复杂的\nkubectl\n命令和 K8s 概念，但每个人的验证资源仍留在自己的 DevCloud 环境中，避免相互影响。\n开发者不需要从零编写复杂 YAML，也不需要手动执行大量\nkubectl\n命令，即可将刚刚构建的镜像部署到 DevCloud 网络中的独立环境。\n下图展示了小 TKE 的镜像更新界面：开发者可在 Workload 列表中选择目标服务，并从镜像仓库选择指定 Tag 完成更新。截图已对 Namespace、镜像地址等敏感信息进行了打码处理。\n由于涉及内部集群、镜像仓库和部署权限等安全边界，小 TKE 工具本身不对外分享；本文分享的是其背后的实践思路和可复用方法：将团队已沉淀的 Dockerfile、Helm、Makefile 与 AI Skill 组合起来，降低独立环境部署和验证的门槛。\n对于新人来说，这种界面化能力的价值尤其直接：不必先理解所有 K8s 术语，也不必依赖 AI 在多轮对话中决定操作路径。只要在明确的环境中选择镜像并完成部署，再使用\ncurl\n调用接口验证结果，就能完成最基础、也最关键的测试闭环。\n2.5\n第三步：在独立环境中验证登录系统的边界与降级场景\n有了独立环境后，验证不再只能依赖公共环境。\n登录系统的验证范围包括：\n正常登录；\nToken 刷新；\n退出登录；\nRedis 不可用时的降级行为；\n数据库不可用时的降级行为；\n配置变更、镜像升级后的服务行为。\n其中，Redis 和 DB 故障验证尤其重要。过去，这类验证不适合在公共环境执行：公共环境中任何关键依赖异常，都可能影响数百人的研发进度。\n现在，开发者可以在自己的环境中部署对应服务和依赖，再通过停止或调整 Redis、DB 等依赖资源，验证登录系统在异常状态下是否符合预期。例如：\n代码修改\n→ AI 按 Skill 调用 Makefile 构建并推送镜像\n→ 在小 TKE 中选择新镜像并部署到独立环境\n→ 验证正常登录、Token 刷新、退出登录\n→ 模拟 Redis 或 DB 不可用\n→ 检查登录系统的降级行为、日志和接口返回\n→ 修复问题后重新构建、部署、验证\n这条链路将原来依赖环境协调、运维支持和公共资源窗口的工作，前移为开发者可自主完成的验证闭环。\n2.6\n第四步：为定位 Token 鉴权问题，构建刚好够用的小工具\n除了环境验证，我们还遇到了一个更细粒度的“最后一公里”问题。\n我主要负责 Token 相关功能，而原有 Token 能力沉淀在 Keycloak 中。改造初期，现有 Token 中有哪些 Claim、各个接口依赖哪些字段，缺少完整文档，也没有足够的人力支援。我们只能从最小 Claim 集合开始，逐步补齐字段。\n在这个过程中，一旦某个接口返回\n401\n或\n403\n，排查成本很高：问题可能来自 Token 签发时缺少或错误设置了 Claim，也可能来自接口自身的鉴权逻辑、角色映射或其他配置。仅靠阅读代码和反复改造后重新登录，定位周期很长。\n为此，我借助 AI 快速构建了一个\nToken 重新签发工具\n。在受控测试环境中，工具可使用经授权的测试密钥，导入已有 Token 并按需修改 Claim，再重新签发一个符合预期的测试 Token。\n这样，排查路径从：\n修改 Token 签发代码\n→ 构建并部署服务\n→ 重新走登录流程\n→ 调用接口，看到 401 / 403\n→ 猜测是 Token 问题还是鉴权问题\n变为：\n导入测试 Token\n→ 仅修改一个待验证的 Claim\n→ 重新签发测试 Token\n→ 直接调用目标接口\n→ 根据结果判断问题在 Token 签发还是接口鉴权\n这个工具并不追求覆盖所有 Token 场景，更不是要替代通用身份认证平台。它的目标非常明确：缩短当前迁移项目中 Token 问题的定位链路，让开发者能够快速验证假设。\n2.7\n第五步：解密 Session，结束“靠猜”排查\n另一个高频痛点来自 Cookie 中的 Session。Session 为了安全会以加密形式存储在 Cookie 中，开发者在排查登录态、会话续期或权限异常时，无法直接看到其中承载的会话信息。\n过去遇到问题时，通常只能根据接口现象、日志和代码路径推测：是 Session 本身不符合预期、会话已失效，还是服务端读取、鉴权逻辑出现问题。这个过程依赖经验，也容易把排查带偏。\n因此，我们又借助 AI 构建了一个\nSession 解密工具\n。该工具仅面向受控测试环境，使用经授权的测试配置解密 Cookie 中的 Session，使研发人员能够快速查看会话内容，并结合接口返回和日志定位问题。\n排查方式从：\n接口异常\n→ 根据现象猜测 Session 是否有问题\n→ 反复修改代码、重新部署、重新登录\n→ 继续观察结果\n变为：\n导入受控测试环境中的 Session Cookie\n→ 解密并查看会话内容\n→ 对照预期字段、接口返回与日志\n→ 快速判断问题在 Session、Token 还是服务端鉴权逻辑\n它和 Token 重新签发工具一样，不是为了打造一个通用的身份认证调试平台，而是为当前项目提供一个能快速验证假设、缩短定位链路的专用工具。\n03\n成效\n核心成果量化对比\n本次实践的核心成果，不只是“验证更方便”，而是将验证链路中的时间、人力和网络资源利用率转化为可观察的变化：\n这里的“约 5 分钟”指开发者完成本地镜像构建、推送并在小 TKE 更新独立环境后，可以开始接口验证的时间，不包含复杂问题修复后的后续迭代时间。\n1、让过去“不敢测、不能测”的故障场景真正可测\nRedis、DB 不可用等场景不再需要在公共环境中冒险操作。开发者可以在独立环境中主动制造依赖异常，验证登录系统的降级逻辑，避免将未知风险带到公共环境或生产链路。\n这使登录系统迁移不只验证“正常功能是否可用”，还能够验证“异常情况下是否按预期工作”。\n2、将部署准备时间从 30 分钟至 1 小时缩短至约 5 分钟\n原先走预发环境时，开发者需要经历合入公共分支、协调审批、等待云端构建和流水线部署等环节，从发起变更到开始验证通常需要 30 分钟至 1 小时。\n现在，开发者可以在本地通过 Makefile 构建并推送镜像，再通过小 TKE 将指定镜像部署到自己的独立环境，约 5 分钟即可开始验证。按原有 30 分钟至 1 小时的准备时间计算，单次验证准备时间缩短约 83% 至 92%。\n这意味着开发者可以在一次开发会话内完成更多轮“修改—构建—部署—验证”，把原本等待环境的时间用于修复和验证问题。\n3、将运维从逐次支撑中释放出来，开发者自主完成日常验证\n过去，涉及环境部署、依赖调整或 Redis、DB 故障模拟的验证，往往需要协调公共环境、申请操作窗口，必要时还需要运维协助。每次验证都依赖跨角色沟通，不仅拉长等待时间，也会占用有限的运维资源。\n改造后，开发者可以在独立环境中自行完成镜像部署、配置调整和依赖故障模拟。日常验证基本不需要运维介入；只有进行跨地域测试等少数场景时，才需要运维协助，而不是重复参与每一轮构建、部署和验证。\n这让运维从高频、重复的验证支撑中释放出来，也使研发验证不再受公共环境和人工协调窗口限制。\n4、降低 K8s 使用门槛，缩短验证准备路径\n过去，开发者想完成环境部署，需要熟悉镜像构建、镜像推送、Helm、K8s 资源以及配置管理等多个环节。\n现在，构建环节由 Makefile 固化，AI 可按 Skill 协助触发；部署环节由小 TKE 的界面化能力承接。即使不熟悉 K8s 的同学，也可以围绕“选择镜像—配置部署—查看资源—开始验证”的路径完成操作。\n团队不需要等所有人掌握完整 K8s 知识后再开始验证，而是可以先通过平台能力完成交付所需的核心动作。\n5、充分利用 DevCloud 本地网络，团队利用率达到 100%\n本地构建、镜像推送、独立环境部署和服务联调均在 DevCloud 网络内完成，避免为了验证频繁等待外部公共环境的构建和部署链路。\n目前，团队对 DevCloud 网络资源的利用率已达到\n100%\n：参与该改造的开发者均通过这条网络内闭环完成环境部署和验证。DevCloud 不再只是可用但闲置的基础设施，而成为支撑高频验证、多人并行联调和故障演练的日常研发资源。\n6、把 AI 从一次性提效变为团队可复用能力\n本次实践中，AI 的价值不只是加速平台代码开发，而是帮助我们把重复、易错的构建操作收敛为标准入口。\n沉淀后的能力包括：\n面向多个服务的镜像构建与推送 Makefile；\n面向 AI 的受约束 Skill；\n面向开发者的轻量 K8s 管理界面；\n可在独立环境中执行的登录系统验证流程。\n面向受控测试环境的 Token 重新签发工具。\n面向受控测试环境的 Session 解密工具。\n这些能力可以继续服务后续服务改造、灰度验证和故障演练，而不是只解决一次迁移任务。\n7、工具的四个直接收益\n这套工具的目标不是做一个“大而全”的平台，而是用最小成本解决当前项目中最阻塞验证的环节。它带来了四个直接收益：\n服务新人，降低知识门槛\n新人不需要先掌握完整的 K8s、Helm 和集群运维知识。可以从最基础的 HTTP 验证开始：选择环境、部署镜像、使用\ncurl\n调用接口、观察结果。在完成任务的过程中，再逐步理解 Namespace、Workload、Pod 等概念。\n支持极端场景验证，不影响公共集群\nRedis、DB 不可用等故障场景可以在个人独立环境中构造，不会影响公共测试集群中的其他同学，也不需要频繁协调运维资源或申请特殊操作窗口。\n方便多人协作与跨平台对接\n登录系统改造需要对接不同的平台和依赖。通过统一的构建资产与轻量管理界面，团队可以按当前项目需要组合服务、配置和集群资源，快速构建用于联调或验证的特殊环境，降低跨团队协作成本。\n本地构建更快，不共享构建机\n构建通过 Makefile 在本地完成，不依赖共享构建机和复杂流水线，减少排队、抢占资源和等待反馈的时间。原先走预发环境时，需要合入公共分支、协调审批、等待云端构建和流水线部署，从发起到开始验证通常需要 30 分钟至 1 小时；现在开发者可在本地构建镜像并通过小 TKE 部署到独立环境，约 5 分钟即可进入验证，单次准备时间缩短约 83% 至 92%。开发者可以在修改后立即完成“构建—部署—验证”，并快速进入下一轮迭代。\n8、将 Token 排查从“靠猜”收敛为一次控制变量验证\n过去，面对\n401\n、\n403\n等问题，团队无法直接确认 Token 中某个 Claim 是否缺失或错误，只能通过“修改 Token 签发代码—构建部署—重新登录—调用接口”的多轮循环观察现象，排查结论很大程度依赖猜测。\nToken 重新签发工具让我们可以控制变量验证 Claim 对鉴权结果的影响：导入测试 Token 后，只修改一个待验证的 Claim，重新签发并直接调用目标接口。原本需要反复修改、部署和登录的排查，收敛为一次控制变量验证，并可依据实际 Token 内容和接口返回得出结论。\n面对\n401\n、\n403\n等问题，团队能够快速区分：\n是 Token 缺少必要 Claim，或 Claim 值不符合预期；\n还是接口自身的鉴权、角色映射或配置存在问题。\n这类工具的价值不在于功能多，而在于它用可观察、可复现的事实替代猜测，直接消除当前项目中最耗时的一段排查路径。\n9、让加密 Session 的排查从猜测转为可观察\nSession 解密工具为受控测试环境中的会话排查提供了直接观察入口。过去，Cookie 中的加密 Session 无法直接查看，研发人员只能结合接口现象、日志和代码路径推测。现在，面对登录态、续期或权限异常时，可以先确认 Session 中的实际内容，再判断后续应检查 Token、会话状态还是服务端鉴权逻辑。\n这减少了“先改代码、再部署、再猜测”的无效循环，也让问题定位建立在可验证的事实之上。\n04\n经验总结\n1、AI 的价值不应只停留在“写代码”\n在高风险系统改造中，代码生成只是开始。真正决定交付速度和质量的，是是否能快速、低成本地验证代码在真实依赖和异常条件下的行为。\nAI 可以帮助团队把构建、部署、排查等流程连接起来，润滑从“代码完成”到“验证完成”的最后一公里。\n2、不要让 AI 每次从零操作，要给它标准入口\n对于镜像构建、推送等关键操作，直接让 AI 临时生成 Shell 命令并不稳定。更好的方式是：\n人先将流程收敛为 Makefile、脚本或 Skill；\n明确输入、输出和执行边界；\n再让 AI 在约束内调用这些能力。\n这样既能提高效率，也能保证过程可复用、可审查、可维护。\n3、Skill 不等于产品界面，确定性操作应优先工具化\nAI 和 Skill 很适合处理开放式问题，例如解释构建失败日志、生成初步方案、辅助定位异常。但当操作对象涉及集群、Namespace、部署资源等有明确边界的基础设施时，模糊的自然语言指令可能带来不稳定和误操作。\n尤其对于不了解 K8s 的新人，如果让他先理解海量术语，再判断 AI 实际进入了哪个集群、创建了哪个 Namespace，学习和验证成本都会很高。此时，工具界面把可选范围、操作对象和结果反馈直接呈现出来，能让使用者依靠最基础的计算机操作完成任务：\n选择正确环境\n→ 选择镜像 Tag\n→ 部署 Workload\n→ 使用\ncurl\n调用接口\n→ 根据返回结果完成验证\n因此，我们的分工是：\n用 命令 固化构建等标准入口，用 AI 处理解释和辅助排障，用平台界面承接需要稳定、直观、可控的部署操作。\n4、轻量工具不必完美，能缩短关键流程就有价值\n有人会问，为什么不直接等现有平台提供能力，或者先找一个成熟的开源软件？\n但在两个月倒排、业务改造和日常需求并行的情况下，等待一个通用平台排期并不现实。通用工具也通常无法完全贴合当前项目的部署方式、依赖关系和验证路径。团队真正需要的是贴合当前验证流程的轻量能力：让不熟悉 K8s 的开发者也能快速部署、配置和验证。\n小 TKE、Token 重新签发和 Session 解密工具都不是要成为适用于所有项目的通用产品。前者依赖 Dockerfile、Helm 等部署资产已经沉淀的前提，离开当前项目未必能直接复用；后两者则只聚焦当前 Token、Session 与鉴权问题的快速验证。\n但在当前几个月的项目周期内，它们恰好解决了团队的刚需。AI 降低了构建这类“小而专”工具的成本，让我们不必等待一个完美、通用的方案，而是可以先解决最阻塞交付的问题。\n一个好工具不一定功能最全、适用范围最广；只要它能稳定地缩短团队当前最关键的流程，它就是有价值的工具。\n本次实践中的 Makefile、轻量小 TKE、Token 重新签发和 Session 解密工具，都是同一个原则的体现：\n够用就好，先让验证顺畅地发生。\n05\n经验总结\n本案例已沉淀以下可复用资产：\n镜像构建 Makefile\n统一封装多个服务的 Docker 构建、镜像 Tag 生成、镜像推送及多架构构建流程。\nAI Skill\n将 AI 操作约束到标准 Makefile 工作流中，降低临时拼接命令带来的不确定性。\n小 TKE 平台实践方案\n平台提供多集群接入、Workload 管理、Helm Chart 部署、镜像和 ConfigMap 管理等能力，帮助非 K8s 专业开发者快速部署独立环境。由于涉及内部集群、镜像仓库与部署权限，工具本身不对外分享；可复用的是其工作流设计和构建、部署资产的组织方式。\n项目维度的排障与验证小工具\n团队可将日常排障中反复出现、但难以快速观察和验证的问题，沉淀为项目专用工具。这类工具不追求跨平台、跨项目通用，而是围绕当前项目的技术栈、测试配置和真实问题缩短定位链路。Token 重新签发与 Session 解密工具就是两个例子：\nToken 重新签发工具\n：面向受控测试环境，支持按需调整 Token Claim 并重新签发，用于快速区分 Token 签发问题与接口鉴权问题。\nSession 解密工具\n：面向受控测试环境，使用经授权的测试配置解密 Cookie 中的 Session，辅助定位登录态、会话续期和鉴权问题。\n后续也可以持续补充同类工具，让每个项目都具备贴合自身场景的排障和验证能力。\n-End-\n原创作者｜\n贾曼鑫\n感谢你读到这里，不如关注一下？👇\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.43,
+        "transfer_agent": 0.57,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.82,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.08,
+        "2": 0.87,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.58,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.07,
+        "4": 0.76,
+        "5": 0.06
+      }
+    },
+    "decision_action": {
+      "score": 1.18,
+      "probabilities": {
+        "0": 0.68,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.08,
+        "4": 0.15,
+        "5": 0.05
+      }
+    },
+    "evidence": {
+      "score": 3.69,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.27,
+        "4": 0.71,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.05,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.05,
+        "4": 0.74,
+        "5": 0.18
+      }
+    },
+    "anti_hype": {
+      "score": 4.07,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0.06,
+        "4": 0.79,
+        "5": 0.15
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 10607,
+    "outputTokens": 172,
+    "totalTokens": 10779
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.46,
+        "relevance": 0.87,
+        "grounding": 0.64,
+        "decision_action": 0.22,
+        "evidence": 0.79,
+        "actionability": 0.79,
+        "anti_hype": 0.85
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179989467,
+                "endTime": 1791179989650,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000445494",
+      "marketCost": "0.000445494",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000445494",
+      "inferenceCost": "0.000445494",
+      "inputInferenceCost": "0.000445494",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB8EBJ9MPF8WKWWQWRRCT"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:49 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::mmrnq-1791179989057-1048b47dc75e"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.43,
+            "transfer_agent": 0.57,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.82,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.08,
+            "2": 0.87,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.58,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.07,
+            "4": 0.76,
+            "5": 0.06
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.18,
+          "probabilities": {
+            "0": 0.68,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.08,
+            "4": 0.15,
+            "5": 0.05
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.69,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.27,
+            "4": 0.71,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.05,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.05,
+            "4": 0.74,
+            "5": 0.18
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 4.07,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0.06,
+            "4": 0.79,
+            "5": 0.15
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 10607,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.46,
+            "relevance": 0.87,
+            "grounding": 0.64,
+            "decision_action": 0.22,
+            "evidence": 0.79,
+            "actionability": 0.79,
+            "anti_hype": 0.85
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179989467,
+                    "endTime": 1791179989650,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000445494",
+          "marketCost": "0.000445494",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000445494",
+          "inferenceCost": "0.000445494",
+          "inputInferenceCost": "0.000445494",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB8EBJ9MPF8WKWWQWRRCT"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:48.880Z"
+  }
+}

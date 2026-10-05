@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "238801511115961344",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从 ReAct 到 Ralph Loop：AI Agent 的持续迭代范式",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557988&idx=1&sn=b70b03f87eedda96f43a8dc7ec05047b",
+      "date": "2026-01-27T00:30:00.601Z",
+      "chars": 17088,
+      "text": "丹坤\n2026-01-27 08:30\n浙江\n痛点：AI 编程助手为何总是“半途而废”？\n在使用 AI 编程工具时，开发者经常遭遇以下困境：\n过早退出：\nAI 在它认为“足够好”时就停止工作，而非真正完成任务\n单次提示脆弱：\n复杂任务无法通过一次提示完成，需要反复人工干预\n重新提示成本高：\n每次手动重新引导都在浪费开发者时间\n上下文断裂：\n会话重启后，之前的所有进展和上下文全部丢失\n这些问题的本质是：\nLLM 的自我评估机制不可靠\n——它会在主观认为“完成”时退出，而非达到客观可验证的标准。\n解决思路：让 AI 持续工作直到真正完成\nClaude Code 社区诞生了一种极简但有效的范式——\nRalph Loop（也称 Ralph Wiggum Loop）\n：\nwhile\n:;\ndo\ncat\nPROMPT.md | claude-code --\ncontinue\ndone\n核心思想：\n同一个提示反复输入，让 AI 在文件系统和 Git 历史中看到自己之前的工作成果\n。\n这不是简单的“输出反馈为输入”，而是通过外部状态（代码、测试结果、提交记录）形成自我参照的迭代循环。其技术实现依赖于\nStop Hook 拦截机制\n。\nRalph Loop 让大语言模型持续迭代、自动运行直到任务完成，而不在典型“一次性提示 → 结束”循环中退出。这种范式已经被集成到主流 AI 编程工具和框架中，被一些技术博主和开发者称作“AI 持续工作模式”。\n甚至 Ralph Loop 结合 Amp Code 被用来构建新编程语言（AFK）：\nhttps://x.com/GeoffreyHuntley/status/1944377299425706060\nTL;DR / 快速开始\nRalph Loop 让 AI 代理持续迭代直到任务完成。\n核心三要素：\n明确任务 + 完成条件：定义可验证的成功标准\nStop Hook 阻止提前退出：未达标时强制继续\nmax-iterations 安全阀：防止无限循环\n最简示例（Claude Code）：\n# 安装插件\n/plugin install ralph-wiggum@claude-plugins-official\n# 运行循环\n/ralph-loop\n\"为当前项目添加单元测试\nCompletion criteria: - Tests passing (coverage > 80%) - Output <promise>COMPLETE</promise>\" \\\n--completion-promise\n\"COMPLETE\"\n\\\n--max-iterations 50\n场景适用性\n：\n详见\n实践建议-场景适用性。\nRalph Loop 概述\n什么是 Ralph Loop？\nRalph Loop\n是一种\n自主迭代循环机制\n。你给出一个任务和完成条件后，代理开始执行该任务；当模型在某次迭代中尝试结束时，一个 Stop Hook 会拦截试图退出的动作，并重新注入原始任务提示，从而创建一个\n自我参照的反馈循环\n。在这个循环中，模型可以读取上一次迭代改动过的文件、测试结果和 git 历史，并据此逐步修正自己的输出直到达到完成条件或达到设定的迭代上限。\n简言之：\n不是简单的一次性运行，而是\n持续迭代直到完成任务\n；\n循环使用\n同一个 prompt\n，但外部状态（代码、测试输出、文件等）在每次迭代后发生改变；\n需要明确的\n完成条件\n（如输出特定关键字、测试通过等）和合理的\n最大迭代次数\n作为安全控制。\nRalph 起源\nRalph Wiggum 名称\n来自《辛普森一家》的角色，用于象征“反复迭代、不放弃”的精神，但实际实现是一个简单的\n循环控制机制\n，并非模型自身拥有特殊认知。\n核心机制不是模型自行创造循环，而是\nStop Hook\n（详见\nStop-hook 拦截机制\n）在模型尝试退出时拦截，并重新注入 prompt，从而在\n同一会话中\n形成“自我参照反馈”。\n迭代不是无条件持续，而是\n依赖于明确可验证的完成信号或最大迭代次数\n。否则循环可能永不结束。\n哲学根源：\nRalph 循环可以追溯到软件工程中的“Bash 循环”思维，其核心逻辑是“不断向智能体提供任务，直到任务完成为止”。这种极致的简化体现了将失败视为数据、将持久性置于完美之上的设计哲学。\n核心原理\n与传统智能体循环的对比\n为了深入理解 Ralph Loop 与常规智能体循环的区别，需要首先建立对“智能体”这一概念的通用语义框架。根据当代人工智能实验室的共识，智能体被定义为\n“在循环中运行工具以实现目标的 LLM 系统”\n。这种定义强调了三个关键属性：\nLLM 编排的推理能力：智能体能够根据观察结果进行推理和决策\n工具集成的迭代能力：智能体可以调用外部工具并基于工具输出调整行为\n最小化人工监督的自主性：智能体能够在有限指导下自主完成任务\n在常规的智能体架构中，循环通常发生在\n单一会话的上下文窗口内\n，由 LLM 根据当前观察到的结果决定下一步行动。\nReAct（Reason + Act）模式\nReAct 遵循\n“\n观察（Observation）→ 推理（Reasoning）→ 行动（Acting）”\n的节奏。这种模式的优势在于其\n动态适应性\n：当智能体遇到不可预见的工具输出时，它可以在当前的上下文序列中即时修正推理路径。\n然而，这种“内部循环”受限于 LLM 的自我评估能力。如果 LLM 在某一步骤产生幻觉，认为任务已经完成并选择退出，系统就会在未达到真实目标的情况下停止运行。\nPlan-and-Execute（计划并执行）模式\nPlan-and-Execute 将任务分解为\n静态的子任务序列\n，由执行器依次完成。虽然这在处理长程任务时比 ReAct 更具结构性，但它对环境变化的适应度较低。如果第三步执行失败，整个计划往往会崩溃，或者需要复杂的重计划机制（Re-planning）。\nRalph 循环的“外部化”范式\nRalph 循环打破了上述依赖 LLM 自我评估的局限性。其实现机制采用\n停止钩子（Stop Hook）\n技术：当智能体试图退出当前会话（认为任务完成）时，系统会通过特定的退出代码（如退出码 2）截断退出信号。外部控制脚本会扫描输出结果，如果未发现预定义的“完成承诺”（Completion Promise），系统将重新加载原始提示词并开启新一轮迭代。\n这种模式在本质上是\n强制性的\n，它不依赖智能体的主观判断，而是依赖外部验证。\n对比总结\n在开发者语境中，\"agent loop\" 通常指智能体内部的感知—决策—执行—反馈循环（即典型的感知-推理-行动机制）。而 Ralph Loop 更侧重于\n迭代执行同一任务直至成功\n，与典型智能体循环在目的和设计上有所不同：\n比较结果表明：\n常规 Agent Loop 通常更通用：\n用于决策型 agent，可以根据多种状态和输入动态调整下一步操作。ReAct 模式适合需要动态适应的场景，Plan-and-Execute 模式适合结构化任务分解。\nRalph Loop 更像是自动驱动的 refine-until-done 模式：\n重点是让模型在固定任务上不断修正输出直到满足完成条件。它通过外部强制控制避免了 LLM 自我评估的局限性。\n因此，它与一般意义上 agent 的循环机制并不矛盾，但\n定位更专注于可验证任务的持续迭代修正\n，\n而非全面的 agent lifecycle 管理。\nStop-hook 拦截机制\nRalph 循环的技术优雅之处在于它如何利用现有的开发工具链（如 Bash、Git、Linter、Test Runner）构建一个闭环反馈系统。在常规循环中，工具的输出仅作为下一步推理的参考；而在 Ralph 循环中，工具的输出成为了决定循环是否存续的“客观事实”。\nRalph 循环的工业实现依赖于对终端交互的深度拦截。通过\nhooks/stop-hook.sh\n脚本，开发者可以捕获智能体的退出意图。如果智能体没有输出用户指定的承诺标识（如\n<promise>COMPLETE</promise>\n），停止钩子会阻止正常会话结束。\n这种机制强迫 LLM 面对这样一个事实：只要没有达到客观的成功标准，它就无法“下班”。这种外部施加的压力通过重复输入相同的提示词（Prompt）来实现，智能体在每一轮迭代中都能看到上一轮留下的改动痕迹和 Git 提交记录。\n状态持久化与记忆管理\n解决上下文腐烂问题\n常规智能体的一个核心痛点是\n“\n上下文腐烂（Context Rot）”\n——随着对话轮次的增加，LLM 对早期指令的注意力和精确度会线性下降。Ralph 循环通过“刷新上下文”解决了这一问题：\n每一轮循环可以看作是一个全新的会话，智能体不再从臃肿的历史记录中读取状态\n智能体直接通过文件读取工具扫描当前的项目结构和日志文件\n这种模式将“状态管理”从 LLM 的内存（Token 序列）转移到了硬盘（文件系统）\n由于 Git 历史记录是累积的，智能体可以通过\ngit log\n查看自己之前的尝试路径，从而避免重复同样的错误。这种将环境视为“累积记忆”的做法，是 Ralph 循环能够支持持续数小时甚至数天开发的核心原因。\n核心持久化组件\n在典型的 Ralph 实现中，智能体会维护以下关键文件：\nprogress.txt：\n一个追加形式的日志文件，记录了每一轮迭代的尝试、遇到的坑以及已经确认的模式。后续迭代的智能体会首先读取该文件以快速同步进度。\nprd.json：\n结构化的任务清单。智能体每完成一个子项，就会在该 JSON 文件中标记\npasses: true\n。这确保了即使循环中断，新的智能体实例也能明确接下来的优先级。\nGit 提交记录：\nRalph 循环被要求在每一步成功后进行提交。这不仅提供了版本回滚能力，更重要的是，它为下一轮迭代提供了明确的“变更差分”（Diff），让智能体能够客观地评估现状。\n文件结构\nscripts/ralph/\n├── ralph.sh\n├── prompt.md\n├── prd.json\n└── progress.txt\nralph.sh\n#!/bin/bash\nset\n-e\nMAX_ITERATIONS=\n${1:-10}\nSCRIPT_DIR=\n\"\n$(cd\n\"\n$(dirname \\\n\"\n${BASH_SOURCE[0]}\n\"\n)\" && pwd)\"\necho\n\"🚀 Starting Ralph\"\nfor\ni\nin\n$(\nseq\n1\n$MAX_ITERATIONS\n);\ndo\necho\n\"═══ Iteration\n$i\n═══\"\nOUTPUT=$(\ncat\n\"\n$SCRIPT_DIR\n/prompt.md\"\n\\\n| amp --dangerously-allow-all 2>&1 \\\n|\ntee\n/dev/stderr) ||\ntrue\nif\necho\n\"\n$OUTPUT\n\"\n| \\\ngrep -q\n\"<promise>COMPLETE</promise>\"\nthen\necho\n\"✅ Done!\"\nexit\n0\nfi\nsleep\n2\ndone\necho\n\"⚠️ Max iterations reached\"\nexit\n1\nprompt.md\n每次迭代的说明：\n# Ralph Agent Instructions\n## Your Task\n1.\nRead\n`scripts/ralph/prd.json`\n2.\nRead\n`scripts/ralph/progress.txt`\n(check Codebase Patterns first)\n3.\nCheck you're on the correct branch\n4.\nPick highest priority story\nwhere\n`passes: false`\n5.\nImplement that ONE story\n6.\nRun typecheck and tests\n7.\nUpdate AGENTS.md files with learnings\n8.\nCommit:\n`feat: [ID] - [Title]`\n9.\nUpdate prd.json:\n`passes: true`\n10.\nAppend learnings to progress.txt\n## Progress Format\nAPPEND to progress.txt:\n## [Date] - [Story ID]\n-\nWhat was implemented\n-\nFiles changed\n-\n**Learnings:**\n- Patterns discovered\n- Gotchas encountered\n---\n## Codebase Patterns\nAdd reusable patterns to the TOP\nof progress.txt:\n## Codebase Patterns\n-\nMigrations: Use IF NOT EXISTS\n-\nReact: useRef\n<\nTimeout\n|\nnull\n>\n(null)\n## Stop Condition\nIf ALL stories pass, reply:\n<\npromise\n>\nCOMPLETE\n</\npromise\n>\nOtherwise end normally.\nprd.json（任务状态）\n任务清单：\n{\n\"branchName\"\n:\n\"ralph/feature\"\n,\n\"userStories\"\n:\n[\n{\n\"id\"\n:\n\"US-001\"\n,\n\"title\"\n:\n\"Add login form\"\n,\n\"acceptanceCriteria\"\n:\n[\n\"Email/password fields\"\n,\n\"Validates email format\"\n,\n\"typecheck passes\"\n],\n\"priority\"\n:\n1\n,\n\"passes\"\n:\nfalse\n,\n\"notes\"\n:\n\"\"\n}\n]\n}\nprogress.txt\n任务进度日志：\n# Ralph Progress Log\nStarted: 2024-01-15\n## Codebase Patterns\n-\nMigrations: IF NOT EXISTS\n-\nTypes: Export from actions.ts\n## Key Files\n-\ndb/schema.ts\n- app/auth/actions.ts\n---\n## 2024-01-15 - US-001\n-\nWhat was implemented: Added login form with email/password fields\n-\nFiles changed: app/auth/login.tsx, app/auth/actions.ts\n-\n**Learnings:**\n- Patterns discovered: Use IF NOT EXISTS for migrations\n- Gotchas encountered: Need to handle email validation on both client and server\n---\n运行 Ralph\n./scripts/ralph/ralph.sh 25\n运行最多 25 次迭代。Ralph 将：\n创建功能分支\n逐个完成任务\n每个任务完成后提交\n当所有任务通过时停止\n上下文工程的对比分析\n常规智能体通常采用总结（Summarization）或截断（Truncation）来管理上下文。研究表明，相比于复杂的 LLM 总结，简单的“观察掩码”（Observation Masking，即保留最新的 N 轮对话，其余用占位符代替）在效率和可靠性上往往更胜一筹。然而，即使是最好的掩码策略也无法处理跨越数十轮、数千行代码改动的任务。\nRalph 循环绕过了这一难题，它不试图“总结”过去，而是通过提示词引导智能体进行“自我重新加载”。每一轮迭代的提示词始终包含对核心目标的清晰描述，而具体的执行细节则留给智能体去实时探索环境。这种“即时上下文”加载方式，使得 Ralph 能够处理规模远超其单次窗口容量的工程项目。\n框架和工具实现示例\n以下是一些主流框架和工具对 Ralph Loop 模式的支持：\nLangChain / DeepAgents\nhttps://github.com/langchain-ai/deepagents/tree/master/examples/ralph\n_\nmode\nDeepAgents 提供类似模式支持，需要程序化参数传递：\nuv run deepagents\n--ralph\n\"Build\na\nPython programming course\"\n--ralph-iterations\n5\n这里\n--ralph-iterations\n指定最大循环次数（详见\n实践建议-安全机制和资源控制\n）。\nKimi-cli\nhttps://moonshotai.github.io/kimi-cli/zh/configuration/config-files.html\nloop_control 控制 Agent 执行循环的行为。\nAI SDK (JavaScript)\nhttps://github.com/vercel-labs/ralph-loop-agent\n社区实现的\nralph-loop-agent\n允许更精细的开发控制：\n┌──────────────────────────────────────────────────────┐\n│                   Ralph Loop (\nouter\n)                 │\n│  ┌────────────────────────────────────────────────┐  │\n│  │  AI SDK Tool Loop (\ninner\n)                      │  │\n│  │  LLM ↔ tools ↔ LLM ↔ tools ... until done      │  │\n│  └────────────────────────────────────────────────┘  │\n│                         ↓                            │\n│  verifyCompletion: \"Is the TASK actually complete?\"  │\n│                         ↓                            │\n│\nNo\n? → Inject feedback → Run another iteration  │\n│       Yes? →\nReturn\nfinal\nresult\n│\n└──────────────────────────────────────────────────────┘\nimport\n{\nRalphLoopAgent\n, iterationCountIs }\nfrom\n'ralph-loop-agent'\n;\nconst\nmigrationAgent =\nnew\nRalphLoopAgent\n({\nmodel\n:\n'anthropic/claude-opus-4.5'\n,\ninstructions\n:\n`You are migrating a codebase from Jest to Vitest.\nCompletion criteria:\n- All test files use vitest imports\n- vitest.config.ts exists\n- All tests pass when running 'pnpm test'`,\ntools\n: { readFile, writeFile, execute },\nstopWhen\n:\niterationCountIs\n(\n50\n),\nverifyCompletion\n:\nasync\n() => {\nconst\nchecks =\nawait\nPromise\n.\nall\n([\nfileExists\n(\n'vitest.config.ts'\n),\n!\nawait\nfileExists\n(\n'jest.config.js'\n),\nnoFilesMatch\n(\n'**/*.test.ts'\n,\n/from ['\"]@jest/\n),\nfileContains\n(\n'package.json'\n,\n'\"vitest\"'\n),\n]);\nreturn\n{\ncomplete\n: checks.\nevery\n(\nBoolean\n),\nreason\n: checks.\nevery\n(\nBoolean\n) ?\n'Migration complete'\n:\n'Structural checks failed'\n};\n},\nonIterationStart\n:\n(\n{ iteration }\n) =>\nconsole\n.\nlog\n(\n`Starting iteration\n${iteration}\n`\n),\nonIterationEnd\n:\n(\n{ iteration, duration }\n) =>\nconsole\n.\nlog\n(\n`Iteration\n${iteration}\ncompleted in\n${duration}\nms`\n),\n});\nconst\nresult =\nawait\nmigrationAgent.\nloop\n({\nprompt\n:\n'Migrate all Jest tests to Vitest.'\n,\n});\nconsole\n.\nlog\n(result.\ntext\n);\nconsole\n.\nlog\n(result.\niterations\n);\nconsole\n.\nlog\n(result.\ncompletionReason\n);\n关键特性：\n提供模型与任务说明（包含明确的完成条件，详见\n实践建议-明确完成标准\n）\nstopWhen 和 verifyCompletion 定制循环退出逻辑\n事件钩子用于日志和监控\nRalph Loop 最佳实践\n如果你正在使用 AI 编程 CLI（如 Claude Code、Copilot CLI、OpenCode、Codex），以下实践指南将帮助你更高效地使用 Ralph Loop。\n大多数开发者以交互方式使用这些工具：给出任务、观察工作过程、在偏离轨道时介入。这是“人在回路”（Human-in-the-Loop，HITL）模式。\n但 Ralph 提供了一种新方法：让 AI 编程 CLI 在循环中运行，自主处理任务列表。你定义需要做什么，Ralph 负责如何做——并持续工作直到完成。换句话说，它是\n长时间运行、自主、无人值守的 AFK（Away From Keyboard，离开键盘）编程\n。\n提示：\n本节提供操作层面的具体技巧，原则层面的建议请参考实践建议部分。\n技巧 1：理解 Ralph 是一个循环\nAI 编程在过去一年左右经历了几个阶段：\nVibe 编程\n：\n让 AI 写代码而不真正检查。你“感受”AI，接受它的建议而不仔细审查。速度快，但代码质量差。\n规划模式\n：\n要求 AI 在编码前先规划。在 Claude Code 中，你可以进入规划模式，让 AI 探索代码库并创建计划。这提高了质量，但仍受限于单个上下文窗口。\n多阶段计划\n：\n将大型功能分解为多个阶段，每个阶段在单独的上下文窗口中处理。你为每个阶段编写不同的提示：“实现数据库模式”，然后“添加 API 端点”，然后“构建 UI”。这扩展性更好，但需要持续的人工参与来编写每个提示。\nRalph\n简化了这一切。不是为每个阶段编写新提示，而是在循环中运行相同的提示：\n#!/bin/bash\n# ralph.sh\n# Usage: ./ralph.sh <iterations>\nset\n-e\nif\n[ -z\n\"\n$1\n\"\n];\nthen\necho\n\"Usage:\n$0\n<iterations>\"\nexit\n1\nfi\n# 每次迭代：运行 Claude Code，传入相同的提示\nfor\n((i=\n1\n; i<=\n$1\n; i++));\ndo\nresult=$(docker sandbox run claude -p \\\n\"@some-plan-file.md @progress.txt \\\n1. 决定接下来要处理的任务。这应该是你认为优先级最高的，\\\n不一定是列表中的第一个。\\\n2. 检查任何反馈循环，如类型检查和测试。\\\n3. 将你的进度追加到 progress.txt 文件。\\\n4. 提交该功能的 git commit。\\\n只处理单个功能。\\\n如果在实现功能时，你注意到所有工作都已完成，\\\n输出 <promise>COMPLETE</promise>。\\\n\")\necho\n\"\n$result\n\"\nif\n[[\n\"\n$result\n\"\n== *\n\"<promise>COMPLETE</promise>\"\n* ]];\nthen\necho\n\"PRD 完成，退出。\"\nexit\n0\nfi\ndone\n每次迭代：\n查看计划文件，了解需要做什么\n查看进度文件，了解已完成的工作\n决定下一步做什么\n探索代码库\n实现功能\n运行反馈循环（类型、Linting、测试）\n提交代码\n关键改进：\n代理选择任务，而不是你\n。\n使用多阶段计划时，人类在每个阶段开始时编写新提示。使用 Ralph 时，代理从你的 PRD 中选择下一步要做什么。你定义最终状态，Ralph 到达那里。\n技巧 2：从 HITL 开始，然后转向 AFK\n运行 Ralph 有两种方式：\n对于 HITL，你观察它做的一切，在需要时介入。\n对于 AFK Ralph，\n始终限制迭代次数\n。\n随机系统的无限循环是危险的。关于如何设置迭代次数限制，详见\n实践建议-安全机制和资源控制\n。\nHITL 类似于结对编程。你和 AI 一起工作，在代码创建时审查。你可以实时引导、贡献和分享项目理解。\n这也是学习 Ralph 的最佳方式。你会理解它的工作方式，优化你的提示，并在放手之前建立信心。\n一旦你的提示稳定，AFK Ralph 就能发挥真正的杠杆作用。设置它运行，做其他事情，完成后回来。\n你可以构建通知机制（如 CLI、邮件或消息推送），在 Ralph 完成时提醒你。这意味着更少的上下文切换，你可以完全投入到另一个任务中。典型的循环通常需要 30-45 分钟，尽管它们可以运行数小时。\n进展很简单：\n从 HITL 开始学习和优化\n一旦你信任你的提示，就转向 AFK\n返回时审查提交\n技巧3：定义范围\n为什么范围很重要\n你不需要结构化的 TODO 列表。你可以给 Ralph 一个模糊的任务——“改进这个代码库”——让它跟踪自己的进度。\n但任务越模糊，风险越大。Ralph 可能永远循环，找到无尽的改进。或者它可能走捷径，在你认为工作完成之前就宣布胜利。\n真实案例\n：\n某次运行 Ralph 来提高项目的测试覆盖率。仓库有内部命令——标记为内部但仍面向用户。目标是覆盖所有内容的测试。\n经过三次迭代，Ralph 报告：“所有面向用户的命令都完成了。”但它完全跳过了内部命令。它决定它们不是面向用户的，并将它们标记为被覆盖率忽略。\n修复方法\n：\n明确定义你想要覆盖的内容：\n如何定义范围\n在让 Ralph 运行之前，你需要定义“完成”是什么样子。这是从规划到需求收集的转变：不是指定每个步骤，而是描述期望的最终状态，让代理找出如何到达那里。\n核心原则\n：\n必须定义明确可机器验证的完成条件。模糊的标准会导致循环无法正确退出或产生无意义输出。\n推荐格式：结构化 prd.json\n定义 Ralph 范围有多种方法（Markdown 列表、GitHub Issues、Linear 任务），但推荐使用结构化的\nprd.json\n：\n{\n\"branchName\"\n:\n\"ralph/feature\"\n,\n\"userStories\"\n:\n[\n{\n\"id\"\n:\n\"US-001\"\n,\n\"title\"\n:\n\"新聊天按钮创建新对话\"\n,\n\"acceptanceCriteria\"\n:\n[\n\"点击'新聊天'按钮\"\n,\n\"验证创建了新对话\"\n,\n\"检查聊天区域显示欢迎状态\"\n],\n\"priority\"\n:\n1\n,\n\"passes\"\n:\nfalse\n,\n\"notes\"\n:\n\"\"\n}\n]\n}\nRalph 在完成时将\npasses\n标记为\ntrue\n。PRD 既是范围定义，也是进度跟踪器——一个活生生的 TODO 列表。\n提示\n：\n关于如何定义完成条件的更多示例和最佳实践，详见\n实践建议-明确完成标准\n。\n技巧 4：跟踪 Ralph 的进度\nRalph 在迭代之间使用进度文件来解决\n上下文腐烂问题\n。通过维护\nprogress.txt\n和\nprd.json\n（详见\n状态持久化与记忆管理\n），Ralph 可以在每次迭代中：\n读取\nprogress.txt\n以了解已完成的工作和学到的代码库模式\n读取\nprd.json\n以了解待办任务和优先级\n追加本次迭代的进度和学到的模式\n更新\nprd.json\n中已完成任务的\npasses\n状态\n最佳实践：\n在\nprogress.txt\n顶部维护“代码库模式”部分，方便后续迭代快速参考\n每次迭代只处理一个任务，完成后立即更新状态\n记录遇到的坑和解决方案，避免重复错误\n这创建了一个累积的知识库，后续迭代可以快速同步，而不需要阅读整个 Git 历史。\n技巧 5：使用反馈循环\n反馈循环是 Ralph 的护栏。它们告诉代理它是否在正确的轨道上。没有它们，Ralph 可能会产生看起来正确但实际上有问题的代码。\n反馈循环类型\n在你的 Ralph 提示中，明确要求运行这些反馈循环：\n在每次迭代中：\n1.\n实现功能\n2.\n运行类型检查：\n`tsc --noEmit`\n3.\n运行测试：\n`npm test`\n4.\n运行 Linter：\n`npm run lint`\n5.\n只有在所有检查通过后才提交\n这确保 Ralph 不会提交破坏性代码。\n技巧 6：小步迭代\nRalph 在小的、可验证的步骤中工作得最好。每次迭代应该：\n完成一个功能\n运行反馈循环\n提交代码\n为什么？因为：\n更容易调试：\n如果某次迭代失败，你知道确切的问题所在\n更好的 Git 历史：\n每个提交代表一个完整的功能\n更快的反馈：\n小步骤意味着更快的迭代周期\n避免让 Ralph 一次处理多个功能。这会导致：\n混乱的提交\n难以追踪进度\n更高的失败风险\n技巧 7：优先处理高风险任务\n不是所有任务都是平等的。有些任务如果失败，会破坏整个项目。其他任务如果失败，只是一个小问题。\nRalph 应该优先处理高风险任务：\n架构决策和核心抽象：\n如果这些错了，整个项目都会受到影响\n模块之间的集成点：\n这些是失败风险最高的地方\n未知的未知和探索性工作：\n需要快速失败\n标准功能和实现：\n风险较低，可以稍后处理\n抛光、清理和快速胜利：\n最低风险，适合最后处理\n将 AFK Ralph\n保留到基础稳固时\n。一旦架构得到验证，高风险集成工作正常，你就可以让 Ralph 在低风险任务上无人值守运行。\n尝试一下\n在你的 Ralph 提示中添加优先级指导：\n选择下一个任务时，按以下顺序优先处理：\n1.\n架构决策和核心抽象\n2.\n模块之间的集成点\n3.\n未知的未知和探索性工作\n4.\n标准功能和实现\n5.\n抛光、清理和快速胜利\n在高风险工作上快速失败。将简单的胜利留到后面。\n技巧 8：明确定义软件质量\n并非所有仓库都是相同的。很多代码是原型代码——演示、短期实验、客户提案。不同的仓库有不同的质量标准。\n代理不知道它在哪种仓库中。它不知道这是可丢弃的原型还是将维护多年的生产代码。你需要明确告诉它。\n要传达的内容\n将此放在你的\nAGENTS.md\n文件、你的技能中，或直接放在提示中。\n代码库模式比指令更有影响力\nRalph 会同时参考你的指令和现有代码。当两者冲突时，代码库的影响力更大。\n具体示例：\n// 你的指令：\"永远不要使用 any 类型\"\n// 但现有代码中：\nconst\nuserData: any =\nfetchUser\n();\nconst\nconfig: any =\nloadConfig\n();\nconst\nresponse: any =\napiCall\n();\n// Ralph 会学习这种模式，继续使用 any\n为什么会这样？\n指令只有几行文字\n代码库有数千行“证据”\nAI 更倾向于模仿现有模式\n解决方案：\n在 Ralph 运行前清理代码库：移除低质量模式\n使用反馈循环强制执行标准：Linting、类型检查、测试\n在 AGENTS.md 中明确质量标准：让期望可见\n尝试一下\n在你的\nAGENTS.md\n或 Ralph 提示中明确质量标准：\n## 代码质量标准\n这是生产代码库。请遵循：\n-\n使用 TypeScript 严格模式，禁止 any 类型\n-\n每个函数都需要单元测试\n-\n遵循现有的文件结构和命名约定\n-\n提交前必须通过所有 lint 和类型检查\n优先级：可维护性 > 性能 > 快速交付\n技巧 9：使用 Docker 沙箱\nAFK Ralph 需要编辑文件、运行命令和提交代码的权限。什么阻止它运行\nrm -rf ~\n？你不在键盘前，所以无法介入。\nDocker 沙箱是最简单的解决方案：\ndocker\nsandbox run claude\n这会在容器内运行 Claude Code。你的当前目录被挂载，但其他什么都没有。Ralph 可以编辑项目文件和提交——但无法触及你的主目录、SSH 密钥或系统文件。\n权衡：你的全局\nAGENTS.md\n和用户技能不会被加载。对于大多数 Ralph 循环，这没问题。\n对于 HITL，沙箱是可选的——你在观察。对于 AFK Ralph，特别是过夜循环，它们是防止失控代理的基本保险。\n技巧 10：控制成本\nRalph Loop 可能会运行数小时，成本控制很重要。以下是一些实用的成本管理策略：\n成本估算指南\n典型成本范围\n（以 Claude 3.5 Sonnet 为例）：\n小任务（5-10 迭代）：$5-15\n中等任务（20-30 迭代）：$15-50\n大型任务（30-50 迭代）：$50-150\n影响因素\n：\n代码库大小（上下文窗口）\n任务复杂度（需要多少迭代）\n模型选择（GPT-4 vs Claude vs 本地模型）\n成本控制策略\n1. 从 HITL 开始\n先用人在回路模式学习和优化提示\n一旦提示稳定，再转向 AFK 模式\nHITL 成本更可控，但仍有巨大价值\n2. 设置严格限制\n# 始终设置最大迭代次数\n/ralph-loop\n\"task\"\n--max-iterations 20\n3. 选择成本效益最优的任务\n机械化重构：高效率，低风险\n测试迁移：明确标准，易验证\n避免创意性任务：需要人类判断\n4. 本地模型的现实\n目前本地模型（如 Llama 3.1）在复杂代码任务上表现仍有差距。但可以考虑：\n用于简单任务的预处理\n作为成本敏感项目的备选方案\n5. 投资回报视角\n如果 Ralph 能在几小时内完成原本需要几天的工作，即使花费 $50-150 也是值得的。关键是选择合适的任务和设置合理的期望。\n技巧 11：让它成为你自己的\nRalph 只是一个循环。这种简单性使其无限可配置。以下是一些让它成为你自己的方法：\n交换任务源\n本文中的示例使用本地\nprd.json\n。但 Ralph 可以从任何地方拉取任务：\n关键洞察保持不变：代理选择任务，而不是你。你只是改变该列表的位置。\n更改输出\n不是直接提交到 main，每次 Ralph 迭代可以：\n创建分支并打开 PR\n向现有 issues 添加评论\n更新变更日志或发布说明\n当你有一个需要成为 PR 的 issue 积压时，这很有用。Ralph 进行分类、实现并打开 PR。当你准备好时进行审查。\n替代循环类型\nRalph 不需要处理功能积压。我一直在试验的一些循环：\n测试覆盖率循环\n：\n将 Ralph 指向你的覆盖率指标。它找到未覆盖的行，编写测试，并迭代直到覆盖率达到你的目标。例如，可以将项目的测试覆盖率从 16% 提高到 100%。\n重复代码循环\n：\n将 Ralph 连接到 jscpd 以查找重复代码。Ralph 识别克隆，重构为共享实用程序，并报告更改的内容。\nLinting 循环\n：\n向 Ralph 提供你的 Linting 错误。它一个一个修复，在迭代之间运行 linter 以验证每个修复。\n熵循环\n：\nRalph 扫描代码异味——未使用的导出、死代码、不一致的模式——并清理它们。软件熵的逆转。\n任何可以描述为“查看仓库，改进某些东西，报告发现”的任务都适合 Ralph 模式。循环是相同的。只有提示改变。\n尝试一下\n尝试这些替代循环提示之一：\n# 测试覆盖率循环\n@coverage\n-report.txt\n查找覆盖率报告中的未覆盖行。\n为最关键未覆盖的代码路径编写测试。\n再次运行覆盖率并更新 coverage-report.txt。\n目标：至少\n80\n% 覆盖率。\n# Linting 循环\n运行：npm run lint\n一次修复一个 Linting 错误。\n再次运行 lint 以验证修复。\n重复直到没有错误。\n# 熵循环\n扫描代码异味：未使用的导出、死代码、不一致的模式。\n每次迭代修复一个问题。\n在 progress.txt 中记录你更改的内容。\n实践建议\n提示：\n本节提供原则层面的指导，具体操作技巧请参考 Ralph Loop 最佳实践部分。\n明确完成标准\n无论是在 Claude Code 还是自己实现的 agent loop 模式中，\n明确可机器验证的完成条件\n是 Ralph Loop 成功的关键（详见\n核心原理\n中关于完成条件的讨论）。\n完成条件示例：\n所有测试通过\n构建无错误\nLint 结果清洁\n明确输出标记（如\n<promise>COMPLETE</promise>\n）\n测试覆盖率 > 80%\n所有类型检查通过\n避免模糊标准\n：\n例如“让它好看一点”会导致循环无法正确退出或产生无意义输出。\n示例：\n构建一个 Todo REST API\n完成标准：\n- CRUD 全部可用\n- 输入校验完备\n- 测试覆盖率 > 80%\n完成后输出：<promise>COMPLETE</promise>\n安全机制和资源控制\n始终设置\n--max-iterations\n保护你的钱包\n：\n/ralph-loop\n\"Task description\"\n--max-iterations 30 --completion-promise\n\"DONE\"\n建议的迭代次数：\n小任务：5-10 次迭代\n中等任务：20-30 次迭代\n大型任务：30-50 次迭代\n成本控制策略：\n结合成本监控和 token 使用限制策略\n优先使用 HITL 模式学习和优化提示\n仅在提示稳定后使用 AFK 模式\n场景适用性\n✅\n适合场景：\nTDD 开发：\n写测试 → 跑失败 → 改代码 → 重复直到全绿\nGreenfield 项目：\n定义好需求，过夜执行\n有自动验证的任务：\n测试、Lint、类型检查能告诉它对不对\n代码重构：\n机械化重构、大规模测试迁移\n测试迁移：\n从 Jest 到 Vitest 等框架迁移\n❌\n不适合场景：\n需要主观判断或人类设计抉择\n没有明确成功标准的任务\n整体策略规划和长期决策（常规 Agent Loop 更适合）\n成本敏感场景：ralph-loop 可能会运行数小时甚至几十个小时\n结论\nRalph Loop 是一种\n以持续迭代修正为中心的 agent 运行范式\n，通过 Stop Hook 和明确完成条件使代理不再轻易退出。它与一般意义上的 agent loop 并不冲突，而是在\n特定类型任务（可验证目标条件）下的一种强化迭代模式\n。适当理解二者的适用边界，能帮助开发者在构建自动化代理流水线时更合理选择架构和控制策略。\n参考资料：\nhttps://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum\nhttps://github.com/muratcankoylan/ralph-wiggum-marketer/\nhttps://github.com/frankbria/ralph-claude-code\nhttps://github.com/anthropics/claude-code/blob/main/plugins/ralph-wiggum/README.md\nhttps://www.youtube.com/watch?v=dPG-PsOn-7A\nhttps://www.youtube.com/watch?v=yi4XNKcUS8Q\nhttps://www.youtube.com/watch?v=_IK18goX4X8\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

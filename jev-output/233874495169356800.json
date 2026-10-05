@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "233874495169356800",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯AngelSlim重磅升级！面向全模态的大模型压缩算法工具包，推理速度飙升 1.8倍！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798429&idx=1&sn=da961ed5b12ae12e685ce2fee7767ae8",
+      "date": "2026-01-13T08:56:00.532Z",
+      "chars": 2711,
+      "text": "腾讯程序员\n2026-01-13 16:56\n广东\n首个集LLM、VLM 及语音多模态为一体的投机采样训练框架\n近年来，大模型正从能力竞赛走向工程落地，推理阶段的成本、时延与稳定性逐渐成为制约规模化应用的核心因素。在长上下文、高并发与多模态场景下，解码过程受限于算力与显存带宽，单纯依赖模型压缩或硬件堆叠的优化路径正逼近边际收益，促使业界重新审视推理机制本身的优化空间。\n在这一背景下，投机采样（Speculative Decoding）通过“小模型多步生成 + 大模型并行验证”，在保证生成质量的前提下减少大模型的有效前向计算。腾讯混元近期升级的 AngelSlim 围绕 Eagle3 投机采样训练范式 构建系统化实现，将投机采样提升为可训练、可迁移的加速能力，并扩展至 LLM、视觉语言与语音等多模态场景，在实际部署中最高可实现 1.9× 的推理加速，为多模态 AI 的实时化与规模化应用奠定基础。\n一、AngelSlim +投机采样\n投机采样是一种通过\n小模型多步预测 + 大模型一步验证\n的推理加速技术，其核心思想是：使用一个轻量级的草稿模型生成多个候选 token，由目标模型对候选结果进行并行验证是否接受，以此来并行解码加速，在有效利用大模型解码阶段的算力冗余，提升推理吞吐并降低单请求延迟。\nAngelSlim是一款集成了包括量化、投机采样等压缩算法，面向全模态的大模型压缩算法工具包。此次对投机采样训练进行了重磅升级，支持了大语言、多模态理解、语音等不同模态大模型投机采样草稿模型训练能力。\nAngelSlim 以“\nEagle3训练即部署\n”为设计核心，提供从数据处理、模型封装到投机采样算法训练的完整链路，帮助开发在不侵入现有模型结构的前提下，显著降低推理时延与计算成本，各模态、各类大模型加速可达\n1.4-1.9倍\n。\nGithub开源地址：\nhttps://github.com/Tencent/AngelSlim\n二、核心亮点\n1.\n覆盖从文生文、多模态理解到语音的全模态投机采样训练\nAngelSlim是一个从设计之初就支持全模态的投机采样训练框架，通过统一的训练接口，不同模态之间共享核心算法与工程能力，避免\n重复造轮子。\n2.面向部署\nAngelSlim 并不止步于“能训”，而是强调训出来就能用。AngelSlim训练产出的模型可以无缝用于vLLM/Sglang等框架进行部署。\n三、核心训练组件解析\n1.数据处理模块\n数据处理模块为投机采样训练多个模态提供稳定、可复用的数据基础，主要包括：\na. 数据重采样：针对分布外数据集重新采样，生成分布内数据集用以训练。\nb. 数据预处理：\ni.  统一不同模态的数据格式，将文本、图像、音频等输入标准化处理成token ids和loss mask。\nii. 草稿模型裁剪词表的映射。\nc. 隐藏特征提取：根据处理好的token ids获取对应的隐藏特征。\n2.模型模块\n模型模块是 AngelSlim 实现高度扩展性的关键。\na.统一的 TargetModel 接口\ni. AngelSlim提供统一的TargetModel接口，包括模型加载与权重管理、前向计算、中间层 / 隐状态特征提取等抽象方法；\nb. 低成本扩展新的模型后端\nii. 对于新的模型架构或后端，用户只需实现 TargetModel 中定义的抽象方法即可完成模型注册并接入训练流程，无需修改训练器或核心算法代码。这一设计极大降低了对新模型、新模态的适配成本。\n3.训练器模块\na.训练器针对Eagle3算法特点设计了两种训练模式：在线训练和离线训练。在线与离线训练的区别在于是否预先生成并存好全量数据的hidden states。在线训练适合小尺寸模型或显存足够的场景，离线训练适合大尺寸模型、低显存高磁盘空间机器。\nb.训练器实现封装了Eagle3等投机采样算法训练的关键逻辑：\ni. 训练时测试（training-time-test）：训练时模拟Eagle3模型多步生成过程，让Eagle3模型看到并学习使用自己的预测。\nc.训练器原生支持断点续训能力，完整保存并恢复：\ni.草稿模型参数\nii.Optimizer / LR Scheduler 状态以及训练进度\n四、实践与部署\n1.快速开始\n当安装好AngelSlim后，进入AngelSlim根目录按照如下命令可以快速开始Eagle3的训练：\n# 启动vLLM服务\nbash scripts/speculative/run_vllm_server.sh\n# 生成训练数据\nbash scripts/speculative/generate_data_for_target_model.sh\n# 开始在线训练\nbash scripts/speculative/train_eagle3_online.sh\n其中前两条命令是准备数据，对训练数据进行重采样，生成目标模型分布内的数据。这一步是可选项，如果训练数据已经是来自目标模型的SFT数据或自身生成的数据，这一步可跳过。对Eagle3模型进行训练直接执行最后一条命令即可。并且我们提供了全面的多模态模型 Eagle3 训练与部署指南，支持LLM / VLM / Audio (ASR & TTS) ，详见\n文\n档\n：\nLLM\n|\nVLM\n|\nAudio(ASR)\n|\nAudio(TTS)\n。\n2.AngelSlim训练模型的加速表现\n我们使用vLLM在代码、数学、指令跟随、文本生成、多模态理解等任务上评测了AngelSlim所训练的Eagle3模型，设置num_speculative_tokens=2 or 4下我们所训的模型接收长度可达1.8-3.5，最高加速可达1.4-1.9倍。\n3.代码和模型链接\na. AngelSlim代码Github开源仓库：\nhttps://github.com/Tencent/AngelSlim\nb. Hugging-Face Eagle3模型与权重：\nhttps://huggingface.co/collections/AngelSlim/eagle3\n五、未来计划\n在未来规划中，工具化方面，我们计划支持基于 vLLM 的离线 hidden states 生成，以进一步降低数据构建与训练成本，并通过系统性的训练加速优化提升整体训练效率；算法创新方面，将探索多模态理解与语音输入信息在Eagle3 模型中的深度融合，统一建模文本、视觉与语音特征，拓展投机采样在全模态场景下的适用性与加速潜力。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.13,
+        "transfer_business": 0,
+        "peripheral": 0.22,
+        "irrelevant": 0.65,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.51,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.27,
+        "2": 0.62,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.16,
+      "probabilities": {
+        "0": 0.86,
+        "1": 0.13,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.05,
+      "probabilities": {
+        "0": 0.96,
+        "1": 0.04,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.51,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.66,
+        "3": 0.05,
+        "4": 0.25,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.35,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.05,
+        "4": 0.75,
+        "5": 0.03
+      }
+    },
+    "anti_hype": {
+      "score": 0.71,
+      "probabilities": {
+        "0": 0.54,
+        "1": 0.25,
+        "2": 0.18,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4067,
+    "outputTokens": 173,
+    "totalTokens": 4240
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.56,
+        "relevance": 0.67,
+        "grounding": 0.89,
+        "decision_action": 0.96,
+        "evidence": 0.61,
+        "actionability": 0.53,
+        "anti_hype": 0.52
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179986386,
+                "endTime": 1791179986533,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000170814",
+      "marketCost": "0.000170814",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000170814",
+      "inferenceCost": "0.000170814",
+      "inputInferenceCost": "0.000170814",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB5DZZR938ZB82SGA6K29"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:46 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::nv2tw-1791179986355-9ba3355ba2f5"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.13,
+            "transfer_business": 0,
+            "peripheral": 0.22,
+            "irrelevant": 0.65,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.51,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.27,
+            "2": 0.62,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.16,
+          "probabilities": {
+            "0": 0.86,
+            "1": 0.13,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.05,
+          "probabilities": {
+            "0": 0.96,
+            "1": 0.04,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.51,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.66,
+            "3": 0.05,
+            "4": 0.25,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.35,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.05,
+            "4": 0.75,
+            "5": 0.03
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.71,
+          "probabilities": {
+            "0": 0.54,
+            "1": 0.25,
+            "2": 0.18,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4067,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.56,
+            "relevance": 0.67,
+            "grounding": 0.89,
+            "decision_action": 0.96,
+            "evidence": 0.61,
+            "actionability": 0.53,
+            "anti_hype": 0.52
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179986386,
+                    "endTime": 1791179986533,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000170814",
+          "marketCost": "0.000170814",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000170814",
+          "inferenceCost": "0.000170814",
+          "inputInferenceCost": "0.000170814",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB5DZZR938ZB82SGA6K29"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:45.764Z"
+  }
+}

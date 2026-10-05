@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "257798419736668160",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "OpenViking 实战教程：搭建多仓库代码语义检索系统，赋能 AI 助手 & OpenClaw 记忆插件 2.0 升级",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518946&idx=1&sn=71b64437c738c6dcda6ca2797465c743",
+      "date": "2026-03-20T10:33:00.267Z",
+      "chars": 7833,
+      "text": "原创\nViking\n2026-03-20 18:33\n北京\n一、背景与问题：为什么多仓库代码问答如此困难？\n在大型企业或复杂的开源项目中，代码库通常不会是单一的庞然大物。业务逻辑、基础库、中间件等往往分散在数十甚至上百个独立的 Git 仓库中。这种分布式代码管理带来了模块化和解耦的好处，但也给开发者带来了新的挑战，尤其是在理解和查询代码时：\n上下文缺失：\n当你向一个 AI 助手提问时，如果它只能看到你当前正在处理的那个仓库，它就无法理解那些跨仓库的调用和依赖关系。这好比让一个只读了《哈利·波特与魔法石》的人去解释整个系列七本书的剧情，结果必然是片面和错误的。\n低效的语义检索：\n传统的\ngrep\n或\nglob\n命令依赖于精确的关键词匹配，无法理解代码的真实意图。例如，你想查找“用户认证逻辑”，但相关代码可能分布在名为\nAuthService\n、\nverify_token\n或\nuser_session\n的不同部分，简单的文本搜索很难覆盖所有情况。\n信息过载与干扰：\n当一个关键词（如\nrequest\n）在多个仓库中都频繁出现时，搜索结果会变得非常嘈杂，让你难以定位到真正关心的那部分代码。\n为了解决这些问题，我们需要一个更强大的“上下文数据库”。这个数据库不仅要能存储所有相关的代码仓库，还要能理解代码的语义，并为 AI 助手提供精准、高效的检索能力。这正是\nOpenViking\n发挥作用的地方。\n二、目标效果：打造你的专属代码知识库\n通过本教程，你将学会如何利用 OpenViking 在你自己的本地环境或服务器上，搭建一个覆盖多个代码仓库的智能问答系统。最终，你将能够：\n聚合多仓库代码：\n将任意数量的公开（如 GitHub）或本地代码仓库导入 OpenViking，形成一个统一的知识源。\n实现语义化索引：\nOpenViking 会自动对这些代码进行分析、总结和向量化，构建一个深度的语义索引。\n赋能 AI 助手：\n将 OpenViking 作为插件或技能接入你选择的 AI 助手（Agent），使其具备跨仓库进行语义检索和代码问答的能力。\n当你再次提问“项目中处理支付回调的逻辑在哪里？”时，AI 助手将不再局限于单一仓库，而是能够通过 OpenViking 检索所有相关代码，并给你一个全面、准确的回答。\n三、问答实战效果测评\n测评场景与实验设计\n本次测评，我们根据团队真实工作场景（涉及 157 个代码仓库），从需求设计环节的代码理解，到开发上线遇到的问题解答，选取 10 个具有代表性的问题，这些问题相关的负责人会分别对问答效果做评估（较好、一般、较差）。\n我们设置了三组实验，在统一使用 GLM 4.7 模型的前提下，对比不同检索策略的表现。\n对照组：\n直接使用本地 workspace 目录（包含所有代码仓库），通过 OpenCode 检索本地代码完成问答\n实验组 1：\n不依赖本地 workspace 目录，通过 OpenCode 集成 OpenViking 插件进行语义检索后完成问答\n实验组 2：\n不依赖本地 workspace 目录，通过完全基于 OpenViking 开发的 VikingBot 进行语义检索后完成问答\n效果总览\n_\n较好\n一般\n较差\n输入 Token 成本\n输入 Token 成本中位数\n对照组\n4/10 (40%)\n3/10 (30%)\n3/10 (30%)\n625,183\n486,128\n实验组一\n8/10 (80%)\n1/10 (10%)\n1/10 (10%)\n323,294\n292,722\n实验组二\n9/10 (90%)\n1/10 (10%)\n0/10 (0%)\n216,331\n213,863\n因样本量较少，我们引入中位数来更公正的判断收益\n从汇总数据可以看出，引入 OpenViking 语义检索后，问答效果得到显著提升。\n效果提升显著：\n相较于纯本地检索（40% 较好率），集成 OpenViking 的两组实验“较好”评级比例分别跃升至 80% 和 90%，证明了语义检索在理解复杂查询意图上的绝对优势。\n“较差”比例大幅降低：\n本地检索有 30% 的问题回答错误或无法回答，而 VikingBot 则将这一比例降至 0。这表明 OpenViking 能有效规避因关键词误匹配或上下文不足导致的严重错误。\nVikingBot 表现最佳：\n作为与 OpenViking 深度集成的原生应用，VikingBot 表现最为出色（90% 较好率），在处理业务逻辑、消除答案噪音方面尤为突出，提供了接近标准答案的体验。\n成本估算\n我们估算了使用 OpenViking 前后整体的成本对比（仅对照组、实验组一），随着代码仓库问答的次数增加，仅 1318 次后，OpenViking 拉齐成本，\n后续将带来明显成本收益。\n仓库解析成本：\n在初次添加仓库资源时，OpenViking 将对仓库内容进行解析，消耗 539M tokens（Embedding 300M，VLM 239M）\n日常使用成本：\n日常使用仓库进行对话的输入 token 成本（单次成本如上表）\n三、安装与启动 OpenViking\n为了让 AI 助手能够检索代码，我们首先需要安装 OpenViking 的两个核心组件：\nOpenViking Server\n（负责索引和检索）和\nOpenViking CLI\n（负责与 Server 交互）。\n1. 环境准备\n在开始之前，请确保你的开发环境满足以下基本要求：\nPython 版本：3.10 或更高版本。\n操作系统：Linux（本教程使用该环境）、macOS 或 Windows。\n网络访问：能够正常访问 GitHub 等代码托管平台。\nGo 版本（可选）：1.22 或更高（从源码构建 AGFS 组件需要）。\nC++ 编译器（可选）：GCC 9+ 或 Clang 11+（构建核心扩展需要，必须支持 C++17）。\n此外，你需要一个本地目录，用于存放后续下载的代码仓库和配置文件。\n2. 模型准备\nOpenViking 需要以下模型能力：\nVLM 模型 ：用于图像和内容理解\nEmbedding 模型 ：用于向量化和语义检索\n支持多种模型服务：\nOpenAI 模型：支持 GPT-4V 等 VLM 模型和 OpenAI Embedding 模型\n火山引擎（豆包模型）：推荐使用，成本低、性能好，新用户有免费额度。\n其他自定义模型服务：支持兼容 OpenAI API 格式的模型服务\n3. 安装 OpenViking Python 包\n通过 pip 按照\npip\ninstall openviking\n安装成功后，你可以通过运行\nov --version\n来验证。\n4. 配置 OpenViking Server（本地部署）\n创建配置文件 ～/.openviking/ov.conf :\n{\n\"server\"\n:\n{\n\"host\"\n:\n\"127.0.0.1\"\n,\n\"port\"\n:\n1933\n,\n\"root_api_key\"\n:\n\"{your-key}\"\n,\n\"cors_origins\"\n:\n[\n\"*\"\n]\n},\n\"storage\"\n:\n{\n\"workspace\"\n:\n\"{your-data-dir}\"\n},\n\"embedding\"\n:\n{\n\"dense\"\n:\n{\n\"model\"\n:\n\"{your-model-name}\"\n,\n\"api_key\"\n:\n\"{your-api-key}\"\n,\n\"api_base\"\n:\n\"{your-api-endpoint}\"\n,\n\"dimension\"\n:\n1024\n,\n\"provider\"\n:\n\"{your-provider}\"\n}\n},\n\"vlm\"\n:\n{\n\"model\"\n:\n\"<your-model-name>\"\n,\n\"api_key\"\n:\n\"{your-api-key}\"\n,\n\"api_base\"\n:\n\"{your-api-endpoint}\"\n,\n\"provider\"\n:\n\"{your-provider}\"\n},\n\"log\"\n:\n{\n\"level\"\n:\n\"INFO\"\n}\n}\n5. 配置 CLI（访问本地 Server）\nCLI 需要知道如何连接到 OpenViking Server。创建一个配置文件，并填入 Server 的地址。\n创建并编辑配置文件\n~/.openviking/ovcli.conf\n：\n{\n\"url\"\n:\n\"\nhttp://127.0.0.1:1933\n\"\n,\n\"api_key\"\n:\n\"{your-key}\"\n,\n\"timeout\"\n:\n60.0\n}\nurl\n： OpenViking Server 的服务地址。如果你在本地启动 Server，默认就是\nhttp://127.0.0.1:1933\n。\napi_key\n： 用于访问服务的 API 密钥，本地部署时可以暂时留空（\nnull\n）。\ntimeout\n： CLI 命令的默认超时时间（秒）。\n6. 启动 OpenViking Server\nOpenViking Server 是整个系统的核心，负责存储、处理和检索数据。\n# 使用默认配置\nopenviking\n-server\n# 指定配置文件\nopenviking\n-server --config /path/to/ov.conf\n# 自定义端口\nopenviking\n-server --port\n8000\n# 后台运行\nnohup\nopenviking-server > /data/log/openviking.log\n2\n>&\n1\n&\n启动后，你可以通过运行\nov system health\n命令来检查 Server 是否正常运行。如果看到\n{\"status\":\"ok\"}\n的返回，说明一切准备就绪。\n提示：\n确保 OpenViking Server 已经成功启动并处于健康状态，然后再进行下一步的资源导入操作。\n五、导入多仓库资源\n现在，万事俱备，只欠“数据”。你需要将你的代码仓库导入 OpenViking，让它成为 AI 助手的知识储备。\n1. 添加资源\n使用\nov add-resource\n命令，你可以从 GitHub URL 或本地目录导入代码。\n从 GitHub 导入仓库：\n#\n导入一个公开的 GitHub 仓库\n$\nov add-resource\nhttps://github.com/volcengine/OpenViking.git\\\n--to viking://resources/volcengine/OpenViking --\nwait\n# --to 参数指定了资源在 OpenViking 虚拟文件系统中的存储路径\n#\n--\nwait\n参数会让命令等待，直到该资源处理完成\n从本地目录导入：\n#\n导入本地一个名为 my-project 的项目\n$\nov add-resource /path/to/my-project\\\n--to viking://resources/internal/my-project --\nwait\n建议在\nviking://resources/\n目录下创建有意义的子目录来组织你的代码仓库，例如按业务线（\nbackend\n、\nfrontend\n）或来源（\ninternal\n、\npublic\n）划分。良好的组织结构有助于后续进行更精确的范围检索。\n处理大型仓库：对于包含大量文件的大型仓库，索引过程可能会花费较长时间。你可以在\n--wait\n的基础上，搭配\n--timeout\n参数来延长等待时间（单位为秒）。\n2. 定时增量更新\n代码仓库资源会不断地有内容更新，为了实现定时信息同步，你可以在执行\nadd-resource\n命令时添加\nwatch-interval\n参数，指定每隔多少分钟进行一次增量更新。\n#\n--watch-interval 大于 0，会注册定时更新任务\n$\nov add-resource\nhttps://github.com/volcengine/OpenViking.git\\\n--to viking://resources/volcengine/OpenViking --watch-interval 3600\n# --watch-interval 小于 0 或者不设置时，会注销之前指向 --to uri 的任务\n六、在 Agent 中启用 OpenViking 能力\n为了让你的 AI Agent 能够使用 OpenViking，你需要为其安装一个“技能”（Skill）或“插件”（Plugin）。这个技能本质上是告诉 Agent 如何调用\nov\n命令来检索信息。\n以\nOpenCode\n为例\n编辑 OpenCode 配置 ～/.config/opencode/opencode.json ，把插件加进去：\n{\n\"plugin\"\n:\n[\n\"openviking-opencode\"\n]}\n重启 OpenCode（重启后插件会自动安装/加载）。\n将这个技能注册到你的 Agent 后，你就可以在对话中指示它使用\nov\n命令了。一个好的策略是：\n优先使用\nov find\n或\nov search\n等命令进行检索。如果 OpenViking 中没有找到相关信息，再尝试使用本地文件系统的工具作为兜底。\n七、可选：与聊天机器人集成\n如果你希望在团队的聊天工具中直接进行代码问答，可以将 OpenViking 集成到一个聊天机器人中。\n这里以【飞书 + VikingBot】为例，参考以下步骤部署使用：\n创建飞书机器人\na. 遵循 飞书开放平台官方文档\n（\nhttps://open.larkoffice.com/document/develop-an-echo-bot/introduction）\n创建一个自定义机器人，并获取其\nApp ID\n和\nApp Secret\n。\n配置机器人凭据\n# 将你在第一步中获取的机器人凭据填入 VikingBot 的配置文件 ~/.openviking/ov.conf\n{\n\"bot\"\n: {\n\"channels\"\n: [\n{\n\"type\"\n:\n\"feishu\"\n,\n\"enabled\"\n:\ntrue\n,\n\"appId\"\n:\n\"{your-api-id}\"\n,\n\"appSecret\"\n:\n\"{your-app-secret}\"\n,\n\"threadRequireMention\"\n:\ntrue\n}\n]\n}\n}\n部署 VikingBot\n# 启动 OpenViking Server 时，一同启动 VikingBot\nopenviking-server --\nwith\n-bot\n完成部署后，你就可以在飞书群聊中 @你的机器人，向它提问关于代码库的任何问题了。\nOne More Thing：OpenVIking 面向 OpenClaw 记忆插件2.0 升级\nOpenViking 基于 OpenClaw 最新 ContextEngine 插件系统研发的全新记忆插件 ——OpenViking Plugin 2.0 已正式上线。该插件全面适配高版本 OpenClaw，后续团队将持续对其进行效果与成本优化，让小龙虾越用越聪明，成本越来越低。\n本次发布简化了安装部署方案，内置了虚拟环境搭建及简化环境配置，详细操作指引可参考官方安装文档\nhttps://github.com/volcengine/OpenViking/edit/main/examples/openclaw-plugin/INSTALL-ZH.md。以下为插件核心信息说明：\n项目\n具体要求\nOpenClaw 版本要求\n必须 >= v2026.3.7\n，因为 ContextEngine 是在此版本中引入的革命性架构。\n插件版本\n全新的\nopenviking\n插件，替代旧的\nmemory-openviking\n插件。\n安装方式\n我们在新版本简化了安装部署方案，\n内置了虚拟环境搭建及简化环境配置，\n降低 OpenViking 安装门槛。\n验证方式\n我们提供更完整的\n验证方式\n，确保 OpenViking 作为 Cotnext Engine 安装成功，写入成功以及读取成功。\n注意事项 ：\n旧的 1.0 插件（\nmemory-openviking\n）仅支持 OpenClaw\n2.10.x\n至\n2026.3.6\n版本。对于 OpenClaw\n3.7 以上\n版本，旧插件存在兼容性问题，会导致 Agent 无响应或卡住。\n对于已使用旧插件的用户，建议直接升级到 2.0 版本以获得最佳体验，我们将停止对 1.0 插件的维护。\n后续支持\n当前版本重点做 Context Engine 适配，同时我们也定位到插件中一些潜在的成本效果优化问题，并将持续优化更新，欢迎大家下方加入我们的社区，并反馈您遇到的测试问题。\n开源号召：共建 Agent 长程记忆新生态\nOpenViking 的征程才刚刚开始，我们深知一个充满活力的社区是项目成功的基石。我们在此真诚地邀请每一位对 AI Agent 技术充满热情的开发者加入我们。\nStar & Fork 我们：\n请访问我们的 GitHub 仓库 volcengine/OpenViking，为我们点亮一颗宝贵的 Star，这是对我们最大的鼓励。\n访问我们的网站：\nhttps://openviking.ai，了解我们传递的理念，在您的项目中感受它带来的改变，并向我们反馈最真实的体验。\n加入社区：\n扫描下方二维码，加入我们的官方交流群，与我们和其他开发者共同探讨 Agent 的未来，分享你的洞见。\n成为贡献者：\n无论是提交一个 Issue，还是贡献一段代码 （PR），你的每一次参与都将使 OpenViking 变得更好。\n火山引擎将长期投入并维护 OpenViking 项目，持续优化其与 OpenClaw 等主流框架的适配体验。让我们一起，为 Agent 插上记忆的翅膀，共同定义下一代 Agent 上下文管理的未来！\n飞书群\n微信群\n关于我们：字节跳动 Viking 团队\n我们用 C 端产品的体验标准打造能够重塑企业生产力的产品和技术。在上下文工程领域具有深厚的技术积累与商业化实践，我们的愿景是提供用户友好的上下文工程产品矩阵。\n我们的产品历程\n2019 年：\nVikingDB 向量数据库支撑字节内部全业务大规模使用\n2023 年：\nVikingDB 在火山引擎公有云售卖\n2024 年：\n推出面向开发者的产品矩阵：VikingDB 向量数据库、Viking 知识库、Viking 记忆库\n2025 年：\n打造 AI 搜索、vaka 知识助手等上层应用产品\n2025 年 10 月：\n开源 MineContext\nhttps://github.com/volcengine/MineContext，主动式\nAI 应用探索\n2026 年 1 月：\n开源\nOpenViking\n，为 AI Agent 提供底层上下文数据库支撑\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.21,
+        "peripheral": 0,
+        "transfer_agent": 0.79,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.68,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.13,
+        "2": 0.78,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.07,
+      "probabilities": {
+        "0": 0.21,
+        "1": 0.09,
+        "2": 0.24,
+        "3": 0.34,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.28,
+      "probabilities": {
+        "0": 0.78,
+        "1": 0.18,
+        "2": 0.02,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.7,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.14,
+        "3": 0.01,
+        "4": 0.84,
+        "5": 0.01
+      }
+    },
+    "actionability": {
+      "score": 3.71,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.83,
+        "5": 0.07
+      }
+    },
+    "anti_hype": {
+      "score": 2.1,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.12,
+        "2": 0.45,
+        "3": 0.35,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7488,
+    "outputTokens": 172,
+    "totalTokens": 7660
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.74,
+        "relevance": 0.79,
+        "grounding": 0.21,
+        "decision_action": 0.81,
+        "evidence": 0.79,
+        "actionability": 0.72,
+        "anti_hype": 0.57
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179929580,
+                "endTime": 1791179929775,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000314496",
+      "marketCost": "0.000314496",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000314496",
+      "inferenceCost": "0.000314496",
+      "inputInferenceCost": "0.000314496",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9DYVVC9535A2Q30N2J95"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:49 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::zmq9m-1791179929450-4b3fd170f0b0"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.21,
+            "peripheral": 0,
+            "transfer_agent": 0.79,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.68,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.13,
+            "2": 0.78,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.07,
+          "probabilities": {
+            "0": 0.21,
+            "1": 0.09,
+            "2": 0.24,
+            "3": 0.34,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.28,
+          "probabilities": {
+            "0": 0.78,
+            "1": 0.18,
+            "2": 0.02,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.7,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.14,
+            "3": 0.01,
+            "4": 0.84,
+            "5": 0.01
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.71,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.83,
+            "5": 0.07
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.1,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.12,
+            "2": 0.45,
+            "3": 0.35,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7488,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.74,
+            "relevance": 0.79,
+            "grounding": 0.21,
+            "decision_action": 0.81,
+            "evidence": 0.79,
+            "actionability": 0.72,
+            "anti_hype": 0.57
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179929580,
+                    "endTime": 1791179929775,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000314496",
+          "marketCost": "0.000314496",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000314496",
+          "inferenceCost": "0.000314496",
+          "inputInferenceCost": "0.000314496",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9DYVVC9535A2Q30N2J95"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:49.012Z"
+  }
+}

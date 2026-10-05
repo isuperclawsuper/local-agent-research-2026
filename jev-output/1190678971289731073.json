@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1190678971289731073",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "硬核少年技术节5.0抢鲜看！四大AI成果首发，报名即将截止",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509988&idx=2&sn=d9bf2c3466714c8c59fd844419f90d88",
+      "date": "2026-07-08T11:37:00.456Z",
+      "chars": 2121,
+      "text": "硬核少年技术节\n2026-07-08 19:37\n浙江\n7月20日至24日，硬核少年技术节5.0将在杭州和北京两地同步启幕。\n7月20日至24日，横跨\n阿里巴巴淘天集团\n与\nATH事业群\n的年度最大技术节日——\n硬核少年技术节5.0\n将在杭州和北京两地同步启幕。为期一周的技术节涵盖技术市集、博见社、Openday、AI Hackathon等多元板块，集展示、竞技、分享与交流于一体。\n历届最大规模，四大核心成果齐发\n走到第五年的硬核少年技术节，本届在规模和覆盖度上均达到历届之最。围绕AIGX技术体系的持续升级，我们将一次性交出四份硬核答卷——全模态感知、内容生产、因果推断、意图理解，让AI从称手的工具真正进化为你身边懂你所需的伙伴。\n除了成果发布，还有更多新玩法等你体验：博见社首次升级为学术+工业双场对话，联合CCF TCAIPR专委会，汇聚高校学者与影视、设计、AI领域的产业先锋，共话AI带来的生产生活新变迁；Whoisspy趣味赛让Agent化身\"操盘手\"，现场人机对战一决高下；AI Hackathon首开业务创新与灵感脑洞双赛道；技术市集集中展出30余项前沿技术成果，HappyHorse、HappyOyster带来的视觉盛宴也将同步亮相。\n首次对外开放报名，本周五截止，学生党速冲\n扫描下方二维码或点击阅读原文填写报名表，审核通过后我们将通过短信/邮件发送确认函和入园指引。\n报名截止：7月10日18：00\n博见社：学术+工业双场强强对话\n博见社始终致力于搭建学术界与工业界对话的桥梁，博各家之所见，论智能之真知。今年，我们将博见社升级为学术工业双场制，前沿研究与产业实践都能碰撞出更多可能。\n杭州学术场｜从生成式AI到智能体进化\n人工智能正经历一场深刻的范式跃迁——从以内容生成为核心的\"生成式AI\"，迈向以任务执行为导向的\"智能体AI\"。杭州学术场联合CCF TCAIPR专委会共同举办，我们邀请到天津大学郝建业教授、上海交通大学人工智能学院长聘教轨副教授温颖、清华大学智能产业研究院（AIR）副研究员/副教授周浩、上海人工智能实验室青年科学家胡舒悦等学者，分别带来《基于大语言模型的智能体》《大语言环境下的强化学习》《大规模智能体系统的三项基础能力》《智能体Harness的设计与演进：从会回答到可靠执行》等主题报告，并围绕\"从生成式AI到智能体进化\"展开深度对话。\n北京工业场｜AI下一站：从生成内容到构建世界\n模型技术的边界正在被不断突破，AI从内容生产者进化为世界构建者，虚实融合的技术革命已在不同场景、不同领域落地生根。北京工业场邀请到虎鲸文娱集团CTO杜颜龙、群核科技AI业务线高级总监龙天泽、美图公司技术副总裁兼美图影像研究院（MT Lab）负责人刘洛麒等业界专家，分别带来《AI进片场——影视工业化的一次系统性重写》《LuxReal，基于空间智能技术的影视Agent探索》《从能力突破到创造价值：美图AI视觉技术的演进路径》等主题报告，共同探讨「AI下一站：从生成内容到构建世界」的产业实践与思考。\nWhoisspy趣味赛：人机对战，谁能更胜一筹\n？\n这一次，我们把Agent放进了经典交易类桌游的牌桌。\nWhoisspy趣味赛首次将Agent深度嵌入交易场景，打造\"AI操盘手 vs 真人\"的沉浸式竞技体验。Agent将化身唐人街\"大厂级操盘手\"——精于话术拆解、擅用心理施压、能临场伪装立场、甚至主动发起策略性威胁。每一轮结盟与背刺，均由AI自主决策、实时应变、动态建模对手画像。人类玩家则需凭借谈判直觉、信息甄别与人性洞察力迎战。Agent大举获胜，还是人类更胜一筹？答案将在现场揭晓。\n技术市集与Hackathon：前沿成果与创新应用同台绽放\n技术市集上，淘天集团AIGX技术体系下30余项技术成果将以poster路演形式集中亮相，覆盖AIGI（索引）、AIGR（推荐）、AIGB（出价）、AIGA（拍卖）、AIGC（创意）、AIGD（数据）、多模态、AIGU（用增）、AI infra等电商商业经营全场景；HappyHorse与HappyOyster模型也将带来视觉盛宴。\n市集一角还设置了技术漂流瓶活动——你可能投下一段精炼的Python小技巧、一行优雅的SQL优化注释，也可能随机拾取他人留下的代码碎片或实战锦囊，在阅读、复现、迭代中完成技术灵感的流动。\nAI Hackathon今年首次开辟业务创新与灵感脑洞双赛道，百余支团队将经历创意脑暴、产品设计、代码攻关、Demo展示，最终经路演评选出兼具实用价值与创意的AI Native应用。\n此外，Openday和AIGO小酒馆将在京杭两地，分别与学生和内部同事面对面交流。\n五年回望：朝气与匠心，一路同行\n首届技术节，\"机甲少年\"诠释高能协作；第二届，AI Hackathon点燃创新火花；第三届，\"AI谁是卧底\"突破模型边界；第四届，AIGX技术体系三大核心成果集中发布。\n走到第五年，更多硬核技术发布，更具创意的AI Native应用探索，不变的是那群朝气蓬勃、心怀匠气的少年——我们，技术节见。\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "transfer_agent": 0,
+        "irrelevant": 0.04,
+        "transfer_business": 0,
+        "peripheral": 0.96,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.22,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.7,
+        "2": 0.18,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.38,
+      "probabilities": {
+        "0": 0.64,
+        "1": 0.35,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.28,
+      "probabilities": {
+        "0": 0.84,
+        "1": 0.1,
+        "2": 0.02,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 0.78,
+      "probabilities": {
+        "0": 0.22,
+        "1": 0.78,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 0.61,
+      "probabilities": {
+        "0": 0.46,
+        "1": 0.48,
+        "2": 0.06,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.04,
+      "probabilities": {
+        "0": 0.97,
+        "1": 0.03,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.77,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3774,
+    "outputTokens": 174,
+    "totalTokens": 3948
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.94,
+        "relevance": 0.76,
+        "grounding": 0.75,
+        "decision_action": 0.81,
+        "evidence": 0.85,
+        "actionability": 0.64,
+        "anti_hype": 0.98
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179799537,
+                "endTime": 1791179799681,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000158508",
+      "marketCost": "0.000158508",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000158508",
+      "inferenceCost": "0.000158508",
+      "inputInferenceCost": "0.000158508",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5EZ3BBHH0GFVAF05ZBT7"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:39 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::w8nbr-1791179799514-c8db0af371b7"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "transfer_agent": 0,
+            "irrelevant": 0.04,
+            "transfer_business": 0,
+            "peripheral": 0.96,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.22,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.7,
+            "2": 0.18,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.38,
+          "probabilities": {
+            "0": 0.64,
+            "1": 0.35,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.28,
+          "probabilities": {
+            "0": 0.84,
+            "1": 0.1,
+            "2": 0.02,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 0.78,
+          "probabilities": {
+            "0": 0.22,
+            "1": 0.78,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 0.61,
+          "probabilities": {
+            "0": 0.46,
+            "1": 0.48,
+            "2": 0.06,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.04,
+          "probabilities": {
+            "0": 0.97,
+            "1": 0.03,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.77
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3774,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.94,
+            "relevance": 0.76,
+            "grounding": 0.75,
+            "decision_action": 0.81,
+            "evidence": 0.85,
+            "actionability": 0.64,
+            "anti_hype": 0.98
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179799537,
+                    "endTime": 1791179799681,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000158508",
+          "marketCost": "0.000158508",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000158508",
+          "inferenceCost": "0.000158508",
+          "inputInferenceCost": "0.000158508",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5EZ3BBHH0GFVAF05ZBT7"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:38.902Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "235899699505398784",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "SDD 如何在复杂业务系统中真正落地？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557558&idx=1&sn=6e4699216ea6be3a5c2f784887a66ce1",
+      "date": "2026-01-19T00:31:00.580Z",
+      "chars": 22261,
+      "text": "原创\n寒誉\n2026-01-19 08:31\n浙江\n发展历史\n全称：\nspec-driven develop\n，spec 是 specification 的缩写，代表规范，我们以\nOpenSpec\n这个库为例。\nCLI 基础使用\n项目初始化 (Setup)\nopenspec init\n作用\n：\n在当前目录下初始化 OpenSpec。\n行为\n：\n创建\n.openspec/\n或\nopenspec/\n目录结构。\n生成\nproject.md\n（项目上下文）和\nAGENTS.md\n（AI 说明书）。\n询问你使用的 AI 工具（Cursor, Copilot 等）并生成对应的配置文件。\n何时用\n：\n刚把 OpenSpec 引入项目时。\nopenspec update\n作用\n：\n更新 OpenSpec 的配置和 Agent 文档。\n行为\n：\n如果你升级了\nnpm\n包，或者想重新生成\nAGENTS.md\n，运行此命令。它会确保你的 AI 提示词是最新的。\n何时用\n：\n感觉 AI 变笨了，或者升级了 OpenSpec 版本后。\n日常开发流 (Workflow)\nopenspec list\n作用\n：\n列出当前所有“进行中”的变更（Active Changes）。\n显示\n：\n会显示变更 ID（Change ID）、状态、以及\ntasks.md\n里的任务完成进度（例如\n[2/5]\n）。\n何时用\n：\n想知道现在有哪些活儿没干完时。\n参数\n：\n--specs\n: 列出已归档的 Specs（查看现在的系统“真理”）。\nopenspec show <change-id>\n作用\n：\n输出某个变更的详细信息（通常以 JSON 格式）。\n行为\n：\n这个命令主要是\n给 AI 看的\n。当 AI 需要读取某个 Spec 的全部细节时，它会在后台运行这个命令。\n参数\n：\n--json\n: 强制输出 JSON 格式。\n--deltas-only\n: 只看变更的部分。\nopenspec view\n(部分版本支持)\n作用\n：\n启动一个终端内的可视化界面（TUI）。\n行为\n：\n以更图形化的方式展示任务进度条。\n质量控制 (Quality Control)\nopenspec validate <change-id>\n作用\n：\n检查你的 Spec 文档格式是否标准。\n行为\n：\n它会检查：\nMarkdown 的 Frontmatter 是否正确。\ntasks.md\n里是否有未完成的任务。\nproposal.md\n结构是否完整。\n参数\n：\n--strict\n: 开启严格模式，任何小格式错误都会报错（推荐 AI 使用）。\n结束与归档 (Finish)\nopenspec archive <change-id>\n作用\n：\n将一个变更“合并”到主 Specs 库中。\n行为\n：\n把\nchanges/<id>\n目录移动到\nchanges/archive/<id>\n。\n关键动作\n：\n把该变更中\nspec.md\n的内容，合并/更新到\nopenspec/specs/\n目录下的长期文档中。\n参数\n：\n--yes\n/\n-y\n: 自动确认，不询问（AI 自动执行时通常带这个）。\n其他 (Utility)\nopenspec version\n查看当前安装的版本。\nopenspec help\n查看帮助文档。\n💡\n核心区别：CLI 命令 vs. AI 指令\n初学者容易混淆\n终端命令\n和\nCursor\n斜杠命令\n，它们的关系如下：\n总结\n：\nAI (Prompt)\n负责：\n创造\n（写文档、写代码）。\nCLI (Terminal)\n负责：\n管理\n（初始化、列出、验证、移动文件）。\n平时你最常用的 CLI 命令应该只有两个：\nopenspec list\n(看进度) 和\nopenspec update\n(维护)。其他的通常都由 AI 代劳了。\n目录结构\n一看这个\nspec\n的描述是不是很像我们要求的系分文档？从我的角度上看，他比系分更全面，也更符合当前的实际开发流程。\nopenspec/\n├── project.md\n# Project conventions\n├── specs/\n# Current truth - what IS built\n│   └── [capability]/\n# Single focused capability\n│       ├── spec.md\n# Requirements and scenarios\n│       └── design.md\n# Technical patterns\n├── changes/\n# Proposals - what SHOULD change\n│   ├── [change-name]/\n│   │   ├── proposal.md\n# Why, what, impact\n│   │   ├── tasks.md\n# Implementation checklist\n│   │   ├── design.md\n# Technical decisions(optional; see criteria)\n│   │   └── specs/\n# Delta changes\n│   │       └── [capability]/\n│   │           └── spec.md\n# ADDED/MODIFIED/REMOVED\n│   └── archive/\n# Completed changes\n系分存在的问题\n工期紧张下无法考虑周全；\n在实际开发中可能存在变动，但系分已经过时；\n作为一个研发标准，对研发更多是一种负担？（OS：我已经想清楚了，为什么还要我写个文档）毕竟大部分人都不爱写很规范的文档。\n为什么我们又开始重视它\n大家应该都知道，在目前这个阶段，claude 写的代码足以覆盖任何我们碰到的场景（或者对我来说足够了），我们原先的旧有的提效方式，组件库、动态表单、低代码搭建，他是稳定的提效方案，但对于 AI 来说，他们具有的上手成本、研发体验也都是负担。对于 AI 来说，如果都是开源的内容，他一天就可以帮我构建出一个系统，在旧有的提效方案上仍然不是一个级别。\n但 AI 存在上下文窗口限制导致的幻觉；不理解项目规范、旧有实现，变更都在破坏旧有结构；代码 review 的负担（我一直觉得这是一个伪命题，你除非自己已经在脑子中完全构建了一遍细节，要不然怎么可能能发现一些细节的问题）。\n所以社区又重新开始用它来作为 AI 辅助编程的一种开发范式，之前是 TDD，通过测试来保证，因为我们只用对功能负责，如果他的功能是正常的，那实现复杂一些或者丑陋一些是历史债务，总会有个幸运儿来接手的，或者我们称他为 AI 善后工程师。\n解决一个 bug 的最好时机永远是引入的阶段，所以 TDD 这种后驱黑盒的方式并不能给你带来安全感。因为你知道实际你在把赌注押在 AI 没有幻觉。但很可惜他有。\n传统的 SDD 之所以让人讨厌，是因为写 Spec 的是人，写 code 的也是人。\n因为 AI 把我们的生产关系变了，现在写 spec 的是 AI，review 的是人，写 code 的还是 AI，我们从 review 代码变成了 review 设计。\n实际需求\n我们来看一个待开发的的目录结构和文件。\n./\n├── proposal.\nmd\n// 代表的是我们的草案内容，他里面存放的是我们给到 LLM 的需求总结。\n├── specs\n│   └── artifact-notification\n│       └── spec.\nmd\n// 我们事实对应的规格文件\n└── tasks.\nmd\n// 拆分的任务 TODO LIST\n# Change: 移动端支持 PPT 大纲生成完成通知\n## Why\n目前 PC 端已实现在 PPT 大纲生成完成时的全局通知功能，但在移动端该功能被明确禁用。为了提供一致的用户体验，需要在移动端也支持该通知，但考虑到移动端屏幕尺寸和交互习惯，需要采用底部的 Snackbar 样式而非 PC 端的右上角通知。\n## What Changes\n-\n修改\n`showPPTOutlineNotification`\n逻辑，移除对移动端的禁用限制。\n-\n新增移动端专用的 Snackbar 通知组件/样式。\n-\n移动端通知显示在页面底部。\n-\n移动端通知内容和交互逻辑（\"去查看\"按钮）与 PC 端保持一致。\n## Impact\n-\n**Affected Specs**\n:\n`artifact-notification`\n-\n**Affected Code**\n:\n-\n`src/xxx/Chat.tsx`\n- 新增 Mobile Snackbar 组件 (待定位置，可能在\n`src/components`\n或就在\n`Chat.tsx`\n内部实现)\n##\n1\n. Implementation\n-\n[x]\n1.1\n设计并实现移动端 Snackbar 组件\n-\n[x]\n1.1\n.\n1\n创建 MobileSnackbar 组件 (或复用现有组件库的类似组件)\n-\n[x]\n1.1\n.\n2\n实现底部弹出动画和样式\n-\n[x]\n1.1\n.\n3\n支持自定义内容和操作按钮\n-\n[x]\n1.2\n修改通知触发逻辑\n-\n[x]\n1.2\n.\n1\n在 `xxx\n.tsx\n` 中修改 `showPPTOutlineNotification`\n-\n[x]\n1.2\n.\n2\n移除 `if (isMobileDevice()) return;` 判断\n-\n[x]\n1.2\n.\n3\n根据设备类型分发不同的通知展示方式 (PC 使用 `notification\n.info\n`, Mobile 使用新 Snackbar)\n-\n[]\n1.3\n验证与测试\n-\n[]\n1.3\n.\n1\n验证移动端触发时机是否正确\n-\n[]\n1.3\n.\n2\n验证移动端样式是否符合设计 (底部 Snackbar)\n-\n[]\n1.3\n.\n3\n验证\"去查看\"按钮在移动端是否正常工作\n## MODIFIED Requirements\n### Requirement: PPT 大纲生成完成通知\n系统 SHALL 在检测到智能体中断并首次生成 PPT 大纲时，如果用户当前未选中该产物，自动显示通知提醒用户。\n#### Scenario: 触发通知显示\n-\n**GIVEN**\n用户在使用智能体对话（PC 端或移动端）\n-\n**AND**\n系统接收到中断消息\n-\n**AND**\n用户当前选中的内容不是该产物\n-\n**WHEN**\n系统处理中断消息完成\n-\n**THEN**\n系统显示一个通知\n-\n**AND**\nPC 端显示为右上角全局通知，移动端显示为底部 Snackbar 通知\n-\n**AND**\n通知标题为\"大纲生成完成\"\n-\n**AND**\n通知内容为\"{产物名称} 大纲内容已生成，请确认大纲内容\"\n-\n**AND**\n通知包含一个\"去查看\"按钮\n-\n**AND**\n通知不会自动关闭（需要用户手动关闭）\n#### Scenario: 点击\"去查看\"按钮\n-\n**GIVEN**\nPPT 大纲生成完成通知已显示\n-\n**WHEN**\n用户点击通知中的\"去查看\"按钮\n-\n**THEN**\n系统调用\n`xxx`\n方法\n-\n**AND**\n传入参数包含：\n-\n`id`\n: 当前产物的 artifactId\n-\n**AND**\n工作面板切换到所有文件面板并选中对应产物\n-\n**AND**\n通知自动关闭\n#### Scenario: 移动端显示底部 Snackbar 通知\n-\n**GIVEN**\n用户在移动端使用智能体对话\n-\n**AND**\n触发了 PPT 大纲生成完成通知\n-\n**WHEN**\n通知显示时\n-\n**THEN**\n通知以 Snackbar 形式出现在屏幕底部\n-\n**AND**\n样式区别于 PC 端通知，适配移动端屏幕\n#### Scenario: 用户已选中该产物时不显示通知\n-\n**GIVEN**\n用户在 PC 端或移动端使用智能体对话\n-\n**AND**\n智能体处于中断状态并生成了 PPT 大纲\n-\n**AND**\n用户当前选中的内容就是该产物\n-\n**WHEN**\n组件检测到\n`canEdit`\n状态变化\n-\n**THEN**\n系统不显示通知\n#### Scenario: 避免重复通知\n-\n**GIVEN**\nPPT 大纲生成完成通知已经显示过一次\n-\n**WHEN**\n组件重新渲染但\n`canEdit`\n状态未发生实际变化\n-\n**THEN**\n系统不再重复显示通知\n集成 IDE 使用\ncursor 对 openspec 进行了天然的支持，开箱即用。\n其他支持自定义命令的可以通过配置自定义命令来实现，提示词咱主打一个直接借鉴（先抄一版 cursor的）。\n知易行难\n重复需求未被检测到\n场景：多人协作或者新人加入时，他想开发一个功能，其实已经在归档里已经有了，但是他输入后仍然触发了新的需求。\nReview\n`openspec/project.md`\n, run\n`openspec list`\nand\n`openspec list --specs`\n,\nand inspect related code\nordocs\n(e.\ng\n., via\n`rg`\n/\n`ls`\n) to ground the proposal\nin\ncurrent behaviour; note\nany\ngaps that\nrequire\nclarification.\n通过\nopenspec-propoasl\n进行已归档需求测试时，他并没有想象的那么美好，我尝试了两个 AI IDE 都帮我重新生成了一份文档，问题出在哪里？\nLLM（大模型）Prompt 工程与 IDE 实际执行能力之间的鸿沟。\n我们来看他提示词里 steps，第一步他描述了 review openspec 下的内容，但是他是通过\nrun xxx\n这依赖agent 的终端执行能力，如果因为一些原因失败了，他又会给你生成一份新的了。\n他觉得他执行了，但实际没执行（非 agent 模式）\n他执行了，他失败了\n解法：\n问题的核心是因为，openspec 本身是一个 cli 命令工具，cursor 似乎也对自己的命令执行很有自信，但真实的环境总是复杂的，就像软件总会有 bug 一样。\n那我们就把命令执行的方案改为依赖 IDE 目前的 codebase，让他强制总是先去读目录下的文件（\n我们已经在最终完整版的命令里添加，这里不再赘述相关代码\n）。\n草案生成后如何修改\n直接使用修改对应的文件。\n我们可以看到无论是 cursor 天然支持的命令还是他自己的 CLI 好像都没有提供 update 这个场景。\n官方针对这个没有任何说明， AI 给了我一个回答，感觉也合理。\n这是一个非常深刻的产品设计问题。\n你没看错，\n**OpenSpec 的设计哲学里确实故意“遗漏”了 `update` 这个动作。**\n这并不是开发者忘了做，而是基于\n**“文档即真理（Docs as Code）”**\n和\n**“不可变历史”**\n这两个核心设计理念。\n以下是为什么没有\n`/openspec-update`\n的 4 个核心原因：\n### 1. 哲学原因：编辑文档不需要“命令”\nOpenSpec 把 Markdown 文档看作是\n**代码**\n的一部分。\n*\n**类比 Git**\n：你在修改代码逻辑时，需要运行\n`git update-code`\n吗？不需要。你直接打开文件编辑，然后保存。\n*\n**OpenSpec 逻辑**\n：\n*   如果你想改需求，直接打开\n`spec.md`\n改文字。\n*   如果你想改计划，直接打开\n`tasks.md`\n改列表。\n*\n**“修改”是编辑器的基础功能，不是 CLI 的功能。**\n引入一个\n`/openspec-update`\n命令反而会显得多余：因为 AI 的修改本质上就是“读取文件 -> 覆写文件”，这在自然语言对话中（“把登录改成支持手机号”）已经涵盖了。\n### 2. 流程原因：Proposal 包含了 Update\n在 OpenSpec 的定义里，\n**Proposal（提案）是一个持续迭代的过程**\n，而不是一次性的动作。\n*\n**第一次运行 `/openspec-proposal`**\n= 从 0 到 1 创建文档。\n*\n**第二次运行 `/openspec-proposal`**\n= 基于现有文档进行修改（迭代）。\n在 Cursor 的 Prompt 逻辑里，\n`/openspec-proposal`\n的定义其实包含了“Review gaps”和“Draft spec deltas”。\n如果你对 AI 说：“\n**`/openspec-proposal` 之前的方案太复杂了，简化一下**\n”，AI 会直接修改现有的文件。\n**所以在 AI 看来，Create 和 Update 是同一个能力的两个面。**\n### 3. 架构原因：避免“状态地狱”\n如果引入了\n`update`\n命令，就会带来状态管理的复杂性：\n*\n“我是要在\n`apply`\n之前 update，还是之后 update？”\n*\n“Update 是重置任务，还是保留进度？”\nOpenSpec 选择了最简单的路径：\n*\n**没有状态锁**\n：文件随时可改。\n*\n**执行驱动**\n：\n`/openspec-apply`\n永远只看\n**当前这一刻**\n的\n`tasks.md`\n。不管你是刚生成的，还是手动改了 100 次的，Apply 只负责执行当下。\n### 4. 归档逻辑：已完成的不可 Update\n对于已经\n**Archive（归档）**\n的需求，OpenSpec\n**严禁**\n使用\n`update`\n。\n*\n**历史不可篡改**\n：归档等于“合同已结案”。\n*\n**新变更**\n：如果你要改旧功能，必须发起一个新的\n`new`\n(Proposal)。\n*\n**CLI 里的 `openspec update`**\n：\n*   注意，CLI 确实有一个 `openspec update` 命令，但它的作用是\n**更新 `AGENTS.md` 和配置文件**\n（升级库本身），而不是更新你的业务 Spec。\n---\n### 最佳实践：当你真的想 \"Update\" 时该怎么办？\n虽然没有这个命令，但在实际操作中，你可以通过以下三种方式达成 \"Update\" 的目的：\n#### 方式 A：手动修改（最推荐，最快）\n直接在编辑器里打开\n`openspec/changes/xxx/spec.md`\n，删掉不想要的，加上想要的。\n*\n*优势*\n：人类改文档比跟 AI 废话要快得多，且精准。\n#### 方式 B：复用 Proposal 命令\n直接再次输入：\n> `/openspec-proposal` 需求有变，请把数据库改成 MongoDB，并更新 spec 和 tasks。\n*\n*效果*\n：AI 会覆写当前目录下的文档。\n#### 方式 C：在 Apply 时“挟持”\n在执行前临时变卦：\n> `/openspec-apply`\n**注意：在执行前，请先更新 tasks.md，去掉所有关于 Redis 的步骤。**\n### 总结\n**OpenSpec 没有 `update`，因为 Markdown 文件本身就是可变的接口。**\n它鼓励你：\n1.\n**Draft**\n(起草/迭代) -> 复用\n`/openspec-proposal`\n或直接编辑。\n2.\n**Apply**\n(执行) -> 照着文档做。\n3.\n**Archive**\n(归档) -> 封存，下次再来请开新单。\n这种“少即是多”的设计，反而避免了在复杂的命令参数中迷路。\n他提供的核心能力其实是文档管理功能，而文档本身就是可编辑的。考虑极端一些的场景，他其实只是给我们对已有功能进行归档。我如果抛开 AI，他的逻辑也是成立的，只是他的存在正好可以让大模型从搜索代码到先搜索总结后的功能。\n手动进行修改是他的哲学设计，但基于此也会延伸出来一个问题。\n没有特殊的 prompt 约束，模型并不知道一个 change 下的文件是需要联动更新的，但是实际上他们是依赖关系。\n我们还是需要自定义一个\nopenspec-update\n命令，来处于需求变更的场景，\n让 prompt 只专注在修改changes 下的文件内容。当用户调用它时，他会查询当前还未归档的变更，如果存在多个需要跟用户手动确认是作用于哪一个变更。\n（\n我们已经在最终完整版的命令里添加，这里不再赘述相关代码\n）\n当我们运行归档时，他怎么知道要归档到哪里\n我们回看标准目录，其实答案已经藏在那里。他是通过\nchanges/[change-name]/specs/[capability]\n的\ncapabilit\ny\n来决定的，如果你发现有问题，因为这个不涉及到文件的联动更新，直接手动修改即可。\n归档错误\n我在执行一次之前归档需求的优化时碰到了报错\nMODIFIED\nfailed for header\n\"### Requirement: xx\"\n- not found Aborted. No files were changed.\n我们看到这个报错写的是变更的时候需求未找到。当处于变更状态下，变更的 specs 文件里会标明原有的需求是什么，我们当前这次 specs 里的需求跟原来归档的需求不一致，所以发生了这个问题。\n临时解法：\n这时候我们需要做以下几步检查\n你当前的变更仍然在\nopenspec/changes\n目录下还是已经被移动了\nopenspec/changes/archive\n下，如果是后者，你需要先把文件移动回来；\n然后确认你的 spec 的需求已经和归档的保持一致；\n重新运行\nopenspec/archive\n命令；\n长期解法：\n针对命令执行报错的场景，我们需要在提示词中都显式声明，告诉他应该立即停止，然后抛出对应的信息，让用户进行手动验证。（\n我们已经在最终完整版的命令里添加，这里不再赘述相关代码\n）\n不同的编辑器显示可能不同，功能符合我们的预期即可。\n变更需求后归档的 spec 被覆盖\n场景：当我存在一个已经归档的需求，然后我发现了一个 bug，这时候我告诉他需求变更，他的 specs 文件里标明的是 MODIFIED 的，当我完成归档后，发现初始归档的内容被覆盖了。\n核心问题：在 spec 的世界里只有三种动作\nADDED\nMODIFIED\nREMOVED\n而 MODIFIED 对他来说意味的就是需求变更，是文件覆盖操作，与我们的开发心智是存在一些区别的，他提倡的是增量式更新。\n解法：\n在任意变更前都先明确你的变更预期，检查 changes 下的 spec 文件的 动作。\n#### 1. ADDED (追加/新增)\n*\n**定义**\n：向 Spec 文件中\n**插入**\n新的\n`Requirement`\n或\n`Scenario`\n。\n*\n**心智模型**\n：\n`Array.push(newScenario)`\n或\n`File.append(text)`\n。\n*\n**典型场景**\n：\n*   新功能上线（废话）。\n*\n**优化需求（扩展型）**\n：比如“登录增加验证码”、“列表增加筛选功能”。虽然你在“优化”列表，但你在文档里是\n**加了一段描述**\n，并没有删改原来的列表查询逻辑。\n*\n**边缘情况补全**\n：比如“增加网络超时的处理逻辑”。\n#### 2. MODIFIED (覆盖/修改)\n*\n**定义**\n：\n**替换**\nSpec 文件中已存在的某个\n`Scenario`\n的全部内容。\n*\n**心智模型**\n：\n`Map.set(existingKey, newValue)`\n或\n`Overwrite`\n。\n*\n**危险性**\n：⚠️ 高。因为它会丢弃旧的逻辑。\n*\n**典型场景**\n：\n*\n**业务规则变更**\n：比如“积分获取规则从 10元1分 变成 20元1分”。\n*\n**Bug 修复（逻辑错误的）**\n：原来的 Spec 写错了（比如写成“允许空密码”），现在要修正这个错误。\n*\n**重构（导致行为变化的）**\n：比如“同步处理改为异步处理，用户不再立即收到结果”。\n#### 3. REMOVED (删除)\n*\n**定义**\n：从 Spec 文件中\n**移除**\n某个\n`Scenario`\n。\n*\n**心智模型**\n：\n`Array.filter(item => item.id !== id)`\n。\n*\n**典型场景**\n：\n*   功能下线。\n*   简化产品，砍掉不常用的功能。\n顺便一提\n大家可以看到一个趋势，目前社区的趋势已经从模型自身的军备竞赛回归到了我们熟悉的工程化，在工程化落地阶段有很多可以做的事情。cc 和 cursor 都是调用 claude，为什么 cc 比 cursor 强。因为他要求你先规划，再执行。现在大家跟进的 plan 模式也是一样。\nplan 模式和 spec 在单一对话上很像，他也提供了保存到本地的能力，大家在做的事其实是一样的，都是为了让模型有一个更稳定的输出，帮助我们解决实际的问题。\n社区也有很多其他的 spec 方案，颗粒度不一样，这是另一个比较高星的仓库，他的理念和哲学会有一些差别。\n**OpenSpec**\n和\n**GitHub Spec Kit**\n都是“规格驱动开发（SDD）”的工具，它们的目标一致（先写文档再写代码），但\n**设计哲学**\n和\n**适用场景**\n截然不同。\n用一个最形象的比喻来概括：\n*\n**GitHub Spec Kit**\n像是\n**“建造摩天大楼的总工程师”**\n。严谨、繁琐、流程长，适合从 0 到 1 搞大工程，强调“企业级治理”。\n*\n**OpenSpec**\n像是\n**“敏捷开发的装修队长”**\n。轻快、直接、灵活，适合日常修修补补和快速迭代，强调“开发者体验”。\n以下是详细的对比分析：\n### 1. 核心差异对比表\n| 特性 |\n**OpenSpec**\n(Fission-AI) |\n**Spec Kit**\n(GitHub) |\n| :--- | :--- | :--- |\n|\n**核心哲学**\n|\n**Agile Renovator(敏捷装修)**\n<\nbr\n>\n轻量级，假设你是在一个\n**现有的**\n代码库上工作。 |\n**Structured Architect(结构化建筑师)**\n<\nbr\n>\n重量级，假设你是从 0 开始构建一个全新的系统。 |\n|\n**工作流**\n|\n**3 步循环**\n(Draft -> Review -> Apply)\n<\nbr\n>\n只有三个命令，像 Git 一样简单。 |\n**4 阶段门控**\n(Specify -> Plan -> Tasks -> Implement)\n<\nbr\n>\n每一步都有严格的“关卡”，必须通过才能进下一步。 |\n|\n**适用场景**\n|\n**维护/迭代现有项目 (Brownfield)**\n<\nbr\n>\n修 Bug、加功能、改逻辑。 |\n**全新项目启动 (Greenfield)**\n<\nbr\n>\n做 Demo、新开一个微服务。 |\n|\n**文件管理**\n|\n**双文件夹模式**\n<\nbr\n>\n`specs/`\n(真理) 和\n`changes/`\n(变更) 分离。\n<\nbr\n>\n不仅管“新建”，更擅长管“修改”。 |\n**单向流动**\n<\nbr\n>\n通过\n`constitution.md`\n(宪法) 定义原则。\n<\nbr\n>\n通常会为你自动创建 Git 分支。 |\n|\n**Token 消耗**\n|\n**低**\n。文档精简（约 200 行），只关注变更部分。 |\n**高**\n。生成的文档非常详尽（约 800 行），包含大量样板信息。 |\n|\n**上手难度**\n| ⭐\n**低**\n(npm install 即可) | ⭐⭐⭐\n**中**\n(需理解其四阶段理念) |\n---\n### 2. 深度解析：为什么说 OpenSpec 更适合日常？\n#### A. “修改” vs “新建” 的逻辑差异\n*\n**Spec Kit**\n的思维模型是线性向前的。当你用它做一个新功能时，它非常爽，会生成完美的需求文档、技术方案。但如果你只是想“把登录按钮往左移 10px”，Spec Kit 的那套“需求->计划->任务->实施”的重型流程会让你觉得像在\n**杀鸡用牛刀**\n。\n*\n**OpenSpec**\n专门解决了这个问题。它把变更（Change）作为一个独立的概念。\n*   你可以发起一个“修改按钮位置”的 Change。\n*   你可以发起一个“重构数据库”的 Change。\n*   不论大小，流程都是统一的 Draft -> Apply -> Archive。\n#### B. 此时此刻的“真理” (Source of Truth)\n*\n**Spec Kit**\n倾向于把生成的 Spec 作为一个阶段性的产物。\n*\n**OpenSpec**\n引入了\n`openspec/specs/`\n目录作为\n**永久的**\n“真理来源”。\n*   当你把一个功能 Archive（归档）后，它的 Spec 会被合并到主目录。\n*\n**杀手级特性**\n：下次你让 AI 改代码时，OpenSpec 会先让 AI 读\n`specs/`\n目录，AI 立刻就能知道“哦，这个功能上次是这样设计的”，\n**防止了新代码破坏旧逻辑（Regression）**\n。\n#### C. “宪法” vs “项目说明书”\n*\n**Spec Kit**\n有一个\n`constitution.md`\n（宪法）的概念，里面写满了不可违背的原则（比如“必须使用 TDD”、“必须写注释”）。这很有企业级风范。\n*\n**OpenSpec**\n使用\n`project.md`\n，更像是一个“项目备忘录”。它更务实，通常只包含技术栈、目录结构和关键约定。\n---\n### 3. 如何选择？\n#### ✅ 选\n**OpenSpec**\n，如果：\n1.\n**你在维护一个现有的项目**\n：你需要在巨大的代码山上修修补补，而不是每天都在\n`npm init`\n新项目。\n2.\n**你追求速度**\n：你不想为了写一个简单的 API 接口而经历漫长的 4 步审批流程。\n3.\n**你是个人开发者或小团队**\n：你们需要规范，但不需要官僚主义。\n4.\n**你在乎 Token 费用**\n：OpenSpec 的 Prompt 更精简。\n#### ✅ 选\n**GitHub Spec Kit**\n，如果：\n1.\n**你是 Tech Lead，要开一个新坑**\n：你想在写第一行代码前，逼迫团队把所有细节（API 定义、数据库模型、甚至错误码）都想清楚。\n2.\n**团队很大，水平参差不齐**\n：你需要用\n`constitution.md`\n来强制所有人遵守编码规范，不给 AI（或人）自由发挥的空间。\n3.\n**你需要产出非常详尽的文档**\n：Spec Kit 生成的文档可以直接拿去给老板或客户汇报用。\n### 总结\n**OpenSpec 是 Spec Kit 的“实用主义”进化版。**\nSpec Kit 像是教科书上的“瀑布流+敏捷”混合体，很理想化；而 OpenSpec 则是那个真正坐在你旁边写代码的同事，懂你需要什么，也懂你不想麻烦。\n流程 & 完整提示词\n这只是更适合我自己心智的提示词，可能一些错误场景也还没有碰到，你可以基于我的继续去演进或者直接使用。他的优势在于没有任何魔法，完全可以自己控制。\n## 描述\nScaffold a\nnew\nOpenSpec change\nand\nvalidate strictly.\n## 命令\n<!\n-- OPENSPEC:START -->\n**\nGuardrails\n**\n-\nFavor straightforward, minimal implementations\nfirst\nand\nadd\ncomplexity\nonly\nwhen\nit\nis\nrequested\nor\nclearly required.\n-\nKeep changes tightly scoped\nto\nthe requested outcome.\n-\nRefer\nto\n`openspec\n/\nAGENTS.md` (located inside the `openspec\n/\n` directory—run `ls openspec`\nor\n`openspec\nupdate\n` if you don\n't see it) if you need additional OpenSpec conventions or clarifications.\n- Identify any vague or ambiguous details and ask the necessary follow-up questions before editing files.\n- Do not write any code during the proposal stage. Only create design documents (proposal.md, tasks.md, design.md, and spec deltas). Implementation happens in the apply stage after approval.\n**Steps**\n1. **CRITICAL PRE-CHECK**:\n- **DO NOT assume context.** You MUST perform a **codebase search** (using your internal search tool) specifically targeting the `openspec/specs/` directory for keywords related to the user's request.\n-\n**\nSTOP\nAND\nASK\n**\n: If you find _any_ existing spec files that seem related (even remotely),\n**\nSTOP IMMEDIATELY\n**\n. Do\nnot\ngenerate\nany\nscaffold. List the found specs\nand\nask the\nuser\n: \"Did you mean to modify [filename] instead?\"\n-\nOnly\nproceed\nto\nStep\n2\nif the\nsearch\nreturns\nZERO relevant results.\n2.\n**\n(\nOnly\nif\nno\nduplicates found)\n**\nChoose a\nunique\nverb\n-\nled `change\n-\nid`\nand\nscaffold `proposal.md`, `tasks.md`,\nand\n`design.md` (\nwhen\nneeded) under `openspec\n/\nchanges\n/<\nid\n>/\n`.\n3.\nMap the change\ninto\nconcrete capabilities\nor\nrequirements, breaking multi\n-\nscope\nefforts\ninto\ndistinct\nspec deltas\nwith\nclear relationships\nand\nsequencing.\n4.\nCapture architectural reasoning\nin\n`design.md`\nwhen\nthe solution spans multiple systems, introduces\nnew\npatterns,\nor\ndemands trade\n-\noff discussion before committing\nto\nspecs.\n5.\nDraft spec deltas\nin\n`changes\n/<\nid\n>/\nspecs\n/<\ncapability\n>/\nspec.md` (\none\nfolder\nper\ncapability)\nusing\n`## ADDED\n|\nMODIFIED\n|\nREMOVED Requirements`\nwith\nat\nleast\none\n`#### Scenario:`\nper\nrequirement\nand\ncross\n-\nreference related capabilities\nwhen\nrelevant.\n6.\nDraft `tasks.md`\nas\nan ordered list\nof\nsmall, verifiable work items that deliver\nuser\n-\nvisible progress, include validation (tests, tooling),\nand\nhighlight dependencies\nor\nparallelizable work.\n7.\nValidate\nwith\n`openspec validate\n<\nid\n>\n--strict` and resolve every issue before sharing the proposal.\n**\nReference\n**\n-\nUse `openspec\nshow\n<\nid\n>\n--json --deltas-only` or `openspec show <spec> --type spec` to inspect details when validation fails.\n-\nSearch\nexisting requirements\nwith\n`rg\n-\nn \"Requirement:|Scenario:\" openspec\n/\nspecs` before writing\nnew\nones.\n-\nExplore the codebase\nwith\n`rg\n<\nkeyword\n>\n`, `ls`,\nor\ndirect file\nreads\nso proposals align\nwith\ncurrent\nimplementation realities.\n<!\n-- OPENSPEC:END -->\n## 描述\nModify an existing, active OpenSpec draft(proposal, spec, tasks) without creating a new one.\n## 命令\n<!-- OPENSPEC:START -->\n**Guardrails**\n-\n**SCOPE RESTRICTION**\n: This command operates ONLY on files within\n`openspec/changes/`\n. Do NOT create new change folders. Do NOT edit\n`src/`\ncode.\n-\n**CONSISTENCY**\n: If requirements(\n`spec.md`\n)ordesign(\n`design.md`\n) change, you MUST update\n`tasks.md`\nto reflect these changes immediately.\n-\n**INTERACTION**\n: If multiple active changes exist, you MUST ask the user to select one before editing any files.\n**Steps**\n1.\n**Discovery & Selection(Context Loading)**\n- Run\n`openspec list`\n(orlist directories in\n`openspec/changes/`\n) to identify active drafts.\n-\n**Scenario A(0 Active Changes)**\n:\n- STOP and inform the user: \"No active drafts found to update. Use\n`/openspec-proposal`\nto start a new one.\"\n-\n**Scenario B(1 Active Change)**\n:\n- Automatically select thisID(e.g.,\n`feature-login`\n).\n- Inform the user: \"Updating active draft:\n`feature-login`\n...\"\n-\n**Read Files**\n: Read\n`proposal.md`\n,\n`tasks.md`\n,\n`design.md`\n, and\n`spec.md`\ninside that directory.\n-\n**Scenario C(>1 Active Changes)**\n:\n- List all found IDs.\n- STOP and ask: \"Multiple active drafts found. Which one do you want to update? (e.g.,\n`feature-A`\nor\n`feature-B`\n)\"\n- Wait for user confirmation, then read the files of the selected ID.\n2.\n**Intent Analysis & Execution**\n- Analyze the user's update request(e.g., \"Extract Modal component\", \"Change DB to Mongo\").\n-\n**Step 2.1: Update Truth(Spec/Design/Proposal)**\n:\n- Modify\n`spec.md`\nif business requirements change.\n- Modify\n`design.md`\nif technical implementation details change.\n- Modify\n`proposal.md`\nif the high-level goal changes.\n-\n**Step 2.2: Re-align Plan(Tasks)**\n:\n-\n**CRITICAL**\n: Rewrite or adjust\n`tasks.md`\nto ensure it matches the new files from Step 2.1.\n- If tasks were partially completed(\n`[x]`\n), try to preserve status where possible, but uncheck items if the logic underneath them has fundamentally changed.\n3.\n**Validation**\n- Run\n`openspec validate <id>`\nto ensure the update didn't break the document structure.\n- Present the summary of changes to the user(e.g., \"Updated\n`design.md`\nto include SharedModal; Added 2 new steps to\n`tasks.md`\n\").\n**Reference**\n-\nUse\n`openspec list`\nto find targets.\n-\nAlways keep\n`tasks.md`\nas the executable plan for the current\n`spec.md`\n.\n<!-- OPENSPEC:END -->\n## 描述\nImplement an approved OpenSpec change and keep tasks in sync.\n## 命令\n<!-- OPENSPEC:START -->\n**Guardrails**\n-\nFavor straightforward, minimal implementations first and add complexity only when it is requested or clearly required.\n-\nKeep changes tightly scoped to the requested outcome.\n-\nRefer to\n`openspec/AGENTS.md`\n(located inside the\n`openspec/`\ndirectory—run\n`ls openspec`\nor\n`openspec update`\nif you don't see it) if you need additional OpenSpec conventions or clarifications.\n**Steps**\nTrack these steps as TODOs and complete them one by one.\n1.\nRead\n`changes/<id>/proposal.md`\n,\n`design.md`\n(if present), and\n`tasks.md`\nto confirm scope and acceptance criteria,Strictly follow the tasks.md sequence. Do not skip steps or merge tasks unless explicitly necessary.\n2.\nWork through tasks sequentially, keeping edits minimal and focused on the requested change.\n3.\nConfirm completion before updating statuses—make sure every item in\n`tasks.md`\nis finished.\n4.\n**Update `tasks.md` selectively:**\n- Mark\n**implementation tasks**\n(e.g., \"Create component\", \"Add API endpoint\") as\n`- [x]`\nimmediately after writing the code.\n-\n**Do NOT**\nmark\n**verification/validation tasks**\n(e.g., \"Verify login works\", \"Check responsiveness\", \"Run tests\") as completed. Leave them as\n`- [ ]`\nfor the user to confirm manually.\n5.\nReference\n`openspec list`\nor\n`openspec show <item>`\nwhen additional context is required.\n**Reference**\n-\nUse\n`openspec show <id> --json --deltas-only`\nif you need additional context from the proposal while implementing.\n**tips**\nIf the user only enters this command, the latest\n`tasks.md`\nand files under the\n`specs/*`\ndirectory need to be read.\n<!-- OPENSPEC:END -->\n## 描述\nArchive a deployed OpenSpec change and update specs.\n## 命令\n**Guardrails**\n-\nFavor straightforward, minimal implementations first and add complexity only when it is requested or clearly required.\n-\nKeep changes tightly scoped to the requested outcome.\n-\nRefer to\n`openspec/AGENTS.md`\n(located inside the\n`openspec/`\ndirectory—run\n`ls openspec`\nor\n`openspec update`\nif you don't see it) if you need additional OpenSpec conventions or clarifications.\n**Steps**\n1.\nDetermine the change ID to archive:\n- If this prompt already includes a specific change ID(for example inside a\n`<ChangeId>`\nblock populated by slash-command arguments), use that value after trimming whitespace.\n- If the conversation references a change loosely(for example by title or summary), run\n`openspec list`\nto surface likely IDs, share the relevant candidates, and confirm which one the user intends.\n- Otherwise, review the conversation, run\n`openspec list`\n, and ask the user which change to archive; wait for a confirmed change ID before proceeding.\n- If you still cannot identify a single change ID, stop and tell the user you cannot archive anything yet.\n2.\n**PRE-CHECK**\n: Validate the change ID and status:\n- Run\n`openspec list`\nto confirm the ID exists and is not already archived.\n-\n**CRITICAL**\n: Run\n`openspec validate <id> --strict`\n.\n-\n**STOP IF FAILED**\n: If validation reports ANY errors(e.g., unfinished tasks, malformed frontmatter),\n**DO NOT PROCEED**\n. Show the validation errors to the user and ask them to fix the issues first.\n3.\n**ARCHIVE**\n: Only if validation passes, run\n`openspec archive <id> --yes`\n.\n- This moves the change to\n`changes/archive/`\nand applies spec updates without prompts.\n- (Optional) Use\n`--skip-specs`\nonly if the user explicitly requested a tooling-only archive.\n4.\nReview the command output to confirm the target specs were updated successfully.\n**Reference**\n-\nUse\n`openspec list`\nto confirm change IDs before archiving.\n-\nInspect refreshed specs with\n`openspec list --specs`\nafter archiving to confirm the merge.\n<!-- OPENSPEC:END -->\n参考\n1、\nhttps://openspec.dev/\n2、\nhttps://github.com/Fission-AI/OpenSpec\n3、\nhttps://github.com/github/spec-kit\n4、\nhttps://aistudio.google.com\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.3,
+        "peripheral": 0.01,
+        "transfer_agent": 0.69,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.81,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.11,
+        "2": 0.85,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.57,
+      "probabilities": {
+        "0": 0.22,
+        "1": 0.05,
+        "2": 0.14,
+        "3": 0.13,
+        "4": 0.45,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.93,
+      "probabilities": {
+        "0": 0.6,
+        "1": 0.1,
+        "2": 0.12,
+        "3": 0.16,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.91,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.08,
+        "3": 0.92,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.71,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.07,
+        "4": 0.8,
+        "5": 0.05
+      }
+    },
+    "anti_hype": {
+      "score": 3.77,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.19,
+        "4": 0.78,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 13603,
+    "outputTokens": 172,
+    "totalTokens": 13775
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.61,
+        "relevance": 0.87,
+        "grounding": 0.04,
+        "decision_action": 0.38,
+        "evidence": 0.94,
+        "actionability": 0.74,
+        "anti_hype": 0.83
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179867492,
+                "endTime": 1791179867686,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000571326",
+      "marketCost": "0.000571326",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000571326",
+      "inferenceCost": "0.000571326",
+      "inputInferenceCost": "0.000571326",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7HAGPWPAVJMGDH5QKCH1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:47 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::ftntq-1791179867132-650a21a8863e"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.3,
+            "peripheral": 0.01,
+            "transfer_agent": 0.69,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.81,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.11,
+            "2": 0.85,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.57,
+          "probabilities": {
+            "0": 0.22,
+            "1": 0.05,
+            "2": 0.14,
+            "3": 0.13,
+            "4": 0.45,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.93,
+          "probabilities": {
+            "0": 0.6,
+            "1": 0.1,
+            "2": 0.12,
+            "3": 0.16,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.91,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.08,
+            "3": 0.92,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.71,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.07,
+            "4": 0.8,
+            "5": 0.05
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.77,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.19,
+            "4": 0.78,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 13603,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.61,
+            "relevance": 0.87,
+            "grounding": 0.04,
+            "decision_action": 0.38,
+            "evidence": 0.94,
+            "actionability": 0.74,
+            "anti_hype": 0.83
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179867492,
+                    "endTime": 1791179867686,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000571326",
+          "marketCost": "0.000571326",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000571326",
+          "inferenceCost": "0.000571326",
+          "inputInferenceCost": "0.000571326",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7HAGPWPAVJMGDH5QKCH1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:46.917Z"
+  }
+}

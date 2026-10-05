@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1283328874377117696",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "48小时数百万浏览：Graph Engineering是真趋势还是又一轮造词？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697420&idx=1&sn=5ce86628c0ceb8cb9df0e3027192de3d",
+      "date": "2026-09-10T00:45:00.313Z",
+      "chars": 4987,
+      "text": "原创\n朱进\n2026-09-10 08:45\n广东\n关注腾讯云开发者，一手技术干货提前解锁👇\n开发者公众号专属群聊\n扫码加入获取更多一手教程、科技前沿报告\n2026 年上半年，AI 工程圈最火的词是 Harness Engineering；到了 7 月，一条推文又带火了新词 Graph Engineering。它是真趋势还是又一轮造词？本文讲清它是啥、为啥需要、怎么落地、什么时候别碰。\n2026 年 7 月，一条推文炸了 AI 工程圈。OpenClaw 创始人 Peter Steinberger 写道：\n\"我们还在聊循环，还是已经转向图谱了？\"\n48 小时，数百万浏览。「Graph Engineering」这个词彻底火了。\n但热度背后是一个真实的趋势：AI 系统的设计方式，正在从「一个智能体自己转圈」演进到「一群智能体组队干活」。这篇文章就来说清楚：Graph Engineering 到底是什么、为什么需要它、怎么落地、什么时候不该碰它。\n先把定义说死：它不是知识图谱工程\n这个词火了之后，最常见的混淆也随之而来：把 Graph Engineering 当成知识图谱（Knowledge Graph）工程。\n不是。\nGraph Engineering 是一种\n面向多智能体协作的工程范式\n，解决「系统该怎么做」的问题：把多智能体组织显式建模成图——\n用组织图定角色，用工作图管任务流转，失败可隔离、可局部重试\n。\n两者的区别一句话说清：\n知识图谱\n结构化的是「系统知道什么」——实体、事实、关系，属于数据工程\nGraph Engineering\n结构化的是「系统由谁组成、活怎么流转」——成员、职责、消息路径，属于组织工程\n主流文献把这一点列在 FAQ 第一条。TrueFoundry 的原话是「this is not knowledge-graph engineering」；explainx.ai 把「是不是知识图谱」列为该术语最常见混淆点，回答是 No；taeho.io 则把它列为需要纠正的第一大误解。数据是数据，组织是组织，两码事。\n知识图谱当然有它的价值——它是另一个领域（RAG 与记忆系统）的核心技术。但本文只讲 Graph Engineering 本体：多智能体的编排工程。\nPart 1 · 演进：从一句话到一个系统\n01\n五层工程栈：AI 工程的演进\n过去三年，AI 工程的「操控范围」一直在往外扩。每一层不替代前一层，而是把前一层包了进来：\n打个比方，把五层想象成\n开一家公司\n的过程：\nPrompt\n：你跟新员工说「把报告总结成三句话」——说话方式越准，他理解越好\nContext\n：你给他看项目背景、历史文档——材料给齐了，他不会跑偏\nHarness\n：你给他配电脑、开通权限、装好工具——环境就绪，他能开始干活\nLoop\n：他接到任务，自己读需求 → 写代码 → 跑测试 → 看报错 → 修 bug → 再跑 → 通过了交付——一个完整的自主工作循环\nGraph\n：你不再管一个人，而是管一个\n团队\n：调研的、实现的、审查的，各有分工、有依赖、有并行——这就是图谱\n一句话总结：\nLoop 让单个智能体的行为可编程，Graph 让智能体的组织可编程。\n一个容易搞混的包含关系\n这五层的「包含」有两种理解方式，很多人在这里绕晕了。\n视角一：工程关注范围的演进\n（本文主线）。每一层的关注范围都扩展并包含前一层——Prompt ⊂ Context ⊂ Harness ⊂ Loop ⊂ Graph。Addy Osmani 的原话是「Loop sits one floor above the harness」，dev.to 上一篇文章标题就叫\nGraph Engineering: The Missing Fifth Layer\n。这个视角回答的问题是：「作为工程师，我需要关注的范围在怎么扩大？」\n视角二：运行时的物理部署\n。关系反过来——Harness 提供运行环境（工具、权限、沙箱），Graph 在 Harness 提供的环境内定义工作流，Loop 在 Graph 的节点内执行。有位技术博主总结得很精炼：\n「图跑在 Harness 里，Loop 活在图里，Harness 给 Loop 提供弹药。」\n这个视角回答的问题是：「系统部署时，谁包含谁？」\n两个视角不矛盾——前者讲的是工程学科的演进关系，后者讲的是系统的部署关系。如果你之前觉得「Harness 应该是最外层」，你用的是视角二，没有错。只是在工程演进这条线上，Loop 和 Graph 是后来叠加上去的新关注层。\nPart 2 · 拓扑：从串行循环到并行图谱\n02\n循环 vs 图谱：拓扑的根本区别\nLoop Engineering 让一个 Agent 的行为可编程：触发 → 行动 → 验证 → 重试。但循环是串行的——做完一步才能做下一步。\nGraph Engineering 把循环拆开，变成有向图：多个阶段可以\n并行\n执行，反馈走特定路径而不是整个循环重来。\n看这张图就明白了。同样是「代码审查」任务：\n左边（Loop）\n：Plan → Act → 安全审查 → 逻辑审查 → 风格审查 → 汇总。三个审查\n串行\n，每次都等上一个完成。失败就从头来。总耗时 ≈ 3 轮。\n右边（Graph）\n：Plan → Act → 三个审查\n同时跑\n→ 汇总 → 判断门。三个审查并行，耗时从 3 轮压到 1 轮。失败只回到 Worker 节点，不用重跑整个循环。\n代码上的区别也很直接：\n# Loop：串行，每个审查等上一个完成\ndef\nagent_loop\n(\ntask\n):\nplan = planner(task)\nwhile\nnot\ndone:\ncode = worker(plan)\nsec_review = security_reviewer(code)\n# 等...\nlog_review = logic_reviewer(code)\n# 再等...\nsty_review = style_reviewer(code)\n# 再等...\nsynthesis = synthesize([sec_review, log_review, sty_review])\nif\nsynthesis[\n\"pass\"\n]:\nreturn\nsynthesis[\n\"output\"\n]\nplan = replan(plan, synthesis[\n\"feedback\"\n])\n# Graph：并行，所有审查同时执行\nasync\ndef\nagent_graph\n(\ntask\n):\nplan =\nawait\nplanner(task)\nwhile\nTrue\n:\ncode =\nawait\nworker(plan)\nsec, log, sty =\nawait\nasyncio.gather(\n# 三个审查同时跑\nsecurity_reviewer(code),\nlogic_reviewer(code),\nstyle_reviewer(code)\n)\nsynthesis = synthesize([sec, log, sty])\nif\nsynthesis[\n\"pass\"\n]:\nreturn\nsynthesis[\n\"output\"\n]\nplan =\nawait\nreplan(plan, synthesis[\n\"feedback\"\n])\n有人说了句很精准的话：\n「循环是宽容的，图谱逼你承认还有多少工作流你根本没建模。」\n循环让你推迟架构决策——一个 Agent 搞定一切直到搞不定。图谱要求你提前声明结构：谁负责什么、什么依赖什么、失败时怎么办。\n03\n双图架构：组织图 + 工作图\n生产级多智能体系统实际跑着\n两张图\n：\nOrg Graph（组织图）——稳定的。\n定义永久角色：Researcher、Writer、Validator、Publisher，每个 Agent 拥有一个领域并积累上下文。这是公司的\n组织架构图\n——每个格子是一个持续运行自己 Loop 的 Agent。\nWork Graph（工作图）——动态的。\n定义当下在做什么：任务节点只在任务存在时存在，边可以动态拆分、合并、消失。这是\nSprint 看板\n——但看板可以自我改写。\n为什么要分两层？\n角色稳定 + 任务灵活。\n你不会每次来新任务就重组团队，但你会每次都重新安排工作。Org Graph 保持上下文积累和领域专长，Work Graph 保证执行结构适配当前任务。\nPart 3 · 落地：怎么用起来\n04\n什么时候该用图：诚实的选择\n在动手之前，先问自己：你的问题真的需要图吗？\n不需要图的情况：\n任务本身是线性流程，环节之间没有可并行的空间\n单个 Agent 的上下文窗口装得下整个任务\n团队没有维护多智能体编排的工程能力\n失败模式分析还没做过——你甚至不知道瓶颈在哪个环节\n需要图的情况：\n任务环节天然可并行（多路审查、多源调研、多方案探索）\n单 Agent 上下文经常爆，需要按领域拆分\n失败需要精准定位到环节，而不是整个流程重跑\n团队要在多个任务之间复用角色配置和领域记忆\n最诚实的中间路线\n：先用单 Agent Loop 跑透一个任务。监控两个指标：环节排队耗时占比、失败重试成本。如果失败能定位到具体环节、且环节之间可并行，那就是上图的信号。\n不要先建图再找理由。\n一个实操判断法则：80% 的问题靠 Harness 就能解决，15% 靠 Loop，最后 5% 才需要 Graph。别被术语迷惑，回到实际问题看它卡在哪一层。\n05\n三步落地路线\nStage 1：单智能体 Loop。\n一个 Agent 配好 Harness（工具、权限、沙箱），自主循环跑透任务。工具形态如 Claude Code、OpenClaw。监控两个指标：环节排队耗时占比、失败重试成本。这个阶段 Prompt 和 Context Engineering 是主要杠杆。\nStage 2：角色拆分。\n把独立的环节拆成专职 Agent，先上简单流水线拓扑：明确谁向谁交付、失败回到哪个节点。编排工具选 LangGraph 或 Microsoft Agent Framework。关键决策不是技术选型，而是\n角色边界\n：每个 Agent 负责什么、上下文怎么分。\nStage 3：双图架构。\n角色稳定下来、任务形态多变时，引入双图。Org Graph 定义角色和依赖，Work Graph 管理动态任务。编排框架选择：LangGraph、Microsoft Agent Framework、Google ADK、AutoGen GraphFlow 都支持图原生多智能体拓扑。成本高、复杂度高，但换来并行效率、可解释性和失败隔离。\n一个容易被忽略的工程细节：角色边界的维护是最被低估的瓶颈。\n两个 Agent 的职责一旦重叠，就会出现重复劳动和互相等待。Org Graph 值得像数据库 Schema 一样认真设计、评审、做版本管理——它是团队的「组织架构」，不是随手画的草图。\n选型参考：\n06\n结语：图不是替代，是补充\nGraph Engineering 不是 Loop Engineering 的替代品。从工程演进视角看，包含关系是 Prompt ⊂ Context ⊂ Harness ⊂ Loop ⊂ Graph——每层扩展前一层关注范围。从运行时部署视角看，Harness 提供环境，Graph 定义拓扑，Loop 在节点内执行。两个视角描述的是同一件事的不同切面。\n它也不是知识图谱工程。它编排的是「谁干活、活怎么流」，不是「知识怎么连」。\n2026 年的共识很清楚：从单 Agent 循环起步，角色边界先行，混合编排工具成熟。不要被术语吓住——先跑单 Agent，监控瓶颈，在需要的地方上图。图的魔力不在于图本身，在于\n用对地方\n。\n-End-\n原创作者｜\n朱进\n感谢你读到这里，不如关注一下？👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

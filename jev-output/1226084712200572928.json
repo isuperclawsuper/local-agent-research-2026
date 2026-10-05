@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1226084712200572928",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工有哪些小众的 AI 玩法？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802968&idx=1&sn=2d2ebd6412b2698bc6e5cb18446a13b9",
+      "date": "2026-07-31T13:48:00.655Z",
+      "chars": 2520,
+      "text": "原创\n腾讯程序员\n2026-07-31 21:48\n广东\n你怎么看？\n当大多数人还在用 AI 写文案、做总结时，有人已经拿它修电动车、找耳机、选车牌，甚至复盘一场吵架。\n这次带大家看看鹅厂员工们发掘了哪些真实又小众的 AI 玩法？\n看似脑洞大开，却可能比你想象中更实用。也欢迎大家在评论区晒出你自己的AI小众玩法。\n01｜生活外挂类\nkikiq-\n财务会计及分析\n剪辑宝宝的视频\n，能方便找到几千个视频里合适的素材片段：\n（1）先让AI整理和重新命名视频+缩略图；\n（2）然后告知AI想要剪辑的主题，AI依据主题创建素材的分身，和制作一个推荐素材的HTML（例如截图想剪辑的是宝宝大运动发展的视频）\nbunyan-\n后台开发\n修电驴\n算不算， 电驴坏了，拍照拍视频，丢给ai，让它给我解决方案，我自己动手修复，目前自己换过控制器、修过油刹上泵，换过右手刹；\nline-\n质效运营\n这个月开始体检预约，我完成体检后，在家收到电子报告，用\nAI帮忙解读体检报告\n，把那些让人一头雾水的医学术语和箭头，变成听得懂、用得上的健康行动指南，我能提前看懂身体的预警信号，主动调整生活习惯。\nfelixfq-\n后台开发\n用ai做一个帮我找到”它“\n1. 一种是实时找东西：比如无线耳机掉到草地里了，肉眼看不到，拍照/视频让ai帮我找\n2. 另一种是找记忆中的东西：比如小时候看过一部动画片，记不起来名字了，向ai描述一些细节，让他帮我找\nflorian-\n系统测试\n让\nAI 自己搜索旅游笔记\n，整理博主们的真实笔记，筛掉广告、网红踩雷点、重复打卡地，结合我的出行天数、同行人群、预算这些，自动理顺顺路动线，生成完整的旅游计划，不用自己一条条笔记对比筛选，省去几小时刷攻略的时间\nirisyr-\n综合项目管理\n1）\n用AI做了一个形象管理大师\n，上传你的自拍照帮你检测你适合的颜色、发型、妆容和风格搭配，亲测有效，根据AI诊断换了发色后明显感觉气色看起来变好了，周围的人都来问染发剂链接；\n2）搬家之前\n用AI做了一个整理收纳大师\n，根据我的需求帮我制定了整理方案，例如哪些需要丢弃，哪些必须购置，哪些可以不用买，确实挺省心的，然后也按照它推荐的价位购买了一些合适的家具和家电，性价比很高，它甚至还帮我考虑到了狗狗搬家后的适应期，比我想的更周到\njean-\n应用开发\nai选号，5分钟的时间，\n选一个比较吉利的车牌\nliuyi-\n产品策划\n很喜欢\n跟ai打视频\n，长痘痘了 ，让ai帮我判断该涂什么药；换衣服让他给我搭配，心情不好让她给我讲故事；晚上一个人走夜路或者打车，开着语音让ai跟你聊天，增加安全感。\n02｜脑\n洞整活类\nv_hyou-\n主模数据\n把做的怪梦讲给它\n，让它续写成短故事，设定成\"克苏鲁风\"或\"王家卫风\"，早上通勤路上看，比刷短视频醒神。\nyeliye-研发项目管理\n在家时候父母要拍照查岗有没有及时收拾家里，拖延到最后一刻然后紧急\n拿AI生一个干净家里的图片\n，再紧急的拽着自己开始收拾，争取在父母回家前一秒收拾干净谢谢老爸老妈没有要求拍视频orz。\nstellay-\n产品策划\n周六买了几瓶不同品牌的小酒（低度白酒）、果汁和一个香水柠檬，和ai打视频，\n请ai给出几种调酒方法\n。AI能准确辨认酒的品牌和类型，也能给出很好的调酒方法。\nkimo-\nAI创新孵化\n用 AI 给小时候弄丢的那只玩具熊写了一封“寻熊启事”\n，他会回一封来自北极熊邮局的信，说它在那边当了气象观测员——原来它过得比我想象的还酷\nsenderrea-\n风险处理\n让AI帮我计算牌面赢面最大的打法\n03｜情绪树洞类\njoyue-\n服务台\n让AI扮演\"18岁的自己\"跟\"现在的自己\"对话\n，做跨时间的自我和解。\nzhaojian-\n产品策划\n把 AI 当\"吵架复盘教练\n\"和人闹别扭后,把聊天记录贴进去,让它分别站在我和对方的角度各写一遍\"我真正想表达什么\"。\n很多时候误会就来自措辞,AI 帮我看清了自己没说出口的那半句。经常我连字都不打,直接开着语音跟AI对喷——它扮演对方呛回来,我隔着屏幕把憋屈全倒出来,等情绪泄完,再让它把那通脾气翻译成\"好好说话版\"。比硬扛着内耗舒服太多。\n04｜沟通助攻类\nwi\nn\nney\n-\n行业应用\n用AI来分类和维护自己的朋友标签体系\n，日常唱K、打球、爬山需要组队会不知道该约谁，这个时候就可以让AI帮你从朋友池里进行打捞。\n1.朋友们都可以设置对应兴趣白名单和黑名单，关注哪些朋友不喜欢哪些运动，哪些是很乐于参加哪些活动的；\n2.可以设置朋友们的邀约成功率和是否单身状况，如果单身，邀约成功率高的，重点考虑约出来玩3.周末出去玩可以邀约哪些朋友，输入你想做的事情，就可以快速分类整理出来啦～\njessy-\n直客销售\n用AI练口语！\n特别好用，不用担心说错，因为AI总会有耐心。所有所见所闻都可以用英语跟AI进行交流，0成本外教就此get，然后还能把瞎聊的东西让AI总结成日记或者是帖子，等想起来的时候翻一翻也特别的有意义～！\nsaree-\n社交服务\n\"AI 替你吵架\"\n— 帮写高难度回怼邮件/消息场景：收到甩锅或者阴阳怪气的邮件，你气得手抖但又不想当场撕破脸。\n做法：把原文丢给 AI，让它用\"绵里藏针\"、\"优雅发疯\"、\"格局打开但不好惹\"等不同语气帮你起草回复。你选一个微调发出。为什么有意思：情绪上头时写的东西容易暴露弱点，AI 帮你保持体面同一个意思，换个表达方式杀伤力完全不同还能用来练习\"非暴力沟通\"——让 AI 把尖锐的话软化说出去这玩法够反直觉吧？大部分人用 AI 是\"帮我写好话\"，逆向用反而更爽。\nzichel-\n应用运维安全\n会在重要会议之前先和AI开一遍会，\n让AI模仿老板提供意见\n，或者挑战我，然后会议纪要和复盘建议也自动总结出来了\n这些用法或许不算“标准答案”，却让我们看到，\nAI 真正有意思的地方，不只是替人完成工作\n而是被塞进生活的缝隙里，解决那些具体、琐碎，甚至有点奇怪的问题。\n🎁欢迎在评论区分享“你的AI小众玩法”\n随机抽5名同学送出鹅厂周边一份\n视频快采⬇️\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.01,
+        "peripheral": 0.49,
+        "transfer_business": 0,
+        "direct_local": 0,
+        "irrelevant": 0.5
+      }
+    },
+    "relevance": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.36,
+        "1": 0.6,
+        "2": 0.03,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.3,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.07,
+        "2": 0.49,
+        "3": 0.36,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.64,
+        "1": 0.18,
+        "2": 0.06,
+        "3": 0.11,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.61,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.29,
+        "2": 0.66,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.48,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.44,
+        "2": 0.19,
+        "3": 0.11,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.19,
+      "probabilities": {
+        "0": 0.86,
+        "1": 0.1,
+        "2": 0.04,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4261,
+    "outputTokens": 173,
+    "totalTokens": 4434
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.38,
+        "relevance": 0.73,
+        "grounding": 0.59,
+        "decision_action": 0.55,
+        "evidence": 0.74,
+        "actionability": 0.44,
+        "anti_hype": 0.87
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179950489,
+                "endTime": 1791179950668,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000178962",
+      "marketCost": "0.000178962",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000178962",
+      "inferenceCost": "0.000178962",
+      "inputInferenceCost": "0.000178962",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AA2BZT05JMCDCNP9KD33F"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:10 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::8648r-1791179950453-c93092c45122"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.01,
+            "peripheral": 0.49,
+            "transfer_business": 0,
+            "direct_local": 0,
+            "irrelevant": 0.5
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.36,
+            "1": 0.6,
+            "2": 0.03,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.3,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.07,
+            "2": 0.49,
+            "3": 0.36,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.64,
+            "1": 0.18,
+            "2": 0.06,
+            "3": 0.11,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.61,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.29,
+            "2": 0.66,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.48,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.44,
+            "2": 0.19,
+            "3": 0.11,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.19,
+          "probabilities": {
+            "0": 0.86,
+            "1": 0.1,
+            "2": 0.04,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4261,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.38,
+            "relevance": 0.73,
+            "grounding": 0.59,
+            "decision_action": 0.55,
+            "evidence": 0.74,
+            "actionability": 0.44,
+            "anti_hype": 0.87
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179950489,
+                    "endTime": 1791179950668,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000178962",
+          "marketCost": "0.000178962",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000178962",
+          "inferenceCost": "0.000178962",
+          "inputInferenceCost": "0.000178962",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AA2BZT05JMCDCNP9KD33F"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:09.898Z"
+  }
+}

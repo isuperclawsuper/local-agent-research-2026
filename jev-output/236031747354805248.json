@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "236031747354805248",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "淘宝订单列表体验优化实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650542407&idx=1&sn=fd453a0a0c183a786c465aecbeaecfdc",
+      "date": "2026-01-19T08:58:00.874Z",
+      "chars": 4593,
+      "text": "原创\n基础交易终端团队\n2026-01-19 16:58\n浙江\n本文系统介绍了电商平台订单列表在性能、交互和稳定性三方面的优化实践。\n本文\n系统介绍了电商平台订单列表在性能、交互和稳定性三方面的优化实践：通过双层预请求策略与多级缓存体系提升首屏加载速度；采用多实例架构实现 Tab 间状态保持与流畅切换；并通过缓存复用、并发控制和多实例管理等手段有效治理白屏问题。整体优化显著提升了缓存命中率、渲染性能和用户体验，为复杂业务场景下的体验升级提供了可复用的方法论。\n引言\n在移动互联网时代，用户体验是产品成功的关键因素之一。作为电商平台的核心功能，订单列表承载着用户查看、管理订单的重要任务。随着业务的快速发展，订单列表面\n临着更多的挑战：业务场景日益复杂、技术架构持续演进、极致的性能与体验需求。\n在这些挑战背后，我们发现了几个关键问题：\n首屏性能瓶颈\n（闪购分离后P99暴增）、\n交互体验断层\n（tab切换时页面体验不连贯）、\n白屏问题\n（\n边缘case白屏问题频发）。这些问题不仅影响了数亿用户的日常体验，也制约了业务的进一步发展。\n本文将系统性地介绍我们针对订单列表进行的一系列优化实践，通过性能优化、体验升级和白屏治理三大方向，实现了订单列表从\"能用\"到\"好用\"再到\"爱用\"的质变。这些实践不仅显著提升了用户体验指标，也为类似复杂业务场景的技术优化提供了可复用的方法论。\n整体优化架构\n订单列表优化涉及多个维度的技术改进，我们将其划分为三大领域：\n首屏性能优化\n、\n交互体验升级\n和\n白屏问题治理\n。每个领域都有其特定的技术挑战和解决方案，但它们共同构成了一个完整的用户体验优化体系。\n首屏性能优化\n▐\n问题背景\n随着闪购业务的上线，订单列表新增一级tab类型，其包含了全部订单、购物、闪购、飞猪等等不同业务场景，支持根据用户的行动轨迹以及订单状态，通过算法首屏直达指定tab。然而原有的缓存和预请求机制只支持全部订单的场景，导致：\n其他业务场景预请求机制失效，用户在非全部订单场景下体验到明显的加载延迟\n订单列表整体缓存命中率下降明显\n弱网环境下白屏时间延长，用户体验严重受损\n▐\n技术方案\n双层遍历预请求策略\n我们重构了预请求机制，从单层tab遍历升级为rootTabCode + tabCode的双层\n遍历策略：\n核心实现包括：\n动态配置\n：基于配置实时调整预请求策略\n双重索引\n：同时支持\nrootTabCode\n和\ntabCode\n维度的预请求\n智能缓存过滤\n：跳过已缓存的tab，减少不必要的请求\n动态限流控制\n：通过配置控制最大预请求数，防止服务端压力过大\n多级缓存体系\n我们构建了三级缓存策略，提升缓存命中率：\n多级缓存来源：\n默认\n：\nrootTabCode\n+\ntabCode\n的策略读取\n历史兼容：\nall\n+\ntabCode\n的策略读取\n兜底优化：\n当当前\nrootTabCode\n不存在的时候，通过读取all的缓存数据中的核心组件，保\n证除订单外的其他组件能快速展示，提升用户体验\n我淘touchdown场景优化\n根据来源去向图，当前订单列表页大部分的流量来源于我淘页面，所以从我淘进入订单列表的首屏优化是重中之重。\n通过集成架构组Elastic库，我们实现了订单列表的预加载机制。当用户从我淘页面点击进入订单列表（Touchdown场景）时，系统会：\n利用反射在路由前将参数传递给订单列表模块\n接受并解析\nrootTabCode\n和\ntabCode\n参数\n在导航阶段提前完成框架预热、缓存预取、动画准备\n▐\n技术难点与效果\n技术难点\n：\n双层遍历策略需要平衡预请求覆盖率和网络资源消耗\n多级缓存需要处理缓存一致性、过期策略等复杂问题\ntouchDown场景所需参数获取及提前初始化的框架制定\n解决效果\n：\n缓存命中率大幅上升\n首屏渲染时间大幅减少\n交互体验升级\n▐\n问题背景\n原有的订单列表使用单实例架构（\nListProxy\n），所有的订单列表二级tab同时只会存在一个实例，当tab切换时实例经历销毁->重建->配置参数->绑定viewPager->渲染的流程，这样的流程存在以下问题：\n性能瓶颈\n：\n每次tab切换都需要重新构建整个页面容器\n状态丢失\n：\n切换tab后，原tab的滚动位置、数据状态等会丢失\n流畅度差\n：\n频繁的页面重建导致切换动画不够流畅\n资源浪费\n：\n重复创建销毁\nInstance\n，消耗不必要的资源\n▐\n多实例架构技术方案\n基于以上的问题，我们设计了\nMultiTabProxy\n多实例架构：\n核心特点\n:\n每个Tab拥有独立的\nInstance\n组件结构\n:\nMultiTabProxy\n作为总协调器\nTabStateManager\n管理所有Tab状态\n每个\nTabContainer\n包含独立的\nInstance\n+\nListProxy\n专门的多Tab事件订阅器\n架构核心组件\n：\nMultiTabProxy\n：多tab的统一代理，协调各tab容器生命周期\nTabStateManager\n：管理每个tab的独立状态和生命周期\nTabContainer\n：封装单个tab的完整状态（\nInstance\n、数据、视图等）\n关键实现及效果：\n懒加载机制\n：\n只在真正需要显示tab时才创建对应容器\n动态ViewPager调整\n：\n支持根据协议数据动态调整页面数量\n状态保持\n：\n各tab的滚动位置、数据状态得到有效保持\n最终效果\n：\n切换tab时，使用复用的实例，保持实例的状态持续\n▐\n现有能力兼容\n推荐流多实例问题处理\n背景：\n多tab实例架构对推荐流的原有架构产生了很大的影响，在单实例模式的情况下，由于只有一个实例，所以每次切换tab时，都会去重新构建一个推荐流的view加载到订单列表View上。\n在多实例模式下每个tab都维护了一个独立的推荐流实例，其生命周期跟随tabContainer的生命周期，需要重建推荐流的架构确保推荐流View不会在切换tab时被异常复用和销毁\n实现：\n所以我们基于订单列表的多实例架构背景，开发了MultiOrderRecommendWrapper\n核心特点：\n每个Tab拥有独立的推荐流实例，通过HashMap映射表实现Tab级别的推荐流状态隔离和智能切换。\n核心组件：\nMultiOrderRecommendWrapper\n：多Tab推荐流的统一管理器，协调各Tab推荐流的生命周期\nHashMap\n映射表：管理每个Tab的独立推荐流实例和状态保持\nOrderRecommendWrapper\n实例：封装单个Tab的完整推荐流状态（推荐数据、滚动位置、加载状态等）\n最终效果\n：推荐流跟随当前的tab实例，保持独立可复用\n失效标记机制\n背景：\n单实例架构下，例如在全部订单tab下立即付款、确认收货后，当前tab会立即刷新的，并且切换tab时，由于单实例架构的销毁重建机制，待付款列表自然也会拿到最新状态的数据。\n但接入多实例架构后，当用户立即付款、确认收货并且tab切换后，由于实例的复\n用，所以默认是不刷新列表的，为了保证数据状态的一致性，需要引入失效标记机制。\n实现：\n每个proxy维护独立的loaded标志位，在切换tab时检查目标proxy的loaded状态，根据loaded状态决定是否需要重新加载数据。\n当立即付款、确认收货等需要状态变更的回调触发时，给出了当前proxy外的别的proxy设置loaded=false的标记位，进行懒加载。\n▐\n技术难点与效果\n技术难点\n：\n多实例状态管理\n：需要设计合理的状态管理机制，确保各tab状态独立且可复用\n架构兼容性\n：在不破坏现有功能的前提下实现架构升级，并支持通过灰度放量切流\n资源平衡\n：懒加载策略需要在内存占用、首屏和响应速度之间找到平衡点\n解决效果\n：\n流畅度\n：\n切换\ntab不用重新渲染和发请求\n，切换流畅度大幅提升\n状态保持\n：用户在不同tab间切换后，原有浏览位置得到保持\n改动前：每次切换tab都会重新loading\n改动后：切换tab不用重新渲染和发请求\n白屏问题治理\n▐\n无缓存数据渲染优化\n问题背景\n订单列表在无缓存数据命中时，会只有订单tab这个原生组件渲染，其他动态核心组件无法渲染，这会导致白屏区域过大，用户的体验比较割裂。\n技术方案\n基于以上问题，我们修改了缓存数据获取机制：\n新缓存数据\n：尝试获取当前rootTabCode+tabCode的缓存数据\n旧缓存数据：\n若未命中，尝试获取\"all\"+tabCode的缓存数据\n复用其他tab缓存数据：\n通过协议裁剪技术，获取其他tab缓存数据的核心组件，经过数据处理和替换后，保证当前tab渲染正确\n▐\n并发请求列表白屏\n问题背景\n在订单列表，当用户进行快速操作（如频繁切换Tab、快速刷新）并且叠加上网络环境较差时，会出现页面空白显示的异常情况。其根本原因是多个并发网络请求导致生命周期管理出现问题，渲染了空白数据。\n技术方案\n我们采用被动防御策略，通过添加保护性检查避免异常：\n解决效果\n改动前，快速下拉刷新或者切换tab会有空白态\n改动后\n▐\n退款列表白屏问题修复\n问题背景\n退款列表tab下点击订单筛选，筛选后返回退款列表出现白屏或无法交互。问题根源在于退款列表预热框架为单实例的。\n退款列表预热\n：从我淘进入退款列表时，启用退款列表weex2框架的异步预热。\n实例复用问题\n：订单搜索结果页的逻辑复用了订单列表页的实现。\n销毁时机错误\n：退出订单搜索结果页时，预热的退款列表由于是单实例的被销毁。\n返回阶段\n：返回退款列表时，发现实例已被销毁，但没有重新创建机制，导致白屏。\n技术方案\n基于上述问题，我们设计了多实例管理架构：\n解决效果\n根本解决实例销毁冲突问题\n保持预热性能优化效果\n支持灰度发布和快速回滚\n总结与展望\n▐\n技术成果总结\n通过系统性的优化，订单列表在多个维度取得了显著提升：\n性能指标\n：\n缓存命中率大幅提升，首屏渲染时间大幅减少\n稳定性指标\n：\n页面空白发生率大大降低\n架构价值：\n多实例的架构解决了tab状态管理难题，提升了用户体验\n▐\n展望\n体验与性能平衡：\n随着多tab架构的全面升级，我们在获得状态保持、流畅切换等体验提升的同时，也面临着新的技术挑战。架构重构带来了首屏性能的阶段性上涨，这提醒我们必须在技术创新与用户体验之间寻找最佳平衡点，不能为了一部分的体验去牺牲另一部分的体验。\n体验优化无止境\n：当前的体验优化项主要依赖首屏性能数据以及用户舆情反馈，这是一种\n被动响应式的优化模式，未来我们需要构建更加系统化、前瞻性的用户体验度量体系，转被动为主动，进一步提升产品体验。\n团队介绍\n本文作者\n悠二\n，来\n自淘天集团-\n基础交易终端团队。一支专注于手淘APP交易域（购物车、下单、订单、物流等）业务研发和体验优化的技术团队。在丰富的业务场景下，我们通过持续的技术探索、不断的创新突破，给数亿用户提供极致可靠的交易保障、极致流畅的操作交互以及极致顺滑的购物体验。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0.11,
+        "irrelevant": 0.82,
+        "transfer_agent": 0.06,
+        "direct_local": 0,
+        "peripheral": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.48,
+      "probabilities": {
+        "0": 0.25,
+        "1": 0.03,
+        "2": 0.72,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.07,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.1,
+        "2": 0.11,
+        "3": 0.28,
+        "4": 0.22,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.17,
+      "probabilities": {
+        "0": 0.91,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.37,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.63,
+        "3": 0.36,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.37,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.24,
+        "4": 0.61,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.16,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.06,
+        "2": 0.39,
+        "3": 0.44,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5982,
+    "outputTokens": 173,
+    "totalTokens": 6155
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.78,
+        "relevance": 0.65,
+        "grounding": 0,
+        "decision_action": 0.88,
+        "evidence": 0.75,
+        "actionability": 0.56,
+        "anti_hype": 0.43
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179904282,
+                "endTime": 1791179904448,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000251244",
+      "marketCost": "0.000251244",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000251244",
+      "inferenceCost": "0.000251244",
+      "inputInferenceCost": "0.000251244",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8N84W8MY3FGPB8DSECAE"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:24 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::d4t8f-1791179904241-c6851af7903e"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0.11,
+            "irrelevant": 0.82,
+            "transfer_agent": 0.06,
+            "direct_local": 0,
+            "peripheral": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.48,
+          "probabilities": {
+            "0": 0.25,
+            "1": 0.03,
+            "2": 0.72,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.07,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.1,
+            "2": 0.11,
+            "3": 0.28,
+            "4": 0.22,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.17,
+          "probabilities": {
+            "0": 0.91,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.37,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.63,
+            "3": 0.36,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.37,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.24,
+            "4": 0.61,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.16,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.06,
+            "2": 0.39,
+            "3": 0.44,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5982,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.78,
+            "relevance": 0.65,
+            "grounding": 0,
+            "decision_action": 0.88,
+            "evidence": 0.75,
+            "actionability": 0.56,
+            "anti_hype": 0.43
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179904282,
+                    "endTime": 1791179904448,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000251244",
+          "marketCost": "0.000251244",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000251244",
+          "inferenceCost": "0.000251244",
+          "inputInferenceCost": "0.000251244",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8N84W8MY3FGPB8DSECAE"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:23.707Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1258916766973726720",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "DeepSeek Harness规模化踩坑实录：耗时、成本、失败到底该怎么查",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803822&idx=1&sn=82b4c1b6735d5757e5e0a3288312c73e",
+      "date": "2026-08-24T09:36:00.582Z",
+      "chars": 6701,
+      "text": "腾讯云日志服务\n2026-08-24 17:36\n广东\n全景Agent可观测方案\n作者：\ntrumphuang\n一、导语\nAgent 已经进入不少团队的日常研发流程。规模上来之后，使用方的关注点不再只是单次结果是否正确，还包括三件事：\n耗时花在模型推理还是工具执行上；Token 消耗集中在哪些会话、哪些模型上；失败与中断发生在哪一步，过程是否可以回溯\n。\nDeepSeek Harness（下文简称 DSH）是 DeepSeek 开源的 Agent 框架，自带会话轨迹视图、Session 事件流落盘与工具调用检索，作用域是\n本机、单会话、实时\n；一旦要看一批任务的整体表现、一段时间的成本分布，或复现几天前的一次失败，就需要跨会话、跨机器且可长期留存的结构化链路数据。\n腾讯云 Agent 可观测在已有的\nOneSuite\nAgent 观测能力基础上，提供了针对 DSH 的采集插件：以原生插件形态挂载，将执行过程还原为结构化调用链，覆盖\n任务与推理轮次、模型调用、工具调用、会话关联\n，配合链路检索、聚合分析与平台本身的告警仪表盘等能力，构成针对 DSH 的全景Agent 可观测方案。\n二、DeepSeek Harness 的运行原理\nDSH 是一个开源的编码 Agent 框架，命令行名 dsh，用于\n让大模型在受控环境中自主完成一个完整任务\n：读写文件、执行命令、调用外部服务，并根据每一步的结果决定下一步动作。\n组织方式上，DSH 采用\nCordis 微内核加全插件化\n：内核只负责按 profile 装配插件与管理生命周期，模型适配器、工具集、沙箱策略、会话持久化等均为可插拔插件，web / tui / headless 三种形态共用同一个内核，\n可观测能力同样挂载在这一层\n。\n执行模型是 ReAct 循环：\n一次用户任务称为一个 turn，turn 内的每一轮推理、调用工具、观察结果称为一个 step\n。循环轮数与调用哪些工具由模型在运行时决定，\n因此执行结构在运行前无法确定\n。\n图1 DSH 的分层结构、一次 turn 的执行时序，以及对外的两条数据产出\n2.1 DSH 自带了什么\n基于上述事件流与落盘数据，DSH 自身提供了三项开箱即用的观测能力：\n会话轨迹\n——浏览器内按轮次组织的执行记录表，可查看单条记录的 Token 用量与耗时。\nSession 事件流落盘\n——完整事件流以 zstd 压缩的 JSONL 落盘于 $DSH_HOME/sessions/，数据无损。\n工具调用检索\n——工具的调用参数与返回结果记录在事件流中，并支持会话全文检索。\n图2 DSH 自带的会话轨迹视图\n2.2 为什么还需要在这份数据之上完善调用关系\nDSH 的过程数据是\n按时间排列的会话事件序列，且保存在本机\n：目前暂时没有调用关系与各自的时间占用统计，在实际业务部署规模扩大后随着机器数量增大，三个问题会变得突出：\n实现这些能力的共同前提是\n把一次任务还原成一棵带父子关系与时间区间的调用树，并让数据可以跨会话、跨机器汇聚与长期留存\n。\n三、腾讯云 Agent 可观测提供了什么\n基于目前已有的OneSuite Agent能力基础上，提供一个 DSH 插件挂载在 DSH能力插件层，对接运行时的\n事件总线与流式管道\n，聚焦做三件事：\n订阅\n——订阅生命周期事件，并在模型流式管道上包一层中间件，逐块观察而不改变数据，不插桩、不改代码。\n建模\n——在插件内维护状态树，把散落的事件还原成五层调用树，映射为符合 OpenTelemetry GenAI 语义约定的 Span。\n上报\n——数据批量直传腾讯云 Agent 可观测，不经过 Collector 或常驻采集进程。\n3.1 数据地基：五层调用树\n插件上报的调用链路分成五个层级，与 DSH 的实际执行结构一一对应：一个 turn 对应一次任务，turn 内有若干 step，step 内有模型调用与工具调用。\n图3 五层 Span 模型与各层承载信息\n一次 turn 一条 trace\n——多轮对话通过 gen_ai.session.id 横向关联，避免长会话产生无限膨胀的单条链路。\n重试不被合并\n——每次真实模型调用生成独立 chat Span，以 dsh.llm.attempt 标记序号。\n中断也画完整\n——流未收尾、step 先于工具结束、用户中断等场景均补发带错误码的 Span。\n各层属性\n均遵循 OpenTelemetry GenAI 语义约定\n，便于与既有可观测体系对齐，也便于后续接入其他 Agent 框架时保持同一套口径。\n图4 整体技术架构与数据路径\nAgent 的执行结构由模型在运行时决定，层级深度不固定，而链路数据要求父子关系明确、时间区间完整。插件通过\n状态树与延迟发射\n处理这一差异构造整体采集上报能力。\n图5 一次 turn 的完整处理逻辑：事件流 → 状态树 → Span 发射 → 批量上报\n四、接入后腾讯云Agent可观测后能看到什么\n接入后，DSH 的每一次任务都会形成一条完整链路，并按会话、模型、工具等维度汇总：\n完整调用链\n——entry / agent / step / chat / tool 五层逐层展开，父子关系与各层耗时占比清晰可见\n耗时分布\n——端到端与单轮耗时、模型推理与工具执行各自的占用，以及首 Token 延迟与 P95 分位数\nToken 与成本\n——输入、输出分别统计，可下钻到单次模型调用，也可按会话、模型聚合排行\n调用明细\n——模型名称、结束原因与重试次数，工具名称、耗时、错误情况统计\n失败定位\n——每层 Span 带独立状态并支持错误类型自定义，可用于区分模型侧失败、工具侧失败与循环中断\n检索与告警\n——Traces / Spans / Sessions 三种视角，支持按 Trace ID、Session ID 与状态检索，并可对耗时、失败率配置告警\n下述为部分能力，更多能力可在Agent可观测控制台体验\n图6\n可观测面板 - Token消耗部分\n图7\n调用链面板\n-\n一次完整的DeepSeek Harness任务执行过程\n五、接入实践\n目前tencentcloud-agentobs-sdk-dsh已发正式版本，并已被 DSH 社区插件市场收录（当前版本支持 DSH >=0.1.0-rc.6 <0.2.0，要求 Node.js >=22.19.0）\n前提条件\n已开通\n日志服务 CLS\n，并准备好具备日志写入权限的访问凭证，建议使用 CAM 子账号或临时密钥。\n已安装 DSH，版本在 >=0.1.0-rc.6 <0.2.0 区间内；插件运行环境的 Node.js 为 18.0.0 或更高。\n创建 Agent 可观测应用\n1.\n登录\n日志服务控制台\n，在左侧导航栏中选择\nAgent 可观测\n，单击\n应用接入\n创建应用，接入方式选择DeepSeek Harness\n2.\n进入应用详情，在日志主题列表中找到名称为 {应用名称}-trace-topic 的日志主题。\n3.\n复制该日志主题 ID，用于后续配置中的 CLS_TOPIC_ID 或 topicId。\n方式一：通过Skill安装+配置\n复制以下提示词到 AI 工具，让它在你的项目目录中完成 DeepSeek Harness接入。\n请使用腾讯云\nAgent\n可观测接入\nSkill\n：\nhttps\n:\n//skillhub.cn/skills/tencentcloud-cls-agent-obs\n帮我把当前\nAI\n应用接入腾讯云\nAgent\n可观测。\n接入方式：\nDeepSeek\nHarness\nRegion\n：ap-guangzhou\n方式二：手动安装+配置\n前置依赖\n全局安装 DeepSeek Harness CLI：\nnpm install -\ng\n@deepseek-ai\n/dsh\n安装插件\ndsh plugin --profile web\nadd\ntencentcloud-agentobs-sdk-dsh\ndsh plugin --profile headless\nadd\ntencentcloud-agentobs-sdk-dsh\ndsh plugin --profile harness\nadd\ntencentcloud-agentobs-sdk-dsh\n注意\n：安装或更新插件后，需要重启 DSH 服务才能生效。\npnpm 构建脚本问题\npnpm v9+ 默认禁止依赖包运行 install 脚本。如果安装时遇到以下错误：\n[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: protobufjs@6.11.6\nRun\n\"pnpm approve-builds\"\nto pick\nwhich\ndependencies should be allowed to run scripts.\n在对应 profile 目录执行一次即可（后续安装/更新不再需要）：\ncd\n~/.dsh/profiles/web\necho\n\"enable-scripts=true\"\n>> .npmrc\npnpm install\nheadless / harness profile 同理，将路径改为 ~/.dsh/profiles/headless 或 ~/.dsh/profiles/harness。\n配置连接信息\n方式一：环境变量（推荐）\nexport\nCLS_ENDPOINT\n=ap-guangzhou.cls.tencentcs.com\nexport\nCLS_TOPIC_ID\n=your-topic-\nid\nexport\nCLS_SECRET_ID\n=your-secret-\nid\nexport\nCLS_SECRET_KEY\n=your-secret-key\nexport\nCLS_SERVICE_NAME\n=dsh-agent    # 可选，用于区分实例或业务\ndsh --profile web\n方式二：手动调整插件配置文件\n编辑 $DSH_HOME/profiles/<profile>/cordis.patch.yml，未设置 DSH_HOME 时默认为 ~/.dsh/profiles/<profile>/cordis.patch.yml：\n-\nid\n: cls-observability\nconfig:\nendpoint: ap-guangzhou.cls.tencentcs.com\ntopicId: your-topic-id\nsecretId: your-secret-id\nsecretKey: your-secret-key\nserviceName: dsh-agent\ncaptureContent:\ntrue\nbatchMaxSize: 32\nflushIntervalMs: 5000\ndebug:\nfalse\n显式插件配置优先于环境变量。以及访问凭证属于敏感信息，建议通过环境变量或密钥管理工具注入，\n不要将真实 SecretId 与 SecretKey 提交到代码仓库\n。\n启动并验证\ndsh\n--profile\nweb\n启动后发起一次测试任务，至少触发一次模型调用\n卸载插件\ndsh plugin --profile web\nremove\ntencentcloud-agentobs-sdk-dsh\ndsh plugin --profile headless\nremove\ntencentcloud-agentobs-sdk-dsh\ndsh plugin --profile harness\nremove\ntencentcloud-agentobs-sdk-dsh\n关闭内容捕获\n默认情况下，prompts、responses、tool arguments/results\n会\n附加到 span。如需关闭：\nexport\nOTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT\n=\nfalse\ndsh --profile web\n或在插件配置中设置 captureContent: false。\n配置文件完整配置项\n设置\n默认值\n说明\nenabled\ntrue\n禁用采集但不卸载插件\nendpoint\nCLS_ENDPOINT\nCLS API 接入点\ntopicId\nCLS_TOPIC_ID\nCLS 日志主题 ID\nsecretId\nCLS_SECRET_ID\n腾讯云 SecretId\nsecretKey\nCLS_SECRET_KEY\n腾讯云 SecretKey\nserviceName\ndeepseek-harness\n服务名\ncaptureContent\ntrue\n捕获 prompts/responses/tool 内容（设为 false 关闭）\ncontentMaxChars\n128000\n单个内容属性最大字符数\nbatchMaxSize\n32\n每批上报最大 span 数\nmaxQueueSize\n2048\n队列上限，超限丢弃最旧 span\nflushIntervalMs\n5000\n定时刷新间隔（毫秒）\nretryTimes\n3\n上报重试次数\ndebug\nfalse\n启用调试日志\n六、腾讯云 Agent 可观测还提供哪些接入方式与能力\nDSH 插件是接入形态之一。除此之外，腾讯云 Agent 可观测还提供以下上报方式，它们写入同一套数据模型，可在同一个控制台内查看与横向对比：\n目前接入生态正在持续丰富中，逐步支持通用Agent框架（如langchain、OpenAI Agent SDK等）和Coding Agent（如CodeX、ClaudeCode等）中\n数据上报后，控制台侧已提供的分析能力：\n应用列表\n——已接入应用、上报中应用、昨日写入量与昨日 Token 总数，以及各应用的地域、状态与接入类型。\n仪表盘\n——总览（请求数与错误数、模型调用次数、Input/Output Tokens、Agent 与模型 Top10、平均 TTFT）、性能（耗时直方图与 P50/P90/P99 分位趋势、模型平均耗时 Top10）、成本 & Token、应用观测（按 generation / tool / chain / agent / retriever / guardrail / event 等类型分析调用分布与耗时）。\n调用链\n——Traces 与 Span两种视图，可按状态、错误类型（工具调用失败、LLM 调用失败、Root span 状态码异常、Agent 执行失败）、Trace ID、Session ID 与耗时筛选，详情页提供调用树、节点 Input/Output 与错误根因定位。\n会话\n——按 Session 聚合 Trace，支持按会话时长、Trace 数、Token 与成本筛选，还原多轮对话上下文。\n告警能力\n——支持对常用指标比如可对耗时、失败率等异常情况配置告警\n七、总结\nDSH 原生的轨迹视图与事件流落盘，解决的是\n本机、单会话、实时\n的调试问题；本文方案在此基础上把同一批运行时事件还原为结构化的五层调用链，补充\n跨会话聚合、跨机汇聚、长期留存与告警能力\n，帮助用户快速搭建针对DeepSeek Harness的运维观测体系。\n项目GitHub：\nhttps://github.com/TencentCloud/tencentcloud-agentobs-sdk-dsh\n相关接入指南：\nAgent 可观测应用详情：\nhttps://cloud.tencent.com/document/product/614/133517\n接入 AI Coding Agent 数据（Onesuite-Pilot）：\nhttps://cloud.tencent.com/document/product/614/135910\n使用 Langfuse SDK 上报 Trace 数据到 CLS：\nhttps://cloud.tencent.com/document/product/614/133518\n有任何关于 Agent 可观测的问题和建议，欢迎入群交流 ⬇️\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.3,
+        "transfer_agent": 0.69,
+        "direct_local": 0,
+        "peripheral": 0.01,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.87,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.08,
+        "2": 0.89,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.61,
+      "probabilities": {
+        "0": 0.33,
+        "1": 0.18,
+        "2": 0.14,
+        "3": 0.26,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.36,
+      "probabilities": {
+        "0": 0.81,
+        "1": 0.08,
+        "2": 0.07,
+        "3": 0.02,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.34,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.65,
+        "3": 0.34,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.89,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.83,
+        "5": 0.11
+      }
+    },
+    "anti_hype": {
+      "score": 2.24,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.13,
+        "2": 0.33,
+        "3": 0.43,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6349,
+    "outputTokens": 172,
+    "totalTokens": 6521
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.62,
+        "relevance": 0.91,
+        "grounding": 0,
+        "decision_action": 0.76,
+        "evidence": 0.76,
+        "actionability": 0.78,
+        "anti_hype": 0.44
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179946145,
+                "endTime": 1791179946339,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000266658",
+      "marketCost": "0.000266658",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000266658",
+      "inferenceCost": "0.000266658",
+      "inputInferenceCost": "0.000266658",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9Y4MFXHQG9046YPSGS93"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:06 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::6rhf5-1791179946104-55ffd1a4d7f9"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.3,
+            "transfer_agent": 0.69,
+            "direct_local": 0,
+            "peripheral": 0.01,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.87,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.08,
+            "2": 0.89,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.61,
+          "probabilities": {
+            "0": 0.33,
+            "1": 0.18,
+            "2": 0.14,
+            "3": 0.26,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.36,
+          "probabilities": {
+            "0": 0.81,
+            "1": 0.08,
+            "2": 0.07,
+            "3": 0.02,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.34,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.65,
+            "3": 0.34,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.89,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.83,
+            "5": 0.11
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.24,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.13,
+            "2": 0.33,
+            "3": 0.43,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6349,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.62,
+            "relevance": 0.91,
+            "grounding": 0,
+            "decision_action": 0.76,
+            "evidence": 0.76,
+            "actionability": 0.78,
+            "anti_hype": 0.44
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179946145,
+                    "endTime": 1791179946339,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000266658",
+          "marketCost": "0.000266658",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000266658",
+          "inferenceCost": "0.000266658",
+          "inputInferenceCost": "0.000266658",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9Y4MFXHQG9046YPSGS93"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:05.572Z"
+  }
+}

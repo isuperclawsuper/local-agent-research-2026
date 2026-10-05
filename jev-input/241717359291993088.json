@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "241717359291993088",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Paimon-cpp：阿里高性能Paimon读写库正式开源",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509125&idx=1&sn=ad04f363ef2170e9c51f94dba37e763d",
+      "date": "2026-02-04T00:31:00.173Z",
+      "chars": 7395,
+      "text": "原创\n刘欣瑀\n2026-02-04 08:31\n浙江\n这是\n2026\n年的第\n3\n篇文章\n（ 本文阅读时间：15分钟 ）\n阿里巴巴智能引擎团队，是阿里内部AI工程系统的建设者与维护者，主导设计了大数据AI工程体系AI·OS，致力于为集团各业务提供高效稳定的AI工程基础设施。团队坚持开放共享的技术文化，贡献了Havenask、RTP-LLM、DiffSynth-Engine、XDL、Euler、ROLL 等优秀开源项目，与行业共赢共进。\n01\n前言\nApache Paimon是一种流批统一的湖存储格式，通过与Flink和Spark等深度集成，支持构建实时湖仓一体架构，实现“一份数据、多处读取”的核心理念。近期，阿里巴巴智能引擎团队提出了Paimon-cpp方案，为Paimon的C++实现，旨在为ODPS、StarRocks、DuckDB、Velox、Native Flink、Spark等Native引擎提供高性能的湖表读写能力。\n本文将详细介绍Paimon-cpp的架构设计、功能支持及在阿里集团内部业务中的最佳实践；同时，深入解析团队在零拷贝Arrow集成、异步 I/O、多线程预取加速等方面的关键性能优化及其实际效果。期望Paimon-cpp能成为连接高性能分析引擎与开放数据湖的重要桥梁，推动实时湖仓架构在更广泛场景中高效落地。\nPaimon-cpp现已开源，欢迎使用和共建。\nGithub地址：\nhttps://github.com/alibaba/paimon-cpp\n02\n背景介绍\n2.1 Paimon数据湖\n在数据架构持续演进的背景下，数据湖（Data Lake）已成为支撑现代企业统一存储与分析的核心基础设施。与传统Hive为代表的离线数仓不同，数据湖强调开放格式、ACID事务支持、流批统一读写能力，并能同时服务批处理、流处理、交互式查询等多种负载。当前业界主流的数据湖表格式包括Apache Iceberg、Delta Lake、Apache Hudi和Apache Paimon等，它们共同推动了从“T+1 批处理数仓”向“实时湖仓一体”架构的转型。\n其中，Apache Paimon最初由阿里巴巴云计算团队发起并开源，专为流批融合场景设计。它基于LSM-Tree存储结构，原生支持高效的主键更新、增量快照读取和changelog消费，在Flink生态中深度集成，实现了“一次写入、多端复用”的统一数据访问语义。凭借其优异的实时更新能力和对流式语义的原生支持，Paimon已在金融、电商、物流等多个行业得到广泛应用，并于2023年正式进入Apache孵化器，于2024年顺利完成孵化，成为Apache软件基金会旗下的顶级项目之一，也是业界广泛认可的开放数据湖表格式标准。\n在阿里集团内部，数据湖项目已全面采用Paimon作为核心湖表格式，以统一离线与实时数据链路，替代原有的Lambda架构（即同时维护批处理与流处理两套系统）。这一方案显著降低了数据冗余、逻辑重复和运维复杂度。然而，集团内大量高性能数据处理平台（如ODPS、Native Spark、StarRocks等）此前缺乏对Paimon格式的原生支持，导致数据需依赖Java层桥接，不仅增加了开发的复杂度还影响端到端性能与资源效率。为此，我们启动了Paimon-cpp项目，旨在为C++技术栈提供高性能、低开销的Paimon读写能力，使各C++引擎能够直接读写集团数据湖上Paimon表，充分发挥其流批一体优势，实现与Spark、StarRocks等计算引擎的无缝协同，最终达成“统一格式、统一存储、多语言高效访问”的湖仓一体化目标。\n2.2 湖格式\nPaimon的表格式组织如下：表根目录下包含partition、bucket、manifest、schema和snapshot等子目录。用户可定义分区键，所有分区键值相同的记录将被写入同一\n分区\n目录中；在分区内，数据进一步根据bucket键进行哈希散列，分布到不同的\nbucket\n子目录中。实际的数据文件通常以ORC、Parquet 或 Avro 等通用列存、行存格式存储。表的字段定义及配置信息保存在\nschema\n目录中，Paimon支持通过ALTER TABLE语句动态修改表结构或配置参数。\nsnapshot\n目录用于存储表的数据快照。每个快照代表某一时刻的表状态，支持Time Travel查询——用户可指定特定快照ID或时间点进行历史数据回溯。快照中记录了该版本所包含的全量与增量数据文件信息。文件的元数据则集中管理于\nmanifest\n目录，采用两层结构：Manifest List和Manifest File。Manifest List汇总了多个Manifest File的索引信息，而每个Manifest File则详细记录其包含的数据文件的元信息，包括文件名、大小、存储路径、所属分区、各字段的统计信息（如最小值、最大值、空值计数等）。这些统计信息可被查询引擎用于谓词下推和文件跳过，显著提升查询性能。\n2.3 基本读写操作\nWrite\n：数据写入模块，将数据写入内存，flush到磁盘生成对应的data文件，收集刷出data文件的基本信息Commit Message。对于PK表，内存中的数据在刷盘前进行排序&归并，生成Level0文件。\nCommit\n：将刷出数据的meta等源信息汇总整理，生成manifest和snapshot快照。\nScan\n：流/批读取snapshot，解析manifest，通过元信息筛选目标文件集合，生成查询计划DataSplit。\nRead\n：根据DataSplit读取data文件。对于PK表将合并多个Level的LSM。\nCompact\n：分为写进程后台compact和外置compact任务。\n03\n设计原则\nPaimon-cpp旨在丰富Paimon数据湖生态，提供一套高性能的Paimon读写库，为ODPS、StarRocks、Native Flink等C++原生分析引擎提供更多原生集成选项，显著降低C++引擎开发者在多语言技术栈间切换的成本。为此，Paimon-cpp的接口设计以高效性与通用性为核心，能够灵活适配各类计算引擎，并充分复用现有引擎在内存管理、向量化执行、I/O 优化等方面的成熟经验。同时，严格保持与Apache Paimon社区在表格式、序列化协议及元数据交互层面的兼容性，确保不同语言（如Java与C++）的用户可无缝协同读写同一张Paimon表。综上，Paimon-cpp的整体设计遵循以下四大原则：﻿\n1. 设计统一的高性能批式数据读写接口，支持批量数据写入和读取。\n2. 统一模块间的数据传输格式（通用的arrow格式）。\n3. 支持用户自定义数据格式、文件系统等模块，支持扩展且能更灵活地适配各个在线引擎。\n4. 兼容Java Paimon格式和通信协议，支持用户跨语言读写Paimon数据。\n04\n功能支持\n支持字段类型：BOOLEAN、TINYINT、SMALLINT、INT、BIGINT、FLOAT、DOUBLE、STRING、BINARY、TIMESTAMP(0/3/6/9，with/without timezone)、DECIMAL、DATE、ARRAY、MAP、STRUCT、BLOB。\nAppend表和pk表的基本读写操作：Write、Commit、Scan、Read\n支持schema evolution【支持增删字段；调整字段类型、顺序、名字；配置调整等】\n支持external path【数据文件可写入多个存储集群】\n支持Blob字段【large binary字段，独立存储，减少读写放大；支持流式读写blob字段，减少内存使用】\n支持Append表FixedBucket和UnawareBucket模式；支持PK表FixedBucket模式，PostponeBucket\n支持PK表Deleteion Vector和Merge On Read模式数据读取，支持4种Merge策略和基本聚合功能\n支持bitmap、bsi、bloom filter等文件索引读取\n支持列裁剪和谓词下推\n支持面向AI场景的RowTracking和DataEvolution模式\nRowTracking：支持全局row id\nDataEvolution：全局row id连续且无空洞，写入支持写指定字段（可用于快速动态加列）；不同字段可能分散于多个文件，查询将多个文件字段合并后返回\n支持全局索引（bitmap倒排和DiskAnn向量检索，进行中）\n文件格式支持：Aliorc、开源ORC、Parquet、Lance、Avro\nfile format层data batch和接口层arrow batch支持浅拷贝\n文件系统支持：本地、盘古、OSS\n数据清理支持：孤儿文件清理、snapshot过期清理、partition过期清理（仅Append表）\n其他：\n支持orc、parquet等data文件无拷贝迁移至paimon表\n支持数据shuffle功能\n支持分支表读写\n4.1 常见使用方式\n集团内众多分析型引擎（如StarRocks和Spark）均支持Java与C++的多语言混合架构：元数据相关的操作（如Scan 和Commit）由Java实现，并以单节点方式部署；而对性能敏感的分布式读写操作（Read/Write）则由C++版本的Paimon在Worker节点上高效执行。其整体架构如下图所示，其中\nCommit Message\n和\nData Split\n作为跨节点通信的读写协议，Paimon-cpp与Java Paimon序列化与反序列化方式完全兼容，支持用户跨语言组合多种Operation。\n此外，我们的接口层全面采用C语言定义的ArrowArray和ArrowSchema（即C Data Interface）。该内存格式具有跨语言、跨Arrow版本的完全兼容性，有效避免了因引擎与Paimon-cpp使用不同Arrow版本而引发的兼容性问题或符号冲突，确保了系统在异构环境下的稳定集成。\n05\n优化方案&性能收益\n5.1 文件预取\n在Paimon-cpp中，为提升文件读取性能，我们采用了一种\"多生产者-单消费者\"模型。该模型的核心思想是：将单个数据文件按行划分为多个读取范围（ReadRange），并分发给多个并发的读取线程（即“生产者”）。每个生产者线程拥有独立的结果队列，用于存放其读取并解析后的RecordBatch。主读取线程作为唯一的消费者，会持续监控所有生产者队列的队首元素，并根据各ReadRange的起始位置进行排序，优先消费起始位置最小的RecordBatch。这一机制确保了最终输出结果的全局顺序性——对于（PK Table）而言，顺序性是正确合并和更新语义的关键保障。为实现高效并行读取，ReadRange的拆分策略需同时兼顾以下两个关键目标：\n最小化读放大（Read Amplification）\n：确保所读取的数据尽可能被有效利用，避免因过度预取导致不必要的I/O开销；\n控制ReadRange粒度\n：理想情况下，每个ReadRange的大小应与一个读取批次（Read Batch Size）相匹配，从而实现细粒度并行。这不仅能提升CPU与I/O资源利用率，还能显著降低因用户查询中使用LIMIT而引发的无效读取。\n基于上述原则，我们为AliORC和Parquet格式分别设计了针对性的ReadRange切分策略。未来，其他文件格式插件若希望复用框架层的预取与并行读取能力，仅需实现其专属的ReadRange切分逻辑；线程调度、生产者-消费者协调、队列管理及唤醒机制等复杂流程均由框架自动处理，极大降低了插件开发成本。当读取数据规模很小时，Paimon会自动关闭预取，避免线程切换引入的额外开销。预取优化可通过EnablePrefetch、SetPrefetchBatchCount配置。\n在数据规模较大场景可达近似线性加速比。\n5.2 PK表行列转换\n在主键表（PK Table）的Merge-on-Read场景中，当多个数据文件包含相同主键的记录时，Paimon会将这些文件协同归并，并根据配置的合并策略更新对应字段的值。Paimon支持四种归并模式：Deduplicate（去重）、First Row（保留首行）、Partial Update（部分字段更新）和Aggregate（聚合更新）。\n由于行式数据结构更利于多路归并操作，在Paimon-cpp中，从列存格式（如Parquet/ORC）读取的Arrow Array会零拷贝地转换为行式表示，并基于Loser Tree算法高效完成多路归并。然而，考虑到下游计算引擎普遍依赖列式内存布局以实现向量化执行，Paimon-cpp层最终仍需返回标准的列式Arrow Array。因此，归并后的行式结果会被重新组织并拷贝至一个新的列式Arrow Array中。如下图所示：\n为优化“列→行→列”转换带来的性能开销，我们设计了一套异步流水线机制，将数据读取、多路归并与行列格式转换三个阶段解耦并并行化执行，有效隐藏I/O与计算延迟。在此基础上，行列格式转换本身也支持多线程加速：用户可通过配置参数（如EnableMultiThreadRowToBatch，SetRowToBatchThreadNumber）指定用于行列转换的线程数，Paimon将自动将归并后的行式数据分片，并由多个工作线程并行执行列式Arrow Array的构建，显著提升高吞吐场景下的转换效率。\n实际业务侧实测，相比集成Java版本，由于减少了行列转换开销，Paimon-cpp端到端延迟可降低1-2倍。\n同时，针对Arrow Buffer在动态扩容时因容量翻倍（doubling）导致的冗余内存分配与数据拷贝问题，我们引入了基于历史数据规模的预分配策略。Paimon会根据前序批次的输出记录数与字段宽度，动态预测当前批次所需的内存总量，并提前申请连续、足量的缓冲区。该策略有效避免了运行时频繁触发resize及伴随的数据迁移，不仅降低了内存碎片，还大幅提升了内存利用效率与整体吞吐性能。此外，读取、写入及元数据操作均复用同一套行列转换逻辑，进一步提升了代码的可维护性。\n5.3 Blob I/O优化\nBlob是专为存储大规模二进制多模态数据（如图像、音频、嵌入向量等）而设计的数据类型。与传统字段（通常以 Parquet 等列式格式存储）不同，Blob字段采用独立的行存布局，并与主数据文件分离存储，以兼顾大对象访问效率与列式分析性能。用户可通过配置项blob.target-file-size为Blob文件指定独立于主数据文件的目标大小，避免小文件过多对存储集群造成较大压力。此外，通过启用blob-as-descriptor参数，Paimon支持以“描述符模式”进行流式读取：\n当该选项开启时，写入和读出的Arrow Array中不包含原始字节数据，而是存储指向 Blob 文件的轻量级描述符（包括文件名、偏移量和长度）；\n若关闭，则直接内联存储完整的二进制内容。\n在Paimon-cpp实现中，Blob读取过程进行了多项性能优化。我们采用异步I/O与Pangu预取机制，显著减少I/O等待。同时读取时预先分配目标内存空间，并将Blob数据以零拷贝方式直接填充至Arrow Array的Buffer中，避免中间缓冲区复制，进一步提升吞吐与延迟表现。\n06\n阿里内部使用情况\nOLAP分析引擎集成方面，Paimon-cpp在阿里集团内已广泛支持主流分析引擎，具体进展为：\nNative Spark读链路全面上线，PK表端到端延迟降低1-2倍，写链路延迟降低30%-50%；\nPaimon-cpp的使用在StarRocks覆盖90%集群，服务淘天等核心业务；\nHologres接入Paimon-cpp Shuffle功能后，多表Join延迟下降越一半；\nODPS读写接入完成（延迟与内表持平），Shuffle功能已上线；\nNative Flink接入Paimon-cpp PK表MOR读取，延迟下降超50%；\nDuckDB完成读取集成；\n蚂蚁集团正推进Velox+Paimon-CPP高性能分析方案。\n垂直业务集成方面，我们的自研时序数据库Khronos基于Paimon-cpp实现无拷贝导出，兼顾实时查询与复杂分析；自研消息队列Swift通过Paimon-cpp列存统一格式、降低存储开销并支持多下游消费；淘宝主搜索自2024双十一起上线Paimon-Cpp Scan功能，显著减少全量数据与索引构建耗时。\n07\n未来规划\nPaimon-cpp已在Github开源，诚挚感谢Java Paimon团队在设计与开发过程中提供的宝贵帮助，以及Lumina插件模块和Jindo插件模块作者们贡献的关键能力。未来，项目会在以下方向加大投入：\nCatalog层增强：支持REST Catalog，强化与集团内部元数据中心（如DLF）的对接能力，推动元数据管理标准化与统一化。\n向量索引集成：依托团队自研的Lumina向量数据库，补齐Paimon在向量召回场景的能力短板，拓展AI原生分析支持。\nCompaction性能优化：通过C++重构Compaction流程，提升合并性能与资源效率。\n扩展字段类型支持：新增对variant等复杂数据类型的原生支持，增强数据模型表达能力。\n插件生态完善：补充文件格式（如Avro 行存）和文件系统（如HDFS）等插件。\n湖格式互操作：深化与Iceberg等开放湖表格式的集成，实现跨格式数据的免拷贝迁移，降低湖内数据流转成本。\n我们将持续迭代和优化，欢迎大家交流共建！\nGithub地址：\nhttps://github.com/alibaba/paimon-cpp\n点击\n阅读原文\n，可直接跳转\n欢迎留言一起参与讨论~\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

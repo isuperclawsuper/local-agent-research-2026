@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "263249327668855808",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "当整个团队开始 0 人工Coding：一份万字AI Native研发实战手册",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801035&idx=1&sn=08b72c3dcdb56de5922466bc17c67038",
+      "date": "2026-04-03T11:07:00.952Z",
+      "chars": 13819,
+      "text": "原创\n腾讯程序员\n2026-04-03 19:07\n日本\n一段完全零编程的研发全记录\n作者：binxiong\n导语\n：2023年我们开始用 AI 辅助解决问题，2025 年我们验证了 AI Coding 的可行性，2026 年我们决定更进一步——不再让 AI 当\"打字员\"，而是让它当\"施工队长\"。这篇文章记录了我们团队在 AI Native 研发模式落地过程中的思考、踩坑和最终形成的一套可复制的方法论。\n写在前面\n如果你也在用 AI 写代码，你大概率经历过这样的场景：\n打开 CodeBuddy，对着对话框敲下一段需求描述，AI \"唰唰唰\"吐出一段代码。你看了看，好像对？复制粘贴，跑一下——报错了。于是开始新一轮的\"对话-调试-再对话\"循环。\n运气好的话，折腾半小时能搞定。运气不好，你发现 AI 写的代码和项目架构完全不搭，甚至用了一个你们团队根本没有的库。\n这不是 AI 的问题，是我们\"用法\"的问题。\n我们团队在 2025 年就开始大规模使用 AI 辅助编码，标准软件、产品市场、极光平台都跑通了实际案例。但随着使用深入，一个共识越来越清晰：\n把 AI 当打字员用，天花板很低。把 AI 当施工队用，才有真正的效率革命。\n2026 年初，我们正式决定——\n全面转向 AI Native 研发模式，目标是\"0 人工 Coding\"\n。\n这篇文章，就是这段旅程的全记录。\n一、为什么要搞 AI Native？\"辅助编码\"到底差在哪？\n先说个残酷的事实：即便团队里的 AI 老手，用 AI 辅助编码的效率提升也很难超过\n50%\n。原因不是模型不够聪明，而是我们的\n协作方式\n有结构性缺陷。\n当前研发用 AI 的真实画面\n我总结了\n四大痛点\n，几乎每个用 AI 写代码的人都会踩到：\n痛点\n具体表现\n根因\n人机协作无标准\n效果完全取决于个人\"提示词\"功力，老手提效明显，新手反而更慢\n没有统一的 AI 交互规范，输入质量因人而异\n流程断点\n工程师变成了\"人肉翻译器\"，在方案文档和 IDE 之间来回搬运信息\n设计工具和编码工具之间数据隔离，无法自动传递上下文\n上下文缺失\nAI 不认识你的项目，可能重复造轮子、违反架构规范\nAI 无法主动读取项目代码库和技术规范，只能看到你手动喂的片段\n文档脱节\n方案写进 iWiki 就再没更新过，新人入职只能\"考古\"代码\n文档和代码不在同一个版本控制系统里，天然失同步\n核心矛盾就一句话：人与 AI 的交互缺乏规范，导致输出质量不可控。\n所以我们需要的不是\"更好的提示词技巧\"，而是\n一套系统性的方法\n。\n二、我们的回答：OpenSpec + CodeBuddy 全链路方案\n什么是 OpenSpec？\n如果把开发一个功能比作\n盖一栋房子\n：\n以前的做法\n：你（工程师）像个包工头，脑子里装着模糊的房子样子，跑到砖厂（AI）喊\"来100块砖\"，再跑到水泥厂（另一个 AI）喊\"来两袋水泥\"。AI 不知道你要盖什么，只能听你零散的指令，盖出来的东西千奇百怪。\nOpenSpec 的做法\n：你的核心工作是和 AI 一起\n把建筑图纸画清楚\n。图纸审批通过后，AI 施工队就能根据这份\n唯一的、标准的图纸\n，全自动、高质量地完成施工。\n本质上，OpenSpec 是一套\n机器和人都能理解的\"研发契约\"\n。\n目标态：人做什么，AI 做什么？\n我们重新定义了 AI 时代研发人员的角色——\n从执行者变成指挥者\n：\n阶段\nAI 负责\n人负责\n需求分析\n提炼需求、发现遗漏、结构化输出需求文档\n优先级判断，审批需求边界\n方案设计\n生成技术方案、架构图、接口定义、风险清单\n技术选型拍板，安全审查\n代码开发\n根据设计方案进行多文件编码、补充注释和单测\n评审关键代码，控制合并门禁\n测试验证\n生成测试脚本、执行回归测试、分析失败原因\n审核高风险场景，最终放行决策\n发布上线\n校验实现是否与需求一致，提供发布清单\n审批发布窗口，处理事故升级\n人的核心角色只有三个：决策、审批、把关。\n其他的？让 AI 去干。\n三、代码开发阶段的落地实践（我们是怎么做到\"0-Coding\"的）\n3.1 核心工作流：三步走\n我们把整个代码开发流程压缩到了\n三个指令\n：\nStep 1：/opsx:propose — 先想清楚，再动手\n原则：严禁直接让 AI 写大段业务代码，必须先生成规划文档。\n/opsx:propose 帮我生成一个关于 [新增用户权限控制模块] 的变更\nAI 会自动在\nopenspec/changes/[变更名]/\n目录下生成：\n文件\n作用\n通俗理解\nproposal.md\n需求背景与目标\n\"为什么做\"和\"做什么\"\ndesign.md\n技术方案与架构决策\n\"怎么做\"\ntasks.md\n带复选框的实施清单\nAI 的\"施工单\"\nspecs/\n规范增量\n本次变更的\"差异记录\"\n为什么这一步至关重要？\n因为这些文件就是 AI 编码时的\n全部上下文\n。你在这里多花 10 分钟审查，编码阶段能省 2 小时的返工。\nStep 2：/opsx:apply — 让 AI 按图施工\n/opsx:apply [变更名称]\n这一步 AI 会：\n读取\ntasks.md\n中的清单\n结合\ndesign.md\n和\nproposal.md\n的完整上下文\n跨文件批量生成/修改代码\n每完成一项自动在\ntasks.md\n里打钩 ✓\n开发者此时只需要做一件事：Code Review。\nStep 3：/opsx:archive — 让规范活起来\nMR 通过后执行：\n/opsx:archive [变更名称]\n系统自动将本次规范增量合并到\nopenspec/specs\n主目录，清空变更草稿。\n这意味着什么？\n你的项目文档永远和代码保持同步。没有\"僵尸 Wiki\"，没有\"代码才是文档\"的无奈。\n3.2 完整六步工作流\n实际项目中，我们把核心三步扩展成了更严谨的六步：\n关键卡点\n：Step 2 的 Review 是质量的生命线。\ntasks.md\n建议控制在\n15 项以内\n，避免 AI 因上下文过长产生幻觉。\n3.3 前端页面开发的额外一步\n如果变更涉及前端页面，我们在 Step 2 和 Step 4 之间加了一个\n原型审查\n环节：\n在 With 平台上画好原型 → 团队确认 → 截图/链接贴回\ndesign.md\n→ 再执行\n/opsx:apply\n为什么？\nProposal 和 Design 解决的是\"做什么\"和\"怎么做\"，但对前端来说还缺\"页面长什么样\"。跳过这步直接让 AI 写 UI，返工成本远大于提前画一版原型。\n四、让 AI \"懂\"你的项目：三大武器库\n光有工作流还不够。AI 再聪明，如果不了解你的项目，写出来的代码也只是\"通用代码\"，不是\"你的代码\"。\n我们围绕 CodeBuddy 的三大机制，构建了一套完整的\n统一规范体系\n：\n知识库 → 让 AI\n\"知道\"\n我们的项目\nMCP   → 让 AI\n\"连接\"\n我们的工具\nSkills → 让 AI\n\"掌握\"\n我们的方法\n4.1 知识库：AI 的项目记忆\n知识库分两个通道注入 AI：\n通道一：OpenSpec specs/\n（核心记忆）\n这就是项目的\"活文档\"。AI 执行\n/opsx:apply\n时会自动读取，了解系统当前所有功能。每次\n/opsx:archive\n后自动更新，\n始终与代码保持同步\n。\n通道二：MCP 外部知识\n（辅助记忆）\n通过 MCP 协议连接 Knot 知识库平台，存放无法用 specs 文件表达的内容：业务术语表、架构决策历史、踩坑记录等。\n知识类别\n具体内容\n来源\n业务知识\n产品功能说明、核心业务流程\niWiki 文档\n架构知识\n系统架构图、模块依赖、技术选型说明\niWiki + Git\n项目规范\n目录结构约定、数据模型定义、接口契约\nOpenSpec specs/\n历史决策\n技术选型原因、已知限制\niWiki + OpenSpec\n常见问题\n高频问题及解决方案、排错指南\niWiki 文档\n4.2 MCP：AI 的工具连接层\nMCP 让 AI 能直接访问团队的内部工具，消除\"复制粘贴\"式的跨工具搬运。\n我们团队配置了以下 MCP：\nMCP 工具\n连接目标\nAI 获得的能力\nTCS Component\n前端组件库\n查询组件使用规则，确保风格统一\nTAPD MCP\nTAPD 需求平台\n直接查询原始需求/Bug 单\niWiki MCP\n文档平台\n直接检索设计文档、架构文档\n极光流水线 MCP\n部署平台\n触发构建、查看部署状态\n实际效果举例\n：以前工程师需要先打开 TAPD 看需求 → 理解 → 切到 IDE 描述给 AI。现在 AI 通过 MCP 直接读 TAPD 原始需求，信息\n零损耗传递\n。\n4.3 Skills：AI 的专业技能包\nSkills 是团队沉淀的标准化操作流程（SOP），封装成 AI 可复用的\"技能包\"。我们统一管理在\nted.aurora/tcsc-skills\n仓库中，按业务域分类，目前涵盖产品市场、前端组件库、工程实践、运维中心、运营中心等多个领域。大家也可以通过\nSkillHub市场\n来进行预览, 后续我们也会上架Knot. 下一章会以 openspec-installer 为例，深度解剖一个生产级 Skill 的完整构造。\n4.4 三大机制如何协同工作？\n以一个典型的代码开发任务为例：\n三者的关系可以用一句话概括：知识库让 AI \"知道\"我们的项目，MCP 让 AI \"连接\"我们的工具，Skills 让 AI \"掌握\"我们的方法。\n五、深度解剖 openspec-installer：一个 Skill 是怎么炼成的\n前面提到 Skills 是团队经验的标准化封装。说起来容易，做起来呢？这一章我们拿 openspec-installer 这个 Skill 做一次完整的\"庖丁解牛\"——从文件结构到设计决策，从安装流程到版本管理，让你看到\n一个生产级 Skill 的全貌\n。\n5.1 这个 Skill 解决什么问题？\n新人入职，或者团队开启一个新项目，首先要做的就是\"搭环境\"。在没有 openspec-installer 之前，这个过程是这样的：\n打开 Wiki，找到安装指引（先找到正确的那篇 Wiki 就要 10 分钟）\n安装 Node.js（版本不对？换一个重来）\n全局安装 OpenSpec CLI（npm 权限问题？sudo？nvm？）\n在项目中执行\nopenspec init\n（目录错了？重来）\n手动编辑\nopenspec/config.yaml\n（漏填了？AI 生成的代码不符合规范）\n配置 MCP 服务（iWiki、工蜂的 URL 是什么？Token 怎么拿？）\n安装项目需要的 Skills（装哪几个？从哪下载？版本对不对？）\n搭建知识库目录（docs/ 下该有什么结构？）\n至少 1 小时，踩坑了可能半天。而且每个人踩的坑还不一样。\nopenspec-installer 把这 8 步压缩成了一句话：\n请执行 curl -fsSL http:（\n内部skill命令, 可以根据下文生成一个类似的安装指令即可）\nAI 读到这个 SKILL.md 后，会自动完成所有步骤，\n全程不需要人工干预\n。\n5.2 文件结构：每个文件都有存在的理由\nopenspec-installer/\n├── SKILL.md                          # 灵魂：\n600\n+ 行的完整安装 SOP\n├── version.json                      # 版本控制元数据\n├── scripts/\n│   ├── INSTALL_MAC_LINUX.sh          # macOS/Linux 环境自动安装\n│   ├── INSTALL_WINDOWS.ps1           # Windows 环境自动安装\n│   ├── install_skills.sh             # 项目 Skills 批量安装\n│   ├── check-skill-updates.sh        # 所有 Skills 版本检测\n│   └── self_update.sh                # Skill 自身热更新\n└── templates/\n├── mcp-servers.json              # MCP 配置模板（含认证信息）\n├── skill-bundle.json             # 项目默认 Skill 套装清单\n└── openspec-config-awareness.md  # Bridge Rule 模板\n注意这不是一个简单的\"安装脚本\"——它是一个\n包含 SOP、自动化脚本、配置模板、版本管理的完整系统\n。下面逐一拆解。\n5.3 SKILL.md：AI 的\"施工蓝图\"\nSKILL.md 是整个 Skill 的核心，它定义了 AI 应该按什么步骤做什么事。它的 frontmatter 使用统一的元数据格式：\n---\nname: openspec-installer\ndescription\n: 项目初始化工具。自动安装 OpenSpec 开发环境，同时配置 MCP 服务、\n批量安装 Skill、搭建项目知识库目录、生成 OpenSpec 索引文件、检查 Skill 版本更新。\n当用户提到安装 OpenSpec、配置 OpenSpec 环境、初始化项目、或 openspec init 时使用此 Skill。\nversion\n:\n0.4\n.3\nauthor\n: binxiong\ncenter\n: 公共\nmodule\n: openspec-installer\ntags\n: [openspec, setup, installation, initialization, mcp, skills]\n---\ndescription 字段的措辞经过仔细斟酌——它同时承担两个职责：\n让人理解这个 Skill 做什么\n，以及\n让 AI 知道什么时候该触发这个 Skill\n（通过关键词匹配）。\n正文则是一套严格的\n分步 SOP（Standard Operating Procedure）\n，包含 7 个主要步骤：\n步骤\n做什么\n关键设计\nStep 0\n自身版本检查\nMCP 优先 → 静默跳过（不阻塞安装）\nStep 1\n检测操作系统\n自动识别 macOS/Linux/Windows\nStep 2-4\n安装 Node.js + OpenSpec CLI\n跨平台脚本，幂等（已装不重装）\nStep 5\n补全 config.yaml\n引导用户填写技术栈和业务背景\nStep 6a\nopenspec init\n生成 OpenSpec 项目结构\nStep 6a-1\n生成 Bridge Rule\n解决\"AI 不知道要读 config.yaml\"的问题\nStep 6b\n配置 MCP 服务\nToken 交互 + 安全防护（.gitignore）\nStep 6c-6g\n安装 Skills + 知识库 + 版本检测\n批量操作，一步到位\nStep 7\n告知用户下一步\n安装完成后的使用指引\n每个步骤都是\n可执行的 bash 代码块\n，AI 读到后直接执行。同时每个步骤都设计了\n幂等性\n——重复执行不会出问题。这意味着安装中断了可以随时重来。\n5.4 三个关键设计决策\nopenspec-installer 的开发过程中，我们做了几个重要的设计决策，值得展开说说。\n决策一：Bridge Rule——解决\"链路断裂\"问题\n这是最有意思的一个设计。\nOpenSpec 的\nconfig.yaml\n支持自定义 rules 字段，比如：\n# openspec/config.yaml\nrules\n:\narchive:\n- 归档前检查：确认已创建 MR\n- 归档后更新：自动更新 INDEX.md 索引\n问题是：\nAI 不知道要去读这个文件。\nopenspec init\n生成的 SKILL.md 是静态的，不包含\"去读 config.yaml rules\"的指令。结果就是：你辛辛苦苦在 config.yaml 里配了一堆规则，AI 执行 archive 的时候完全无视。\n我们的解决方案是\n在安装时自动生成一个 Bridge Rule 文件\n：\n# Step\n6\na\n-1\n：生成到 .codebuddy/rules/ 目录\ncp\n\"$SKILL_DIR/templates/openspec-config-awareness.md\"\n\\\n\".codebuddy/rules/openspec-config-awareness.md\"\n这个文件的内容非常短（只有 10 行），但作用关键——它像一个\"指路牌\"，告诉 AI：\n\"当你执行 OpenSpec 操作时，先去读\nopenspec/config.yaml\n中的 rules。\"\n它使用\nalwaysApply: true\n（每次会话自动加载），context 开销可忽略不计。\n这个设计背后的思想是\n：不把规则内容复制到 Bridge Rule 里（那样 config.yaml 改了 Bridge Rule 也要改），而是只做\"指路\"——保持 config.yaml 作为 single source of truth。\n这个看似简单的设计经历了两个版本迭代：v0.4.2 首次引入时用了\nalwaysApply: false\n（AI 自行判断是否加载），实测发现偶尔漏判；v0.4.3 改为\nalwaysApply: true\n，问题彻底解决。\n决策二：Token 交互——在 SKILL.md 指令层完成，而非 bash 脚本\nMCP 服务需要 PAT Token 才能认证。怎么让用户配置 Token？\n直觉的做法是在 bash 脚本里用\nread -p\n提示用户输入。但 CodeBuddy 的 bash 执行环境是\n非 TTY 的\n——\nread -p\n会导致脚本挂起。\n我们的解法是\n把 Token 交互写在 SKILL.md 的 SOP 里\n，让 AI 在对话中完成：\n🔑 配置 MCP 服务需要你的个人访问令牌（PAT）。\n请前往以下地址获取 Token：\n👉 https:\n//t\noken申请网址\n获取后请将 Token 粘贴到这里。\n如果你想跳过此步骤，请直接回复\n\"跳过\"\n。\nAI 获取到 Token 后，用 Python 脚本将\nmcp-servers.json\n模板中的\n<your_token>\n占位符替换为真实 Token，生成最终的\n.mcp.json\n。\n同时，在 Token 交互之前，还有一个安全防护步骤\n——自动将\n.mcp.json\n加入\n.gitignore\n，防止含有 Token 的文件被意外提交到 Git 仓库。这个步骤无条件执行，即使用户跳过了 Token 配置也会生效（因为用户之后可能手动配置）。\n# Step\n6\nb\n-0\n：幂等地将 .mcp.json 加入 .gitignore\nif\ngrep -qxF\n'.mcp.json'\n\".gitignore\"\n; then\necho\n\"[INFO] .gitignore 已包含 .mcp.json，跳过\"\nelse\necho\n\".mcp.json\"\n>>\n\".gitignore\"\nfi\n决策三：版本检查的三级降级策略\nopenspec-installer 自身也有版本更新。怎么在安装时检测新版本？\n直觉的做法是\ncurl\ngit.woa.com 的 raw 文件。但该地址需要身份认证，在非交互环境下永远 302 到登录页。\n我们设计了\n三级降级策略\n：\n1.\n优先：通过工蜂 MCP 服务查询仓库中的 version.json（需已配置 Token）\n2.\n降级：如果在仓库目录内，直接读取本地 version.json\n3.\n兜底：静默跳过版本检查，不阻塞安装\n脚本通过环境变量\nMCP_REMOTE_VERSION\n接收 MCP 的查询结果（因为 bash 脚本无法直接调用 MCP，但 AI 可以在调用脚本前通过 MCP 获取版本信息并传入）：\n# self_update.sh 中的版本获取逻辑\nif\n[[ -n\n\"${MCP_REMOTE_VERSION:-}\"\n]]; then\nremote_version=\n\"$MCP_REMOTE_VERSION\"\n# MCP 查询成功，使用该版本\nelif command -v git &>\n/dev/\nnull\n; then\n# 降级：git clone --depth\n1\n获取\nelse\n# 兜底：静默跳过\nfi\n核心原则是：辅助功能的失败不应该阻塞核心功能。\n版本检查是辅助功能，安装环境是核心功能。\n5.5 version.json：不只是一个版本号\n{\n\"version\"\n:\n\"0.4.3\"\n,\n\"name\"\n:\n\"openspec-installer\"\n,\n\"description\"\n:\n\"项目初始化工具 — 安装 OpenSpec 环境、配置 MCP 服务、批量安装 Skill...\"\n,\n\"release_date\"\n:\n\"2026-03-20\"\n,\n\"git_repo\"\n:\n\"git@git.woa.com:ted.aurora/tcsc-skills.git\"\n,\n\"skill_path\"\n:\n\"skills/公共/openspec-installer\"\n,\n\"changelog\"\n: {\n\"0.4.3\"\n:\n\"更新：bridge rule 改为 alwaysApply: true，确保 100% 覆盖率\"\n,\n\"0.4.2\"\n:\n\"新增：OpenSpec 配置感知 bridge rule，修复 config.yaml rules 消费链路断裂问题\"\n,\n\"0.4.1\"\n:\n\"更新：场景五 SOP 标注为兜底机制\"\n,\n\"0.4.0\"\n:\n\"新增：归档后索引自动更新规则\"\n,\n\"0.3.0\"\n:\n\"新增：归档前 MR 检查规则\"\n,\n\"0.2.0\"\n:\n\"新增：MCP 配置与 Skill 批量安装\"\n}\n}\n这不只是给人看的 changelog——\nself_update.sh\n会解析这个 JSON，比较本地和远端版本号，在发现新版本时展示精确到每个版本的变更内容。\n5.6 skill-bundle.json：项目的\"Skill 套装\"\n每个项目需要安装哪些 Skills 不需要手动记忆：\n{\n\"skills\"\n: [\n{\n\"name\"\n:\n\"atomic\"\n,\n\"type\"\n:\n\"local\"\n,\n\"centerPath\"\n:\n\"产品市场/atomic\"\n},\n{\n\"name\"\n:\n\"operation-template\"\n,\n\"type\"\n:\n\"local\"\n,\n\"centerPath\"\n:\n\"产品市场/operation-template\"\n},\n{\n\"name\"\n:\n\"bug-fix\"\n,\n\"type\"\n:\n\"local\"\n,\n\"centerPath\"\n:\n\"工程实践/bug-fix\"\n}\n]\n}\ninstall_skills.sh\n读取这个清单，批量安装所有 Skill。\n新人入职不需要问\"这个项目需要装什么 Skill\"，跑一次 installer 就全齐了。\n5.7 迭代历史：用 OpenSpec 管理 Skill 本身\nopenspec-installer 的每一次改进，本身就是用 OpenSpec 的 propose → apply → archive 流程来管理的。最近一周的迭代记录：\n版本\n日期\n变更\nOpenSpec Change\nv0.4.3\n3月20日\nBridge Rule 改 alwaysApply: true\nconfig-awareness-always-apply\nv0.4.2\n3月20日\n新增 Bridge Rule 解决链路断裂\nadd-config-awareness-rule\nv0.4.1\n3月20日\n版本号同步、场景五 SOP 优化\nsync-skill-version-and-author\nv0.4.0\n3月20日\n归档后索引自动更新规则\narchive-index-auto-update\nv0.3.0\n3月19日\n归档前 MR 检查 + MCP Token 重构\narchive-require-mr\n每个变更都有完整的\nproposal.md\n（为什么改）、\ndesign.md\n（怎么改）、\nspec.md\n（规范增量）和\ntasks.md\n（实施清单）。\n这就是 dogfooding 的力量\n——我们用自己的工具来改进自己的工具，既验证了流程的可行性，也确保了每次变更都有据可查。\n5.8 为什么这套做法值得推广？\nopenspec-installer 不只是一个安装工具，它展示了\n一个 Skill 应该怎么做\n：\n做法\n带来的价值\nSKILL.md 定义完整 SOP\nAI 照着做就行，不需要人工解释上下文\n每个步骤都幂等\n中断了可以随时重来，不怕搞坏环境\n跨平台脚本\nmacOS/Linux/Windows 统一一套流程\n配置模板预填\n减少手动配置，降低出错概率\nBridge Rule\n解决 AI 工具链之间的\"链路断裂\"问题\nToken 安全防护\n.gitignore + 跳过机制，防止凭证泄漏\n三级降级策略\n辅助功能不阻塞核心功能\nversion.json + 热更新\n团队成员无感升级，永远用最新版\n用 OpenSpec 管理自身\n每次改进都有 proposal + design + spec\n一句话总结：一个好的 Skill，写一次，全团队永久受益。而 openspec-installer 就是这个理念的最佳实践——它让\"搭环境\"这件最枯燥的事，变成了一句话的事。\n六、从 0 到 1 的上手指南\n6.1 环境搭建（10 分钟搞定）\n前置条件\n：已安装 CodeBuddy（CLI 版或 IDE 插件版，推荐 CLI）\nStep 1：安装 OpenSpec Skill\n请执行 curl -fsSL http:\n//\n内部skill命令, 可以根据下文生成一个类似的安装指令即可。\nStep 2：执行自动化初始化\n和 AI 对话：\"帮我初始化 OpenSpec 项目\"\nAI 会自动完成：\n检测/安装 Node.js 环境\n全局安装\n@fission-ai/openspec@latest\n在项目根目录执行\nopenspec init\n，生成配置目录\nStep 3：补全配置\n打开\nopenspec/config.yaml\n，填写：\n配置项\n说明\n示例\n技术栈\n当前项目使用的语言/框架\nTS/JS、Go、React\n代码规范风格\n团队约定的编码风格\nESLint Standard、Airbnb\n核心业务背景\n简述项目的业务领域\n\"电商订单管理系统\"\n⚠️\nconfig.yaml\n是 AI 生成代码时的基础\"宪法\"，请务必认真填写。\n6.2 CLI 与 IDE 的最佳搭配\n推荐策略：CLI 主攻，IDE 辅助。\n工具\n适用场景\nCodeBuddy CLI\n执行\n/opsx:propose\n、\n/opsx:apply\n等核心指令，跨项目协同\nCodeBuddy IDE\n审查修改 proposal.md / design.md，解决 Git 冲突，单行逻辑优化\n6.3 多项目联动（前后端同时开发）\nmy-fullstack-workspace/         ← 父目录：在此启动 CodeBuddy CLI\n├── web-frontend/               ← 前端仓库\n│   ├── openspec/\n│   └── src/\n└── api-backend/                ← 后端仓库\n├── openspec/\n└── src/\n在\n父目录\n下启动 CLI，AI 拥有全局视角，一条指令同时搞定前后端：\n/opsx:propose 新增一个查询订单列表的 API，并在前端编写对应的调用逻辑与表格渲染\n七、扩展工作流：给高阶玩家的\"精细操控\"\n核心三步对大多数场景够用了。但遇到复杂需求时，你可能需要更精细的控制——\n开启扩展工作流\nopenspec config profile\n# 选择\n\"Workflows only\"\n→ 勾选扩展命令（\nnew\n、ff、\ncontinue\n、verify）\n扩展指令速查\n指令\n作用\n什么时候用\n/opsx:new\n只创建空脚手架，不生成内容\n想自己控制生成节奏\n/opsx:continue\n步进式生成（先 Proposal → Review → 再 Design）\n逐步审查，适合复杂需求\n/opsx:ff\n快进生成，一次补全所有规划\n需求明确，想快速推进\n/opsx:verify\nAI 代码审计，比对 design.md\n写完代码想让 AI 自查\n/opsx:explore\n探索模式，和 AI 讨论需求\n不知道怎么开始时\n安全提示\n：\n/opsx:explore\n只讨论和输出文档，\n绝对不会动代码\n，放心使用。\n八、团队协同实践：踩过的坑和定下的规矩\n原子化变更原则\n规则\n说明\n一次变更解决一个需求\n每次 Change 只对应一个明确的业务需求或 Bug\ntasks.md 控制在 15 项以内\n避免 AI 因上下文过长产生遗忘或幻觉\n小步快跑\n确保人工 Code Review 在可控范围内\n\"规范即文档\"原则\nopenspec/specs/\n目录就是永远与代码保持一致的\"活体文档\"，替代传统的沉睡 Wiki。\n要求\n说明\n禁止绕过 OpenSpec\n不要绕过流程直接手写大量核心业务逻辑\n原因\n否则会破坏\"规范与代码\"的同步性，Spec 沦为\"死文档\"\n收益\n全员坚持 SOP → 交付质量标准化 → 交接和维护成本最低\nMR 审查的双重视角\nReview 人员在审查 MR 时要同时看\n代码\n和\n规划文档\n：\n审查维度\n内容\n对照文件\n代码逻辑\nAI 生成的代码是否遵守约束条件\ndesign.md\n架构合规\n技术方案是否符合团队底线\nproposal.md\n需求覆盖\n所有规范中定义的行为是否已实现\nspecs/\n九、写在最后\n回头看这半年的实践，最大的感悟不是技术上的，而是认知上的：\nAI 不是来替代程序员的，而是来重新定义\"程序员\"这个角色的。\n以前，我们的核心价值是\"能写代码\"。现在，我们的核心价值是\"能指挥 AI 写出正确的代码\"。这听起来像是降级，但实际上是升级——你的注意力从\"怎么实现\"转移到了\"做什么\"和\"为什么做\"。\n这像极了软件工程发展史上的一次次跃迁：\n从机器码到汇编：我们不再关心寄存器\n从汇编到高级语言：我们不再关心内存地址\n从写代码到 AI Native：\n我们不再关心具体的代码实现，而是关心需求定义和架构决策\n如果你的团队也在探索 AI Native 研发，希望我们的经验能帮到你。也欢迎随时交流——毕竟，在这个 AI 飞速进化的时代，\n没有人是\"到达\"了的，我们都还在路上。\n附录：指令总速查表\n指令\n阶段\n一句话说明\n/opsx:explore\n探索\n与 AI 讨论需求，沉淀文档，不写代码\n/opsx:propose\n规划\n一键生成全套规划文档\n/opsx:apply\n编码\n严格按 tasks.md 清单自动编码\n/opsx:archive\n归档\n合并规范增量到主干，清空草稿\n/opsx:new\n准备\n创建空脚手架（扩展版）\n/opsx:continue\n步进\n逐文件生成，逐步审查（扩展版）\n/opsx:ff\n快进\n一次性补全所有规划（扩展版）\n/opsx:verify\n审计\nAI 代码审计，比对 design.md（扩展版）\n附录：项目目录结构\n项目根目录/\n└── openspec/\n├── config.yaml              ← 项目配置（技术栈、规范风格、业务背景）\n├── specs/                   ← 归档区：系统功能的\n\"活文档\"\n│   └── [功能名称]/\n│       └── spec.md\n└── changes/                 ← 工作区：进行中的变更提案\n└── [任务名称]/\n├── proposal.md      ← 为什么做、做什么\n├── design.md        ← 怎么做\n├── tasks.md         ← AI 的施工清单\n└── specs/           ← 变更增量\n附录：常见场景速查\n场景\n操作\n新项目首次配置\n安装 Skill → \"帮我初始化 OpenSpec 项目\" → 补全 config.yaml\n接到新需求\n/opsx:propose\n→ Review →\n/opsx:apply\n→ 测试 → 提 MR\n复杂需求不知如何下手\n/opsx:explore\n和 AI 讨论\n需要更细粒度控制\n开启扩展工作流 →\nnew\n+\ncontinue\n/\nff\n写完想让 AI 自查\n/opsx:verify\nMR 通过后\n/opsx:archive [变更名称]\n前后端联动\n父目录启动 CLI →\n/opsx:propose\n一次性规划\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

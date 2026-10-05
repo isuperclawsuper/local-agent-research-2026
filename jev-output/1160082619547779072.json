@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1160082619547779072",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文搞懂Token经济学：同样额度多干3倍活，只需理解消耗机制",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695941&idx=1&sn=94403a902e95852eb72979e495410907",
+      "date": "2026-06-17T00:45:00.262Z",
+      "chars": 11742,
+      "text": "原创\n王卓\n2026-06-17 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n01\n你的一句话背后：一次 API 调用到底发了什么\n1\n.1\nToken 不是字数\nToken 是模型处理文本的最小单元。不同模型的 tokenizer 略有差异，以 Claude / GPT 系列为例的粗略换算：\n语言\n换算关系\n说明\n英文\n1 token ≈ 4 个字符 ≈ 0.75 个单词\n\"hello\" = 1 token，\"implementation\" = 1 token\n中文\n1 个汉字 ≈ 1~2 tokens\n常用字约 1 token，生僻字/组合约 2 tokens\n代码\n差异较大\n关键词/变量名/符号各占 1 token，长变量名可能拆成多个\n一段 200 行的 Python 脚本大约 2,000~4,000 tokens；一段 1000 字的中文约 1,200~1,800 tokens。\n1\n.2\n一次调用的完整结构\n每当你在 AI 编程工具里敲一句话、或 AI 调用一个工具后准备回复，都是一次完整的 API 调用。每次调用发送的内容结构如下：\n┌────────────────────────────────────────────────────┐\n│ ①\nSystem\nPrompt\n（系统指令）        ~8k-20k tokens\n│   ├ 行为规则、安全约束\n│   ├ 工具定义（\n20\n+ 个工具的\nJSON\nSchema\n）\n│   ├ 项目规则 /\nMemory\n/\nCODEBUDDY\n.\nmd\n│   └ 项目上下文（目录结构、git status 等）\n├────────────────────────────────────────────────────┤\n│ ② 对话历史（所有之前的 turn）          累积增长\n│   ├ 你说的每句话\n│   ├\nAI\n的每次回复\n│   └ 每次工具调用的入参 + 返回结果\n├────────────────────────────────────────────────────┤\n│ ③ 当前输入（本轮新增）                 ~\n0.\n5k-2k\n│   └ 你刚打的那句话 + 附加的文件/上下文\n└────────────────────────────────────────────────────┘\n↓ 发给模型 ↓\n┌────────────────────────────────────────────────────┐\n│ ④ 模型输出                              ~1k-8k\n│   ├ 思考过程（部分模型可见）\n│   ├ 文字回复\n│   └ 工具调用指令\n└────────────────────────────────────────────────────┘\n关键认知：你打的那句话（③）通常只占总输入的 1%~5%。真正的大头是 ① 和 ②。\n02\n缓存机制：为什么长对话反而比新窗口便宜 5 倍\n2\n.1\n没有缓存会怎样——O(N²) 的恐怖增长\n如果每次 API 调用都要从头全价计算所有输入 Token，成本会是这样：\n假设：System Prompt\n15\nk，每轮新增\n2\nk（你的话 + AI 回复 + 工具结果）\nTurn\n1\n:\n15\nk +\n2\nk =\n17\nk     全价\nTurn\n2\n:\n15\nk +\n4\nk =\n19\nk     全价  （包含 Turn\n1\n的历史）\nTurn\n3\n:\n15\nk +\n6\nk =\n21\nk     全价\n...\nTurn\n10\n:\n15\nk +\n20\nk =\n35\nk    全价\n────────────────────────────\n10\n轮总计输入：~\n260\nk tokens（全价）  ← 二次增长\nO\n(N²)\n每一轮都把之前的所有内容重发一遍，\n重复付费。\n这就是为什么早期 API 用户感觉\"聊几轮就烧光了\"。\n2\n.2\nKV 缓存的原理\n大模型用 Transformer 注意力机制处理文本，其中历史 Token 的 Key 和 Value 张量算完就不变了。把它们存起来，下次直接读取，不用重算。\n这就是 KV Cache。\n2\n.3\n三档价格：写入、命中、全价\n以 Claude 为例，Token 有三档价格：\nToken 类型\n价格倍率\n触发条件\n缓存写入\n(cache write)\n基础价 ×\n1.25\n首次出现的前缀，写入缓存\n缓存命中\n(cache read)\n基础价 ×\n0.1\n前缀匹配成功，直接读取\n全价输入\n(uncached)\n基础价 × 1.0\n新增的、不在缓存中的部分\n具体到各模型的\n实际价格\n（每百万 token，美元）：\n模型\n基础输入\n缓存写入\n缓存读取\n输出\nClaude Opus 4\n$5\n$6.25\n$0.50\n$25\nClaude Sonnet 4\n$3\n$3.75\n$0.30\n$15\nClaude Haiku 4.5\n$1\n$1.25\n$0.10\n$5\n缓存读\n取只要基础输入价的 1/10。 对 Opus 来说，缓存命中的输入价格（0.5/M）\n甚至比\nHaiku\n的基础输入价（1/M）还便宜。\n注意\n：Claude Code 订阅产品（Pro/Max）与直接调用 API 的缓存机制有所不同。Claude Code 在产品层面为订阅用户实现了扩展缓存有效期（源码中为 1 小时），这是产品侧的优化，不等同于 API 的付费选项。\n2\n.4\n有缓存后：同样 10 轮，省 76%\nTurn\n1\n:  [\nSystem\n15\nk: 写入×\n1.25\n]\n+\n[新增\n2\nk: 全价]\n等价\n=\n15\nk×\n1.25\n+\n2\nk\n=\n20.75\nk          ← 首次略贵\nTurn\n2\n:  [\nSystem\n15\nk: 命中×\n0.1\n]\n+\n[T1历史\n2\nk: 命中×\n0.1\n]\n+\n[新增\n2\nk: 全价]\n等价\n=\n15\nk×\n0.1\n+\n2\nk×\n0.1\n+\n2\nk\n=\n3.7\nk    ← 骤降！\nTurn\n3\n:  等价\n=\n15\nk×\n0.1\n+\n4\nk×\n0.1\n+\n2\nk\n=\n3.9\nk\nTurn\n5\n:  等价\n=\n15\nk×\n0.1\n+\n8\nk×\n0.1\n+\n2\nk\n=\n4.3\nk\nTurn\n10\n: 等价\n=\n15\nk×\n0.1\n+\n18\nk×\n0.1\n+\n2\nk\n=\n5.3\nk\n────────────────────────────────────────────\n10\n轮总计：\n~\n62\nk 等价 tokens\n无缓存           有缓存\n10 轮总输入 token    ~260k 全价       ~260k（但大部分 ×0.1）\n等价成本             260k             ~62k\n节省                 —                76%\n增长曲线             O(N²)            近似 O(N)\n越长的对话，缓存覆盖率越高，每轮边际成本越低。\n这就是为什么\"一个 Session 持续对话\"远比\"频繁开新 Session\"划算。\n2\n.5\n缓存只能从头匹配——中间断了全废\n缓存\n只能从头开始\n匹配。想象你的 Prompt 是一条链：\n[System 指令]\n→\n[工具定义]\n→\n[Rules/Memory]\n→\n[msg1]\n→\n[msg2]\n→\n[msg3]\n如果链条中间任何一环变了，该环及之后的所有内容全部失效：\n最省：只追加新消息\n[✅ System]\n[✅ Tools]\n[✅ Rules]\n[✅ msg1]\n[✅ msg2]\n[新 msg3]\n→ 只有 msg3 全价\n中等：修改了 Rules/Memory\n[✅ System]\n[✅ Tools]\n[❌ Rules]\n[❌ msg1]\n[❌ msg2]\n[❌ msg3]\n→ Rules 之后全部重算\n最贵：切换模型\n[❌ System]\n[❌ Tools]\n[❌ Rules]\n[❌ msg1]\n[❌ msg2]\n[❌ msg3]\n→ 不同模型的 KV 张量不互通，从头全价\n2\n.6\n缓存有效期与保活\nAPI 层面\n（直接调用 Anthropic API）：默认 5 分钟过期，付费选项可延长至 1 小时。\nClaude Code 产品层面\n（源码逻辑，claude.ts:408-413）：\n普通用户：\n5 分钟\nPro/Max 订阅且未超额：\n延长至 1 小时\n刷新机制：\n每次缓存命中都会重置过期计时。所以只要在过期前发一次匹配前缀的请求，缓存就能无限续命。\n实操影响：午饭 1.5 小时回来 → 缓存过期 → 冷启动。可以设置定时脚本每 55 分钟发一句简单的话（如\"ok\"）来保活。\n03\n四类配置的加载机制与成本控制\nSystem Prompt 是每轮必带的\"固定税\"，但\n不是所有配置都会常驻在 System Prompt 里\n。AI 编程工具提供了四类可配置项，它们的\n复杂度递增、加载策略各异\n。理解它们的区别，既是控制成本的关键，也决定了你应该把什么内容放在哪一层。\n3\n.1\n全景：从全量常驻到完全按需\n复杂度 ↑   加载粒度 ↑   单次成本 ↑\n│\n│   ┌─────────────────────────────────────────────────────────┐\n│   │ 第四层：MCP 工具\n│   │ · 工具定义（JSON Schema）常驻在\nSystem\nPrompt\n│   │ · 每次调用的返回结果永久留在对话历史\n│   │ · 每个工具 Schema\n~\n200-500\ntokens\n│   │ · 适合：需要外部能力（浏览器、数据库、部署等）\n│   ├─────────────────────────────────────────────────────────┤\n│   │ 第三层：Skills（完全按需）\n│   │ · 加载前零开销，仅 description 在可用列表（\n~\n50\ntokens）\n│   │ · 加载后 SKILL.md 全文注入对话历史（\n5\nk\n-15\nk tokens）\n│   │ · 一旦加载无法卸载\n│   │ · 适合：复杂工作流（含指令文档\n+\n参考文档\n+\n可执行脚本）\n│   ├─────────────────────────────────────────────────────────┤\n│   │ 第二层：Rules（常驻\n+\n按需）\n│   │ · 常驻规则每轮都在\nSystem\nPrompt，缓存后 ×\n0.1\n│   │ · 触发式规则仅在关键词匹配时注入，不触发时零成本\n│   │ · 适合：编码规范、格式约束、特定场景的模板\n│   ├─────────────────────────────────────────────────────────┤\n│   │ 第一层：Memory（全量常驻）\n│   │ · 所有条目全量注入\nSystem\nPrompt，无筛选\n│   │ · 改动任意一条即打断缓存链\n│   │ · 适合：简短的用户偏好、项目约定（\n1-2\n句话\n/\n条）\n│   └─────────────────────────────────────────────────────────┘\n│\n复杂度 ↓   加载粒度 ↓   单次成本 ↓\n3\n.2\n第一层：Memory——全量注入，最简单也最粗暴\nMemory 的机制是\n所有记忆条目全量拼接后注入 System Prompt\n，没有检索、没有筛选。\n你有\n20\n条\nMemory\n记录：\n-\n\"缩进统一用 4 空格\"\n→ 相关（写代码时）\n-\n\"函数命名用 snake_case\"\n→ 相关（写代码时）\n-\n\"部署脚本在 scripts/ 目录下\"\n→ 不相关（大部分时候）\n-\n\"文档格式用 Markdown\"\n→ 不相关（大部分时候）\n- ...\n全部\n20\n条 → ~\n800\ntokens → 每轮都带 → 但大部分场景只有\n2\n-\n3\n条相关\n直接 Token 成本很低\n（几百 tokens），但有两个隐性影响：\n位置效应：\nMemory 在 System Prompt 中，改动任意一条都会打断缓存链\n噪声效应：\n无关的 Memory 占据模型的注意力权重，可能干扰输出质量\n什么时候用 Memory：\n一句话能说清的偏好或约定，比如\"SQL 中不等于用\n<>\n\"、\"字符串格式化用\n.format()\n\"。不要把复杂的规范或工作流放在 Memory 里。\n3\n.3\n第二层：Rules——高频常驻，低频触发\nRules（\n.mdc\n文件）比 Memory 更结构化，支持三种加载模式：\n模式\n加载时机\nToken 影响\n常驻（always）\n每轮都在 System Prompt 中\n固定增加系统税，但缓存后 ×0.1\n触发式（requested/auto）\nAI 根据用户消息的关键词/语义判断是否加载\n不触发时 0 成本，触发时动态注入\n手动（manual）\n用户显式 @ 或调用时才加载\n完全按需\n实际案例：\ncode\n-style-guide.mdc        → always    → 每轮常驻 ~\n2\nk tokens（高频，几乎每个任务都用）\napi\n-gen-template.mdc         → triggered → 提到\n\"生成 API\"\n时才注入 ~\n1\n.\n5\nk tokens\nmigration\n-check.mdc          → triggered → 提到\n\"数据迁移\"\n时才注入 ~\n1\nk tokens\n什么时候用 Rules\n：需要几百到几千字描述的编码规范、格式约束、特定场景模板。高频规则设为常驻，低频规则设为触发式。和 Memory 的区别在于：Rules 可以按需加载，Memory 只能全量常驻。\n3\n.4\n第三层：Skills——加载前零开销，加载后回不去\nSkills 是最重的配置单元，通常包含：\nSKILL.md\n：技能指令文档（可达 5k-15k tokens）\nreferences/\n：参考文档\nscripts/\n：可执行脚本\n阶段\n是否在上下文\nToken 消耗\n未加载\n仅 description 在可用列表中（~50 tokens/skill）\n极低\n用户触发或 AI 判断需要 →\nuse_skill\nSKILL.md 全文注入到对话\n一次性 5k-15k\n加载后的后续轮次\n留在对话历史中\n缓存命中 ×0.1\n关键区别\n：Skills 不进 System Prompt，而是作为一条消息注入对话历史。所以：\n加载前：零开销\n加载后：首轮全价，后续缓存\n不会影响 System Prompt 的缓存链\n但一旦加载就无法卸载\n，5k-15k tokens 永久留在历史中\n什么时候用 Skills：\n需要完整工作流的复杂任务，比如\"数仓开发全流程（建表→改表→取数→审查）\"。和 Rules 的区别在于：Skills 承载的是带脚本、带参考文档的完整工作流，而非单条规范。\n3\n.5\n第四层：MCP 工具——Schema 常驻，结果永久留存\nMCP（Model Context Protocol）工具是外部能力的接入点，比如浏览器控制、数据库查询、部署服务等。\n它的成本有两部分：\n工具定义（JSON Schema）：\n每个工具的 Schema 约 200-500 tokens，\n常驻在 System Prompt 中\n。10 个闲置工具 = 2k-5k tokens 的固定税\n工具调用结果：\n每次调用的返回结果\n永久留在对话历史\n中\n工具操作\n典型返回大小\n后续每轮重发成本（缓存 ×0.1）\n读一个 200 行文件\n3k-5k tokens\n300-500 等价/轮\n搜索代码（10 条结果）\n2k-4k tokens\n200-400 等价/轮\n执行命令（长输出）\n1k-10k tokens\n100-1,000 等价/轮\n单看 ×0.1 不多，但工具调用频繁时会快速累积。一个复杂任务调用 20 次工具，历史里就积累了 40k-100k 的工具结果。\n什么时候该关注 MCP 成本：\n当你发现 Session 后期每轮都变慢、变贵时，大概率是工具调用结果把对话历史撑大了。解决方案见第五章。\n3\n.6\n选择指南：什么内容放在哪一层\n内容类型\n推荐层级\n原因\n\"变量命名用 snake_case\"\nMemory\n一句话偏好，全量常驻成本低\n代码格式规范（缩进、命名、注释规则）\nRules（常驻）\n几千字的结构化规范，高频使用\n特定场景的代码生成模板\nRules（触发式）\n低频场景，不需要每轮都带\n完整开发流程（需求分析→编码→测试→部署）\nSkills\n完整工作流 + 参考文档 + 脚本\n浏览器自动化、数据库查询\nMCP 工具\n需要外部能力\n3\n.7\n缓存链全貌：断在哪里，后面全废\n把配置项按它们在 Prompt 中的\n实际排列顺序\n画出来：\n缓存链条（断在哪里，后面全废）：\n[核心指令 ~4k]\n→\n[工具定义 ~6k]\n→\n[Rules(always) ~2k]\n→\n[Memory ~0.8k]\n→\n[项目文档 ~3k]\n↑                 ↑                 ↑                   ↑                 ↑\n全球共享缓存       Session 内稳定      改 Rule 断这里       改 Memory 断这里   改文档断这里\n缓存是前缀匹配——断在越前面，后面废掉的越多。\n04\nSub-Agent：不省钱，但能防膨胀\n4\n.1\n什么是 Sub-Agent\n复杂任务中，主 Agent 可能启动独立的子 Agent 来完成特定工作（如 code-explorer 搜索代码、reviewer 审查代码）。\n4\n.2\nSub-Agent 无法复用主 Agent 的缓存\nSub-Agent 几乎不能复用主 Agent 的缓存。\n原因：\n工具集不同\n→ 工具 Schema 不同 → 缓存前缀不同\n消息历史独立\n→ 对话内容完全不同\n可能用不同模型\n→ KV 张量不互通\n主 Agent (Turn\n8\n, 上下文\n40\nk):\n[\nSystem 15k: 命中×0.1\n] + [历史\n23\nk: 命中×\n0.1\n] + [新增\n2\nk: 全价]\n等价成本 =\n1.5\nk +\n2.3\nk +\n2\nk =\n5.8\nk            ← 大部分缓存\nSub-Agent (Turn\n1\n, 全新上下文):\n[\nSystem 10k: 写入×1.25\n] + [传入 prompt\n3\nk: 全价]\n等价成本 =\n12.5\nk +\n3\nk =\n15.5\nk                   ← 冷启动全价！\n4\n.3\n什么时候值得用 Sub-Agent\n场景\n推荐方式\n原因\n简单的文件搜索/读取\n主 Agent 直接做\n缓存好，边际成本低\n大范围代码探索（20+ 文件）\nSub-Agent\n避免大量工具结果污染主上下文\n代码审查\nSub-Agent\n需要独立视角，且审查结果不应膨胀主上下文\n需要用更便宜模型的任务\nSub-Agent\n子任务用 Sonnet/Haiku，省模型费用\nSub-Agent 的核心价值不是省 Token，而是防止主上下文被工具结果无限膨胀。\n05\n化策略：配置侧 + 对话侧\n前面四章讲的是\"钱花在哪\"，这一章讲\n怎么少花\n。分两个维度：配置侧（Session 开始前做好）和对话侧（Session 进行中注意）。\n5\n.1\n配置侧：Session 开始前配好，中途别动\n核心原则：配置类改动会打断缓存链，所以在 Session 开始前一次性配好，工作过程中不要改。\nRules\n策略\n做法\n节省效果\n精减常驻 Rules\n只把高频规则设为\nalwaysApply: true\n，低频规则用触发式\n每条规则省 1k-3k tokens/轮系统税\n合并同类规则\n把 5 个小规则合并成 1 个大规则，减少元数据开销\n减少 Rules 描述注入量\n精炼规则内容\n去掉冗余示例，保留核心约束\n每条省 30-50%\n善用触发式关键词\n在\ndescription\n里写精准的触发关键词，避免误触发\n减少不必要的注入\n❌ 所有\n5\n条规则都\nalwaysApply\n:\ntrue\n→ 系统税 = 5k-15k tokens（其中大部分场景只用到\n1\n条）\n✅\n1\n条高频规则\nalwaysApply\n:\ntrue\n+\n4\n条触发式\n→ 系统税 = 1k-3k tokens（其余按需加载）\n→ 节省\n60\n-\n80\n% 的\nRules\n系统税\nSkills\n策略\n做法\n节省效果\n不要预加载\n让 AI 根据任务自动判断是否需要加载\n避免 5k-15k 的无效注入\n精简 SKILL.md\n把参考文档放\nreferences/\n而非写进主文件\n加载时只注入核心指令\n写好 description\n精确的 description 让 AI 更准确地判断何时加载\n减少误加载\nMemory\n策略\n做法\n节省效果\n定期清理\n删除过时或冗余的条目\n减少噪声 token\n合并同类记忆\n多条相似偏好合并为一条\n减少条目数\n写法精炼\n每条控制在 1-2 句话\n总量控制在 500 tokens 以内\nMCP 工具\n策略\n做法\n节省效果\n禁用闲置工具\n每个 Schema 约 200-500 tokens，10 个闲置 = 2k-5k 浪费\n减少 Schema 大小\n按项目配置\n不同项目用不同的工具配置，而非全局开启\n减少 Schema 大小\n项目文档（CODEBUDDY.md）\n策略\n做法\n节省效果\n精炼内容\n控制在 2k-5k tokens，用指针引用其他文档\n减少系统税\n用引用代替内联\n\"详见 .codebuddy/skills/xxx/SKILL.md\" 而非复制进来\n文档瘦身\n量化效果：\n优化前（所有 Rules 常驻\n+\n10\n个 MCP\n+\n30\n条 Memory\n+\n大 CODEBUDDY.md）：\nSystem\nPrompt ≈\n25\nk tokens → 后续每轮\n=\n25\nk ×\n0.1\n=\n2.5\nk 等价\n优化后（\n1\n条常驻 Rule\n+\n精简 MCP\n+\n精炼 Memory\n+\n精炼 CODEBUDDY.md）：\nSystem\nPrompt ≈\n12\nk tokens → 后续每轮\n=\n12\nk ×\n0.1\n=\n1.2\nk 等价\n每轮节省\n1.3\nk 等价，\n100\n轮节省\n~\n130\nk 等价 tokens\n5\n.2\n对话侧：Session 进行中的行为习惯\n保护缓存（最重要）\n#\n原则\n说明\n1\n一个 Session 干到底\n新 Session = 冷启动全价（~15-25k），老 Session 继续只付增量，省 5 倍\n2\n别频繁切模型\nOpus → Sonnet → Opus = 两次冷启动\n3\n超过一小时没说话？缓存已过期\n缓存有有效期，超时就过期。持续工作时保持对话活跃即可\n减少无效 Token\n#\n原则\n说明\n4\n一次说清需求\n\"建一张日表，字段有 A/B/C，分区 ds\" 比分 3 轮说省 60% 轮次\n5\n先描述再贴代码\n\"第 15 行 join 条件写反了\" 比直接贴 500 行代码高效\n6\n别反复问\"要不要继续\"\n每轮对话都有成本，AI 能自主完成的就让它做完\n7\n复杂任务写 plan 文件\n多 Session 任务把方案写到文件里，下次直接读取，跨 Session 省 80%\n附1：\nToken 流向全景图\n你打的一句话 (\n50\ntokens,\n<\n1\n%\n)\n│\n▼\n┌──────────────────────────────────────────────────────┐\n│               一次 API 调用的总输入\n│\n│  ┌──────────────────────┐\n│  │\nSystem\nPrompt\n~\n12-25\nk│  ← Turn\n2\n起缓存命中 ×\n0.1\n│  │ (指令\n+\n工具\n+\nRules     │\n│  │\n+\nMemory\n+\n项目文档)    │     配置侧优化可压到\n~\n12\nk\n│  └──────────────────────┘\n│  ┌──────────────────────┐\n│  │ 对话历史\n~\n5\nk\n-100\nk    │  ← 逐轮累积，缓存命中 ×\n0.1\n│  │ (消息\n+\n工具结果       │\n│  │\n+\n触发式Rules\n/\nSkills) │\n│  └──────────────────────┘\n│  ┌──────────────────────┐\n│  │ 本轮新增\n~\n2\nk         │  ← 唯一全价部分\n│  └──────────────────────┘\n│\n│  总计:\n20\nk\n-125\nk tokens\n│  等价成本:\n4\nk\n-15\nk (缓存命中后)\n└──────────────────────────────────────────────────────┘\n│\n▼\n┌──────────────────────────────────────────────────────┐\n│               模型输出\n~\n1\nk\n-8\nk tokens\n│  (回复\n+\n工具调用 → 结果回流到下轮历史)\n└──────────────────────────────────────────────────────┘\n记住这三个数字：\nSystem Prompt 是\"固定税\"：\n~12-25k tokens，但缓存后只要 ~1.2-2.5k 等价（配置侧优化可压低基数）\n对话历史是\"累积税\"：\n线性增长，但缓存后只付 1/10\n你打的字是\"零头\"：\n真正的成本在你看不见的地方\n附2\n：常见误区纠正\n误区\n真相\n\"我就打了一行字怎么这么贵\"\n你的一行字只占 1%，其余 99% 是系统指令和对话历史\n\"长对话越来越贵，应该经常开新窗口\"\n恰好相反\n——长对话缓存命中率高（×0.1），新窗口才是最贵的操作（全价冷启动）\n\"Sub-Agent 能省 Token\"\nSub-Agent 每次冷启动无缓存，等价成本可能更高。它的价值是隔离上下文\n\"Memory 很耗 Token\"\nMemory 本身只有几百 tokens，但好的 Memory 能省掉数轮重复交代\n\"/compact 能省钱\"\nCompact 压缩历史 → 缓存断裂。除非上下文接近窗口上限，否则别用\n\"Rules 越多越好\"\n常驻 Rules 增加系统税。低频规则应设为触发式，按需加载\n\"Skills 加载了不用也没关系\"\nSkills 的 SKILL.md 一旦加载就留在历史中，5k-15k tokens 无法撤回\n\"配好环境后随时可以改\"\n改 Rules/Memory/CODEBUDDY.md/MCP 工具都会打断缓存链，应在 Session 开始前配好\n一句话总结：AI 编程的 Token 成本不在于你说了多少，而在于两件事——配置侧：精简系统税（Rules 按需加载、禁用无用工具、精炼 Memory）；对话侧：保护缓存（一个 Session 干到底、不中途改配置、不频繁切模型）。两手都抓，同样的额度可以多干 3-5 倍。\n-End-\n原创作者｜\n王卓\n感谢你读到这里，不如关注一下？👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装1个（见下图）。6月24日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "transfer_agent": 0.36,
+        "direct_local": 0,
+        "peripheral": 0.43,
+        "transfer_business": 0,
+        "irrelevant": 0.21
+      }
+    },
+    "relevance": {
+      "score": 1.63,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.33,
+        "2": 0.65,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.13,
+      "probabilities": {
+        "0": 0.49,
+        "1": 0.13,
+        "2": 0.22,
+        "3": 0.11,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.47,
+      "probabilities": {
+        "0": 0.72,
+        "1": 0.11,
+        "2": 0.16,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.59,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.5,
+        "3": 0.22,
+        "4": 0.22,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.59,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.23,
+        "4": 0.7,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.38,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.16999999999999998,
+        "2": 0.14,
+        "3": 0.51,
+        "4": 0.09,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 11282,
+    "outputTokens": 174,
+    "totalTokens": 11456
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.29,
+        "relevance": 0.74,
+        "grounding": 0.25,
+        "decision_action": 0.69,
+        "evidence": 0.5,
+        "actionability": 0.7,
+        "anti_hype": 0.45
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180007984,
+                "endTime": 1791180008179,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000473844",
+      "marketCost": "0.000473844",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000473844",
+      "inferenceCost": "0.000473844",
+      "inputInferenceCost": "0.000473844",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ABTH19KTTE51CB4B2BCAW"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:08 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::6rhf5-1791180007588-4c589522e44e"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "transfer_agent": 0.36,
+            "direct_local": 0,
+            "peripheral": 0.43,
+            "transfer_business": 0,
+            "irrelevant": 0.21
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.63,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.33,
+            "2": 0.65,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.13,
+          "probabilities": {
+            "0": 0.49,
+            "1": 0.13,
+            "2": 0.22,
+            "3": 0.11,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.47,
+          "probabilities": {
+            "0": 0.72,
+            "1": 0.11,
+            "2": 0.16,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.59,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.5,
+            "3": 0.22,
+            "4": 0.22,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.59,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.23,
+            "4": 0.7,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.38,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.16999999999999998,
+            "2": 0.14,
+            "3": 0.51,
+            "4": 0.09,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 11282,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.29,
+            "relevance": 0.74,
+            "grounding": 0.25,
+            "decision_action": 0.69,
+            "evidence": 0.5,
+            "actionability": 0.7,
+            "anti_hype": 0.45
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180007984,
+                    "endTime": 1791180008179,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000473844",
+          "marketCost": "0.000473844",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000473844",
+          "inferenceCost": "0.000473844",
+          "inputInferenceCost": "0.000473844",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ABTH19KTTE51CB4B2BCAW"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:07.428Z"
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "257302641633130496",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深入理解OpenClaw技术架构与实现原理（上）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558933&idx=1&sn=926e244c855c44c818d83c6c7d57d4d3",
+      "date": "2026-03-19T00:32:00.643Z",
+      "chars": 6500,
+      "text": "──┤\n│ pairing          │ 配对管理: resolvePairing, validatePairing        │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ 功能适配器        │ 职责                                            │\n├──────────────────┼──────────────────────────────────────────────────┤\n│\ngroups\n│ 群组: resolveRequireMention, resolveToolPolicy    │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ threading        │ 线程: resolveReplyToMode, buildToolContext       │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ mentions         │ 提及: resolveMentions, formatMention            │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ directory        │ 目录: resolveUserDirectory, resolveGroupDirectory│\n├──────────────────┼──────────────────────────────────────────────────┤\n│ resolver         │ 路由: resolveAgentRoute (自定义路由逻辑)         │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ actions          │ 动作: resolveMessageActions, handleAction        │\n├──────────────────┼──────────────────────────────────────────────────┤\n│ messaging        │ 消息扩展: resolveMessageMeta, formatMessage      │\n└──────────────────┴──────────────────────────────────────────────────┘\n目录结构映射\nsrc/\n├── channels/\n# Channel核心抽象\n│   ├── plugins/\n# 插件系统\n│   │   ├── types.plugin.ts\n# ChannelPlugin接口定义\n│   │   ├── types.adapters.ts\n# 12个适配器接口\n│   │   ├── types.core.ts\n# Capabilities, Meta等\n│   │   └── registry-loader.ts\n# 加载器工厂\n│   ├── dock.ts\n# 轻量级Dock (共享代码路径)\n│   ├── registry.ts\n# Channel ID规范化\n│   ├── allow-from.ts\n# Allowlist匹配\n│   ├── channel-config.ts\n# 配置匹配\n│   └── session.ts\n# 会话状态管理\n│\n├── routing/\n# 路由系统\n│   ├── resolve-route.ts\n# 路由解析 (核心: 291-443行)\n│   ├── bindings.ts\n# Agent绑定管理\n│   └── session-key.ts\n# Session Key构建\n│\n├── telegram/\n# Telegram实现\n│   └── bot.ts\n# Bot创建, Update去重\n├── discord/\n# Discord实现\n│   ├── monitor.ts\n# Gateway连接\n│   ├── send.ts\n# 消息发送 (Components V2)\n│   └── ui.ts\n# UI容器\n├── slack/\n# Slack实现\n├── signal/\n# Signal实现\n├── imessage/\n# iMessage实现\n├── web/\n# WhatsApp Web实现\n│   └── whatsapp-heartbeat.ts\n# 心跳检测\n│\n├── infra/outbound/\n# 出站消息基础设施\n│   └── deliver.ts\n# 消息发送流程\n│\n└── plugins/\n# 插件注册系统\n└── registry.ts\n# PluginRegistry实现\nextensions/\n# 扩展插件\n├── msteams/\n# Microsoft Teams\n│   └── src/channel.ts\n├── matrix/\n# Matrix协议\n│   └── src/channel.ts\n├── zalo/\n# Zalo\n└── voice-call/\n# 语音通话\n3.5.2 关键设计要点\n1.\n分层抽象\n:\nApplication → Channel Abstraction → Implementation → Plugin Registry\n2.\n适配器模式\n:\n12个独立适配器，职责清晰分离\n3.\n性能优化\n:\nDock轻量加载、延迟加载、路由缓存、Update去重\n4.\n扩展性\n:\n新增Channel只需实现\nChannelPlugin\n接口并注册\n5.\n安全隔离\n:\n每个channel独立的security、pairing、allowlist逻辑\n3.6 上下文管理\n3.6.1 核心概念\nContext（上下文）\n= OpenClaw 在一次运行中发送给模型的\n所有内容\n，受模型的上下文窗口（token 限制）约束。如下为上下文构成要素，包括系统提示词汇、工具列表+描述、Skills列表(仅元数据)、工作区位置 + 时间 + 运行时数据。\n注意\n：\nContext ≠ Memory。记忆可持久化到磁盘，Context 是模型当前窗口内的内容。\n3.6.2 上下文窗口管理\n上下文解析优先级：\n1.\n显式覆盖\ncontextTokensOverride\n→ 直接使用\n2.\n配置参数\ncontext1m: true\n(Anthropic 1M 模型) → 1,048,576 tokens\n3.\n模型注册表\n→ 从\nmodels.json\n或\nprovider catalog\n发现\n4.\n配置文件覆盖\n→\nmodels.providers.*.models[].contextWindow\n5.\nFallback\n→ 使用传入的默认值\n上下文窗口守卫：\nsrc/agents/context-window-guard.ts\nCONTEXT_WINDOW_HARD_MIN_TOKENS\n=\n16_000\n// 低于此值阻断运行\nCONTEXT_WINDOW_WARN_BELOW_TOKENS\n=\n32_000\n// 低于此值警告\n三种检查结果：\nshouldWarn\n:\n窗口 < 32K tokens（可能体验不佳）\nshouldBlock\n:\n窗口 < 16K tokens（无法正常工作）\n来源标记\n:\nmodel\n|\nmodelsConfig\n|\nagentContextTokens\n|\ndefault\n3.6.3 上下文压缩\n压缩机制\nsrc/agents/compaction.ts\n当会话接近或超过上下文窗口时，OpenClaw 自动触发压缩：\n旧消息 ──→\nLLM\n总结 ──→ 紧凑摘要条目 ──→ 持久化到\nJSON\nL\n核心流程\n：\n1.\nToken 估算\n(\nestimateMessagesTokens\n) - 计算当前消息总 token\n2.\n分块\n(\nchunkMessagesByMaxTokens\n) - 按 token 限制分块\n3.\n摘要生成\n(\nsummarizeWithFallback\n) - 带重试的摘要生成\n4.\n历史裁剪\n(\npruneHistoryForContextShare\n) - 裁剪旧消息保持预算\n自适应分块\nBASE_CHUNK_RATIO\n=\n0\n.\n4\n// 基础分块比例\nMIN_CHUNK_RATIO\n=\n0\n.\n15\n// 最小分块比例\nSAFETY_MARGIN\n=\n1\n.\n2\n//\n20\n% 缓冲补偿估算误差\n当消息平均大小 > 上下文 10% 时，自动减小分块比例。\n过大消息处理\nisOversizedForSummary\n(msg, contextWindow)\n// 单条消息 > 上下文 50% → 无法安全压缩\n处理策略：\n1.尝试完整压缩\n2.失败 → 只压缩小消息，记录过大消息\n3.最终回退 → 返回消息计数说明\n3.6.4 上下文剪枝\n与压缩的区别\n特性\nCompaction\nPruning\n作用范围\n整个历史\n仅 toolResult 消息\n持久化\n✓ 写入 JSONL\n✗ 仅内存\n触发时机\n接近窗口上限\n每次请求前 (TTL 过期时)\n内容变更\n生成摘要\n软修剪/硬清除\n剪枝配置\nsrc/agents/pi-extensions/context-pruning/settings.ts\nDEFAULT_CONTEXT_PRUNING_SETTINGS\n= {\nmode\n:\n\"cache-ttl\"\n,\nttlMs\n:\n5\n*\n60\n*\n1000\n,\n// 5 分钟 TTL\nkeepLastAssistants\n:\n3\n,\n// 保护最后 3 条助手消息\nsoftTrimRatio\n:\n0.3\n,\n// 上下文占用 > 30% 触发软修剪\nhardClearRatio\n:\n0.5\n,\n// 上下文占用 > 50% 触发硬清除\nminPrunableToolChars\n:\n50_000\n,\nsoftTrim\n: {\nmaxChars\n:\n4_000\n,\n// > 4K 字符触发软修剪\nheadChars\n:\n1_500\n,\n// 保留头部 1500 字符\ntailChars\n:\n1_500\n,\n// 保留尾部 1500 字符\n},\nhardClear\n: {\nenabled\n:\ntrue\n,\nplaceholder\n:\n\"[Old tool result content cleared]\"\n,\n},\n}\n剪枝执行流程\nsrc/agents/pi-extensions/context-pruning/pruner.ts\n1.\n检查 TTL 是否过期\n↓ 过期\n2.\n计算上下文占用比例\n↓ 超过 softTrimRatio\n3.\n软修剪：对可修剪工具结果截取 head + tail\n↓ 仍超过 hardClearRatio\n4.\n硬清除：替换为占位符\n保护机制\n：\n不修改用户/助手消息\n跳过包含图片的 toolResult\n保护 bootstrap 阶段消息（第一条用户消息之前）\n保护最后 N 条助手消息之后的工具结果\n3.6.5 工具结果上下文守卫\nsrc/agents/pi-embedded-runner/tool-result-context-guard.ts\n单条工具结果限制\nSINGLE_TOOL_RESULT_CONTEXT_SHARE\n=\n0\n.\n5\n// 单条最多占上下文\n50\n%\nTOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE\n=\n2\n// 更保守的估算\n执行逻辑\n// 1. 每条工具结果限制\nmaxSingleToolResultChars = contextWindowTokens *\n2\n*\n0.5\n// 2. 总上下文预算 (75% headroom)\ncontextBudgetChars = contextWindowTokens *\n4\n*\n0.75\n// 3. 超预算时压缩最旧的工具结果\n//    替换为 \"[compacted: tool output removed to free context]\"\n3.6.6 运行时上下文注入\n工作区文件注入\n默认注入文件（如果存在）：\nAGENTS.md\n- 项目规则\nSOUL.md\n- 角色定义\nTOOLS.md\n- 工具指南\nIDENTITY.md\n- 身份信息\nUSER.md\n- 用户偏好\nHEARTBEAT.md\n- 心跳状态\nBOOTSTRAP.md\n- 首次运行引导\n截断配置\n：\n{\n\"agents\"\n:\n{\n\"defaults\"\n:\n{\n\"bootstrapMaxChars\"\n:\n20000\n,\n// 单文件上限\n\"bootstrapTotalMaxChars\"\n:\n150000\n// 总上限\n}\n}\n}\n压缩后上下文刷新\nsrc/auto\n-reply/re\nply/post-compaction-context.ts\n压缩完成后，重新注入 AGENTS.md 中的关键章节：\n## Session Startup\n## Red Lines\n目的：确保模型在压缩后仍遵循关键规则。\nSandbox 上下文\nsrc/agents/sandbox/context.ts\n为沙箱会话提供：\n容器信息 (\ncontainerName\n,\ncontainerWorkdir\n)\n工作区映射 (\nworkspaceDir\n,\nagentWorkspaceDir\n)\nDocker 配置 (\ndocker\n)\n工具权限 (\ntools\n)\n浏览器桥接 (\nbrowser\n,\nfsBridge\n)\n3.6.7 检查与调试命令\n命令\n作用\n/status\n快速查看窗口占用率 + 会话设置\n/context list\n查看注入文件大小、工具 schema 大小\n/context detail\n详细分解各组件大小\n/usage tokens\n每次回复显示 token 使用量\n/compact\n手动触发压缩\n3.6.8 关键配置汇总\n{\n\"agents\"\n:\n{\n\"defaults\"\n:\n{\n// 上下文窗口\n\"contextTokens\"\n:\n200000\n,\n// 硬性上限\n// Bootstrap 注入\n\"bootstrapMaxChars\"\n:\n20000\n,\n\"bootstrapTotalMaxChars\"\n:\n150000\n,\n// 压缩配置\n\"compaction\"\n:\n{\n\"mode\"\n:\n\"auto\"\n,\n\"targetTokens\"\n:\n0.7\n// 目标占用率\n},\n// 剪枝配置\n\"contextPruning\"\n:\n{\n\"mode\"\n:\n\"cache-ttl\"\n,\n\"ttl\"\n:\n\"5m\"\n,\n\"keepLastAssistants\"\n:\n3\n,\n\"softTrimRatio\"\n:\n0.3\n,\n\"hardClearRatio\"\n:\n0.5\n}",
+      "fulltext_obtained": true,
+      "chunk_index": 7,
+      "chunk_count": 10
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.87,
+        "irrelevant": 0.13
+      }
+    },
+    "relevance": {
+      "score": 1.74,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.17,
+        "2": 0.79,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.1,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.18,
+      "probabilities": {
+        "0": 0.9,
+        "1": 0.06,
+        "2": 0.02,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.57,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.37,
+        "3": 0.6,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.28,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.03,
+        "2": 0.02,
+        "3": 0.13,
+        "4": 0.65,
+        "5": 0.04
+      }
+    },
+    "anti_hype": {
+      "score": 1.57,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.48,
+        "2": 0.18,
+        "3": 0.23,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.62,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5915,
+    "outputTokens": 172,
+    "totalTokens": 6087
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.84,
+        "relevance": 0.83,
+        "grounding": 0.93,
+        "decision_action": 0.88,
+        "evidence": 0.71,
+        "actionability": 0.46,
+        "anti_hype": 0.48
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180424505,
+                "endTime": 1791180424649,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00024843",
+      "marketCost": "0.00024843",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00024843",
+      "inferenceCost": "0.00024843",
+      "inputInferenceCost": "0.00024843",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARH9362BTYW9W741G4ZA0"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:04 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::gmtbg-1791180424465-ed01cb8825e0"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.87,
+            "irrelevant": 0.13
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.74,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.17,
+            "2": 0.79,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.1,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.18,
+          "probabilities": {
+            "0": 0.9,
+            "1": 0.06,
+            "2": 0.02,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.57,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.37,
+            "3": 0.6,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.28,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.03,
+            "2": 0.02,
+            "3": 0.13,
+            "4": 0.65,
+            "5": 0.04
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.57,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.48,
+            "2": 0.18,
+            "3": 0.23,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.62
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5915,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.84,
+            "relevance": 0.83,
+            "grounding": 0.93,
+            "decision_action": 0.88,
+            "evidence": 0.71,
+            "actionability": 0.46,
+            "anti_hype": 0.48
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180424505,
+                    "endTime": 1791180424649,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00024843",
+          "marketCost": "0.00024843",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00024843",
+          "inferenceCost": "0.00024843",
+          "inputInferenceCost": "0.00024843",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARH9362BTYW9W741G4ZA0"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:03.876Z"
+  }
+}

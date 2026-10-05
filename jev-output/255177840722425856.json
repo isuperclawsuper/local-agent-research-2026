@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "255177840722425856",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "你的 AI Agent 真的在受控运行吗？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558894&idx=1&sn=66e97f3df165135113bc3ea000873f1b",
+      "date": "2026-03-13T00:31:00.457Z",
+      "chars": 15815,
+      "text": "原创\n烨陌\n2026-03-13 08:31\n浙江\n阿里妹导读\n以 OpenClaw 为案例，从行业威胁态势与运行时防护的固有局限出发，系统拆解 AI Agent 可观测体系的设计方法论：通过 Session 审计日志、应用日志与 OpenTelemetry 遥测三条数据管道，构建行为审计、威胁检测、成本管控与运维观测的完整闭环。\n一、为什么必须回答：「Agent 真的在受控运行吗？」\n「受控」\n至少包含四件事：\n谁\n在触发调用、\n花了多少钱\n、\n做了哪些操作\n（尤其是高危工具）、\n行为是否可追溯、可审计\n。回答不了这些问题，就不能说 Agent 在受控运行。\nAI Agent 与传统后端服务有一个本质差异：\nAgent 的行为是非确定的\n。同样的用户输入，模型可能产生完全不同的工具调用序列。这意味着你无法像审计 REST API 那样通过代码审查预判所有行为路径。若不做可观测，你无法回答「谁在调你的模型、花了多少钱、有没有被注入恶意指令」——也就无法声称 Agent 在受控运行。\n1.1 行业安全事件：风险不是假设，而是事实\nOpenClaw 是 2026 年最受关注的开源 AI Agent 平台之一。它允许大语言模型直接操作文件系统、执行 Shell 命令、浏览网页、收发消息——将 LLM 的推理能力转化为真实的系统操作。这种\"自主执行\"能力是其核心价值，也是其核心风险。\n2026 年初，多家安全厂商集中披露了一批 AI Agent 相关漏洞和事件：\n最具讽刺意味的案例来自 Meta 超级智能实验室的 AI 对齐总监 Summer Yue——一位职业敏感度高于 99% 用户的安全专家。她给 OpenClaw 下达了清理邮件的指令并明确设置了\"未经批准不得操作\"的限制，但在处理大量数据过程中，受限于大模型上下文窗口压缩机制，这条关键安全指令被\"遗忘\"了。最终，大量邮件被永久删除，连喊 3 次 STOP、跑去拔网线都已经来不及。\n1.2 AI Agent 的攻击面\n上述行业事件背后，是 AI Agent 天然宽广的攻击面：\n1.3 代码审计数据：攻击面的量化视角\n行业报告说明了外部威胁态势。而对 OpenClaw 自身代码仓库的审计则揭示了另一个维度——\n项目本身在高频修复安全问题\n。通过基于 Git 历史与 commit message 的安全语义分析，可以量化一段时间内与安全相关的代码变更规模与分布，从而判断攻击面集中在哪些层次。\n对 OpenClaw 最近 60 天（2026-01-05 至 2026-03-05）的\n14,254 个 commits\n进行筛选与分类，\n平均每天约 2.45 个安全修复\n，得到如下风险等级分布：\nCritical 与 High 合计 50 个，约占明确安全修复的\n34%\n。按代码模块分布，风险高度集中在入口与执行层：\ntools/\n与\ngateway/\n两项合计\n61%\n，对应 Agent 的\"能执行什么\"与\"谁来调\"两条主战线。\n这些数据说明两件事：第一，OpenClaw 在代码层面持续投入安全修复，响应及时，说明项目在运行时安全上已有较好实践。第二，\nAI Agent 的攻击面天然宽广\n——工具执行层与网关层正是\"自主操作\"与\"多入口接入\"的代价所在；静态代码审计只能覆盖已提交的变更，无法穷尽运行时的行为变异、配置组合与外部输入驱动的攻击路径。\n二、运行时防护的固有局限\nOpenClaw 在架构上提供了多道\n预防性控制\n（Preventive Controls）：工具策略管道（Tool Policy Pipeline）在调用前做策略决策、Owner-only 封装对敏感操作做权限绑定、循环检测器识别无进展的会话、命令 allowlist/denylist 限制可执行命令集合。这些机制在正常配置下能有效缩小攻击面，但从安全工程角度看，它们属于\n同一信任域内的执行时校验\n，存在以下固有局限：\n因此，运行时防护相当于\"城墙\"——能挡住绝大多数已知攻击路径，但无法保证配置永不出错、也无法覆盖未知绕过与逻辑性误用。 在安全架构上，需要与之互补的\n\"哨兵\"\n——用日志、指标与链路数据对 Agent 行为持续观测，在策略失效或遭遇新型攻击时及早发现并在影响扩大前响应。\n三、可观测三支柱与全景架构\n3.1 三支柱在 AI Agent 场景的映射\n可观测性建立在 Logs + Metrics + Traces 三支柱之上。在 AI Agent 场景下，三者各自承担不同的观测职能，理解它们各自能回答什么问题，是后续搭建整套体系的基础：\nLogs（Session 审计日志）：Agent 做了什么？调了哪些工具？传了什么参数？花了多少钱？\nLogs（应用运行日志）：系统哪里出了问题？Webhook 失败、认证被拒、网关异常？\nMetrics：现在花了多少钱？延迟正常吗？有没有会话卡死？\nTraces：单条消息从接收到响应经历了哪些步骤？调用链如何串起来？\n三支柱缺一不可：仅有 Metrics 无法回答\"谁、因何\"导致成本飙升；仅有 Session 日志无法从全局感知系统健康与异常拐点；仅有应用运行日志则看不到 Agent 的业务行为与工具调用序列。三者协同才能同时支撑安全审计、成本管控与运维排障。\n3.2 数据 Pipeline\nOpenClaw Gateway 内部存在三个独立的数据生产者：SessionManager 将每轮对话的完整结构化数据写入磁盘 JSONL 文件；tslog Logger 写应用运行日志；diagnostics-otel 插件通过 OTLP/HTTP 协议直接将 Metrics 与 Traces 推送到 OTLP 兼容后端。前两者通过日志采集器（如 LoongCollector、Filebeat、Fluentd 等）文件采集后转发到日志分析平台，后者直接对接任意支持 OTLP 协议的可观测后端。\n3.3 数据源对照表\n3.4 为什么选阿里云 SLS\n阿里云日志服务（Simple Log Service, SLS）天然适合这个场景：\nOTLP 友好接入：LoongCollector 原生支持 OTLP 协议，与 OpenClaw 的\ndiagnostics-otel\n插件无缝对接，开箱即用\n算子丰富、查询灵活：内置多种加工与分析算子，对 Session 日志里的 JSON 嵌套字段（如\nmessage.content\n、\nmessage.usage.cost\n）做解析、过滤、聚合很方便，写几条 SPL 就能做工具调用统计、成本归因、敏感模式匹配\n安全与合规能力：支持日志访问审计、RAM 权限管控、敏感数据脱敏与加密存储，满足审计留痕与合规要求；告警可对接钉钉、短信、邮件，便于安全事件及时响应\n日志分析一站式：「采集 → 索引 → 查询 → 仪表盘 → 告警」一条龙，小规模 Agent 日志量不大、按量计费成本低，流量上来也能自动弹性\n四、Session 审计日志：行为链还原与威胁检测\nSession 日志是 AI Agent 安全审计的\n核心数据源\n。它记录了每一轮对话、每一次工具调用、每一笔 Token 消耗——完整还原\"Agent 到底做了什么\"。\n4.1 数据格式\n每个会话对应一个\n.jsonl\n文件，每行是一个 JSON 对象，通过\ntype\n字段区分条目类型。以下是一次典型的对话中产生的日志序列（以用户请求读取系统文件为例）：\n用户消息\n{\n\"type\"\n:\n\"message\"\n,\n\"id\"\n:\n\"70f4d0c5\"\n,\n\"parentId\"\n:\n\"b5690259\"\n,\n\"message\"\n:\n{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\n[{\n\"type\"\n:\n\"text\"\n,\n\"text\"\n:\n\"帮我读取 /etc/passwd 文件\"\n}]\n}\n}\nAssistant 回复（含工具调用）\n{\n\"type\":\n\"message\"\n,\n\"id\"\n:\n\"3878c644\"\n,\n\"parentId\"\n:\n\"70f4d0c5\"\n,\n\"message\"\n: {\n\"role\":\n\"assistant\"\n,\n\"content\"\n: [\n{\n\"type\":\n\"toolCall\"\n,\n\"id\"\n:\n\"call_d46c7e2b...\"\n,\n\"name\"\n:\n\"read\"\n,\n\"arguments\"\n: { \"\npath\n\":\n\"/etc/passwd\"\n}\n}],\n\"provider\":\n\"anthropic\"\n,\n\"model\"\n:\n\"claude-4-sonnet\"\n,\n\"usage\"\n: { \"totalTokens\":\n2350\n},\n\"stopReason\":\n\"toolUse\"\n}\n}\n工具执行结果\n{\n\"type\"\n:\n\"message\"\n,\n\"id\"\n:\n\"81fd9eca\"\n,\n\"parentId\"\n:\n\"3878c644\"\n,\n\"message\"\n: {\n\"role\"\n:\n\"toolResult\"\n,\n\"toolCallId\"\n:\n\"call_d46c7e2b...\"\n,\n\"toolName\"\n:\n\"read\"\n,\n\"content\"\n: [{\n\"type\"\n:\n\"text\"\n,\n\"text\"\n:\n\"root:x:0:0:root:/root:/bin/bash\n\\n\n...\"\n}],\n\"isError\"\n:\nfalse\n}\n}\nAssistant 最终回复（stopReason 为 stop，纯文本）\n{\n\"type\"\n:\n\"message\"\n,\n\"id\"\n:\n\"a025ab9e\"\n,\n\"parentId\"\n:\n\"81fd9eca\"\n,\n\"message\"\n: {\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n: [{\n\"type\"\n:\n\"text\"\n,\n\"text\"\n:\n\"文件 `/etc/passwd` 的内容如下（节选）：\n\\n\\n\nroot:x:0:0:...\"\n}],\n\"usage\"\n: {\n\"totalTokens\"\n:\n12741\n,\n\"cost\"\n: {\n\"total\"\n:\n0.0401\n} },\n\"stopReason\"\n:\n\"stop\"\n}\n}\n从审计视角看，上面这段示例（一轮 user → assistant toolCall → toolResult → assistant stop）已经能回答几个关键问题：谁（user）让 Agent 做了什么（read 工具读 /etc/passwd），Agent 用了哪个模型（claude-4-sonnet），花了多少钱（$0.0401），结果是什么（成功读取了 /etc/passwd 内容）。\n字段索引设计\n对 Session 日志建立索引时，以下字段是审计分析的关键维度：\n4.2 核心审计场景\n4.2.1 审计场景：敏感数据外泄检测\nAgent 通过工具读取文件、执行命令后，返回内容会记录在\ntoolResult\n条目中。如果返回内容中包含 API Key、AK、私钥、密码等敏感数据，意味着这些数据已经进入了 Agent 的上下文——可能被模型\"记住\"并在后续对话中泄露。\ntype: message\nand\nmessage.role : toolResult\n|\nextend content\n=\ncast\n(json_extract(message,\n'$.content'\n)\nas\narray\n<\njson\n>\n)\n|\nproject content\n|\nunnest\n|\nextend content_type\n=\njson_extract_scalar(content,\n'$.type'\n), content_text\n=\njson_extract_scalar(content,\n'$.text'\n)\n|\nwhere\ncontent_type\n=\n'text'\n|\nproject content_text\n|\nwhere\ncontent_text\nlike\n'%BEGIN RSA PRIVATE KEY%'\nor\ncontent_text\nlike\n'%password%'\nor\ncontent_text\nlike\n'%ACCESS_KEY%'\nor\nregexp_like(content_text,\n'LTAI[a-zA-Z0-9]{12,20}'\n)\n4.2.2 审计场景：Skills 调用审计\n技能文件（如\nSKILL.md\n）被\nread\n工具读取时，会在 Assistant 消息的\ncontent\n中以\ntype: \"toolCall\"\n、\nname: \"read\"\n、\narguments.path\n记录。可按路径统计哪些技能被调用、调用次数及最近调用时间，用于合规与使用分析。\ntype: message\nand\nmessage.role : assistant\nand\nmessage.stopReason : toolUse\n|\nextend content\n=\ncast\n(json_extract(message,\n'$.content'\n)\nas\narray\n<\njson\n>\n)\n|\nproject content,\ntimestamp\n|\nunnest\n|\nextend content_type\n=\njson_extract_scalar(content,\n'$.type'\n), content_name\n=\njson_extract_scalar(content,\n'$.name'\n), skill_path\n=\njson_extract_scalar(content,\n'$.arguments.path'\n)\n|\nproject\n-\naway content\n|\nwhere\ncontent_type\n=\n'toolCall'\nand\ncontent_name\n=\n'read'\nand\nskill_path\nlike\n'%SKILL.md'\n|\nstats cnt\n=\ncount\n(\n*\n), latest_time\n=\nmax\n(\ntimestamp\n)\nby\nskill_path\n|\nsort cnt\ndesc\n4.2.3 审计场景：高危工具调用监控\nOpenClaw 的工具权限体系（Tool Policy Pipeline + Owner-only 封装）已经在运行时做了管控，但可观测层应该\n独立于运行时防护\n进行监控——万一策略配置有误，可观测层是最后的发现机会。高危工具的定义按使用场景分为两类。\n场景一：Gateway HTTP 默认禁止的工具\n通过网关\nPOST /tools/invoke\n调用时，以下工具\n默认拒绝\n，因为它们在非交互的 HTTP 面上风险过高或无法正常完成：\n场景二：ACP 必须显式审批的工具\nACP（Automation Control Plane）是自动化入口，以下工具\n不允许静默通过\n，必须用户显式批准后再执行：\n在 Session 日志中监控上述工具（及其在日志中的等价名称）的调用，可发现异常或越权行为；若某工具在 Gateway HTTP 场景下仍被调用成功，则可能存在配置绕过，需排查。\ntype: message and message.role : assistant and message.stopReason : toolUse\n| extend content =\ncast\n(\njson_extract\n(message,\n'$.content'\n)  as array<json>)\n| project content, timestamp | unnest | extend content_type =\njson_extract_scalar\n(content,\n'$.type'\n), content_name =\njson_extract_scalar\n(content,\n'$.name'\n), content_arguments =\njson_extract\n(content,\n'$.arguments'\n)\n| project-away content\n| where content_type =\n'toolCall'\nand content_name in (\n'exec'\n,\n'write'\n,\n'edit'\n,\n'gateway'\n,\n'whatsapp_login'\n,\n'cron'\n,\n'sessions_spawn'\n,\n'sessions_send'\n,\n'spawn'\n,\n'shell'\n,\n'apply_patch'\n)\n4.2.4 审计场景：成本分析\n每条 Assistant 消息都携带\nusage\n（含\ntotalTokens\n、\ninput\n、\noutput\n、\ncacheRead\n、\ncacheWrite\n）以及\nprovider\n、\nmodel\n。按 provider、model 汇总 totalTokens 可回答「用量花在哪了」；若上游提供\nusage.cost.total\n，也可用同样方式按 provider、model 汇总做成本归因。\ntype: message\nand\nmessage.role : assistant\n|\nstats totalTokens\n=\nsum\n(\ncast\n(\"message.usage.totalTokens\"\nas\nBIGINT\n)), inputTokens\n=\nsum\n(\ncast\n(\"message.usage.input\"\nas\nBIGINT\n)), outputTokens\n=\nsum\n(\ncast\n(\"message.usage.output\"\nas\nBIGINT\n)), cacheReadTokens\n=\nsum\n(\ncast\n(\"message.usage.cacheRead\"\nas\nBIGINT\n)), cacheWriteTokens\n=\nsum\n(\ncast\n(\"message.usage.cacheWrite\"\nas\nBIGINT\n))\nby\n\"message.provider\", \"message.model\"\n关于费用数据：\nOpenClaw 原生不支持阶梯计费，仅按\ninputTokens × input + outputTokens × output + ...\n估算单次调用费用。因此费用字段应视为\n成本估算的参考基线\n，而非精确账单。未配置\ncost\n的模型，费用列将为 0。\n4.3 审计大盘设计方法论\n上述查询覆盖了核心审计场景，但在日常安全运营中，逐条执行查询效率有限。将这些查询固化为仪表盘，可实现持续性的审计观测。以下是审计大盘的关键设计维度。\n4.3.1 安全审计统计概览\n总览页应以指定时间窗口内的多维高危操作计数为核心，将 Agent 的安全态势压缩为一屏可读的风险快照。核心指标包括：高危命令执行数、网页请求外发数、命令行外发数、通信工具外发数、敏感文件访问数、提示词注入事件数，以及\n注入后的高危操作数\n。配合环比数据，帮助安全团队快速判断当前风险水位。\n4.3.2 Token 分析大盘\nToken 消耗直接关联运营成本，且其波动往往是系统异常的早期信号。Token 分析大盘应包含以下维度：\n整体概览\n：\n今日 vs 昨日的 Token 与费用环比，日环比突破阈值（如 ±30%）是成本异常的第一道信号；\n按 Provider / Model 的时序趋势\n：\n按模型分色展示 Token 消耗与费用变化。Token 激增往往不只是成本问题——Prompt 注入导致上下文被恶意填充、工具调用陷入死循环、会话持续膨胀都会表现为曲线陡升；\n按会话与按主机的 Top 消耗\n：\nAgent 的成本分布呈\n长尾特征\n——少数会话占据绝大部分消耗，识别这些\"头部会话\"是成本优化的第一步；按主机/Pod 聚合则支持多实例部署下的成本分摊与风险定位；\n模型 Token 详情表\n：\n按模型列出\ntotalTokens\n、\ninputTokens\n、\noutputTokens\n、\ncacheReadTokens\n、\ncacheWriteTokens\n及对应成本。其中\ninputTokens\n与\noutputTokens\n的比值反映 Agent 的交互模式（输入占比过高说明 Prompt 冗余），\ncacheReadTokens\n占比直观体现缓存策略收益；\n4.3.3 行为分析大盘\n行为分析大盘以会话为基本单位，回答\"Agent 在当前时间窗口内做了什么\"：\n会话统计\n：\n将工具调用按行为类型拆解为命令执行、后台进程、网页请求、通信工具、文件读写等维度，提供整体行为构成的快速快照。以 Session 为粒度展开，记录每个会话在各行为维度上的调用量，量级异常的 Session 值得优先审查\n工具调用量与错误分析\n：\n工具调用时间线按工具类型分色展示调用频次构成，异常尖峰是排查问题的第一入口。错误率趋势图与调用量时间线共享时间轴——错误率高峰不一定与调用量高峰重合，两者的时间差往往能揭示问题的真实来源\n外部交互\n：\n记录 Agent 发起的所有对外行为（API 调用、网页访问、消息发送、邮件外发），按会话、工具名与交互类型分类。外部交互既是完成任务的必要手段，也是潜在的风险出口\n五、应用日志：系统运行状态与安全事件\n应用日志的角色不同于 Session 日志。Session 日志记录的是\nAgent 做了什么\n（面向审计），应用日志记录的是\n系统运行状态\n（面向运维）——Gateway 是否正常启动？Webhook 有没有报错？消息队列是否堆积？\n5.1 数据格式\nOpenClaw Gateway 使用 tslog 库写结构化 JSONL 日志：\n{\n\"0\"\n:\n\"{\n\\\"\nsubsystem\n\\\"\n:\n\\\"\ngateway/channels/telegram\n\\\"\n}\"\n,\n\"1\"\n:\n\"webhook processed chatId=123456 duration=2340ms\"\n,\n\"_meta\"\n: {\n\"logLevelName\"\n:\n\"INFO\"\n,\n\"date\"\n:\n\"2026-02-27T10:00:05.123Z\"\n,\n\"name\"\n:\n\"openclaw\"\n,\n\"path\"\n: {\n\"filePath\"\n:\n\"src/telegram/webhook.ts\"\n,\n\"fileLine\"\n:\n\"142\"\n}\n},\n\"time\"\n:\n\"2026-02-27T10:00:05.123Z\"\n}\n关键字段：\n_meta.logLevelName\n：日志级别（\nTRACE\n/\nDEBUG\n/\nINFO\n/\nWARN\n/\nERROR\n/\nFATAL\n）；\n_meta.path\n：源码文件路径和行号，用于精确定位；\n数字键\n\"0\"\n：JSON 格式的 bindings，通常含\nsubsystem\n（如\ngateway/channels/telegram\n）；\n数字键\n\"1\"\n及后续：日志消息文本；\n日志文件按天滚动（\nopenclaw-YYYY-MM-DD.log\n），24 小时自动清理，单文件上限 500 MB。\n索引设计\n5.2 按子系统的错误聚合分析\n应用日志以异常级别（WARN、ERROR、FATAL）和子系统为维度做聚合，可方便看出哪类异常集中在哪个组件：\n_meta.logLevelName: ERROR or _meta.logLevelName: WARN or _meta.logLevelName: FATAL\n|\nproject\nsubsystem\n=\n\"0.subsystem\"\n, loglevel =\n\"_meta.logLevelName\"\n|\nstats\ncnt\n=\ncount(\n1\n) by loglevel, subsystem\n| sort loglevel\n5.3 典型安全审计场景\n场景一：WebSocket 未授权连接\nWebSocket 连接在鉴权阶段被拒绝时会打 WARN，便于发现 token 错误、过期或伪造导致的未授权访问。\n{\n\"0\"\n:\n\"{\n\\\"\nsubsystem\n\\\"\n:\n\\\"\ngateway/ws\n\\\"\n}\"\n,\n\"1\"\n:\n\"unauthorized conn=e32bf86b remote=127.0.0.1 client=openclaw-control-ui webchat vdev reason=token_mismatch\"\n,\n\"_meta\"\n: {\n\"logLevelName\"\n:\n\"WARN\"\n,\n\"date\"\n:\n\"2026-02-27T07:46:20.727Z\"\n}\n}\n审计关注点：\nsubsystem: gateway/ws\n表示来自 WS 层；消息正文中\nconn=\n为连接 ID，\nremote=\n为客户端 IP，\nreason=token_mismatch\n表示 token 不匹配。同一 remote 在短时间大量 unauthorized 可能为撞库或盗用尝试。\n场景二：HTTP 工具调用被拒或执行失败\nPOST /tools/invoke\n的失败日志可发现谁在尝试执行被禁止的高危工具、或执行时触发的权限/沙箱异常。\n{\n\"0\"\n:\n\"{\n\\\"\nsubsystem\n\\\"\n:\n\\\"\ntools-invoke\n\\\"\n}\"\n,\n\"1\"\n:\n\"tool execution failed: Error: EACCES: permission denied, open '/etc/shadow'\"\n,\n\"_meta\"\n: {\n\"logLevelName\"\n:\n\"WARN\"\n,\n\"date\"\n:\n\"2026-02-27T10:00:07.000Z\"\n}\n}\nsubsystem: tools-invoke\n可快速筛出此类事件；消息正文中的异常类型（如 EACCES、ENOENT）可区分\"越权访问敏感路径\"与\"配置/路径错误\"。\n场景三：连接/请求处理失败\n连接重置、解析错误等可暴露异常客户端行为、畸形请求或中间人干扰。\n{\n\"0\"\n:\n\"{\n\\\"\nsubsystem\n\\\"\n:\n\\\"\ngateway\n\\\"\n}\"\n,\n\"1\"\n:\n\"request handler failed: Connection reset by peer\"\n,\n\"_meta\"\n: {\n\"logLevelName\"\n:\n\"ERROR\"\n,\n\"date\"\n:\n\"2026-02-27T10:00:08.000Z\"\n}\n}\n{\n\"0\"\n:\n\"{\n\\\"\nsubsystem\n\\\"\n:\n\\\"\ngateway\n\\\"\n}\"\n,\n\"1\"\n:\n\"parse/handle error: Invalid JSON\"\n,\n\"_meta\"\n: {\n\"logLevelName\"\n:\n\"ERROR\"\n,\n\"date\"\n:\n\"2026-02-27T10:00:08.100Z\"\n}\n}\n「Connection reset by peer」多为对端断开或网络中断，集中爆发疑似扫描或 DoS；「Invalid JSON」表示请求体非法，可能是恶意构造的畸形包。\n场景四：设备权限升级\n设备配对与权限升级会留下完整的审计迹：谁、从何角色/权限、升级到何角色/权限、来自哪 IP、何种认证方式。\n{\n\"0\"\n:\n\"{\n\\\"\nsubsystem\n\\\"\n:\n\\\"\ngateway\n\\\"\n}\"\n,\n\"1\"\n:\n\"security audit: device access upgrade requested reason=role-upgrade device=abc-123 ip=192.168.1.1 auth=token roleFrom=[ ] roleTo=owner scopesFrom=[ ] scopesTo=[...] client=control conn=conn-1\"\n,\n\"_meta\"\n: {\n\"logLevelName\"\n:\n\"WARN\"\n,\n\"date\"\n:\n\"2026-02-27T10:00:09.000Z\"\n}\n}\nroleTo=owner 表示从无角色升为 owner，属高敏感操作。同一 IP 或同一 device 在非工作时间频繁升级应优先排查。\n场景五：FATAL 与核心异常\nFATAL 表示核心功能不可用，可能由配置被篡改、依赖失效或严重运行时错误导致。若 FATAL 伴随「bind」「config」「listen」等关键词，需优先排查暴露面与配置一致性。建议配置实时告警（如每分钟\ncnt > 0\n即推送），确保第一时间响应。\n六、OTEL 遥测：实时监控与告警\nSession 日志和应用日志以\n事件与审计迹\n为主，适合按条件检索与事后归因。若要掌握\n聚合指标、趋势与请求链路\n——成本/用量趋势、会话健康度、单次请求的耗时与依赖——需要借助 OTEL 的\nMetrics\n与\nTraces\n，与日志一起构成完整的可观测能力。\n6.1 接入配置\nOpenClaw 内置了\ndiagnostics-otel\n插件，支持通过 OTLP/HTTP (Protobuf) 协议导出 Metrics、Traces 和 Logs。\n启用插件\n执行命令\nopenclaw plugins enable diagnostics-otel\n启动插件，通过 openclaw plugins list 命令查看插件状态，预期状态为 loaded。\n配置\n~/.openclaw/openclaw.json\n{\n\"plugins\"\n:\n{\n\"allow\"\n:\n[\n\"diagnostics-otel\"\n],\n\"entries\"\n:\n{\n\"diagnostics-otel\"\n:\n{\n\"enabled\"\n:\ntrue\n}\n}\n},\n\"diagnostics\"\n:\n{\n\"enabled\"\n:\ntrue\n,\n\"otel\"\n:\n{\n\"enabled\"\n:\ntrue\n,\n\"endpoint\"\n:\n\"<YOUR_OTLP_ENDPOINT>\"\n,\n\"protocol\"\n:\n\"http/protobuf\"\n,\n\"headers\"\n:\n{\n\"Authorization\"\n:\n\"Bearer <YOUR_TOKEN>\"\n},\n\"serviceName\"\n:\n\"openclaw-gateway\"\n,\n\"traces\"\n:\ntrue\n,\n\"metrics\"\n:\ntrue\n,\n\"logs\"\n:\nfalse\n,\n\"sampleRate\"\n:\n1.0\n,\n\"flushIntervalMs\"\n:\n60000\n}\n}\n}\n6.2 导出的指标与 Span\nOpenClaw 通过 OTEL 导出的数据覆盖四个观测维度：\n成本与用量指标\n与 LLM 调用成本直接相关，是费用管控的核心。通过监控 token 消耗、估算费用、运行耗时和上下文占用，可掌握每次模型调用的成本，发现配置不当或使用低效导致的浪费。\nopenclaw.cost.usd\n仅在上游\nmodel.usage\n事件提供\ncostUsd\n时才会产生数据。\nWebhook 处理指标\nWebhook 是 OpenClaw 与外部系统交互的重要入口。监控收到的请求量、错误次数和处理耗时，可及时发现外部调用异常，保障对接稳定。\n消息队列指标\n消息队列是任务处理的中转站。关注入队/出队数量、队列深度和等待时间，可判断系统是否拥堵、任务是否积压，便于调整资源或排查瓶颈。\n会话管理指标\n会话状态变化与卡住会话数量反映交互健康度。监控卡住、重试等指标可快速发现陷入死循环或异常状态的对话，提升可观测与排障效率。\nTrace Span\n6.3 基于指标的告警与分析\n场景：用量与成本分布\n回答：用量与钱主要花在哪些模型、哪些 Provider？近期 Token 消耗趋势是否正常、有无突然飙升？按模型或 Provider 的累计用量如何排名？Token 增速异常时，可结合 Session 日志做进一步分析。\n# Token 消耗增速（可设告警：如超过 N tokens/min）\nsum\n(rate(openclaw_tokens[10m]))\n# Token 消耗趋势（按模型）\nsum\n(rate(openclaw_tokens[5m])) by (openclaw_model)\n# 累计 Token（按 Provider）\nsum\n(openclaw_tokens) by (openclaw_provider)\n场景：会话卡死与执行过长\n回答：当前是否存在卡死、无进展的会话？卡死发生的频率与时段如何？单次 Agent 执行耗时（P95/P99）是否超过预期、是否有长尾？\n# 卡死会话（告警：> 0）\nsum\n(rate(openclaw_session_stuck[\n5\nm]))\n# 执行耗时 P95（告警：如 > 5 分钟）\nhistogram_quantile\n(\n0\n.\n95\n, sum(rate(openclaw_run_duration_ms_bucket[\n5\nm])) by (le))\n场景：Webhook 错误率与处理延迟\n回答：各通道 Webhook 的请求量与错误次数如何、错误率是否在可接受范围？单次 Webhook 处理耗时与 Agent 执行耗时的分位数（P95/P99）是否恶化？按通道或按模型的延迟分布有何差异？错误率或延迟异常时，可结合应用日志按 Webhook 子系统查具体错误。\n# Webhook 错误率（告警：如 > 5%）\nsum\n(rate(openclaw_webhook_error[\n5\nm])) / sum(rate(openclaw_webhook_received[\n5\nm]))\n# 执行耗时 P99（按模型）\nhistogram_quantile\n(\n0\n.\n99\n, sum(rate(openclaw_run_duration_ms_bucket[\n5\nm])) by (le, openclaw_model))\n# Webhook 处理耗时 P95（按通道）\nhistogram_quantile\n(\n0\n.\n95\n, sum(rate(openclaw_webhook_duration_ms_bucket[\n5\nm])) by (le, openclaw_channel))\n场景：队列积压与等待时间\n回答：各队列通道（lane）的深度与入队/出队速率是否健康？任务在队列中的等待时间（P95/P99）是否拉长、是否存在积压趋势？哪些 lane 最容易出现拥堵？便于在用户体感变差前发现瓶颈并调整资源。\n# 队列深度（按 lane）\nhistogram_quantile\n(\n0\n.\n95\n, sum(rate(openclaw_queue_depth_bucket[\n5\nm])) by (le, openclaw_lane))\n# 队列等待时间 P95（按 lane）\nhistogram_quantile\n(\n0\n.\n95\n, sum(rate(openclaw_queue_wait_ms_bucket[\n5\nm])) by (le, openclaw_lane))\n七、多源联动：从异常发现到根因定位\n前面我们基于可观测数据介绍了数据的接入、内置大盘与自定义探索，在实际运维与审计中，可观测数据之间并非孤立使用，而是遵循一个\n固定的协作模式\n，逐层收敛、互相印证：\nOTEL Metrics → 应用日志（错误上下文）→ Session 审计日志（完整行为链）\n。典型排查路径如下：OTEL 指标发现异常（如延迟飙升、Token 激增、错误率突增）；随即在应用日志中定位对应时间窗口的错误详情（Webhook 超时、认证失败、网关异常）；最后下钻到 Session 审计日志，还原该会话的完整工具调用序列、模型交互内容与成本消耗，确认根因并留存审计证据。\n八、总结\n回答「你的 AI Agent 真的在受控运行吗？」需要同时回答四件事：\n谁\n在触发调用、\n花了多少钱\n、\n做了哪些操作\n（尤其是高危工具）、\n行为是否可追溯、可审计\n。\n行业安全报告和 OpenClaw 自身的代码审计数据都表明，AI Agent 的攻击面天然宽广——60 天内 147 次安全修复，\ntools/\n和\ngateway/\n模块合计占比 61%；公网暴露实例超 4 万、恶意 Skills 达 800+、间接提示注入已在真实场景中被观测到。运行时防护（工具策略、循环检测、命令过滤等）不可或缺，但仅靠防护不足以声称受控——策略误配、规则遗漏、上下文压缩导致安全指令被\"遗忘\"等问题，决定了必须建立\n持续可观测\n体系\n，用数据回答上述问题。\n本文以 OpenClaw 为案例，系统拆解了 AI Agent 可观测体系的三条核心数据管道：\nSession 审计日志\n回答「Agent 做了什么、花了多少」，通过敏感数据外泄检测（漏斗式分析）、Skills 调用审计（攻击面视角）、高危工具监控（独立于运行时防护）、提示词注入检测（注入后高危操作关联）、成本归因五大审计场景，以及安全审计、Token 分析、行为分析三类审计大盘，实现可视化的持续观测\n应用日志\n回答「系统哪里异常」，通过 WebSocket 未授权连接、HTTP 工具调用失败、连接/请求异常、设备权限升级、FATAL 核心异常五类安全审计场景覆盖网关层面的风险信号\nOTEL 指标与链路\n回答「当前状态与耗时」，通过 Token 消耗增速、会话卡死、Webhook 错误率、队列积压等指标实现实时告警\n实践中，三条管道应\n协同使用\n：由 OTEL 告警发现异常，用应用日志缩小范围、定位子系统与会话，再用 Session 日志还原完整行为链并采取响应措施。只有三源联动，才能从「有异常」到「哪里出了问题」再到「Agent 具体做了什么」形成可查证的审计与运维闭环——这是 AI Agent 从\"能用\"走向\"可信赖\"的必经路径。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.79,
+        "transfer_business": 0,
+        "peripheral": 0.01,
+        "irrelevant": 0.2,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.93,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.91,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.51,
+      "probabilities": {
+        "0": 0.33,
+        "1": 0.19,
+        "2": 0.22,
+        "3": 0.14,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.69,
+      "probabilities": {
+        "0": 0.3,
+        "1": 0.04,
+        "2": 0.45,
+        "3": 0.09,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.49,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.6,
+        "3": 0.31,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.96,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.05,
+        "4": 0.81,
+        "5": 0.11
+      }
+    },
+    "anti_hype": {
+      "score": 2.97,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.03,
+        "2": 0.12,
+        "3": 0.67,
+        "4": 0.17,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 12089,
+    "outputTokens": 172,
+    "totalTokens": 12261
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.74,
+        "relevance": 0.93,
+        "grounding": 0,
+        "decision_action": 0.34,
+        "evidence": 0.67,
+        "actionability": 0.83,
+        "anti_hype": 0.74
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179852874,
+                "endTime": 1791179853072,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000507738",
+      "marketCost": "0.000507738",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000507738",
+      "inferenceCost": "0.000507738",
+      "inputInferenceCost": "0.000507738",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A731S0FHMBKAF1QGVT0HJ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:33 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::6s2h8-1791179852530-a663465d2023"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.79,
+            "transfer_business": 0,
+            "peripheral": 0.01,
+            "irrelevant": 0.2,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.93,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.91,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.51,
+          "probabilities": {
+            "0": 0.33,
+            "1": 0.19,
+            "2": 0.22,
+            "3": 0.14,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.69,
+          "probabilities": {
+            "0": 0.3,
+            "1": 0.04,
+            "2": 0.45,
+            "3": 0.09,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.49,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.6,
+            "3": 0.31,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.96,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.05,
+            "4": 0.81,
+            "5": 0.11
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.97,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.03,
+            "2": 0.12,
+            "3": 0.67,
+            "4": 0.17,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 12089,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.74,
+            "relevance": 0.93,
+            "grounding": 0,
+            "decision_action": 0.34,
+            "evidence": 0.67,
+            "actionability": 0.83,
+            "anti_hype": 0.74
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179852874,
+                    "endTime": 1791179853072,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000507738",
+          "marketCost": "0.000507738",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000507738",
+          "inferenceCost": "0.000507738",
+          "inputInferenceCost": "0.000507738",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A731S0FHMBKAF1QGVT0HJ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:32.330Z"
+  }
+}

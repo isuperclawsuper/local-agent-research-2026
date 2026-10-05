@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "244966328927325184",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "用Spring AI Alibaba把MultiAgent实现从5天压到5小时",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558373&idx=1&sn=edc6314dd8b386cb4d5f9d92985a1479",
+      "date": "2026-02-13T00:31:00.554Z",
+      "chars": 21707,
+      "text": "原创\n式遂\n2026-02-13 08:31\n黑龙江\n一、前言\n不久前，Spring AI和Spring AI Alibaba都迎来了新版本的发布，首次在框架层面支持了Multi-agent 编排能力，看到官方示例中的ReactAgent构建代码，以及其“10 行代码就可以启动并运行一个智能体应用”的宣传，决定试一试。结果花了5个小时把线上正在运行的Multi-agent框架基本重新实现了一遍，且功能基本一致，带来的感受的确不错。\n本文将从Agent的核心模式（React、Planning）出发，给出基于Spring AI Alibaba的简单实现示例，帮助读者：\n理解Multi-agent系统的核心模式和实现原理\n认识手写框架与成熟框架的关键差异\n为技术选型提供参考依据\n二、大模型应用的三个演进阶段\n2.1 第一阶段：构建组件\n核心：告诉模型它能做什么\n这个阶段我们用大模型来：\n简单代码生成\n：\n快速生成样板代码。\n问题解答\n：\n技术问题的快速咨询，如\n用idealab搭建答疑机器人。\n文本处理\n：\n摘要、归类，如：\n利用模型能力进行相似类目聚合等。\n2.2 第二阶段：工作流\n核心：告诉模型它该怎么做\n结合特定的业务场景，将多个步骤串联起来，形成一个工作流：\n这种方式能够处理更复杂的任务，但问题也随之而来：\n流程固定\n：\n每个步骤都是预定义的，缺乏灵活性\n错误处理困难\n：\n某个环节出错，整个流程就会中断\n无法自主决策\n：\n不能根据中间结果动态调整后续步骤\n2.3 第三阶段：自主Agent\n核心：告诉模型我想做什么，它自主决策\n这个阶段我们主要关注：\n1.\nAgent定义：\nAgent = LLM + Planning + Memory + Tool（OpenAI Lilian Weng）。即Agent在LLM之上，还带有任务规划、记忆和环境交互能力。\n2.\nReAct\n模式：\n使得Agent 具备了\"思考-行动\"的能力。\n3.\nMulti-agent\n协作：\n让不同专业的 Agent 可以相互配合，解决单个Agent无法完成的复杂任务。\n这个阶段遇到的最大挑战就是：\n如何设计一个自主Agent。\n主流的AI框架、工具和活跃的社区讨论等都以python主导，作为java开发者只能通过“多看多学”来汲取经验，\n这里\n我们主要就是参考了OpenManus的实现思路，\n并将其核心理念用 Java 进行了复刻\n。（但是其核心的browser use等相关的Tool并不是我们需要的）。\n三、React 模式\n3.1 React模式执行流程\n1.\nReasoning（推理）\n：\n分析当前状态，决定下一步做什么\n2.\nActing（行动）\n：\n执行具体的动作（如调用工具、查询数据）\n3.\nObserving（观察）\n：\n获取工具执行结果，评估任务完成情况\n4.\n循环迭代\n：\n根据行动结果继续推理，直到完成任务\n3.2 代码示例\n/**\n* ReAct 智能体：推理(Reasoning) + 执行(Acting) 循环模式\n*/\npublic\nabstract\nclassAbstractReactAgentextendsAbstractAgent {\n/**\n* 主执行流程\n*/\n@Override\npublic\nResult\nexecute\n(\nContext context\n)\n{\n// 循环执行 ReAct 流程\nfor\n(\nint\ni =\n0\n; i < maxRetryTimes; i++) {\ncurrentLoop = i;\n// === 第一步：Reasoning（推理） ===\nif\n(!reasoning(context)) {\ncontinue\n;\n// 推理失败，重试\n}\n// === 第二步：Acting（执行） ===\nResult result = act(context);\n// 如果任务完成，退出循环\nif\n(result.isCompleted()) {\nreturn\nresult;\n}\n}\nreturn\nfinalResult;\n}\n/**\n* 推理阶段：让 LLM 思考并决策\n*/\nprivate\nboolean\nreasoning\n(\nContext context\n)\n{\n// 1. 构建提示词（包含历史对话、可用工具等）\ncurrentPrompt = buildPrompt(context);\n// 2. 调用 LLM\nllmResponse = callLLM(currentPrompt, availableTools);\n// 3. 解析 LLM 响应\ntoolCalls = extractToolCalls(llmResponse);\ntextResponse = extractText(llmResponse);\n// 4. 判断是否有有效输出\nreturn\nhasToolCalls || hasTextResponse;\n}\n/**\n* 执行阶段：调用工具并获取结果\n*/\nprivate\nResult\nact\n(\nContext context\n)\n{\n// 情况1：没有工具调用，直接返回文本\nif\n(toolCalls.isEmpty()) {\nreturn\nResult.completed(textResponse);\n}\n// 情况2：执行工具调用\ntry\n{\n// 执行工具\ntoolResult = executeTools(toolCalls);\n// 更新记忆（将工具结果加入对话历史）\nupdateMemory(toolResult);\n// 检查是否可以终止\nif\n(canTerminate(toolCalls)) {\nreturn\nResult.completed(toolResult);\n}\n// 继续下一轮循环\nreturn\nResult.inProgress(toolResult);\n}\ncatch\n(Exception e) {\nreturn\nResult.error(e.getMessage());\n}\n}\n/**\n* 构建提示词（由子类实现）\n*/\nprotected\nabstract\nPrompt\nbuildPrompt\n(\nContext context\n)\n;\n/**\n* 更新记忆（由子类实现）\n*/\nprotected\nabstract\nvoidupdateMemory\n(\nString toolResult\n)\n;\n}\n问题\n1.消息历史管理\n：\n如何正确维护对话历史？哪些消息应该保留？\n2.工具注册\n：\n如何优雅地注册和管理工具？\n3.RAG集成：\n缺少RAG相关处理\n4.错误处理\n：\n工具执行失败如何处理？\n5.循环控制\n：\n如何判断任务是否真正完成？\n6.扩展性\n：\n扩展较差，开发者可定制的空间小，部分改动需要修改主链路。\n3.3 Spring AI Alibaba如何实现\nReactAgent\nSpring AI Alibaba在框架层面提供ReactAgent的标准实现，开发者可以开箱即用，最重要的就是其清晰的构建模式、灵活的扩展机制，使得新人上手没有太大门槛，基本不需要顾虑上面手写框架面临的问题，而且核心组件的构建是基于Spring AI的，使得我们原有的工具接入成本极低。\n使用方式\nReactAgent\nreactAgent\n=\nReactAgent.builder()\n.name(agentName)\n//模型对象，spring-ai的ChatModel\n.model(chatModel)\n//系统提示词\n.systemPrompt(systemPrompt)\n//工具列表，spring-ai的ToolCallback\n.tools(Lists.newArrayList(tool1, tool2,..))\n//流程定制：interceptors\n.interceptors(Lists.newArrayList(interceptor1,..))\n//扩展机制：hooks\n.hooks(Lists.newArrayList(hook1, hook2,..))\n//短期记忆内存实现\n.saver(\nnew\nMemorySaver\n())\n//输出格式化\n.outputType(outputTypeClass)\n.build();\nAssistantMessage\nresponse\n=\nreactAgentWrapper.call(\n\"今天苏州天气怎么样？\"\n);\nString\ntextContent\n=\nresponse.getText();\n模型（Model）\nReactAgent接受的Model是一个ChatModel，它是Spring AI API\n，被设计为一个简单且可移植的接口，用于与各种 AI 模型交互，允许开发者在不同模型之间切换时只需最少的代码更改。\n工具(Tools)\nTools是Agent执行操作的组件，一般会利用大模型的Function Call能力，ReactAgent接受的Tools是ToolCallback，也是Spring AI API，对于之前使用Spring AI的工程，基本可以做到无缝切换。\n记忆管理（Memory）\n记忆部分都是由Graph框架的能力来实现，主要分为：\n短期记忆（会话记忆）：利用框架的Checkpointers机制，通过和会话机制结合，可以实现和大模型的多轮对话。框架内置了RedisSaver、MongoSaver等实现，也可以自定义实现其他更适合的存储。\n长期记忆（跨会话的记忆）：继承Store接口，框架内置了RedisStore、MongoStore等几种实现，支持跨会话的数据存储。\n检索增强（RAG）\nSpring AI Alibaba提供了一系列的RAG组件，包括：文本的分割、向量转化、向量存储及检索等，且支持多种向量数据库的读写。同时结合工具扩展，开发者也可以实现各种Agentic RAG。推荐直接使用百炼的RAG服务，结合下面的扩展机制，动态的扩充我们的上下文。\n扩展机制\nHooks 和 Interceptors 使得开发者可以在Agent、Model、Tool等执行的前后进行自定义扩展，是实现上下文工程的有效手段，官方的示意图表达的十分清晰：\n框架内置了一些Hooks和\nInterceptors\n，包括：\n消息压缩\n：\n当消息tokens超过阈值后，做一个简单的消息摘要。\n模型调用限制\n：\n限制模型调用次数以防止无限循环或过度成本。\n提示词编辑\n：\n特定场景下，动态地增加、删除或修改提示词。\n工具调用限制\n：\n限制工具的调用次数防止无限循环等。\n...\n结合扩展机制，可以为Agent增加各种自定义能力，包括对模型、工具调用的日志、监控、内容审核等。\n实现原理\nSpring AI Alibaba项目架构包含三层，依次是：Spring AI -> Graph -> Agent Framework，Graph是一个轻量级的工作流编排框架，Agent Framework可以认为是在Graph的基础上提供的Agentic API，提供了开箱即用的ReactAgent和\nMulti-agent实现，同时\n围绕上下文工程提供智能体能力的扩展。对于简单的需求，你可以仅通过Agent Framework就能轻松的交付，而了解Graph，则可以帮助你构建出更多样的智能体。\n以ReactAgent为例，它实际上就是一系列\nNodes（执行单元） 在 Edges（边） 的连接下，通过 OverAllState 进行数据传递，以形成一个有向无环图（DAG）。\n四、Multi-agent\n4.1 Multi-agent模式\nSpring AI Alibaba\n支持以下Multi-agent模式：\nTool Calling\n：\nSupervisor Agent将其他Agent作为工具调用，通过AgentTool封装就可以将一个ReactAgent变为一个工具。\nHandoffs\n：\n当前Agent将控制权转移给另一个Agent，框架提供了几种内置实现：顺序执行（Sequential Agent）、并行执行（Parallel Agent）、路由（LlmRoutingAgent）。\n4.2 Spring AI Alibaba内置的Multi-agent实现\n顺序执行（Sequential Agent）\nSequentialAgent sequentialAgent = SequentialAgent.\nbuilder\n()\n.\nname\n(\n\"sequentialAgent\"\n)\n.\ndescription\n(\n\"\"\n)\n.\nsubAgents\n(List.\nof\n(agent1, agent2))\n.\nbuild\n();\nOptional<OverAllState> result = sequentialAgent.\ninvoke\n(\n\"\"\n);\n//可以根据outputKey获取对应Agent的结果\n并行执行（Parallel Agent）\nParallelAgent\nparallelAgent\n=\nParallelAgent.builder()\n.name(\n\"parallelAgent\"\n)\n.description(\n\"\"\n)\n.mergeOutputKey(\n\"merged_results\"\n)\n.subAgents(List.of(agent1, agent2, agent3))\n.mergeStrategy(\nnew\nParallelAgent\n.DefaultMergeStrategy())\n.build();\nOptional<OverAllState> result = parallelAgent.invoke(\n\"\"\n);\nObject\nmergedResults\n=\nstate.value(\n\"merged_results\"\n).get();\n4.3 利用FlowAgent 自定义Multi-agent\n核心还是围绕Graph的工作流框架来定制，流程如下：\n五、实战：用Spring AI Alibaba实现Plan-Execute模式\n5.1 流程示意\n5.2 实现思路\n1.整体分为三个阶段：1）规划，由PlanningAgent生成可执行的步骤；2）执行，分步骤选取ReactAgent并执行；3）总结，由SummaryAgent将上面每个步骤的内容聚合分析，给出总结性的结论。\n2.每个Agent实现都是ReactAgent。\n3.合理的利用Function Call，比如生成计划和步骤，以及每个步骤使用的Agent。\n4.步骤之前需要进行上下文和状态传递，下一个Agent需要感知环境信息。\n5.用合理的方式将上面的流程编排在一起。\n5.3 实现方案\n5.3.1 手动编排\n示例代码：\n/**\n* Plan-Execute 模式简化示例\n* 核心思想：先规划（Plan），再执行（Act），最后总结（Summarize）\n*/\npublicclassSimplifiedPlanningCoordinator {\n/**\n* Plan-Execute 模式的主入口\n*\n*\n@param\nlaiContext 上下文信息\n*\n@return\n完整的规划和执行结果\n*/\npublic\nPlanning\nexecute\n(Context context)\n{\n// 第一阶段：Planning - 生成执行计划\nPlanning\nplanning\n=\ngeneratePlanning(context);\n// 第二阶段：Acting - 按计划执行步骤\nexecuteSteps(planning, context);\n// 第三阶段：Summarizing - 汇总结果\nsummarize(planning, context);\nreturn\nplanning;\n}\n/**\n* 阶段一：生成执行计划\n* 根据用户输入，由 AI 生成结构化的执行步骤\n*/\nprivate\nPlanning\ngeneratePlanning\n(Context context)\n{\n// 步骤1: 创建 Planning Agent\n// 这个 Agent 的职责是分析用户需求并制定执行计划\nReactAgent\nplanningAgent\n=\nreactAgentFactory.createReactAgent(\ncontext,\n\"planning\"\n// Agent 名称\n);\n// 步骤2: 构建 Planning Prompt\n// 提示词中包含：用户需求、可用的 Agent 列表、当前时间等信息\nString\nplanningPrompt\n=\nbuildPlanningPrompt(context);\n// 步骤3: 调用 Planning Agent\n// Agent 会分析需求，然后主动调用 PlanningTool 来创建计划\nUserMessage\nuserMessage\n=\nnew\nUserMessage\n(planningPrompt);\nAssistantMessage\nresponse\n=\nplanningAgent.call(userMessage);\n// 步骤4: 获取生成的计划\n// PlanningTool 已经将计划保存到上下文中了\nPlanning\nplanning\n=\ngetPlanningFromContext(context);\nreturn\nplanning;\n}\n/**\n* 阶段二：按计划执行各个步骤\n* 这是 Act 阶段，每个步骤由特定的 Agent 负责执行\n*/\nprivatevoidexecuteSteps(Planning planning, Context context){\nList<PlanningStep> steps = planning.getSteps();\n// 顺序执行每个步骤\nfor\n(PlanningStep step : steps) {\n// 1. 获取该步骤对应的 Agent\nString\nagentName\n=\nstep.getAgent();\nReactAgent\nagent\n=\nreactAgentFactory.createReactAgent(\ncontext,\nagentName\n// Agent 名称\n);\n// 2. 构造该步骤的执行提示词\nUserMessage\nuserMessage\n=\nbuildStepPrompt(step, context);\n// 3. 调用 Agent 执行\nAssistantMessage\nresponse\n=\nagent.call(userMessage);\n// 4. 保存执行结果\nstep.setResult(response.getText());\nstep.markAsCompleted();\n}\n}\n/**\n* 阶段三：汇总所有步骤的执行结果\n* 由专门的总结 Agent 将各步骤结果整合成最终答案\n*/\nprivatevoidsummarize(Planning planning, Context context){\n// 1. 收集所有步骤的执行结果\nString\nallStepsResults\n=\ncollectAllResults(planning);\n// 2. 构造总结提示词，包含所有步骤的执行结果\nUserMessage\nsummaryPrompt\n=\nbuildSummaryPrompt(allStepsResults, context);\n// 3. 调用总结 Agent 生成最终结果\nReactAgentWrapper\nsummaryAgent\n=\ncreateSummaryAgent();\nAssistantMessage\nfinalResult\n=\nsummaryAgent.call(summaryPrompt);\n// 4. 保存最终结果\ncontext.setFinalResult(finalResult.getText());\n}\n/**\n* 构建 Planning Prompt\n* 这是让 AI 能够制定好计划的关键\n*/\nprivate\nString\nbuildPlanningPrompt\n(Context context)\n{\n// 1. 获取所有可用的 Agent 配置\nList<AgentConfig> availableAgents = getAvailableAgents(context);\n// 2. 构建 Agent 信息描述\nStringBuilder\nagentsInfo\n=\nnew\nStringBuilder\n(\n\"可用的 Agent 列表：\\n\"\n);\nfor\n(AgentConfig agent : availableAgents) {\nagentsInfo.append(\n\"- Agent 名称: \"\n).append(agent.getName()).append(\n\"\\n\"\n);\nagentsInfo.append(\n\"  描述: \"\n).append(agent.getDescription()).append(\n\"\\n\"\n);\nagentsInfo.append(\n\"  擅长: \"\n).append(agent.getCapabilities()).append(\n\"\\n\\n\"\n);\n}\n// 3. 组装完整提示词\nString\nprompt\n=\nString.format(\n\"\"\"\n你是一个任务规划专家。请根据用户的需求制定详细的执行计划。\n用户需求：\n%s\n%s\n请使用 PlanningTool 创建执行计划。计划应该：\n1. 将复杂任务分解为多个可执行的步骤\n2. 为每个步骤分配最合适的 Agent\n3. 确保步骤之间的依赖关系合理\n4. 步骤描述要清晰具体\n\"\"\",\ncontext.getUserInput(),\nagentsInfo.toString()\n);\nreturn\nprompt;\n}\n// ... 辅助方法省略 ...\nprivate\nUserMessage\nbuildStepPrompt\n(PlanningStep step, Context context)\n{\nreturn\nnull\n;\n}\nprivate\nString\ncollectAllResults\n(Planning planning)\n{\nreturn\nnull\n;\n}\nprivate\nUserMessage\nbuildSummaryPrompt\n(String results, Context context)\n{\nreturn\nnull\n;\n}\nprivate\nReactAgent\ncreateSummaryAgent\n()\n{\nreturn\nnull\n;\n}\n}\n/**\n* Planning Tool 简化示例\n* 这是一个供 AI 调用的工具，用于创建执行计划\n*/\npublicclassSimplifiedPlanningToolimplementsToolFunctionInterface<SimplifiedPlanningTool.PlanInput, String> {\n@Override\npublic\nString\ngetDescription\n()\n{\nreturn\n\"用于创建和管理任务执行计划的工具\"\n;\n}\n/**\n* Tool 的核心逻辑\n* 当 AI 决定使用这个工具时，会调用此方法\n*/\n@Override\npublic\nString\napply\n(PlanInput input, ToolContext context)\n{\n// 1. 根据 AI 生成的计划内容创建 Planning 对象\nPlanning\nplanning\n=\ncreatePlanningFromInput(\ncontext,\ninput.getTitle(),\ninput.getSteps()\n);\n// 2. 将计划保存到上下文中，供后续执行使用\nsavePlanningToContext(planning);\n// 3. 返回结果给 AI（告知计划已创建）\nreturn\n\"执行计划已创建完成\"\n;\n}\n/**\n* Tool 的输入参数定义\n* AI 会按照这个结构生成 JSON 参数\n*/\npublicstaticclassPlanInput {\n@ToolParam(description = \"计划的标题\")\nprivate\nString title;\n@ToolParam(description = \"计划步骤列表\")\nprivate\nList<StepInput> steps;\n// getters and setters...\n}\n/**\n* 单个步骤的定义\n*/\npublicstaticclassStepInput {\n@ToolParam(description = \"步骤的任务描述\")\nprivate\nString guide;\n@ToolParam(description = \"执行该步骤的 Agent 名称\")\nprivate\nString agent;\n// getters and setters...\n}\n// ... 辅助方法 ...\n}\n5.3.2 基于Graph工作流框架来编排\nPlan-Execute 三阶段 DAG 拓扑\n__START__\n→ PlanningNode → ExecutionNode → SummaryNode →\n__END__\n类图关系\nFlowAgent\n▲\n│\nPlanActAgent\n──uses──▶\nPlanActGraphBuildingStrategy\n│                          │\n│                          ├──creates──▶\nStateGraph\n│                          │\n│                          ├──adds──▶\nPlanningNode\n(\nReactAgent\n)\n│                          ├──adds──▶\nExecutionNode\n(\nNodeAction\n)\n│                          └──adds──▶\nSummaryNode\n(\nReactAgent\n)\n│\n└──uses──▶\nPlanActTool\n(\nFunction\nCalling\n)\n示例代码\nPlanActAgent\npublicclassPlanActAgentextendsFlowAgent {\nprivatefinal\nChatModel\nchatModel;\nprivatefinal\nMap\n<\nString\n,\nReactAgent\n> availableAgents;\nprivatefinal\nPlanActTool\nplanningTool;\n...\nprotectedPlanActAgent\n(\nPlanActAgentBuilder\nbuilder) throws\nGraphStateException\n{\nsuper\n(builder.\nname\n, builder.\ndescription\n, builder.\ncompileConfig\n, builder.\nsubAgents\n);\nthis\n.\nchatModel\n= builder.\nchatModel\n;\nthis\n.\navailableAgents\n= builder.\navailableAgents\n;\nthis\n.\nplanningTool\n= builder.\nplanningTool\n;\n...\n}\npublicstatic\nPlanActAgentBuilder\nbuilder\n(){\nreturnnew\nPlanActAgentBuilder\n();\n}\n@Override\nprotected\nStateGraph\nbuildSpecificGraph\n(\nFlowGraphBuilder\n.\nFlowGraphConfig\nconfig) throws\nGraphStateException\n{\nconfig.\nsetChatModel\n(\nthis\n.\nchatModel\n);\nconfig.\ncustomProperty\n(\n\"availableAgents\"\n,\nthis\n.\navailableAgents\n);\nconfig.\ncustomProperty\n(\n\"planningTool\"\n,\nthis\n.\nplanningTool\n);\n...\nreturn\nFlowGraphBuilder\n.\nbuildGraph\n(\nPlanActGraphBuildingStrategy\n.\nSTRATEGY_TYPE\n, config);\n}\npublicstaticclassPlanActAgentBuilderextendsFlowAgentBuilder<\nPlanActAgent\n,\nPlanActAgentBuilder\n> {\nprivate\nChatModel\nchatModel;\nprivate\nMap\n<\nString\n,\nReactAgent\n> availableAgents;\nprivate\nPlanActTool\nplanningTool;\npublicPlanActAgentBuilder\n(){\n}\npublic\nPlanActAgentBuilder\nchatModel\n(\nChatModel\nchatModel\n){\nthis\n.\nchatModel\n= chatModel;\nreturnthis;\n}\npublic\nPlanActAgentBuilder\navailableAgents\n(\nMap\n<\nString\n,\nReactAgent\n> availableAgents\n){\nthis\n.\navailableAgents\n= availableAgents;\nreturnthis;\n}\npublic\nPlanActAgentBuilder\nplanningTool\n(\nPlanActTool\nplanningTool\n){\nthis\n.\nplanningTool\n= planningTool;\nreturnthis;\n}\n@Override\nprotected\nPlanActAgentBuilder\nself\n(){\nreturnthis;\n}\n@Override\nprotectedvoidvalidate\n(){\n...\n}\n@Override\npublic\nPlanActAgent\nbuild\n() throws\nGraphStateException\n{\nthis\n.\nvalidate\n();\nreturnnew\nPlanActAgent\n(\nthis\n);\n}\n}\n}\nPlanActGraphBuildingStrategy\npublicclassPlanActGraphBuildingStrategyimplementsFlowGraphBuildingStrategy {\npublicstaticfinal\nString\nSTRATEGY_TYPE\n=\n\"PLAN_ACT\"\n;\nprivatestaticfinal\nString\nPLANNING_NODE\n=\n\"planning\"\n;\nprivatestaticfinal\nString\nEXECUTION_NODE\n=\n\"execution\"\n;\nprivatestaticfinal\nString\nSUMMARY_NODE\n=\n\"summary\"\n;\n@Override\npublic\nStateGraph\nbuildGraph\n(FlowGraphBuilder.FlowGraphConfig config)\nthrows\nGraphStateException {\nvalidateConfig(config);\nStateGraph\ngraph\n=\nnew\nStateGraph\n(config.getName(), config.getKeyStrategyFactory());\nChatModel\nchatModel\n=\nconfig.getChatModel();\nPlanActTool\nplanActTool\n=\n(PlanActTool) config.getCustomProperty(\n\"planningTool\"\n);\nMap<String, ReactAgent> availableAgents = (Map<String, ReactAgent>) config.getCustomProperty(\n\"availableAgents\"\n);\n// 将PlanActTool转换为ToolCallback\nToolCallback\nplanningToolCallback\n=\nFunctionToolCallback\n.builder(planActTool.getName(), planActTool)\n.description(planActTool.getDescription())\n.inputType(planActTool.getInputType())\n.inputSchema(planActTool.getParameters())\n.build();\n// 1. 创建Planning Agent - 负责制定执行计划\nReactAgent\nplanningAgent\n=\nReactAgent.builder()\n.name(PLANNING_NODE)\n.model(chatModel)\n.systemPrompt(buildPlanningSystemPrompt(availableAgents))\n.tools(planningToolCallback)\n.build();\n// 2. 创建Execution Node - 负责执行计划中的各个步骤\nExecutionNode\nexecutionNode\n=\nnew\nExecutionNode\n(EXECUTION_NODE, availableAgents);\n// 3. 创建Summary Agent - 负责汇总执行结果\nReactAgent\nsummaryAgent\n=\nReactAgent.builder()\n.name(SUMMARY_NODE)\n.model(chatModel)\n.systemPrompt(buildSummarySystemPrompt())\n.build();\n// 添加节点到图\nFlowGraphBuildingStrategy.addSubAgentNode(planningAgent, graph);\ngraph.addNode(EXECUTION_NODE, node_async(executionNode));\nFlowGraphBuildingStrategy.addSubAgentNode(summaryAgent, graph);\n// 添加边：构建线性工作流\ngraph.addEdge(\n\"__START__\"\n, PLANNING_NODE);\ngraph.addEdge(PLANNING_NODE, EXECUTION_NODE);\ngraph.addEdge(EXECUTION_NODE, SUMMARY_NODE);\ngraph.addEdge(SUMMARY_NODE,\n\"__END__\"\n);\nreturn\ngraph;\n}\n@Override\npublic\nString\ngetStrategyType\n()\n{\nreturn\nSTRATEGY_TYPE;\n}\n@Override\npublicvoidvalidateConfig(FlowGraphBuilder.FlowGraphConfig config){\n...\n}\n/**\n* 构建规划阶段的系统提示词\n*/\nprivate\nString\nbuildPlanningSystemPrompt\n(Map<String, ReactAgent> availableAgents)\n{\nStringBuilder\nprompt\n=\nnew\nStringBuilder\n();\nprompt.append(\n\"我是一个任务规划专家，基于用户输入，创建一个合理的计划，包含清晰的步骤来完成任务，\"\n);\nprompt.append(\n\"每个步骤使用一个Agent来完成。\\n\\n\"\n);\nprompt.append(\n\"可用的Agent信息如下：\\n\"\n);\nint\nindex\n=\n1\n;\nfor\n(Map.Entry<String, ReactAgent> entry : availableAgents.entrySet()) {\nprompt.append(\n\"Agent\"\n).append(index).append(\n\"：\"\n);\nprompt.append(entry.getKey()).append(\n\" - \"\n);\nprompt.append(entry.getValue().description()).append(\n\"\\n\"\n);\nindex++;\n}\nprompt.append(\n\"\\n请使用PlanActTool工具创建执行计划。\"\n);\nreturn\nprompt.toString();\n}\n/**\n* 构建总结阶段的系统提示词\n*/\nprivate\nString\nbuildSummarySystemPrompt\n()\n{\nreturn\n\"\"\"\n# 角色\n你是一个能够回应用户请求的AI助手，你需要根据这个分步骤的执行计划的执行结果，\n进行信息汇总、提取关键信息，给出总结性的结论。\n\"\"\";\n}\n}\nPlanExecutionNode\npublicclassExecutionNodeimplementsNodeAction {\nprivatefinal\nString\nnodeId;\nprivatefinal\nMap\n<\nString\n,\nReactAgent\n> availableAgents;\npublicExecutionNode\n(\nString\nnodeId,\nMap\n<\nString\n,\nReactAgent\n> availableAgents\n){\nthis\n.\nnodeId\n= nodeId;\nthis\n.\navailableAgents\n= availableAgents;\n}\n@Override\npublic\nMap\n<\nString\n,\nObject\n>\napply\n(\nOverAllState\nstate) throws\nException\n{\n// 从state中提取Planning对象\nPlanning\nplanning =\nextractPlanningFromMessages\n(state);\n// 异常校验\n...\n// 用户原始输入\nString\nuserInput =\nextractUserInput\n(messages);\n// 执行每个步骤\nList\n<\nMap\n<\nString\n,\nString\n>> stepResults =\nnew\nArrayList\n<>();\nStringBuilder\naccumulatedContext =\nnew\nStringBuilder\n();\naccumulatedContext.\nappend\n(\n\"用户请求：\"\n).\nappend\n(userInput).\nappend\n(\n\"\\n\\n\"\n);\nfor\n(\nPlanningStep\nstep : planning.\ngetSteps\n()) {\nString\nagentName = step.\ngetAgentName\n();\nReactAgent\nagent = availableAgents.\nget\n(agentName);\nif\n(agent ==\nnull\n) {\n// Agent不存在，判断是否需要继续\n...\n}\n// 构建执行消息，包含步骤指引和之前的执行结果\nmessages = (\nList\n<\nMessage\n>) state.\nvalue\n(\n\"messages\"\n).\norElse\n(\nnew\nArrayList\n<>());\nList\n<\nMessage\n> contextMessages =\nnew\nArrayList\n<>(messages);\nString\nstepPrompt =\nbuildStepPrompt\n(step, accumulatedContext.\ntoString\n());\nUserMessage\nstepMessage =\nnew\nUserMessage\n(stepPrompt);\ncontextMessages.\nadd\n(stepMessage);\n// 记录步骤执行结果\nMap\n<\nString\n,\nString\n> stepResult =\nnew\nHashMap\n<>();\nstepResults.\nadd\n(stepResult);\ntry\n{\n// 执行Agent\nAssistantMessage\nresponse = agent.\ncall\n(contextMessages);\nString\nresult = response.\ngetText\n();\n//填充stepResult\n...\n}\ncatch\n(\nException\ne) {\n// 执行出错，记录错误并继续\n...\n}\n//手动更新状态\n...\n// 累积上下文\naccumulatedContext.\nappend\n(\n\"步骤 \"\n).\nappend\n(step.\ngetStepIndex\n())\n.\nappend\n(\n\" (\"\n).\nappend\n(agentName).\nappend\n(\n\")：\\n\"\n)\n.\nappend\n(\n\"任务：\"\n).\nappend\n(step.\ngetStepGuide\n()).\nappend\n(\n\"\\n\"\n)\n.\nappend\n(\n\"结果：\"\n).\nappend\n(result).\nappend\n(\n\"\\n\\n\"\n);\n}\n// 返回执行结果\nMap\n<\nString\n,\nObject\n> result =\nnew\nHashMap\n<>();\nresult.\nput\n(\n\"step_results\"\n, stepResults);\nresult.\nput\n(\n\"execution_summary\"\n, accumulatedContext.\ntoString\n());\n// 将执行摘要添加到消息列表，供Summary节点使用\nList\n<\nMessage\n> newMessages =\nnew\nArrayList\n<>(messages);\nnewMessages.\nadd\n(\nnew\nUserMessage\n(\n\"按照计划所有步骤的执行结果如下：\\n\"\n+ accumulatedContext.\ntoString\n()));\nresult.\nput\n(\n\"messages\"\n, newMessages);\nreturn\nresult;\n}\n/**\n* 构建步骤执行提示词\n*/\nprivate\nString\nbuildStepPrompt\n(\nPlanningStep\nstep,\nString\ncontext\n){\nStringBuilder\nprompt =\nnew\nStringBuilder\n();\nprompt.\nappend\n(\n\"请执行以下任务：\\n\"\n);\nprompt.\nappend\n(step.\ngetStepGuide\n()).\nappend\n(\n\"\\n\\n\"\n);\nif\n(!context.\nisEmpty\n()) {\nprompt.\nappend\n(\n\"背景信息：\\n\"\n);\nprompt.\nappend\n(context);\n}\nreturn\nprompt.\ntoString\n();\n}\n}\n使用PlanActAgent示例\npublicclassPlanActAgentExample {\npublicvoidusePlanActAgent(String userQuery){\n// 1. 首先注册PlanAct策略\nPlanActStrategyRegistrar.register();\n// 2. 创建可用的Agent映射\nMap<String, ReactAgent> availableAgents =\nnew\nLinkedHashMap\n<>();\n// 翻译专家Agent\nReactAgent\ntranslationAgent\n=\nReactAgent.builder()\n.name(\n\"翻译专家\"\n)\n.model(chatModel)\n.systemPrompt(\n\"你是一个专业的翻译专家，能够准确地在中英文之间进行翻译。\"\n)\n.description(\n\"专业的翻译专家，能够准确地在中英文之间进行翻译。\"\n)\n.build();\navailableAgents.put(\n\"Agent1\"\n, translationAgent);\n// 天气专家Agent\nReactAgent\nweatherAgent\n=\nReactAgent.builder()\n.name(\n\"天气专家\"\n)\n.model(chatModel)\n.systemPrompt(\n\"你是一个天气专家，能够提供天气相关的信息和建议。\"\n)\n.description(\n\"天气专家，能够提供天气相关的信息和建议。\"\n)\n//查询天气的工具\n.tools(weatherTool)\n.build();\navailableAgents.put(\n\"Agent2\"\n, weatherAgent);\n// 交通专家\nReactAgent\ntrafficAgent\n=\nReactAgent.builder()\n.name(\n\"交通专家\"\n)\n.model(chatModel)\n.systemPrompt(\n\"你是一个交通专家，能够提供交通相关的信息和建议。\"\n)\n.description(\n\"交通专家，能够提供交通相关的信息和建议。\"\n)\n//查询交通的工具\n.tools(trafficTool)\n.build();\navailableAgents.put(\n\"Agent3\"\n, trafficAgent);\n// 3. 创建规划工具\nPlanActTool\nplanningTool\n=\nnew\nPlanActTool\n();\n// 4. 创建PlanActAgent\nPlanActAgent\nplanActgent\n=\nPlanActAgent.builder()\n.name(\n\"plan_act_agent\"\n)\n.description(\n\"一个使用Plan-Execute模式的智能代理\"\n)\n.chatModel(chatModel)\n.availableAgents(availableAgents)\n.planningTool(planningTool)\n.compileConfig(CompileConfig.builder().build())\n.subAgents(availableAgents.values().stream().collect(Collectors.toList()))\n.build();\nAssistantMessage\nresponse\n=\nagent.invoke(userQuery);\n}\n}\n注意点\n1.FlowGraphBuildingStrategy.addSubAgentNode(agentXXX, graph)，其添加的Node实例是AgentSubGraphNode，该Node默认返回的是流式数据，\n框架层在更新overallState时，对于流式数据和非流式数据是有差异的\n，前者只会保留本次的lastData，这个场景下带来的影响是：planning节点的过程消息会丢失，包括：llm首次返回结果、工具执行结果等。如果你希望保留这个过程数据，可以自己构建NodeAction。\n2.ExecutionNode内部多个ReactAgent的执行状态没有更新到ParentState上，只返回了最终的结果，那么SummaryAgent就只能获取ExecutionNode的结果作为输入，当你需要这个过程数据时，那么可以在内部执行过程\n手动更新状态\n，或者直接在\nExecutionNode的结果里填充过程数据\n。\n3.如果需要会话记忆，BaseCheckpointSaver在Agent创建的时候需要手动初始化，在FlowAgent实现中可以通过compileConfig配置。\n优点\n实际上，Graph编排与手动编排在代码量上并无显著差异。但对我们而言，采用Graph工作流框架的核心价值在于：\n统一的抽象层\n：\nPlanActAgent被封装为标准的Multi-agent实现，可以像使用ReactAgent一样便捷地创建和调用。\n协作友好性\n：\n在多人协作项目中，团队成员对Multi-agent的实现模式和功能边界有了统一认知，降低了沟通成本。\n可扩展性\n：\n基于这套标准化框架，可以快速扩展出适配特定业务场景的Multi-agent变体。\nAI-Coding友好\n：\n在既定的模式下，扩展更多的Multi-agent实现，用AI来实现非常高效。\n六、总结\n开发效率的飞跃：5小时 VS 5天\n本文标题提到的\"5小时 VS 5天\"这个对比，虽然看起来很有冲击力，但必须坦诚地说明几点前提条件：\n经验积累的差异：第一次实现时踩过的坑、积累的经验，在第二次实现时都成为了宝贵的财富；\n代码复用的优势：Tool等核心组件都是在原有基础上改写或复用，而非完全从零开始；\n因此，这个对比更多是想说明：选对框架和方法论，能够显著降低Multi-agent系统的实现门槛。即使是首次接触，有了Spring AI Alibaba的加持，开发效率也能得到不错的提升。\n从提示词到上下文工程\n自主Agent以及Multi-agent场景下，开发者需要从单纯的提示词调优转为对上下文工程的关注，包括但不限于：\n工具调用结果的上下文整合，包括：工具结果的标准化、大结果的外部存储及检索机制。\n上下文的动态检索与注入，可以是静态的RAG和Agentic RAG，也可以是文件检索工具等。\n上下文的裁剪与优先级管理，包括：摘要、评分机制、总结等。ps：双刃剑。\n记忆系统的分层管理，短期记忆、长期记忆等。\n智能体间的上下文共享与传递机制，Multi-agent协作的关键在于智能体之间如何高效\n共享与隔离信息\n。\nPlanning不是银弹：因地制宜选择架构\n很多Multi-agent的案例都会强调Planning的重要性，但在实际业务场景中，并不是所有问题都需要复杂的规划能力：\n固定流程的场景：如果业务流程本身就是确定的（比如订单处理、审批流程），使用固定的Agent编排反而更加高效可控；\nReAct的适用性：对于需要一定自主性但又不需要复杂规划的场景，可以从子节点入手，使用ReAct模式提升Agent的决策能力；\n混合架构的价值：在实践中，有些业务场景用 固定流程 + 局部ReAct的混合架构往往是最优解；\n最后\n本文流程图和架构图都由nano banana pro生成，存在部分文字模糊的情况；本文部分代码示例由大模型生成。\n团队介绍\n本文作者式遂，来自淘天集团-淘特用户技术团队。团队主要负责淘宝行业&淘特C端链路的研发工作，包含：搜索推荐、互动游戏、导购、交易等基础服务及创新业务。当下我们积极拥抱AI时代，探索智能化在研发提效和业务场景中的无限可能。技术不只是工具，更是为用户创造价值的力量。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.01,
+        "transfer_agent": 0.86,
+        "irrelevant": 0.12,
+        "peripheral": 0.01,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.93,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.07,
+        "2": 0.91,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.71,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.32,
+        "2": 0.16,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.92,
+      "probabilities": {
+        "0": 0.54,
+        "1": 0.19,
+        "2": 0.09,
+        "3": 0.17,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.42,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.58,
+        "3": 0.42,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.71,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.06,
+        "4": 0.86,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.91,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.16,
+        "3": 0.73,
+        "4": 0.1,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 12683,
+    "outputTokens": 172,
+    "totalTokens": 12855
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "relevance": 0.94,
+        "grounding": 0.53,
+        "decision_action": 0.39,
+        "evidence": 0.71,
+        "actionability": 0.8,
+        "anti_hype": 0.8,
+        "category": 0.84
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791179860316,
+                "endTime": 1791179860399,
+                "providerRequestId": "df814110-f943-4843-8950-82aae4c26ada",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179860407,
+                "endTime": 1791179860586,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000532686",
+      "marketCost": "0.000532686",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000532686",
+      "inferenceCost": "0.000532686",
+      "inputInferenceCost": "0.000532686",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7A8M6KRRG8JF3PNTWR42"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:40 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::pkzxc-1791179859357-691816ff0033"
+    },
+    "body": {
+      "answers": {
+        "relevance": {
+          "type": "score",
+          "score": 1.93,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.07,
+            "2": 0.91,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.71,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.32,
+            "2": 0.16,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.92,
+          "probabilities": {
+            "0": 0.54,
+            "1": 0.19,
+            "2": 0.09,
+            "3": 0.17,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.42,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.58,
+            "3": 0.42,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.71,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.06,
+            "4": 0.86,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.91,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.16,
+            "3": 0.73,
+            "4": 0.1,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.01,
+            "transfer_agent": 0.86,
+            "irrelevant": 0.12,
+            "peripheral": 0.01,
+            "direct_local": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 12683,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "relevance": 0.94,
+            "grounding": 0.53,
+            "decision_action": 0.39,
+            "evidence": 0.71,
+            "actionability": 0.8,
+            "anti_hype": 0.8,
+            "category": 0.84
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791179860316,
+                    "endTime": 1791179860399,
+                    "providerRequestId": "df814110-f943-4843-8950-82aae4c26ada",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179860407,
+                    "endTime": 1791179860586,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000532686",
+          "marketCost": "0.000532686",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000532686",
+          "inferenceCost": "0.000532686",
+          "inputInferenceCost": "0.000532686",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7A8M6KRRG8JF3PNTWR42"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:39.815Z"
+  }
+}

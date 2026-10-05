@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1177466178948239360",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "AI 动画辅助实现（实践篇）：从 AE 到可运行代码的全链路方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650544614&idx=1&sn=1341392d63cc99e7d3461fcbadc12d25",
+      "date": "2026-06-29T02:27:00.759Z",
+      "chars": 5067,
+      "text": "原创\n营销&交易技术\n2026-06-29 10:27\n浙江\nAE直出代码+AI智能集成，动画开发耗时从4小时缩至30分钟，还原度超95%！\n上篇\n《AI 动画辅助实现的方案与实践》\n介绍了用 AI 辅助前端手写动画的思路与实践。本篇进一步介绍我们落地的全链路方案：设计师在 AE 中完成动画制作后，通过插件实时预览转码效果，确认无误后直接导出前端可用代码，前端在 IDE 中集成即可使用。该方案将传统交付流程从「AE → Lottie/视频 → 前端手写代码」简化为「AE 插件直出代码」，大幅提升了动画开发的效率和还原度。\n背景与问题\n▐\n传统动画交付的难题\n在传统的前端动画开发流程中，设计师和前端之间存在明显的协作壁垒：\n交付物不可解析\n：设计师交付视频或 GIF，时间轴、缓动曲线、路径坐标等参数无法精确提取，还原度全靠个人经验\n沟通成本高\n：验收时设计师描述视觉感受、前端描述数值参数，语言不对齐，一个动画来回返工 2–3 次是常态\n实现效率低\n：反复比对视频、手调关键帧，一个组合动画耗时 2–4 小时，且动画代码与业务逻辑高度耦合，后续难以维护\n▐\n核心矛盾\n问题的本质是\n设计侧的视觉表达\n与\n工程侧的代码实现\n之间存在结构性鸿沟：\n传统工作流中，这个鸿沟只能由前端\"人肉反推\"来填补，效率低且质量不可控。\n现有方案的局限\n▐\n现有技术方案的瓶颈\n解决动画还原问题，业界主要有两种路线，但各有明显缺陷：\n路线 A：纯手写 DOM 动画\n还原度差：关键帧、缓动、路径等信息无法从视频中精确提取\n效率低：本质是反复试错，2–4 小时一个动画\n维护难：动画逻辑与业务代码高度耦合，改一个参数牵一发动全身\n路线 B：Lottie 播放\n体积问题：复杂动画（粒子、不规则形变）只能用序列帧，单动画轻松破百 KB\n交互受限：本质是静态播放方案，倒计时、多状态切换等动态场景需大量额外开发\n两条路都走不通，说明问题不在实现方式，而在交付形式本身。\n▐\n我们的解决方案\n我们提出的方案核心是：\n让设计师交付可运行代码，而非动画文件\n。接下来介绍塔罗动画 skill 的实现。\n关键变化：\n设计师侧\n：在 AE 中就能看到代码渲染的效果，提前发现问题\n前端侧\n：拿到的是可直接集成的代码，无需手写和调试\nAI 价值\n：将动画代码与业务代码自动融合，解决\"最后一公里\"的接入问题，\n集成环节需要同时理解动画结构和业务 DOM 现状，判断节点映射关系，再决定合并策略——这个过程无法规则化，是整条链路中最适合交给大模型来做的部分。\n▐\n方案价值\n通过\nAE 插件 + 工程代码生成 + AI 代码集成\n，打通从视觉表达到可执行代码的完整链路：\n实时预览闭环\n：设计师在 AE 中直接看到代码渲染效果，问题前置发现，避免后期返工\n结构化代码输出\n：AI 引擎将动画元数据（图层、关键帧、缓动曲线）转换为结构清晰、性能优化的 DOM 代码\n效率质量双赢\n：单次动画开发从 2–4 小时缩短至 15–30 分钟，还原度从 70–80% 提升至 95%+\n最终目标：让前端从动画实现细节中解放出来，专注业务逻辑。\n已实现：全链路工作流\n▐\n整体工作流\n整条链路分为\n设计师侧\n和\n开发侧\n两条并行线，以\n动画代码链接\n为交付结果：\n两侧之间\n唯一的交付物是动画代码链接\n，设计师不需要关心业务实现，开发不需要关心 AE 工程文件。\n▐\n设计师链路详解\n完整视频：\n第一步：AE 动画制作（规范先行）\n设计师在 After Effects 中制作动画时，需注意以下两个关键规范，避免转码后出现视觉异常：\n规范一：遮罩图层与父元素保持一致\nAE 中使用遮罩动画时，需确保\n遮罩图层和被遮罩的父元素是同一个\n。若遮罩层级关系与父元素不对应，转码后遮罩效果将无法正确还原。\n规范二：提前用插件检查图层遮挡问题\nAE 中的预览是将所有图层\"拍平\"渲染的，不存在层叠上下文的概念；而我们生成的是真实 DOM 结构，受\nCSS 层叠上下文\n约束，元素之间的遮挡关系与 AE 预览可能存在差异。\n设计师在完成制作后，应通过 AE 插件的实时预览功能检查一遍，确认各图层的遮挡顺序与设计意图一致，发现问题可直接在 AE 中调整后重新转码。\n第二步：一键转码，交付代码链接\n设计师点击 AE 插件中的「动画转码」按钮，完成以下全链路自动处理：\nAE 工程文件  ──▶  代码生成  ──▶\nbyte\n预览  ──▶  动画代码链接\n设计师可在 byte 预览中确认动画效果与设计稿一致，随后将生成的\n动画代码链接\n交给开发，\n交付即完成\n。\n▐\n开发链路详解\n完整视频：\n第一步：安装 Cursor Skill（首次）\n在 Cursor 中安装 Animation Integration Skill，后续所有动画集成均通过此 Skill 辅助完成，无需手动编写胶水代码。\n第\n二步：预处理——D2C 出 UI（按需）\n若设计师提供的是\n示意性动效稿\n（大量切图、UI 不完整不可用），开发在接入动画之前，需先通过 D2C 完成业务 UI 的搭建，再将动画\"贴上去\"。\n典型情况：商品卡片动画，设计师直接用切图示意，UI 部分完全无法复用，需先完成标准业务组件，再叠加动效。\n第三步：打开动画链接，按需筛选导出（核心阶段）\n开发打开设计师提供的动画代码链接，在可视化界面中对动画进行筛选和处理。两类常见操作：\n多段动画拆分\n：若动画较长、包含多个独立阶段，可分别导出各段，分批交给 Cursor 处理\n剔除干扰元素\n：动画代码中可能包含设计师用于参照的背景、脚手架元素等，可提前隐藏，避免 Skill 误识别后帮忙新增\n第四步：代码生成\n平台根据图层处理结果，提供两种代码格式：\n两种格式均开箱即用，代码结构清晰，动画逻辑与业务逻辑分离。\n第五步：在编辑器中智能集成\n点击编辑器图标后会自动唤起创建新的对话\n创建好会话后，提供代码上下文（需要集成动画的div），然后直接开始即可。\nSkill 做了什么\n开发提供业务代码上下文后，模型会依次完成：① 解析动画节点与属性 → ② 找出与业务 DOM 的对应关系 → ③ 判断采用哪种集成策略 → ④ 识别样式冲突、hardcode 坐标等边界问题并在代码中标注 → ⑤ 输出完整集成代码。\n开发只需 review 产物，不需要自己决策怎么合并。\n集成思路分两种：\nDOM 优先\n：以现有业务 DOM 为基础，将动画节点映射上去。适合业务 DOM 中相关元素基本已存在的情况\n动画优先\n：以动画代码为基础，向其中扩展业务逻辑。适合设计稿与业务 UI 差异过大、节点映射复杂的情况\n建议使用 opus 4.6 模型以获得最佳集成效果。\n当前能力边界与缺口\n▐\n当前已覆盖的场景\n整套方案目前已能处理业务中绝大多数的动画接入场景：\n两种集成思路均已支持：\nDOM 优先\n：以现有业务 DOM 为基础，将动画节点映射上去。适合业务 DOM 中相关元素基本已存在的情况\n动画优先\n：以动画代码为基础，向其中扩展业务逻辑。适合设计稿与业务 UI 差异过大的情况\n▐\n当前缺口：多模块串联动画\nSkill 处理的是\n单个动画的集成\n，但真实业务中存在一类场景：\n同一页面的多个独立模块之间需要按顺序协同播放动画，且推进依赖业务事件。\n典型例子：\n红包飞入 → 自动触发 → 红包抖动 → 等待用户点击 → 砍价动画 → 接口返回 → 价格变化动画\n↑                     ↑              ↑                              ↑\n自动播放            动画结束触发      业务事件触发                 接口数据驱动\n这类场景的问题不在于单个动画的还原，而在于\n动画之间的编排关系\n：\n工具只产出单个动画实现，不产出动画之间的串联逻辑\n串联关系只存在于设计稿和开发认知里，代码里感受不到\n开发需要自己理解设计意图、手写串联逻辑，理解成本极高\n动画推进时机分散在用户事件、接口回调、动画回调中，维护困难\n这是当前链路唯一尚未解决的系统性问题，也是 Clip 分层方案要解决的核心问题。\n下一步：Clip 分层产物方案\n针对多模块串联的缺口，我们正在推进\nClip 分层产物\n机制，核心思路是：将现有\"完整组件\"的产出方式，改为同时产出\"完整组件 + 按时间段拆分的独立动效函数（clips）\"，让串联编排逻辑有地方可以落。\n▐\n产物分层结构\n输出目录/\n├── index.tsx\n# 完整组件（UI 完整时直接使用）\n└── clips/\n├── clip.1-red-packet.ts\n# 第一段：红包飞入（0ms–800ms）\n├── clip.2-shake.ts\n# 第二段：红包抖动\n└── clip.3-price.ts\n# 第三段：价格变化\n每个 clip 只负责\"动\"，不感知业务。clip 对外暴露该段动画涉及的元素入参，开发对照图层预览填入业务 DOM，由\n胶水层\n决定各段的触发时机与串联关系。\n▐\n胶水层的规律\n串联编排逻辑全部收敛在胶水层，结构清晰，不污染动画代码和业务代码：\n// 胶水层示例：串联三段动画，第一段结束后自动触发第二段，用户点击触发第三段\nconst\nclip1\n=\nplayRedPacketClip\n({\ncard\n: cardRef.current, ... })\nclip1.\nthen\n(() =>\nplayShakeClip\n({\ncard\n: cardRef.current }).\nplay\n())\nclip1.\nplay\n()\nconst\nhandleUserClick\n= () =>\nplayFadeOutClip\n({\ncard\n: cardRef.current }).\nplay\n()\nconst\nhandleApiSuccess\n= (data) =>\nplayPriceChangeClip\n({\nprice\n: priceRef.current,\ntargetPrice\n: data.price }).\nplay\n()\n▐\nAI 辅助分段与胶水层生成\n大模型对长段动画\n智能分段\n，每段单独预览图层和动画效果，clip 时间轴从 0 重置\n自动生成 Cursor Prompt，开发复制进去即可生成胶水层代码，再人工微调\n效果验证\nAE 插件导出效果验证\n带复杂粒子动画\n普通动画，带可替换数字金额\n动画集成验证\n已有组件，新增动画\n大量新增动画元素+已有元素新增动画\n总结与展望\n目前整条链路已完整跑通，覆盖了业务中绝大多数的动画场景，其中：\n设计师侧\n支持主流动画类型：形状图层（SVG）、遮罩动画、矢量动画、帧动画\nAE 插件实时预览，代码渲染效果所见即所得，问题前置发现\n一键转码 +  预览 —— 所见即所得，直接生成代码链接交付\n开发侧\nCSS / Anime.js 双格式代码输出，开箱即用\n可视化图层处理：分段导出、剔除干扰元素、APNG 标记、组件替换\nCursor Skill 智能集成，自动完成动画与业务 DOM 的融合\n已验证场景\n：淘宝秒杀砸金蛋、一元购动画等需求的前端动效，单次开发耗时从 2–4 小时压缩至 15–30 分钟，还原度从 70–80% 提升至 95%+。\n设计师产出的是可运行的代码，前端只需要接入。最终目标：让开发从动画实现细节中解放出来，专注业务逻辑本身。\n团队介绍\n本文作者香芋，来自淘天集团-\n营销&交易技术\n团队。一支专注于探索AI等前沿技术与营销业务技术的融合，深度结合用户场景与营销业务的技术团队。依托大淘宝丰富的用户生态和多元化的消费场景，致力于通过技术创新提升用户体验，优化个性化营销能力，助力业务持续增长。通过AI驱动的精准推荐、场景化表达与动态策略调控，我们为用户创造更自然、更智能的购物旅程，为营销业务提供高效、敏捷的技术支撑，助力淘宝构建以用户为中心的全域营销技术体系。\n我们坚信技术是连接用户与价值的桥梁，持续探索创新边界，让营销更懂用户，用技术点亮每一个关键用户体验瞬间。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0.01,
+        "transfer_agent": 0.18,
+        "peripheral": 0.01,
+        "irrelevant": 0.8,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.37,
+      "probabilities": {
+        "0": 0.24,
+        "1": 0.16,
+        "2": 0.6,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.12,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.3,
+        "4": 0.53,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.29,
+      "probabilities": {
+        "0": 0.87,
+        "1": 0.06999999999999999,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.15,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.18,
+        "3": 0.49,
+        "4": 0.33,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.85,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.02,
+        "4": 0.52,
+        "5": 0.34
+      }
+    },
+    "anti_hype": {
+      "score": 3.64,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.04,
+        "3": 0.16,
+        "4": 0.76,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6370,
+    "outputTokens": 173,
+    "totalTokens": 6543
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.75,
+        "relevance": 0.57,
+        "grounding": 0.4,
+        "decision_action": 0.81,
+        "evidence": 0.66,
+        "actionability": 0.45,
+        "anti_hype": 0.75
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179884150,
+                "endTime": 1791179884342,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00026754",
+      "marketCost": "0.00026754",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00026754",
+      "inferenceCost": "0.00026754",
+      "inputInferenceCost": "0.00026754",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A81K5J4BNWTTEPASG83KH"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:04 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::pv87k-1791179884067-529f9e9aa848"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0.01,
+            "transfer_agent": 0.18,
+            "peripheral": 0.01,
+            "irrelevant": 0.8,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.37,
+          "probabilities": {
+            "0": 0.24,
+            "1": 0.16,
+            "2": 0.6,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.12,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.3,
+            "4": 0.53,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.29,
+          "probabilities": {
+            "0": 0.87,
+            "1": 0.06999999999999999,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.15,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.18,
+            "3": 0.49,
+            "4": 0.33,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.85,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.02,
+            "4": 0.52,
+            "5": 0.34
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.64,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.04,
+            "3": 0.16,
+            "4": 0.76,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6370,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.75,
+            "relevance": 0.57,
+            "grounding": 0.4,
+            "decision_action": 0.81,
+            "evidence": 0.66,
+            "actionability": 0.45,
+            "anti_hype": 0.75
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179884150,
+                    "endTime": 1791179884342,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00026754",
+          "marketCost": "0.00026754",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00026754",
+          "inferenceCost": "0.00026754",
+          "inputInferenceCost": "0.00026754",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A81K5J4BNWTTEPASG83KH"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:03.569Z"
+  }
+}

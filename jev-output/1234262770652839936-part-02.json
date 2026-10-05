@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1234262770652839936",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "参数化 Memory 漫谈（纯干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511041&idx=1&sn=037ffb3529df30ea5b8b30b966a526bf",
+      "date": "2026-08-07T10:18:00.229Z",
+      "chars": 6500,
+      "text": "LM 来说，直接对全部参数做 MAML 成本很高。不过，有一些可以猜测的更加可行的方向是（其中部分内容我们后续也会callback到）：\nMAML\n+ adapter\nMAML\n+\nLoRA\nMAML\n+ prefix / soft prompt\nMAML\n+ tool policy\nMAML\n+ small personalized\nmodule\n也就是说，参数化记忆未必写进整个基座模型，可以写进可控的小型参数模块。\n限制四：它学习的是“梯度适应”，不等价于完整自进化\nMAML 默认内循环是梯度下降。LLM 自迭代还涉及语义评价、工具使用、长期记忆、数据构造、验证回滚、安全约束。MAML 只解决其中一个很核心的问题：\n如何把历史任务经验压缩成一个适合快速参数更新的状态。\n遇到限制，说明是好事：（1）指明方向（2）符合预期。\n2.9 MAML 系列阅读推荐\n要全部讲透，还是太难了。\n不想把文章写得又臭又长（已经很长了，不要臭就好）。\n关于更多的知识，可以阅读：CAVIA (\nPMLR\n) / ANIL——MAML 并不直接证明模型学会了深层快速改写。ANIL 提到一个观点，挺有意思的——许多所谓“快速学习”可能来自高质量特征复用。换句话说，参数化记忆未必总是表现为大规模参数重写，也可能表现为稳定表征加上少量任务特定变量的组合。\n再补充一点关于低维适应与可扩展性。LEO（Meta-Learning with Latent Embedding Optimization, 2018）(\nOpenReview\n) 讲的是“适应（adaptation）不一定发生在高维参数空间”。LEO 学一个低维 latent embedding，再在低维空间里做梯度适应，最后生成任务参数。它很适合为后面的 LoRA、adapter、soft prompt 等做铺垫。也许未来的参数化记忆，可能就存在于这种低维、可控的子空间里。还有，iMAML（Meta-Learning with Implicit Gradients, 2019）(\nNeurIPS\n)，它用隐式梯度降低 MAML 外循环反传内循环路径的内存负担。此外，它还顺带提醒了一件很现实的事：如果 MAML 系列未来真正走向大模型，计算图和内存开销会成为核心瓶颈。\n03\nLLM时代之前，MAML之后的自适应元学习：\nMeta-SGD: Learning to Learn Quickly for Few-Shot Learning\n如果 MAML 告诉我们，过去经验可以被压缩成一个适合快速 fine-tune 的参数起点，那么 Meta-SGD（Meta-SGD: Learning to Learn Quickly for Few-Shot Learning，ICML 2017）(\narXiv\n) 进一步说明，过去经验还可以被压缩成一种更新几何。模型需要记住的，不只是“我现在应该站在哪里”，还包括“当新证据出现时，我应该往哪个方向走、走多远”。具体不展开了，讲的故事是：\nMAML:\n历史经验 → 压缩成好的 θ\nMeta-SGD:\n历史经验 → 压缩成好的 θ + 好的更新方向 + 好的学习率\n04\nTransformer 参数本身是否就是 Memory？\n在 MAML 中，我们看到了一种参数化 Memory 的早期形态：过去任务中的经验可以被压缩进参数，使模型在遇到新任务时更容易被少量样本改写。\n但 MAML 讨论的重点是“如何让参数准备好被改写”。到了一个已经训练好的 Transformer，问题换了一种形式：\nTransformer 的参数里，是否已经存在某种可解释的记忆结构？如果存在，它能否被定位、被验证、被改写？\n下面沿着三条经典线索往下看：FFN 的知识性、知识神经元，以及知识编辑。它们大致来自过去 3–9 年的研究。\n4.1 FFN 为什么像记忆？\nTransformer Feed-Forward Layers Are Key-Value Memories (\nar5iv\n) 这篇论文在讨论的核心问题是：Transformer 里占据大量参数的 FFN / MLP 层到底在做什么？\n如你所知，在标准 Transformer 中，FFN 层通常由两个线性变换和一个非线性函数构成。忽略 bias，可以写成：\n其中：\n：当前位置的 hidden state；\n：第一层线性矩阵，可以理解为一组 keys；\n：每个 key 被激活的程度；\n：第二层线性矩阵，可以理解为一组 values；\n输出是多个 value vectors 的加权组合。\nFFN 层在形式上接近一个未归一化的 key-value memory。第一层矩阵中的 key 会被特定输入模式激活，第二层矩阵中的 value 会对输出词表分布产生影响。论文还指出，FFN 层大约占典型 Transformer 参数预算的三分之二（但是，目前这个超参数似乎会变了。关于 LLM 训练的超参数如何配比，也有很多论文可以挖掘和分享）。因此，如果想理解参数化知识从何而来，FFN 是绕不开的一站。(ar5iv)\n跳过具体的实验，我们直接跳到实验结论：\n第一，\nkey 像模式检测器\n。如果从训练语料中检索最能激活某个 key 的文本片段，可以发现很多 key 对应人类可以识别的模式，例如某些 n-gram、句法片段、语义话题。论文中的人工标注实验显示，几乎每个被抽样的 key 都能找到至少一种可识别模式，65% 到 80% 的 top-trigger prefixes 能被归入某种模式。(\nar5iv\n)\n第二，\n层数越高，模式越语义化\n。低层 key 更容易对应浅层模式，例如末尾词、局部 n-gram；高层 key 更容易对应语义模式，例如话题或关系性上下文。(\nar5iv\n)\n第三，\nvalue 会诱导输出词表分布\n。如果把 value vector 投影到输出 embedding 空间，观察它对词表分布的影响。高层 value 更容易把概率质量集中到 key 所触发模式之后可能出现的 token 上。(ar5iv)\n此外，如上图所示，FFN 输出通常由多个 active memory cells 组合形成，单个 memory cell 很少独立决定 layer-level prediction。即，FFN 在一次前向传播中激活一组 memory cells；同时，每层输出来自多个 value 的加权组合。（论文统计了 4,000 个验证集 prefix 在每一层 FFN 中激活了多少 memory cells）\n因此，想表达的是：\nTransformer 参数中存在一种“模式 → 输出倾向”的可解释结构。FFN 的第一层更像匹配条件，第二层更像写入到 residual stream 的内容。\n但是它也只能说明一些可能存在的结构：\n1.\n说明 FFN 参数具有 memory-like 结构；\n2.\n主要分析了 pattern 与 next-token distribution，还没有直接证明某个具体事实以干净、独立、可任意编辑的形式存在于某个参数槽位中。（我认为可任意编辑是不符合深度学习的思想的）\n到这里要踩一下刹车：这项工作给参数化 Memory 提供了一个结构入口，但还没有完成事实定位，更谈不上事实写入。\n更多的研究，也可以看看 Engram 论文。(\narXiv\n)\n4.2 Knowledge Neurons：事实能否被定位到神经元？\n如果前一篇文章说明了 FFN 有 key-value memory 结构，那么\nKnowledge Neurons in Pretrained Transformers\n(\nar5iv\n) 就往前走了一步：某个事实的表达，能否归因到少量具体神经元？\n这篇论文研究的是 BERT 上的 fill-in-the-blank cloze task。事实被表示为一个关系三元组，例如：\n然后用 prompt 模板让模型预测 tail，例如：\nThe capital of Ireland\nis\n[MASK].\n作者提出 knowledge attribution 方法（如上图），用 integrated gradients 衡量 FFN 中间神经元对正确答案概率的贡献，再通过多个表达同一事实的 prompt 模板做 refinement，保留那些跨表达共享的神经元。这些神经元被称为 knowledge neurons。关于实验，我想多讲一点，主要是让大家看看这种实验可以怎么做：\n第一，作者在 BERT-base-cased 上做实验，并使用 ParaRel 数据集。最终保留 34 个关系，包含 27,738 个 relational facts 和 253,448 个 knowledge-expressing prompts。作者通过阈值控制，使每个 relation/fact 平均得到少量 knowledge neurons。\n第二，操纵这些神经元会显著影响模型表达对应事实。论文报告：抑制 knowledge neurons 会让正确答案概率平均下降 29.03%；放大 knowledge neurons 会让正确答案概率平均上升 31.17%。对应 baseline 神经元的影响很小，甚至在放大时平均下降 1.27%。\n第三，作者尝试做“知识手术”。他们直接修改 FFN 第二层中对应 neuron 的 value slot，用于更新事实或擦除某类关系。更新事实时，knowledge neurons 的 change rate 为 48.5%，success rate 为 34.4%，随机神经元的 success rate 为 0.0%。关系擦除实验中，被擦除关系的 perplexity 大幅上升，其他关系受到较小影响。\n把这些实验放在一起，可以得到一个总结：\n如果 FFN 是 key-value memory，那么某些事实表达也许可以被追踪到少量被激活的 FFN 中间神经元。\n但，还是和前面 FFN 知识性那一节一样，这里必须强调：\n定位不等于可靠写入\n。它的实验主要发生在 BERT 的 cloze 任务中，编辑实验也被作者表述为 preliminary case studies。它证明“少量神经元与事实表达有强相关和可干预关系”，但还没有证明这些神经元就是稳定、独立、可规模化编辑的事实存储单元。\n4.3 ROME：事实关联能否被直接写入参数？\nROME 的全称是\nRank-One Model Editing\n，来自论文\nLocating and Editing Factual Associations in GPT\n( ar5iv )。它研究 GPT 风格的 autoregressive Transformer，并把事实表示为：\n其中\n是 subject，\n是 relation，\n是 object。\nROME 先用 causal tracing 找到事实召回时的关键计算位置。它发现，在 GPT-2 XL 等模型中，事实关联的召回与\n中间层 MLP 模块\n强相关，关键 token 通常是 subject 的最后一个 token。即，中间层 feed-forward modules 在处理 subject tokens 时，会介导 factual predictions。\nROME 的基本流程可以压缩成三步。\nStep\n1\n：找 key\n用包含 subject 的文本，读取 subject 最后一个 token 在目标 MLP 层中的内部表示，得到 subject key。（对照组）\nStep\n2\n：求\nvalue\n优化一个\nvalue\nvector，使它被写入 residual stream 后，模型会预测新的 object，同时尽量保留模型对 subject 的其他理解。（加噪声）\nStep\n3\n：写参数\n用一个 rank\n-\none\nupdate\n修改 MLP 权重，使这个 key 以后能映射到新的\nvalue\n。（恢复噪声组）\n显然，ROME 的写入可以理解成一个受约束的线性代数问题：\n同时要求对大量旧 key 的影响尽量小。简化直觉是：找到一个低秩参数改动，让目标 subject key 读出新的 object value，并尽量减少对其他 key 的干扰。论文中 ROME 把 MLP 看作 linear associative memory，并通过 rank-one update 插入新的 key-value association。\nROME 的实验贡献主要体现在两点。\n第一，它在 zsRE 编辑任务上取得了很高的 efficacy，并且与 fine-tuning、hypernetwork 类方法相比具有竞争力。论文表格中 ROME 在 GPT-2 XL 上的 efficacy 达到 99.8，paraphrase 为 88.1，specificity 为 24.2，与其他方法相比显示出强单点编辑能力。\n第二，ROME 引入 CounterFact 来评估更难的反事实编辑。这个数据集关注三类指标：efficacy、paraphrase generalization、neighborhood specificity。也就是说，编辑后模型要能回答新事实，要能在改写 prompt 下仍然回答新事实，还要避免把邻近但未编辑的事实一起改掉。\n回到我们梳理的文章脉络里，ROME 的意义是：\nROME 把参数化 Memory 的问题推进到“可写入”层面。它不再只问参数里有没有事实关联，而是尝试通过低秩更新，把新的 factual association 写入中间层 MLP。\n当然，这里要强调一个关键点：ROME 写入的是特定形式的事实关联，尤其是 subject-relation-object。这是一种非常基础、类似知识图谱结构的表示方式。它不等同于写入完整知识系统，也不保证新事实的所有逻辑后果都会自动传播，更不保证在那些无法用语言描述的 latent space 中顺利完成编辑（edit）。\n4.4 MEMIT：从单个事实到批量事实写入\nROME 的问题是单点编辑（尽量减少对于其他 key 的干扰）。MEMIT 的问题是：\n能否一次性写入大量 factual memories？\nMEMIT，全称\nMass-Editing Memory in a Transformer\n（\nar5iv\n），沿用 ROME 的思想，继续把 MLP 层视为可写入的 associative memory。它的目标是直接更新模型参数，把大量新的事实关联批量写入模型。MEMIT 可以在 GPT-J 6B 和 GPT-NeoX 20B 上扩展到数千条事实关联，规模比此前工作高出多个数量级。(\nar5iv\n)\n它的实验思路是：确定要修改的事实集合，然后计算每条事实在模型中对应的表示（representation），并通过优化一个目标函数来更新模型参数，使这些事实能够被正确记忆（memorization），同时尽量减少对其他事实的干扰。稍微展开一下，看看这个优化过程怎么写成数学形式：\nROME 可以写成：\n也就是让一个 subject key 映射到一个新的 value。 MEMIT 把这个式子扩展成一批：\n其中：\n：一批要编辑的 subject keys；\n：一批目标 values；\n：目标 MLP 的输出投影权重；\n：一次写入的事实数量。\n如果只关心新事实，直接求一个\n让它满足\n就行。但这样会严重破坏旧知识，因为原来的\n还承载着大量已有 key-value 映射。 所以 M",
+      "fulltext_obtained": true,
+      "chunk_index": 2,
+      "chunk_count": 11
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.04,
+        "transfer_business": 0,
+        "transfer_agent": 0.5,
+        "irrelevant": 0.46
+      }
+    },
+    "relevance": {
+      "score": 1.24,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.59,
+        "2": 0.32,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.07,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.04,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.11,
+      "probabilities": {
+        "0": 0.92,
+        "1": 0.04,
+        "2": 0.04,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.91,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.12,
+        "2": 0.06,
+        "3": 0.02,
+        "4": 0.65,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.67,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.45,
+        "2": 0.23,
+        "3": 0.09,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.73,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.1,
+        "2": 0.16,
+        "3": 0.54,
+        "4": 0.17,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.75,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6398,
+    "outputTokens": 172,
+    "totalTokens": 6570
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "decision_action": 0.93,
+        "evidence": 0.27,
+        "actionability": 0.41,
+        "anti_hype": 0.58,
+        "category": 0.37,
+        "relevance": 0.72,
+        "grounding": 0.95
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180415117,
+                "endTime": 1791180415578,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000268716",
+      "marketCost": "0.000268716",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000268716",
+      "inferenceCost": "0.000268716",
+      "inputInferenceCost": "0.000268716",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AR83JHPK0G0S02RESS9FC"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:55 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::4bg8n-1791180415050-d798e43a8fda"
+    },
+    "body": {
+      "answers": {
+        "decision_action": {
+          "type": "score",
+          "score": 0.11,
+          "probabilities": {
+            "0": 0.92,
+            "1": 0.04,
+            "2": 0.04,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.91,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.12,
+            "2": 0.06,
+            "3": 0.02,
+            "4": 0.65,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.67,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.45,
+            "2": 0.23,
+            "3": 0.09,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.73,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.1,
+            "2": 0.16,
+            "3": 0.54,
+            "4": 0.17,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.75
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.04,
+            "transfer_business": 0,
+            "transfer_agent": 0.5,
+            "irrelevant": 0.46
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.24,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.59,
+            "2": 0.32,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.07,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.04,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6398,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "decision_action": 0.93,
+            "evidence": 0.27,
+            "actionability": 0.41,
+            "anti_hype": 0.58,
+            "category": 0.37,
+            "relevance": 0.72,
+            "grounding": 0.95
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180415117,
+                    "endTime": 1791180415578,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000268716",
+          "marketCost": "0.000268716",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000268716",
+          "inferenceCost": "0.000268716",
+          "inputInferenceCost": "0.000268716",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AR83JHPK0G0S02RESS9FC"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:54.808Z"
+  }
+}

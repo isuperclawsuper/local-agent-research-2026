@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "257424721854858240",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工都Vibe Coding出了什么好玩的东西？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800857&idx=1&sn=3c347f08cdcc6e73a0c1cd8cd7de115d",
+      "date": "2026-03-19T09:27:00.507Z",
+      "chars": 2742,
+      "text": "原创\n脑洞大开的\n2026-03-19 17:27\n广东\n脑洞也太大了\n话题背景\nVibe Coding，正在让“人人都是产品经理”成为可能。\n不需\n要代码基础，几句对话，一个念头，就能把“要是有这个工具就好了”的想法变成现实。在内部KM上看到有人纯Vibe Coding出了2000+用户的「鹅厂饭友」date小程序，有人给部门做了个年会\n街机小游戏，还有人下班后搓了个AI出片神器...\n好奇鹅厂的大佬们，都用Vibe Coding搞出了什么好玩的东西\n？\n也欢迎大家在评论区分享你的奇思妙想。（分享有奖）\n脑洞大开的鹅厂员工们\n@xin-游戏客户端开发\n▼\nVibe了\n监控\n电脑硬件\n状\n态和\n0700\n的摆件\n。\n@space-视觉设计\n▼\n因为太喜欢吃寿X郎了，代码小白vibe coding了一个\n「郎给的诱惑」\n—未上线\n首页集成：\n【本次白碟限时活动倒计时】\n【下期白碟活动启动倒计时】\n【你附近的最近郎君】\n寿司图鉴：\n从夯到拉点评寿司，类似评分功能\n百碟斩：\n大胃王功能，记录累计摄入寿司数\n@\nhealth\n-后台开发\n▼\n由于token有限，最近在使用多个编辑器\nCodebuddy\n/Cursor\n/ClaudeCode\n的时候，发现对话记录全散落在各个IDE 的侧边栏或者命令行里，但里面很多优质内容想收藏作为笔记，所以用ClaudeCode vibe coding了一个小工具\n【问渠】，运行在本地mac，可以把这些对话统一同步到本地管理，然后可以用大模型提炼成可搜索的技术笔记，\n沉淀为你自己的知识库\n。有需要的同学可以体验下。项目开源，并且生成项目所有代码的完整对话流程也都提交到git了。\n@\ncxk\n-大数据开发\n▼\n我\nVibe Coding了一个\n班前休闲小游戏\n，\n大家无聊的时候可以点开小飞一会，躲一躲陨石。\n@\ntivnan\n-客户端开发\n▼\niOS 自带相册 app 的搜索能力太锉了，所以搓了一个\n本地相册搜索 app\n📸。目前有图文互搜、重复图片筛选、图图相似、图文相似等等一大堆图片小工具。底层接了一个基于 weclip v2端侧图文模型，微信出的，号称\n当世最强中文CLIP模型\n，实际体感不错，准确率不低。准备把我所有需要的图片操作都写里面去。\n@kak-3D角色设计\n▼\nAI 短剧制作工作台\n【一句话变一部剧】\n输入一个想法，AI 帮你跑完从剧本到成片的全流程\n【六步流水线】\n剧本→角色→分镜→关键帧→视频→剪辑，步步衔接又自由跳转，创作不被流程绑架\n【7 大视频模型集结】\n一站接入，同一个镜头可以多模型对比出图，挑最满意的那个\n【角色一致性可控】\n立绘锁定角色形象，后续分镜和关键帧自动沿用，不怕主角换脸\n【批量生成不手软】\n关键帧、视频片段支持一键批量渲染，几十个镜头并行出图，效率拉满\n【内置时间轴剪辑】\n生成完不用导出到别的软件，直接拖拽拼片、加字幕转场，闭环搞定\n【多项目并行】\n灵感多的人有福了，几部剧同时推进互不干扰\nSuperTools - 超级工具箱\n为什么选择 SuperTools？\n市面上的在线工具要么需要上传文件到陌生的服务器，要么功能零散分布在十几个网站。SuperTools 把图片处理、PDF 操作、视频编辑、文字识别四大高频需求整合到一个页面里，而且所有运算都发生在你的浏览器中 — 文件自始至终不会离开你的设备。\n没有后端、没有数据库、没有用户系统 — 打开页面就是全部。断网？照样能用。\n@\nlexis\n-\n产品策划\n▼\n0手写代码，文科艺术生背景，\n3个月时间cursor单兵手搓一个\n2000+\n腾讯人在玩的\n约饭date app小程序 【饭之 | 下班一起吃饭】\n。\n自己也靠这个产品认识了很多有意思的人，有漂亮姐妹，也有有想法的业务负责人等等，一段值得探索的旅程～\n@cxxiaoo-研发\n▼\n房多收租金难以管理？每户住几个人，水电费怎么算？微信小程序帮你记录，提醒收租日。\n@qing-客户端开发\n▼\n最近自己 Vibe Coding 做了一个\nmacOS 原生小工具\n，叫 AgentCrew。\n平时用\nCursor、Claude、Codex\n这些 AI 辅助开发时，最大的感受就是：不同模型真的各有各的强项。有的适合改代码，有的适合 Review，有的适合查 Bug 和做修复。\n但现在大多数 IDE 里，这种跨模型协作还是得靠手动切，没法把“写代码 -> Review -> 跑测试 -> 失败修复”真正串成自动流水线。\n所以我就顺着这个痛点，自己做了一个\nAgentCrew\n。它是一个面向 macOS 的\nAI + CLI\n编排工作台，可以把\nCursor / Claude / Codex 和 git / npm / docker / ffmpeg\n这些工具放到同一个可视化工作流里协作。\n现在它可以自动拆任务、生成\nImplement -> Review -> Fix -> Verify\n流程，也支持测试、抓错、补 Patch，甚至能扩展到本地 CI/CD、批处理和运维任务。\n我最喜欢的是，它不是简单再包一层聊天界面，而是真的想让不同 AI 和传统工具像“数字工人”一样协作起来。\n目前还在持续打磨中，但这次 Vibe Coding 的体验很爽，也算是把“要是有这个工具就好了”真的做成了一个能跑的原型。\n@lw-消费互联网营销\n▼\n我写了一个叫\nMagic Box的轻量级实时渲染引擎\n，把它装进3D打印监控界面，可以把枯燥的打印监控变成\n有角色、有场景、有动画的3D小世界。\n如果孩子问：“3D打印机里有小人在盖房子吗？”\n现在，你可以肯定地说\n：“是的，雪宝和艾莎正在盖你的冰雪城堡。”\n请看VCR：\n@j\nacobs\n-\n音频算法工程师\n▼\n做\n了一个DAW和一套带GUI的音频效果器\n，比如4段参数均衡\n@\nkangkan\n-前端开发\n▼\nvi\nbe coding 了一个适合\n自己使用的\n划词翻译插件\n，字幕形式展示\n@yufang\n-内容运营\n▼\n运\n营\n同学上线！只花了2小时用codebuddy+微信云开发做成的小程序，对于非技术同学能够看到自己的小程序运行起来真的超有满足感，\n这款“你拉了不”小程序用于噗噗健康打卡！！！一起噗起来\n*本文内容源自腾讯内部知识平台KM\n想体验鹅厂同学们做的应用吗？\n关注【腾讯技术工程】评论区回复：\n本文中你最想体验的项目名称\n我们会回复github /小程序链接（如已开源）\n也欢迎大家在评论区分享\n你的Vibe Coding作品\n！\n抽\n5\n名点赞最高的同学送出鹅厂周边一份🎁\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "peripheral": 0.49,
+        "transfer_agent": 0.1,
+        "irrelevant": 0.41,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.28,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.39,
+        "2": 0.45,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.7,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.21,
+        "2": 0.39999999999999997,
+        "3": 0.2,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.26,
+      "probabilities": {
+        "0": 0.84,
+        "1": 0.11,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.71,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.28,
+        "2": 0.71,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.59,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.51,
+        "2": 0.21,
+        "3": 0.07,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.39,
+      "probabilities": {
+        "0": 0.7,
+        "1": 0.22,
+        "2": 0.07,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.83,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4227,
+    "outputTokens": 174,
+    "totalTokens": 4401
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.37,
+        "relevance": 0.52,
+        "grounding": 0.48,
+        "decision_action": 0.82,
+        "evidence": 0.8,
+        "actionability": 0.47,
+        "anti_hype": 0.74
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179977972,
+                "endTime": 1791179978131,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000177534",
+      "marketCost": "0.000177534",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000177534",
+      "inferenceCost": "0.000177534",
+      "inputInferenceCost": "0.000177534",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AAX727EQJV3T4JK401Y89"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:38 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::j7qn8-1791179977942-481a52ea56f1"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "peripheral": 0.49,
+            "transfer_agent": 0.1,
+            "irrelevant": 0.41,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.28,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.39,
+            "2": 0.45,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.7,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.21,
+            "2": 0.39999999999999997,
+            "3": 0.2,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.26,
+          "probabilities": {
+            "0": 0.84,
+            "1": 0.11,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.71,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.28,
+            "2": 0.71,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.59,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.51,
+            "2": 0.21,
+            "3": 0.07,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.39,
+          "probabilities": {
+            "0": 0.7,
+            "1": 0.22,
+            "2": 0.07,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.83
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4227,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.37,
+            "relevance": 0.52,
+            "grounding": 0.48,
+            "decision_action": 0.82,
+            "evidence": 0.8,
+            "actionability": 0.47,
+            "anti_hype": 0.74
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179977972,
+                    "endTime": 1791179978131,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000177534",
+          "marketCost": "0.000177534",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000177534",
+          "inferenceCost": "0.000177534",
+          "inputInferenceCost": "0.000177534",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AAX727EQJV3T4JK401Y89"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:37.357Z"
+  }
+}

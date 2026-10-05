@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1228381903611002880",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "面向生产力的 Qwen3.8、“千问办公”已同步上线",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510872&idx=1&sn=147d7bfeca0f79d93bb231fae1f0a74b",
+      "date": "2026-08-03T03:18:00.744Z",
+      "chars": 1935,
+      "text": "阿里技术\n2026-08-03 11:18\n浙江\n今天，我们正式发布新一代基座大模型\nQwen3.8\n。\nQwen3.8 总参数量 2.4 万亿，在编程（Coding）和专业办公（Cowork）方面能力大幅提升，\n今日放榜的权威三方榜单Arena中，整体性\n能处于全球大模型第一梯队\n。\n此次发布的是千问大模型系列中尺寸最大、性能最强的旗舰模型\nQwen3.8-Max\n，它支持视觉理解，上下文长度达1M Tokens。\n在模型架构上，Qwen3.8通过稀疏MoE架构与混合注意力机制的联合优化，首次将千问大模型的总参数量拓展至2.4T，激活95B，获得了更高的推理效率、更快的推理速度，整体性能也迎来新突破。\n编程能力（Coding）是前沿大模型核心能力之一，Qwen3.8实现了自主编程的新突破。\nQwen3.8可以从一个空文件夹出发，自主完成一个十数天的真实项目交付，全程无需人干预。只需一句“创建一个自进化的智能体Harness”，Qwen3.8就像个资深的工程师，从零开始，自主搭建循环工程（Loop Engineering）框架，编排智能体自动领取和执行任务，人类工程师还可通过钉钉给Qwen3.8提出新要求。\nQwen3.8可胜任广泛的、真实的专业工作任务（Cowork）。\n面对完全不同的专业任务、评判标准和计算需求，Qwen3.8通过真实环境和算力的联合强化学习（RL）扩展，实现了数百种高价值、高频专业任务的真实表现提升，在主流的智能体框架中均可稳定可靠地交付生产级成果：\n一支法务助理团队在数百份法律文档中标注千余个相关条款，需要一周时间，Qwen3.8一小时内就能做完。\n一个篮球数据分析团队逐帧标注160个小时以上的比赛录像，Qwen3.8数十分钟就可精准拆解这8400多个攻防回合，并一次性输出球员战术画像和教练报告。\n在长周期任务中，Qwen3.8涌现出系统级自主规划与全栈闭环自适应学习能力。\n无论是在高精密、强物理约束的数字芯片设计，还是在高度动态、博弈激烈的商业模拟运营中，Qwen3.8均能通过“执行-反馈-迭代”的自适应闭环，在数千轮的超长程交互中实现算法与策略的深度重构。\nQwen3.8除了拥有强大的文本和推理能力，还提高了AI视觉理解能力的极限\n：模型能读懂200页的财报pdf、看懂超100小时的长视频，将这些“看到”的知识和信息反馈到工作全流程去，帮助模型思考得更周全。\nQwen3.8-Max预计于下周开源，Qwen3.8-27B也将开源。\n目前，Qwen3.8的API已上线千问AI平台，并在“千问办公”中同步接入。\n“千问办公（QwenWork）”\n是我们全面整合QoderWork、MuleRun、悟空三款产品后全新推出的企业级Agent，致力于帮助个人与企业提升办公生产力，也在今天正式开启公测。\n从写文档、做数据分析，到生成音视频内容、制作可运行的网页应用……“千问办公”既可以处理日常办公任务，也能探索更复杂的业务场景。只需要告诉它你想要什么，它都能搭把手。\n不同于市面上已有的Agent产品专注个人提效，“千问办公”最重要的特色是激活组织生产力，全面瞄准企业级市场。“千问办公”已初步打通了钉钉IM，未来将全面连接企业真实的数据库和工作流，帮助企业提效。\n比如，\n一家20人规模的律师事务所，资深律师用“千问办公”多次交互，完成首份并购尽调报告后，可以将全过程一键沉淀为“组织级Skill”，向全团队共享。新入职的员工接到同类案件，无需向资深律师逐项请教，调用该Skill并选定执行路径，即可产出报告。\n未来，企业客户还可以将“千问办公”接入真实繁杂的工作流。\n比如在大型跨国企业，中国团队完成新品方案讨论后，可以用“千问办公”创建的Agent自动整理决策背景、生成英文项目文档，并将待确认事项同步英国团队。中国团队下班后，7x24小时在线的Agent将在项目群中持续回答英国团队的问题，共同推进工作。\n“千问办公”网页\n版和独立PC客户端已开放，钉钉PC端和手机端内置入口近期也将开放，个人和企业用户都可以通过官\n网（\nqwenwork.cn\n）\n体验。\n未来还将上线独立APP端并推出国际版，实现多端联动，覆盖更多办公场景。\n公测期间，新用户注册“千问办公”即可获得2000积分，公测第一周，个人用户每日登录还可免费领取500至2000积分。目前，个人和企业会员均可免费、无限畅用经济模型，也鼓励大家尝鲜体验Qwen3.8。\n更强的基础模型，更实用的Agent能力，欢迎大家体验全新的基座大模型和企业级Agent，我们一起把Agent从“做得到”推向“做得好”。\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "peripheral": 0.59,
+        "transfer_agent": 0.23,
+        "irrelevant": 0.17,
+        "direct_local": 0,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.77,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.32,
+        "2": 0.55,
+        "3": 0.11,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.83,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.25,
+        "2": 0.61,
+        "3": 0.12,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.18,
+      "probabilities": {
+        "0": 0.52,
+        "1": 0.13,
+        "2": 0.05,
+        "3": 0.25,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.39,
+      "probabilities": {
+        "0": 0,
+        "1": 0.61,
+        "2": 0.39,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.37,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.53,
+        "2": 0.32,
+        "3": 0.05,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.06,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.05,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3623,
+    "outputTokens": 174,
+    "totalTokens": 3797
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.49,
+        "relevance": 0.69,
+        "grounding": 0.71,
+        "decision_action": 0.21,
+        "evidence": 0.73,
+        "actionability": 0.63,
+        "anti_hype": 0.96
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179792425,
+                "endTime": 1791179792557,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000152166",
+      "marketCost": "0.000152166",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000152166",
+      "inferenceCost": "0.000152166",
+      "inputInferenceCost": "0.000152166",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A580VF35CD93SBEMAPF3K"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:32 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::wh67h-1791179792415-45c430bc9f97"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "peripheral": 0.59,
+            "transfer_agent": 0.23,
+            "irrelevant": 0.17,
+            "direct_local": 0,
+            "transfer_business": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.77,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.32,
+            "2": 0.55,
+            "3": 0.11,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.83,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.25,
+            "2": 0.61,
+            "3": 0.12,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.18,
+          "probabilities": {
+            "0": 0.52,
+            "1": 0.13,
+            "2": 0.05,
+            "3": 0.25,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.39,
+          "probabilities": {
+            "0": 0,
+            "1": 0.61,
+            "2": 0.39,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.37,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.53,
+            "2": 0.32,
+            "3": 0.05,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.06,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.05,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3623,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.49,
+            "relevance": 0.69,
+            "grounding": 0.71,
+            "decision_action": 0.21,
+            "evidence": 0.73,
+            "actionability": 0.63,
+            "anti_hype": 0.96
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179792425,
+                    "endTime": 1791179792557,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000152166",
+          "marketCost": "0.000152166",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000152166",
+          "inferenceCost": "0.000152166",
+          "inputInferenceCost": "0.000152166",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A580VF35CD93SBEMAPF3K"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:31.796Z"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "243639706211587072",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "设计模式Trustworthy Generation：提升RAG信赖度",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650542871&idx=1&sn=30f0fa05c0a2129017f6f3f19812a491",
+      "date": "2026-02-09T09:17:00.100Z",
+      "chars": 7408,
+      "text": "原创\n直播技术团队\n2026-02-09 17:17\n浙江\n本文介绍了名为 Trustworthy Generation 的设计模式，旨在提升 RAG 系统生成内容的信赖度，即真实性（是否准确、无幻觉、无偏见）与完整度（是否全面、不遗漏关键信息）。文章系统分析了 RAG 信赖度不足的根源，针对这些问题提出四个层次的解决方案。\n本文介绍了名为\nTrustworthy Generation\n的设计模式，旨在提升 RAG 系统生成内容的\n信赖度\n，即\n真实性\n（是否准确、无幻觉、无偏见）与\n完整度\n（是否全面、不遗漏关键信息）。文章系统分析了 RAG 信赖度不足的四大根源：\n检索错误\n、\n内容可靠性问题\n、\n前置推理错误\n、\n模型幻觉\n。针对这些问题，文章提出围绕“可解释、可追溯、可反思、可监管”四个层次的解决方案。作者指出该模式的\n权衡点\n：会增加系统复杂度与计算开销，并存在误过滤风险；并提供了三种替代路径——双知识库交叉验证、增强过程透明性、带置信分的引用标注。\n前言\nTrustworthy Generation设计模式的目的是提升RAG生成内容的信赖度，这里的信赖度包含两个方面：\n真实性\n和\n完整度\n，该设计模式是一系列技术和功能模块的组合，下面从该设计模式面向的问题域、解决方案以及一些优劣权衡点来展开介绍\n下。\nProblem\nRAG在此就不过多赘述，目前实践中RAG技术应用非常广泛，RAG是由两个主要动作组成，Retrieve和Generate，本质是在做Context Engineering中的内容补充，虽然我们在知识库中补充、梳理、构建的都是我们认为高质量和真实的信息，但是RAG最后返回的是LLM Generate的内容，该内容的生产会因为以下几种情况（不仅限于）出现信赖度不足的问题：\n检索错误\n，包含a.准确率问题，即检索召回的部分信息相关性很弱（\n检索是按照语义向量的相似性召回，高向量相似度不等同于高内容相关性，\nhigh similarity≠high relevant\n），b.召回率问题，即知识库中有些非常相关的内容没\n有被检索召回；\n内容可靠性问题\n，比如召回的信息虽然都是相关的，但是有些内容存在偏见、过期或本身内容有矛盾冲突的情况；\n前置推理错误\n，这个问题一般是由于在检索前做的query扩写，或者是step back问题抽象出现一些偏差，导致最终检索的方向是错的，从而导致检索出来的内容也是偏差的；\n模型幻觉\n，在面向一个复杂问题做RAG时，由于问题的复杂和召回内容的繁杂，模型在最后Generate的时候，就容易出现自导自演加戏的情况；\n以上所列举的情况，基本上涵盖了RAG使用过程中的大部分问题，但是针对这些问题，无法根解，本文所说的设计模式也只是在一定程度上通过一些技术和人机交互的结合，来\n降低问题出现的概率，提升对于问题出现的感知，从而提高RAG的信赖度\n。\nSolution\n解决方案围绕着提升信赖度的四个层次来展开：\n“\n解决不了事情要明确说出来\n”\n，不要自己发挥，这是信赖建立的第一步；\n“\n说话要有依据\n”\n，生成的内容，关键的信息要附带内容出处；\n“\n深思熟虑，为自己的言论负责\n”\n，检索过程中可以有反思和递进，同时对于返回的结果做好质量卡口；\n“\n建防护、受监管\n”\n，构建面向信赖度提升的工程技术链路，同时增加人机交互的\n监督。\n▐\n信息关联度识别\n本质上我们在工程链路中使用RAG，是为了给当前query补充关联的信息，因此，如果RAG模块\na.返回有关联的信息\n且\nb.在没有检索到足够有关联信息的时候，明确不返回\n，能够做到这两点，可以比较大的提升人们对其的信赖度。\n当前比较多的问题在于RAG经常返回一些相似但是不相关的信息，提升对于相关信息的“识别”是问题的关键，这里有三种做法：\n相似度threshold设置\n：\nRAG的检索是计算query和知识embedding index的相似度，然后按照相似度降序返回k个，但是对于这个相似度本身没有做底线threshold的要求，这里可以设定一个threshold值，小于该值的相似度检索信息就不做召回（该threshold需要针对各自的场景去摸索和调优）；同时有研究表明，\n当两个信息没有关联性的时候，向量相似度会陡然下降\n，这里可以判断一个陡降的趋势\n，截止到这个相似度分值之后的信息都是关联性不大的；\n问题类型分类\n：\n就是在RAG之前做问题分类，如果不属于当前RAG知识库可覆盖的信息类型范围，就不做RAG的调用；\n领域关键词识别\n：\n只有在检测到query中有包含特定的关键词或者领域术语时，才触发RAG调用，这是一种非常严格的限制。\n▐\n引用出处说明\n第二种提升RAG信赖度的方式是，针对RAG生成的内容，明确标识出这部分结果信息来自于哪段知识的引用，和写论文引用他人观点或者文章内容类似。\n这里引用说明的实现有三种方式，分别是：\n信息直接来源引用说明\n，即只要指出这段内容来源于哪个知识文档（如果有chunking的话，就是某个chunk，后面统一称doc），相关的prompt和结果如下所示：\ntemplate\n=\n\"\"\"Answer the question based on the following sources, using in-line citations like in scientific papers.\nSOURCES:\n{sources}\nQUESTION: {question}\nINSTRUCTIONS:\n1. Use information only from the provided sources\n2. Provide an answer with in-line citations using brackets, e.g., \"Einstein developed the theory of relativity [1]\"\n3. Use the source ID in brackets [1], [2], etc., corresponding to the source number\n4. Cite ALL facts with their source IDs\n5. If multiple sources support a fact, you can include multiple citations [1][2]\n6. If the information isn't in the sources, say \"I don't have enough information to answer this question\"\n7. Include a \"References\" section at the end listing all the sources you cited\nYour answer should be comprehensive, accurate, and include citations for all factual claims.\n\"\"\"\n附带引用来源的结果示例\n2. 有判断的引用来源说明\n，\n先判断这段内容是否需要引用说明来增加信赖度，这个判断可能和当前应用的领域，以及该事实内容对于整体内容的影响来评估，比如这段文字：”\n王二生于1990年3月3日，出生在一农民家庭，于2015年被评为全国劳模\n“，那么对于王二的出生日期和出生情况，不需要引用做说明，对于后面获得荣誉，要指明出处，不然如果胡诌的话影响比较大；这里对于返回内容哪些需要进一步说明引用出处，需要面向特定领域做小模型微调，会有额外的成本。\n3. 基于token级别的关联说明\n，\n在面向一些复杂问题的回答时，可能会检索召回比较多的doc，同时最终结论生成的内容中每个段落，都是结合了多个doc的内容来关联生成的，因此还是会存在模型会生成逻辑错误（不同的内容编排形式可能就会引入重大事实差异）或事实错误（参考的doc太多，上下文一长，容易自我发挥）；基于token级别的关联说明，当前没有实际实现的类库，整体示意如下图所示：\nToken级别关联引用说明\n▐\n自我批判和自我反思\n在我们设计和应用RAG时候的初衷是，为当前用户的query补充相关联的高质量信息，但是有时候随着事情的发展，会有一些事与愿违的情况发生，没有帮助降低模型幻觉，反而助长了模型幻觉产生的可能；这里有个认知前提，我们认为知识库里面的内容是精心梳理、准备和录入的，因此在使用中对这部分内容是缺乏批判和反思的，但是事实证明，\n知识库中的内容是否足够正确 以及 知识库中的内容是否比模型本身能力可返回能力更高质量，这不是一个固定的结论或判断，因时因事而\n异。\n批判性的看待和在此过程中增加反思，对于提升RAG信赖度，亦显得非常重要。\nCRAG\n首先先来介绍下带自我批判的RAG，也称\nCorrective retrieval-augmented generation (CRAG)，主要解决两个问题：\n评估检索出来的doc的质量（信息正确性），对于低质量doc做过滤，或者关联其他知识库或者外部搜索来补充正确的数据；\n评估检索出来的doc的质量（关联性），对于doc中和query不相关的内容做裁剪；\n整体流程示意如下：\nCRAG流程示意图\n下面是来自于langchain中LLM-based的doc打分实现：\ndef\ngrade_documents\n(\nstate\n):\n\"\"\"\nDetermines whether the retrieved documents are relevant to the question.\nArgs:\nstate (dict): The current graph state\nReturns:\nstate (dict): Updates documents key with only filtered relevant documents\n\"\"\"\nprint\n(\n\"---CHECK DOCUMENT RELEVANCE TO QUESTION---\"\n)\nquestion = state[\n\"question\"\n]\ndocuments = state[\n\"documents\"\n]\n# Score each doc\nfiltered_docs = []\nweb_search =\n\"No\"\nfor\nd\nin\ndocuments:\nscore = retrieval_grader.invoke(\n{\n\"question\"\n: question,\n\"document\"\n: d.page_content}\n)\ngrade = score.binary_score\nif\ngrade ==\n\"yes\"\n:\nprint\n(\n\"---GRADE: DOCUMENT RELEVANT---\"\n)\nfiltered_docs.append(d)\nelse\n:\nprint\n(\n\"---GRADE: DOCUMENT NOT RELEVANT---\"\n)\nweb_search =\n\"Yes\"\ncontinue\nreturn\n{\n\"documents\"\n: filtered_docs,\n\"question\"\n: question,\n\"web_search\"\n: web_search}\n# Data model\nclass\nGradeDocuments\n(\nBaseModel\n):\n\"\"\"Binary score for relevance check on retrieved documents.\"\"\"\nbinary_score:\nstr\n= Field(\ndescription=\n\"Documents are relevant to the question, 'yes' or 'no'\"\n)\n# LLM with function call\nllm = ChatOpenAI(model=\n\"gpt-4o-mini\"\n, temperature=\n0\n)\nstructured_llm_grader = llm.with_structured_output(GradeDocuments)\n# Prompt\nsystem =\n\"\"\"You are a grader assessing relevance of a retrieved document to a user question. \\n\nIf the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \\n\nGive a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question.\"\"\"\ngrade_prompt = ChatPromptTemplate.from_messages(\n[\n(\n\"system\"\n, system),\n(\n\"human\"\n,\n\"Retrieved document: \\n\\n {document} \\n\\n User question: {question}\"\n),\n]\n)\nretrieval_grader = grade_prompt | structured_llm_grader\nSelf-RAG\nSefl-RAG，带自我反思的RAG，主要有以下三个职能：\n评估检索到的doc的相关性和质量，过滤掉相关性不大或低质量的doc；\n针对当前检索到的doc，判断是否需要进一步做信息检索召回（这部分设计有点Agentic RAG的意思，不过Agentic RAG面向的是一个全面和泛化的“知识库”，包含文档知识、接口、search等）；\n评估doc的内容，判断是否直接基于底层LLM做问答召回，来替换该部分doc内容（这里可以比较好利用和结合基模的快速发展红利）；\nSelf-RAG流程示意图如下：\nSelf-RAG流程示意图\n▐\n防护&人机监管\nGuardrails\n整体防护是围绕RAG核心两个动作（Retrieve和Generate）划分了4个阶段，配合相关的手段进行设计的，具体如下：\nPre-retrieval阶段\n：\n过滤掉不在能力范围的内的query调用，对于doc进行正确性评估，过滤掉错误或者过期的doc；\nPost-retrieval阶段\n：\n过滤掉低于相似度阈值的doc，针对检索返回的doc进行正确性验证和隐私合规性验证；\nPre-generate阶段\n：\n过期信息过滤，比如过滤掉1年前的doc，关键信息设置多个引用来源交叉验证；\nPost-generate阶段\n：\n针对生成的结果做评判和反思，检查结果内容相较于引用内容是否存在幻觉等；\nHuman Feedback\nHuman-in-the-Loop，可以发生在RAG流程中的每个核心步骤中，如下示意：\nHuman feedback关联设计示意\n基于人的交互监督设计，背后都会涉及到比较多的专家人员的人力投入，因此\n围绕\nhuman feedback设计的初衷，都是要回收关键的再训练样本数据，去做针对性的工程以及模型的调优工作。\nConsideration\n在上述说的提升RAG信赖度的方式中，基本上都会一定程度上增加整体架构的复杂度以及增加对于模型的调用，从而会影响整体的性能和开销，因此是否使用，使用哪些方式和手段，都需要结合实际去做权衡。\n▐\n局限性\nRAG在检索的时候非常依赖向量的相似度计算的值，上面有提到一个相似度分值\nthreshold的问题，但是这个threshold在实际过程中，不一定能够非常直观的被发现或者被决定，需要结合一些评测进行调整，同时该值还会随着知识库内容的变化以及知识领域的扩充，也会发生变化，需要定期检测和判断调整。\n同时本模式在实现设计中，有针对检索内容的打分、质量判断、正确性判断，然后基于这样的判断做一些过滤；这些动作本身都有一定的成功率，如果过滤策略严格，那么同时也会带来另外一个负面影响，就是会误杀掉一些有用的信息，从而最终影响返回的结果。\n▐\n可选的其他方式\n如果针对该设计模式基于权衡下不考虑采用，可以有另外三种方式推荐：\n给RAG增加另外一个知识库（知识的维护和组织方式都是独立的），每次query面向两个知识库做信息检索召回，然后针对双方结果做交叉验证，提升整体信息的可\n靠性；\n让过程更透明，给出检索出来的信息概述，以及最终得出结论的思考，变相增加整\n体过程的解释性，从而提升信赖度；\n针对返回的结果，附上引用来源，同时在引用来源上增加“置信分”，给到用户自己判断某些段落的信息表达的正确性和后置行为的依赖程度。\n参考资料\nhttps://learning.oreilly.com/library/view/generative-ai-design/9798341622654/\nhttps://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_crag/\n#create\n-index\n团队介绍\n本文作者 Mario，来自淘天集团-直播技术团队。淘宝直播作为全球领先的直播电商平台，正在重新定义人与商品、人与内容的连接方式。我们致力于打造沉浸式、互动式的购物体验，让数亿用户在这里发现好货、感受乐趣。无论是时尚穿搭、美食评测，还是科技新品发布，淘宝直播都在引领电商行业的创新潮流。同时淘宝直播也在推进打造行业领先的AI数字人技术，实现虚拟主播、智能互动、个性化推荐等创新功能。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

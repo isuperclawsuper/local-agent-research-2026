@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1200308551587758082",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "上交 x 阿里：让机器人闭眼先学动作，vla 成功率涨 43%",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510088&idx=2&sn=18a09c3f6d3794079544b9907335b527",
+      "date": "2026-07-13T12:17:00.052Z",
+      "chars": 7119,
+      "text": "阿里技术\n2026-07-13 20:17\n浙江\nLA4VLA: Learning to Act without Seeing via Language-Action Pretraining\n近年来，Vision-Language-Action（VLA）模型正在成为通用机器人操作的重要路线。\n主流做法通常是把视觉观测、语言指令和机器人动作放在一起训练，让模型根据当前图像和语言目标直接预测下一步动作。\n但在这个范式下，一个关键问题很少被单独拎出来讨论：\nVLA 模型到底有没有真正学到\"语言如何约束动作\"？\n标准 VLA pretraining 从一开始就把 visual grounding 和 action learning 绑定在一起。这样当然可以训练出视觉条件下的机器人策略，但也让 language-action learning 始终被包裹在视觉主导的训练过程中。模型看起来是在根据语言执行任务，实际上可能更多是在利用视觉和动作之间更直接的关联。\n这正是\nLA4VLA\n想要研究的问题：\nLanguage-Action Pretraining 是否应该从标准 VLA Pretraining 中被解耦出来，作为一种独立的预训练信号来研究？\n为了探究这个问题，\n上交 & 阿里提出 LA4VLA: Learning to Act without Seeing via Language-Action Pretraining。\n核心思想不是让机器人最终不看图，也不是否定视觉的重要性，而是把语言-动作监督从视觉主导的 VLA 训练中显式拆出来：在没有视觉输入的设置下，让模型学习语言指令如何约束连续动作轨迹，并进一步研究这种监督如何单独使用、如何与标准 VLA pretraining 结合。\n论文标题：\nLA4VLA: Learning to Act without Seeing via Language-Action Pretraining\n项目主页：\nhttps://github.com/MINT-SJTU/LA4VLA\n换句话说，我们希望机器人不要只依赖视觉捷径，而是能够掌握一类更基础的语言-动作规律：\n即使暂时\"看不见\"，也要知道语言中的动作词、方向词和操作意图应该对应怎样的运动模式。\n01\n为什么标准 VLA 训练中的\n语言监督可能不够\n问题的根源在于，\n标准 VLA 训练中视觉、语言和动作的监督密度并不对等。\n在数据层面，一条机器人示范通常包含连续的视觉观测、机器人状态和动作轨迹，但只配有一条高层任务指令。比如一条完整轨迹可能对应一句 \"clean the table\"，而执行过程中实际包含靠近、抓取、抬起、移动、放置等多个局部动作阶段。视觉和动作信号是逐帧变化的，而语言信号往往在整条轨迹中保持不变。这意味着，模型看到的是大量密集的 visual-action 或 state-action 对，但语言与局部动作阶段之间的对应关系并没有被显式标出来。\n在输入层面也存在类似不平衡。图像通常会被编码成大量 visual tokens，而语言指令只占输入中的一小部分。训练时，模型更容易从视觉输入中找到直接的动作预测线索，而不是充分学习语言指令如何约束动作。\n因此，一个 VLA 模型可能在标准输入下看起来是 language-conditioned 的，但其动作预测实际上仍然高度依赖 visual-action association。一旦视觉输入被移除、替换，或者视觉线索与语言目标发生冲突，模型就可能偏离语言指令。\n这正是 LA4VLA 想指出的问题：VLA 模型不能只是在标准输入下\"看起来会听指令\"，而应该真正学会语言如何约束动作。如果 language-action supervision 始终被视觉主导的训练过程淹没，模型很容易依赖视觉捷径，而不是形成稳定的语言-动作关系。\n因此，\n我们将 Language-Action Pretraining 从标准 VLA Pretraining 中解耦出来，把它作为一种独立的预训练信号来研究：\n让模型显式学习不依赖具体图像和场景布局的 language-action priors，并进一步验证这种监督如何提升下游 VLA 策略、真实机器人操作和视觉扰动下的鲁棒性。\n02\n业务背景机器人到底是在听指令，\n还是在跟着视觉走？\n为了判断 VLA 策略到底是在跟随语言，还是在依赖视觉线索，我们设计了一个诊断实验：\n保持语言指令不变，只改变视觉输入，观察模型预测出的动作轨迹是否仍然沿着指令方向运动。\n实验选取方向明确的原子动作指令，例如 \"move upward to approach the target\" 和 \"move downward to approach the target\"，并构造四种视觉输入设置：\n在原始配对输入下，模型看起来表现很好：相反方向的指令对应的轨迹能够分开，端点也大致落在指令方向上。但一旦视觉输入被移除或替换，轨迹很快变得混乱，原本清晰的方向区分消失。\n最关键的是视觉冲突设置：语言仍然要求模型朝一个方向运动，但视觉输入来自相反方向的动作片段。此时，预测轨迹明显偏向视觉所暗示的方向，而不是语言指令指定的方向。也就是说，\n模型并不只是\"不确定\"，而是在视觉和语言冲突时，更倾向于跟随视觉线索。\n进一步的量化结果也验证了这一观察：标准配对输入下看似良好的 direction following，在移除、替换或冲突视觉输入后显著下降，并且在视觉冲突时出现明显反向偏移。\n这个诊断实验说明：标准 VLA 训练可以产生表面上的 instruction following 行为，但这种行为未必稳固建立在 language-action relationship 上。模型看起来是在听指令，实际上仍可能高度依赖配对视觉输入。\n03\n业务背景LA4VLA：\n把 Language- Action Pretraining\n从 VLA\nPretraining 中解耦出来\n基于上面的诊断实验，LA4VLA 提出核心思想：不要一开始就把语言、视觉和动作全部耦合在一起训练，而是先把 language-action supervision 单独抽出来，让模型先学习语言如何约束动作。\n在标准 VLA pretraining 中，模型同时接收视觉观测、语言指令和机器人状态，并预测动作。Visual grounding 和 action learning 从一开始就被绑定在一起。这样虽然可以学习视觉条件下的机器人策略，但 language-action 关系也容易被更密集的 visual-action 信号淹没。\nLA4VLA 则将 language-action 部分显式解耦出来。在 LA pretraining 阶段，视觉输入被移除，模型只能根据语言指令和机器人状态预测动作轨迹。也就是说，模型暂时不能依赖图像中的目标位置、物体外观或场景布局，而必须关注语言指令本身如何对应到连续动作模式。\n这里的 language-action supervision 并不是简单的动作类别标签。我们不是只告诉模型当前片段属于 \"lift\" 或 \"grasp\"，而是希望模型学习更完整的局部动作描述与连续动作轨迹之间的对应关系。例如：\n“Lower the object downward toward the target while holding it”\n对应持物状态下，将物体向目标方向下放；\n“Transport the object to the right while holding it”\n对应持物状态下，将物体向右侧水平移动；\n“Open gripper to release and place the object onto the target surface”\n对应打开夹爪，将物体释放并放置到目标表面。\n这些 instruction 不只是说明\"做什么动作\"，还包含动作方向、夹爪状态、是否持物以及局部物理效果。更重要的是，它们尽量避免物体外观、背景布局和场景特定目标选择，因此不同于普通的细粒度 subtask instruction（如\"把红色杯子移动到书本左边\"）。这些知识并不依赖某一张具体图像，而是跨任务、跨场景可复用的 language-action 规律。\nLA4VLA 希望模型先学习这些规律，形成 vision-agnostic 的 language-action priors，再在后续 VLA 训练和下游微调中结合视觉输入完成具体场景中的操作。\n因此，LA4VLA 的重点不是简单提出一个新的数据集，也不是只在标准 VLA pretraining 中加入额外数据，而是提出一种新的预训练视角：\nLanguage-Action Pretraining 可以从 VLA Pretraining 中独立出来，作为一种基础的、可单独使用、也可与标准 VLA 训练互补的预训练范式。\n04\nLA-33K: 为独立的 Language-Action Supervision\n提供数据基础\n为了实现这种预训练范式，需要构造不依赖视觉输入的 Language-Action 数据。LA4VLA 并没有额外采集新的机器人示范，而是提出了一个 pipeline 来重新组织已有的 VLA demonstrations。一条完整的 VLA 轨迹通常只对应一条高层任务指令，但轨迹内部其实包含多个局部动作阶段。\nLA4VLA 将这些长轨迹切分成短的 atomic action segments，并为每个片段配上对应的低层动作描述。这样，原本隐藏在完整轨迹中的 language-action supervision 就被显式暴露出来：每个短片段都有一个更局部的语言指令，以及与之对应的连续动作轨迹。\n在构建过程中，使用关键帧检测、原子动作类别约束、VLM temporal segmentation 和人工核验，将原始 VLA 数据转化为 vision-agnostic 的 LA 数据。最终得到的 LA episodes 覆盖 move、grasp、lift、transport、place、reorient、lower 等常见原子操作类别。\n最终，构建了 LA-33K，包含 33,116 条经过人工核验的 Language-Action episodes。它们来自已有机器人示范，不需要额外机器人数据采集。与原始 VLA 轨迹相比，LA-33K 的每个 episode 更短、更局部，语言描述也更直接对齐到动作执行。但需要强调的是，LA-33K 的意义不只是\"多了一个数据集\"。更重要的是，它让原本被包裹在 VLA demonstrations 中的 language-action supervision 变成了可以被单独训练、单独分析、单独与 VLA pretraining 组合的监督信号。\n05\n实验结果：LA Pretraining 带来了什么？\n实验在 MetaWorld 和 LIBERO 两个 benchmark 上进行评测，以下是核心结论。\n第一，单独 LA pretraining 已经有效，且收益覆盖仿真、跨架构和真实机器人\n这说明 LA pretraining 不是某个模型或某个仿真 benchmark 上的特定 trick。即使预训练阶段不使用视觉输入，模型学到的 language-action priors 仍然可以迁移到不同 VLA 架构，并显著提升真实机器人中的语言条件操作能力。\n第二，LA pretraining 优于 matched VLA pretraining\n在相同原子动作片段上，保留视觉输入做 VLA pretraining，并不如移除视觉输入做 LA pretraining：\n这说明，在相同原子动作片段上，LA pretraining 不只是改变了预训练信号的形式，而且带来了比 matched VLA pretraining 更好的下游效果。相比保留视觉输入继续学习 vision-language-action 关联，移除视觉输入后，模型需要更直接地学习 instruction 与 action trajectory 之间的对应关系；这种更集中的 language-action supervision，反而为后续 VLA 策略提供了更有效的预训练信号。\n第三，LA 和 VLA supervision 可以互补\n这里的 No 表示不做预训练、直接下游微调；VLA 表示保留视觉输入的标准 VLA pretraining；LA 表示移除视觉输入的 Language-Action pretraining；LA-VLA 表示两阶段结合 LA 与 VLA supervision；MixPT 表示在同一预训练阶段混合 LA 与 VLA 数据。\n在 MetaWorld 上：\nNo 69.73% → LA 83.00% → LA-VLA 86.75% → MixPT 87.53%\n在 LIBERO 上：\nNo 92.85% → LA 95.30% → MixPT 95.75% → LA-VLA 96.28%\n我们也在真实机器人上验证了 LA4VLA。三个任务分别是 Press Button、Place Book 和 Place Drink，它们都需要机器人根据语言指令选择正确目标。\n真实机器人平均成功率：\nNo 38.3% → VLA 48.3% → LA 81.7% → MixPT 83.3%\n在视觉扰动下，平均成功率为：\nNo 27.5% → VLA 42.5% → LA 67.5% → MixPT 70.0%\n实验结果可以概括为一句话：\nLanguage-Action Pretraining 是一种独立有效的预训练信号；它优于 matched VLA pretraining，也可以与标准 VLA supervision 形成互补。 LA supervision 提供不依赖具体图像的 language-action priors，VLA supervision 保留视觉输入并提供 visual grounding。二者结合后，在仿真、真实机器人和视觉扰动下都带来稳定收益。\n06\n为什么 LA Pretraining 有效？\n除了下游成功率，我们还进一步观察了 LA pretraining 对模型行为和内部表示的影响。\n从方向跟随结果可以看到，经过 LA pretraining 后，即使没有视觉输入，模型仍然能根据语言指令预测出清晰分开的相反方向轨迹。也就是说，动作方向不再轻易被其他输入带偏，而是更稳定地跟随语言指令。\n从 t-SNE 可视化可以看到，标准 VLA-trained policy 的内部表示中，不同方向指令混在一起；而 LA-pretrained policy 的表示会按照指令方向形成更清晰的聚类，相反方向也被分到不同区域。\n这说明 LA pretraining 不只是提升了最终成功率，也让模型在动作预测前形成了更清晰的 instruction-conditioned representation。换句话说，\n模型内部真的更好地学到了\"语言如何约束动作\"。\n07\n这篇工作的核心贡献\n总结来看，LA4VLA 的贡献不只是提出一个新的数据集或一个新的模型，而是把一个重要问题明确拆了出来：\nLanguage-Action Pretraining 可以从标准 VLA Pretraining 中被解耦，并作为一种独立、有效、可互补的预训练范式。\n具体来说，本文主要贡献包括：\n这些结果共同说明：\n显式的 language-action supervision 是 VLA 学习中一个值得被单独建模和系统研究的关键方向。\n08\n写在最后：先学会“听懂动作”，\n再学会“看见世界”\nVLA 模型的目标不是只看图，也不是只听语言，而是把视觉、语言和动作结合起来，让机器人能够在真实世界中执行复杂任务。但如果从训练一开始就把视觉、语言和动作完全耦合在一起，语言-动作关系可能会被更密集的视觉-动作信号淹没。模型看起来能执行语言指令，但在视觉变化或视觉冲突下，可能仍然更倾向于跟着视觉走。\nLA4VLA 提供了一种新的思路：先把 Language-Action Pretraining 从 VLA Pretraining 中解耦出来，让模型在没有视觉输入的情况下学习语言如何约束动作；再将这种语言-动作先验与视觉 grounding 结合起来，用于下游 VLA 策略学习。\n这不是为了让机器人不看世界，而是为了让机器人在看见世界之前，先学会理解动作。\nLearning to Act without Seeing，最终是为了更好地 Seeing and Acting with Language.\n论文：\nLA4VLA: Learning to Act without Seeing via Language-Action\nPretraining\n机构：\n上海交通大学 & 阿里巴巴\n代码：\nhttps://github.com/MINT-SJTU/LA4VLA\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.87,
+        "transfer_agent": 0.12,
+        "peripheral": 0.01,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 0.99,
+      "probabilities": {
+        "0": 0.24,
+        "1": 0.54,
+        "2": 0.22,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.34,
+      "probabilities": {
+        "0": 0.83,
+        "1": 0.06,
+        "2": 0.06,
+        "3": 0.03,
+        "4": 0.01,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 0.16,
+      "probabilities": {
+        "0": 0.92,
+        "1": 0.02,
+        "2": 0.04,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.89,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.02,
+        "3": 0.02,
+        "4": 0.89,
+        "5": 0.04
+      }
+    },
+    "actionability": {
+      "score": 2.95,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.13,
+        "2": 0.06,
+        "3": 0.15,
+        "4": 0.51,
+        "5": 0.04
+      }
+    },
+    "anti_hype": {
+      "score": 1.68,
+      "probabilities": {
+        "0": 0.15,
+        "1": 0.34,
+        "2": 0.26,
+        "3": 0.2,
+        "4": 0.04,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6879,
+    "outputTokens": 173,
+    "totalTokens": 7052
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.83,
+        "relevance": 0.68,
+        "grounding": 0.77,
+        "decision_action": 0.89,
+        "evidence": 0.88,
+        "actionability": 0.25,
+        "anti_hype": 0.35
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179797965,
+                "endTime": 1791179798116,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000288918",
+      "marketCost": "0.000288918",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000288918",
+      "inferenceCost": "0.000288918",
+      "inputInferenceCost": "0.000288918",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5DDY9ZC68FY7RWCMERRT"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:38 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::cfcmj-1791179797819-454b46cf7bd3"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.87,
+            "transfer_agent": 0.12,
+            "peripheral": 0.01,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.99,
+          "probabilities": {
+            "0": 0.24,
+            "1": 0.54,
+            "2": 0.22,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.34,
+          "probabilities": {
+            "0": 0.83,
+            "1": 0.06,
+            "2": 0.06,
+            "3": 0.03,
+            "4": 0.01,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.16,
+          "probabilities": {
+            "0": 0.92,
+            "1": 0.02,
+            "2": 0.04,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.89,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.02,
+            "3": 0.02,
+            "4": 0.89,
+            "5": 0.04
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.95,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.13,
+            "2": 0.06,
+            "3": 0.15,
+            "4": 0.51,
+            "5": 0.04
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.68,
+          "probabilities": {
+            "0": 0.15,
+            "1": 0.34,
+            "2": 0.26,
+            "3": 0.2,
+            "4": 0.04,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6879,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.83,
+            "relevance": 0.68,
+            "grounding": 0.77,
+            "decision_action": 0.89,
+            "evidence": 0.88,
+            "actionability": 0.25,
+            "anti_hype": 0.35
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179797965,
+                    "endTime": 1791179798116,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000288918",
+          "marketCost": "0.000288918",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000288918",
+          "inferenceCost": "0.000288918",
+          "inputInferenceCost": "0.000288918",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5DDY9ZC68FY7RWCMERRT"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:37.356Z"
+  }
+}

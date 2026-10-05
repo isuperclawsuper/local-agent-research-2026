@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "257302641633130496",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深入理解OpenClaw技术架构与实现原理（上）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558933&idx=1&sn=926e244c855c44c818d83c6c7d57d4d3",
+      "date": "2026-03-19T00:32:00.643Z",
+      "chars": 6500,
+      "text": "\n}\n},\n// 模型上下文窗口覆盖\n\"models\"\n:\n{\n\"providers\"\n:\n{\n\"anthropic\"\n:\n{\n\"models\"\n:\n[\n{\n\"id\"\n:\n\"claude-sonnet-4\"\n,\n\"contextWindow\"\n:\n200000\n}\n]\n}\n}\n}\n}\n3.7 SubAgent 架构详解\n3.7.1 核心概念\nSubAgent（子智能体）是从现有 Agent 运行中生成的后台独立运行实例\n。它们在独立的会话中执行任务，完成后将结果自动\n通告\n回请求者的聊天渠道。\n关键特征\n会话隔离\n：\n每个 SubAgent 拥有独立的会话键\nagent:<agentId>:subagent:<uuid>\n后台执行\n：\n非阻塞式运行，支持并行处理\n结果通告\n：\n完成时自动向父会话推送结果摘要\n嵌套支持\n：\n支持多层嵌套（最大5层深度，推荐2层）\n3.7.2 架构组件\n会话键系统\n会话键格式与深度\n：\n深度\n会话键格式\n角色\n能否派生子智能体\n0\nagent:<id>:main\n主智能体\n总是可以\n1\nagent:<id>:subagent:<uuid>\n子智能体（编排者）\n仅当\nmaxSpawnDepth >= 2\n2\nagent:<id>:subagent:<uuid>:subagent:<uuid>\n子子智能体（叶子工作者）\n永远不能\n深度计算逻辑\n（\nsubagent-depth.ts:124-176\n）：\nexport\nfunction\ngetSubagentDepthFromSessionStore\n(\nsessionKey\n:\nstring\n|\nundefined\n|\nnull\n,\nopts\n?: { cfg?: OpenClawConfig; store?: Record<\nstring\n, SessionDepthEntry> }\n):\nnumber\n{\n// 从会话键解析基础深度\nconst\nfallbackDepth =\ngetSubagentDepth\n(raw);\n// 读取会话存储中的 spawnDepth 字段\nconst\nstoredDepth =\nnormalizeSpawnDepth\n(entry?.\nspawnDepth\n);\n// 或通过 spawnedBy 链递归计算父深度 + 1\nconst\nparentDepth =\ndepthFromStore\n(spawnedBy);\nreturn\nparentDepth +\n1\n;\n}\n注册表\n核心数据结构\n（\nsubagent-registry.types.ts:6-35\n）：\nexport\ntype\nSubagentRunRecord\n= {\nrunId\n:\nstring\n;\n// 运行标识符\nchildSessionKey\n:\nstring\n;\n// 子会话键\nrequesterSessionKey\n:\nstring\n;\n// 请求者会话键\nrequesterOrigin\n?:\nDeliveryContext\n;\n// 请求者来源（渠道、账号等）\ntask\n:\nstring\n;\n// 任务描述\ncleanup\n:\n\"delete\"\n|\n\"keep\"\n;\n// 清理策略\nlabel\n?:\nstring\n;\n// 显示标签\nmodel\n?:\nstring\n;\n// 使用的模型\nrunTimeoutSeconds\n?:\nnumber\n;\n// 运行超时\nspawnMode\n?:\nSpawnSubagentMode\n;\n// 运行模式\ncreatedAt\n:\nnumber\n;\n// 创建时间\nstartedAt\n?:\nnumber\n;\n// 开始时间\nendedAt\n?:\nnumber\n;\n// 结束时间\noutcome\n?:\nSubagentRunOutcome\n;\n// 运行结果\nsuppressAnnounceReason\n?:\n\"steer-restart\"\n|\n\"killed\"\n;\n// 抑制通告原因\nendedReason\n?:\nSubagentLifecycleEndedReason\n;\n// 结束原因\n};\n核心职责\n：\n1.\n运行跟踪\n：\n维护所有活跃和历史 SubAgent 运行记录\n2.\n生命周期监听\n：\n通过\nonAgentEvent\n监听\nlifecycle\n事件（start/error/end）\n3.\n持久化\n：\n运行记录持久化到磁盘，支持网关重启后恢复\n4.\n级联停止\n：\n停止父运行时自动停止所有子运行\n5.\n孤儿检测\n：\n恢复时检测并清理孤儿运行（缺失会话条目）\n初始化流程\n（\nsubagent-registry.ts:488-518\n）：\nfunction\nrestoreSubagentRunsOnce\n()\n{\nif\n(restoreAttempted)\nreturn\n;\nrestoreAttempted =\ntrue\n;\n// 1. 从磁盘恢复运行记录\nconst\nrestoredCount\n=\nrestoreSubagentRunsFromDisk\n({\nruns\n: subagentRuns,\nmergeOnly\n:\ntrue\n,\n});\n// 2. 协调孤儿运行\nif\n(\nreconcileOrphanedRestoredRuns\n()) {\npersistSubagentRuns\n();\n}\n// 3. 恢复未完成的工作\nfor\n(\nconst\nrunId of subagentRuns.\nkeys\n()) {\nresumeSubagentRun\n(runId);\n}\n}\n派生逻辑\n核心流程\n（\nsubagent-spawn.ts:166-550\n）：\n┌─────────────────────────────────────────────────────────────┐\n│\n1\n. 权限与深度检查                                              │\n│    - 检查调用者深度 < maxSpawnDepth                           │\n│    - 检查活跃子运行数 < maxChildrenPerAgent                   │\n│    - 检查 agentId 允许列表                                    │\n└─────────────────────────────────────────────────────────────┘\n↓\n┌─────────────────────────────────────────────────────────────┐\n│\n2\n. 创建子会话                                                  │\n│    - 生成子会话键:\nagent:\n<id>\n:subagent:<uuid>\n│\n│    - 通过 sessions.patch 设置 spawnDepth                      │\n│    - 设置模型和思考级别                                        │\n└─────────────────────────────────────────────────────────────┘\n↓\n┌─────────────────────────────────────────────────────────────┐\n│\n3\n. 线程绑定（可选）                                            │\n│    - 调用 subagent_spawning 钩子准备线程绑定                  │\n│    - 失败时回滚删除会话                                        │\n└─────────────────────────────────────────────────────────────┘\n↓\n┌─────────────────────────────────────────────────────────────┐\n│\n4\n. 启动子运行                                                  │\n│    - 构建子智能体系统提示                                      │\n│    - 调用 gateway.agent() 启动运行                            │\n│    - 使用专属\nlane:\nAGENT_LANE_SUBAGENT\n│\n└─────────────────────────────────────────────────────────────┘\n↓\n┌─────────────────────────────────────────────────────────────┐\n│\n5\n. 注册运行记录                                                │\n│    - 调用 registerSubagentRun() 注册到 registry              │\n│    - 开始等待完成                              │\n│    - 触发 subagent_spawned 钩子                               │\n└─────────────────────────────────────────────────────────────┘\n系统提示构建\n（\nsubagent-announce.ts:921-1025\n）：\nexport\nfunction\nbuildSubagentSystemPrompt\n(\nparams\n: {\nrequesterSessionKey?:\nstring\n;\nchildSessionKey:\nstring\n;\nlabel?:\nstring\n;\ntask?:\nstring\n;\nchildDepth?:\nnumber\n;\nmaxSpawnDepth?:\nnumber\n;\n}) {\nconst\ncanSpawn = childDepth < maxSpawnDepth;\nconst\nlines = [\n\"# Subagent Context\"\n,\n`You are a **subagent** spawned by the\n${parentLabel}\nfor a specific task.`\n,\n\"\"\n,\n\"## Your Role\"\n,\n`- You were created to handle:\n${taskText}\n`\n,\n\"- Complete this task. That's your entire purpose.\"\n,\n\"\"\n,\n\"## Rules\"\n,\n\"1. **Stay focused** - Do your assigned task, nothing else\"\n,\n\"2. **Complete the task** - Your final message will be automatically reported\"\n,\n\"3. **Don't initiate** - No heartbeats, no proactive actions, no side quests\"\n,\n\"4. **Be ephemeral** - You may be terminated after task completion\"\n,\n\"5. **Trust push-based completion** - Descendant results auto-announce\"\n,\n\"6. **Recover from compacted/truncated tool output** - Re-read with smaller chunks\"\n,\n// ...\n];\nif\n(canSpawn) {\nlines.\npush\n(\n\"## Sub-Agent Spawning\"\n,\n\"You CAN spawn your own sub-agents using `sessions_spawn`.\"\n,\n\"Use the `subagents` tool to steer, kill, or check status.\"\n,\n\"Your sub-agents will announce their results back to you automatically.\"\n,\n// ...\n);\n}\nelseif\n(childDepth >=\n2\n) {\nlines.\npush\n(\n\"## Sub-Agent Spawning\"\n,\n\"You are a leaf worker and CANNOT spawn further sub-agents.\"\n,\n// ...\n);\n}\n}\n通告机制\n核心流程\n（\nsubagent-announce.ts:1053-1382\n）：\n┌─────────────────────────────────────────────────────────────┐\n│\n1\n. 等待运行结束\n│\n│\n-\n等待嵌入式运行完成（如果是嵌入式）\n│\n│\n-\n调用 agent.wait 等待运行完成\n│\n│\n-\n读取最新助手回复或工具结果\n│\n└─────────────────────────────────────────────────────────────┘\n↓\n┌─────────────────────────────────────────────────────────────┐\n│\n2\n. 构建通告消息\n│\n│\n-\n提取运行结果文本\n│\n│\n-\n计算运行统计（运行时间\n、\ntoken使用量\n、\n成本）\n│\n│\n-\n生成状态标签（成功\n/超时/\n失败）\n│\n└─────────────────────────────────────────────────────────────┘\n↓\n┌─────────────────────────────────────────────────────────────┐\n│\n3\n. 确定投递目标\n│\n│\n-\n检查线程绑定路由（bound 模式）\n│\n│\n-\n调用 subagent_delivery_target 钩子（hook 模式）\n│\n│\n-\n回退到请求者来源（fallback 模式）\n│\n└─────────────────────────────────────────────────────────────┘\n↓\n┌─────────────────────────────────────────────────────────────┐\n│\n4\n. 投递通告\n│\n│\n-\n直接投递：调用 gateway.agent() 或 gateway.send()\n│\n│\n-\n队列投递：当请求者忙时入队等待\n│\n│\n-\n嵌套处理：如果请求者是子智能体，向上冒泡\n│\n└─────────────────────────────────────────────────────",
+      "fulltext_obtained": true,
+      "chunk_index": 8,
+      "chunk_count": 10
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_agent": 0.88,
+        "transfer_business": 0,
+        "irrelevant": 0.12,
+        "peripheral": 0
+      }
+    },
+    "relevance": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.12,
+        "2": 0.86,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.12,
+      "probabilities": {
+        "0": 0.94,
+        "1": 0.03,
+        "2": 0.01,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.89,
+      "probabilities": {
+        "0": 0.64,
+        "1": 0.14,
+        "2": 0.02,
+        "3": 0.08,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.22,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.75,
+        "3": 0.23,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.36,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.16,
+        "4": 0.68,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 1.15,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.77,
+        "2": 0.11,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.6,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5847,
+    "outputTokens": 172,
+    "totalTokens": 6019
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.84,
+        "relevance": 0.89,
+        "grounding": 0.92,
+        "decision_action": 0.41,
+        "evidence": 0.83,
+        "actionability": 0.55,
+        "anti_hype": 0.81
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180424241,
+                "endTime": 1791180424426,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000245574",
+      "marketCost": "0.000245574",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000245574",
+      "inferenceCost": "0.000245574",
+      "inputInferenceCost": "0.000245574",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARH131Y3C8YNDJVVH4PHK"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:04 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::sh9qb-1791180424217-e82d46444a6b"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_agent": 0.88,
+            "transfer_business": 0,
+            "irrelevant": 0.12,
+            "peripheral": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.12,
+            "2": 0.86,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.12,
+          "probabilities": {
+            "0": 0.94,
+            "1": 0.03,
+            "2": 0.01,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.89,
+          "probabilities": {
+            "0": 0.64,
+            "1": 0.14,
+            "2": 0.02,
+            "3": 0.08,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.22,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.75,
+            "3": 0.23,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.36,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.16,
+            "4": 0.68,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.15,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.77,
+            "2": 0.11,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.6
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5847,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.84,
+            "relevance": 0.89,
+            "grounding": 0.92,
+            "decision_action": 0.41,
+            "evidence": 0.83,
+            "actionability": 0.55,
+            "anti_hype": 0.81
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180424241,
+                    "endTime": 1791180424426,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000245574",
+          "marketCost": "0.000245574",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000245574",
+          "inferenceCost": "0.000245574",
+          "inputInferenceCost": "0.000245574",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARH131Y3C8YNDJVVH4PHK"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:03.660Z"
+  }
+}

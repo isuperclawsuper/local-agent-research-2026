@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1241760314538627072",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "3万字长文带你WorkBuddy 从入门到精通",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803569&idx=1&sn=325170a0e2bd7117d51dfabbbd79539b",
+      "date": "2026-08-12T10:24:00.712Z",
+      "chars": 6500,
+      "text": "Skill（技能）\n✅ 自动配置对应的 专家\n你可以选择两种方式：\n直接生成 — 不想改什么？点一下就直接产出结果\n修改细节再生成 — 想个性化？改改提示词里的内容，让它更符合你的需求\n就像用美图秀秀的滤镜：系统已经帮你调好了所有参数，你直接用就行；想微调也可以，但完全不是必须的。\n第四步：成果查看\n生成完成后，在右侧产物区域查看结果：\n文件类产物（Word、PPT、Excel 等）— 直接在产物区下载或预览。\n网页类产物（HTML 页面）— 系统会自动打开内置浏览器，直接预览最终效果，所见即所得。\n探索 VS 技能 VS 专家\n模块 | 一句话理解 | 回答的问题\n技能 | 工具箱里的工具 | WorkBuddy能做什么？\n专家 | 工具箱里的专家顾问 | WorkBuddy里谁能帮我做？\n探索 | 用这些工具做出来的真实作品集 | 用这些能力实际做出了什么？\n打个比方：\nSkill 是锅碗瓢盆（厨具）\n专家 是不同菜系的厨师\n探索 是厨师用厨具做出来的成品菜肴展示柜\n养虾实践案例\n基于腾讯 12000内测员工的真实使用实践，我们从大量一线案例中总结提炼出 10 个最具价值的应用场景。接下来，本文将通过 手把手的实战步骤，带你逐一落地这些场景，快速掌握其具体用法与实践方式。\n3.1 文档内容识别与处理\n3.1.1 一句话批量命名文件\n提示词示例：\n桌面上有个叫做“团建报销发票”文件夹，请检查其中发票的内容，生成一个报销简述，包含以下信息：- 日期- 商家名称- 消费金额- 消费类别（餐饮/交通/住宿/其他）- 备注并按照如下示例排序：2025.12.01  XX地址聚餐 消费金额：299 元最后分别按照支付的明细和发票的明细金额汇总，如有异常，帮我特殊标注除了最终直接输出结果外，还要以一个excel交付\n3.1.2 整理会议纪要\n提示词示例：\n说明素材类型 + 要整理成什么文档 + 格式要求 + 粘贴原始内容以下是【素材类型，如：本周工作备忘 / 会议语音转文字 / 调研笔记】，请帮我整理成【目标文档，如：工作周报 / 会议纪要 / 分析报告】，格式要求：【列出关键格式，如：分条列举 / 含表格 / 含摘要】，读者是【目标读者】。【粘贴原始素材】\n3.1.3 外文视频翻译\n提示词示例：\n我想将文件夹中的英文音频和视频文件转录成中文笔记，可以帮我实现吗？\n3.2 文档生成与编辑\n3.2.1 一句话制作Word文档\n提示词示例：\n帮我生成一份公司年会活动策划的 Word 文档框架，公司约 100 人，包含：活动目标、流程安排（含时间节点）、节目类型建议、预算构成清单、注意事项。语言简洁实用，适合拿去和领导确认方向用。\n效果：\n结果生成后，如果你觉得某些地方不对，不需要自己动手改文档——直接用自然语言告诉 WorkBuddy 即可，就像给同事提修改意见一样。比如：\n“预算清单那部分不够详细”\n“流程安排写得太笼统，每个环节补充一句注意事项”\n“整体语气再正式一点，这个是要发给老板审批的”\nWorkBuddy 会在原有基础上按你的要求更新，不需要重新写提示词，也不需要自己打开Word 去改。\n3.2.2 根据素材和模板制作PPT\n提示词示例：\n还可以召唤”文档生成专家“辅助制作\n效果：\n3.3 数据分析并可视化\n3.3.1 Excel表格转为可视化图表\n当已有 Excel（.xlsx / .csv）格式的数据文件时，WorkBuddy 可以直接读取文件内容，根据需求生成对应的可视化图表。\n3.3.1.1 导入数据文件\n3.3.1.2 描述需求\n示例提示词：\n请读取工作区中的所有 xlsx 数据表，生成一份可视化分析报告PDF。重点分析 2 月各渠道的投放数据、转化率和 ROI 表现，并与 1 月历史数据做对比。报告需要包含多维度的图表和文字总结。\n3.3.1.3 预览结果\n3.3.2 数据搜集并生成可视化报告\n当数据尚未整理成文件，或需要从网络、多个来源搜集信息时，WorkBuddy 可以完成从数据采集到报告生成的端到端流程。\n3.3.2.1 描述数据需求\n说明需要搜集的数据主题、范围和来源偏好，例如：\n搜集近三年国内新能源汽车销量数据查找主流编程语言的 GitHub 活跃度排名汇总本项目各模块的代码行数和提交频率\n3.3.2.2 描述报告要求\n指定报告的格式与内容结构，例如：\n生成一份包含趋势图和数据表格的 HTML 报告输出 Markdown 格式的分析报告，内嵌图表制作一个可交互的数据看板页面\nAI 将根据需求，从公开数据源搜集相关信息，完成数据分析、图表绘制和报告排版，输出完整的可视化报告文件。\n3.4 每日自动推送资讯简报\n3.4.1 第一步：连接消息平台（以QQ邮箱为例）\n3.4.1.1 开启 QQ 邮箱的 SMTP 授权码\n登录 QQ 邮箱网页版 → 设置 → 账户与安全 →安全设置→找到「POP3/IMAP/SMTP 服务」→ 开启服务后「生成授权码」，按提示用手机发短信验证后会得到一串授权码，复制保存好（授权码不是你的 QQ 密码）。\n3.4.1.2 在 WorkBuddy 中填写邮件配置\n打开 WorkBuddy → 在对话框发送以下内容：\n我需要配置 QQ 邮箱的 SMTP 服务，我的邮箱号码是：xxx，授权码是：xxx\n配置完成后效果如下：\n3.4.2 发出你的第一条简报报指令\n先手动触发一次，验证效果。把以下指令粘贴到 WorkBuddy 的对话框，按回车发送：\n基础版早报指令（可直接复制使用）现在请帮我生成一份今日简报，然后通过邮件发送到我的邮箱：你的邮箱@example.com简报报需要包含以下内容：今日天气：（你的城市）的今日天气预报（温度、降雨情况、穿衣建议）科技资讯：今天的 AI 和科技圈最新动态，精选 3 条，附简短摘要内容草稿：根据以上资讯，为我的公众号生成一个今天可以发的选题和开头段落AI 建议任务：主动思考你今天可以替我完成的 2-3 件事，并列出来邮件主题格式：【AI 简报】2026年3月2日 周一\nWorkBuddy 会自动拆解这个任务，你能在界面上看到它一步步执行：搜索天气 → 抓取资讯 → 读取你的任务文件 → 生成文案 → 发送到QQ邮箱。整个过程约 2-3 分钟。\n3.4.3 设置每日定时发送\n手动跑通之后，接下来告诉 WorkBuddy 每天自动重复这件事：\n请把上面的简报任务设置为定时自动执行：每天早上 8:30 自动运行，不需要我手动触发。执行完成后发送邮件到：你的QQ邮箱@qq.com。\n可以看到AI自动创建了一个自动化任务，在左侧边栏“自动化”目录下可以管理所有自动任务。\n3.4.4 个性化调整\nWorkBuddy 的强大之处在于，改一条自然语言就能改变早报内容。以下是一些常见调整方向：\n接入其他数据源：\"增加微博和知乎的每日热榜精选\"\n换资讯方向：\"只要 A 股和财经资讯，不需要 AI 新闻\"\n换风格：\"用轻松愉快的语气，每条新闻加一个 表情\"\n工作日专属：\"法定节假日不要发，只在工作日执行\"\n3.5 零代码制作本地应用\n3.5.1 让AI帮你设计应用\n为了更好的执行应用开发工作，让AI完成所有的代码和界面开发，我们选择\n代码开发模式\n开始新的对话\n。\n在对话框中输入以下提示词：\n我想构建一个个人笔记系统，在这个系统中我可以回顾我的所有的笔记，谈话，想法或提醒。请使用Next.js构建它。要求如下：1.所有内容的浏览列表，支持点击条目查看完整内容2.供全文搜索功能，支持按标题和内容搜索3.支持内容的新增，编辑，删除4.支持按日期和类型的快速过滤5.简洁、清爽的中文界面\nWorkBuddy 会理解你的需求，自动生成完整的应用代码并运行，最终效果如图：\n3.5.2 让AI帮你解决报错\n当项目运行中出现异常时，只需在对话中描述观察到的现象，例如：\n页面访问返回 404界面组件未正确渲染模块加载失败\nAI 将自动执行以下步骤：\n1. 分析上下文：结合项目代码与错误现象，定位根因2. 修改代码：直接对问题代码进行修复3. 重新运行：执行修复后的程序并验证结果\n整个过程无需手动介入，也不要求使用者具备任何代码的调试经验。\n提升修复效率的建议：\n提供具体的现象描述。 例如，「点击保存按钮后页面白屏，控制台显示 TypeError」比「页面坏了」能帮助 AI 更快定位问题。\n支持多轮排查。如果首次修复未完全解决问题，可以继续描述新的异常现象，AI 会基于上下文进行持续排查。\n善用截图。 直接提供报错界面的截图，可以为 AI 提供更丰富的诊断信息。\n3.5.3 让AI帮你升级系统\n新的功能需求会随着系统使用自然产生。WorkBuddy 支持通过对话持续迭代系统能力，系统可以在持续使用中不断进化，而非一次性交付后固定不变。\n以下是一些典型的升级场景示例：\n需求描述 | AI 执行的操作\n希望支持模糊搜索，不依赖精确关键词 | 接入本地 embedding 模型，实现语义搜索能力\n每天早上自动推送待处理任务 | 配置定时任务，自动汇总并推送待办事项\n通过 QQ 或微信随时录入内容 | 对接消息平台 API，实现移动端输入通道\n新增内容时自动关联已有记录 | 构建知识图谱，自动检测内容间的关联关系\n3.6 自我进化——创建自己的Skills（技能）\n除了安装和导入技能库中的Skills，WorkBuddy还可以制作自定义的Skill，实现自我升级。\n基于4.6制作的笔记应用，我们使用自制Skills的能力为它赋予真正有别于一般笔记软件的AI能力，让 AI 在任意对话中都能自动识别你的记录意图，并自主整理并保存。\n在对话框中输入：\n请帮我制作一个Skill，并安装到WorkBuddy，这个 Skill 的功能是：当用户在对话中表达了想要保存、记忆、提醒某件事的意图时（例如\"帮我记住\"、\"保存这个\"、\"提醒我\"、\"这个值得记录\"等），自动将内容写入笔记系统中。Skill 需要包含以下行为规范：1. 自动判断内容类型2. 每条内容包含：标题、类型标签、创建时间、来源对话摘要、正文内容3. 如果内容是链接或资源，额外提取并保存摘要4. 保存成功后，简短告知用户已记录制作完成后，将其安装至WorkBuddy\nAI执行完成后，打开技能栏，在已安装目录下可以看到新增的Skill，即为安装成功。\n效果：\n在 WorkBuddy 的任意对话中，输入：\nWorkBuddy 会自动识别到这是一条\"灵感\"类型的内容，然后将内容梳理后存入系统，最后回复告知你已记录成功。\n高效养虾小技巧\n4.1 从桌面端、痛点开始，别一来就远程\n别把虾神话，也有边界，先从电脑\nPC\n端开始\n非常推荐从 日常办公 PC 端和当前的痛点开始，远程 Claw 模式更适合具有技术背景的同学深入，很多新手一开始就远程接入，费了很大精力连上了远程，但不知道做什么，但是远程依赖的是电脑 PC 端需要保持在线，同时远程场景针对于复杂耗时的长任务、效果的返回体验没有 PC 端那么直接直观，新手非常建议从当前的痛点\n4.2 清晰表达，给虾下达明确任务\n做什么 + 有什么 + 怎么样，别让 AI 猜你的意图\n很多新手第一次用 WorkBuddy，往往随手甩一句模糊的需求过去，然后对结果大失所望。原因很简单：虾不会读心术。你给的信息越少，它能发挥的空间越混沌。\n想让虾精准执行，记住这个三要素公式：\n💡\n新手小贴士：\n如果不确定从哪里开始，可以先问虾：「我想做 XX，你需要我提供哪些信息？」让虾帮你梳理需要补充的要素，再开始正式提问。\n4.3 小步快跑，一次搞定一件事\n把大任务拆成小步骤，稳稳地推进\n新手最常犯的错误之一，就是把庞大的需求一口气丢给虾——「帮我把整个项目重构一遍」、「把这份 50 页的报告全部翻译并总结」。结果往往是：虾出了一大堆内容，却没有一处完全令你满意。\n更好的做法是：把大任务拆解成独立的小目标，一次只推进一步。\n这样每一步都有明确的验收标准，出了问题也方便定位和回滚，不用推倒重来。\n4.4 不满意就追问，别一轮定生死\n对话是多轮的，和虾不断磨合，找到相处之道\n很多用户第一次得到不满意的回答，就放弃了——这是最可惜的。AI 对话的精髓在于多轮迭代，第一次回答只是起点，而不是终点。\n追问公式参考：\n「太长了，缩短一半」· 「语气太正式，换成口语」· 「重点放在 XX 部分」· 「这个例子不好，换一个」· 「整体方向对，但第三段逻辑不通，重写」\n把和虾的对话想象成和一个非常勤奋但需要你指导的实习生沟通。你越愿意给反馈，他进步越快，产出越好。\n4.5 别怕试错，多换几种问法\n同一个需求，换个说法可能效果天差地别\nAI 对你用词的细微差异非常敏感。同一个需求，换一种表达方式，可能会得到完全不同质量的回答。描述越具体、越有场景感，AI 越能「代入」你的处境，给出更贴切的结果。\n优化问法的几个方向：\n换个角度：换一个切入视角重新描述需求\n加上受众：明确说明内容面向谁\n给出场景：描述一个具体的使用情境\n设定限制：字数、格式、风格限定\n角色代入：让虾站在某个角色的立场思考\n4.6 给虾一个身份，它就更专业\n「专家」功能：角色扮演是最简单的提质手段\nWorkBuddy 内置了「专家」功能，提供了各行各业的预设角色——法律顾问、产品经理、数据分析师、营销文案……一键召唤，虾就会以该身份来回答你的问题。\n本质上，这是在给虾设定一个「初始化角色提示」，让它的回答框架和专业用语立刻对齐对应领域的思维方式。使用专家角色的回答，在专业性和针对性上，效果会好得多。\n4.7 给虾看例子，比说一堆要求管用\n一个好的参考样本，胜过写十行要求\n语言描述有时候难以精确传达你期望的「感觉」。这时候，最省力也最有效的方式是：直接把一个你满意的样本扔给虾，告诉它「照这个来」。\nAI 更擅长\"模仿\"而不是\"从零想象\"\n。给它一个锚点，它就能在那个基础上发挥得更好。\n4.8 善用多任务，别在烂上下文里死磕\n不同的任务，开不同的会话\n就像给每件事单独准备一张桌子，互不干扰，同时推进。写方案一个窗口、整理数据一个窗口、回邮件一个窗口，效率翻倍。\n另一方面，当一个会话太长、虾开始\"前说后忘\"时，果断开新窗口，把关键背景简洁重述一遍。\nAI 的上下文窗口有限\n，对话越长能\"记住\"的越少。保持会话干净，才能让虾保持清醒。\n4.9 易「虾」改，频繁备份和版本管理\n虾可能“虾”改，改崩了就回退\nWorkBuddy 再能干，也不是每次都稳。让虾帮你修改文档、方案、表格之前，先把原文件复制一份放好——哪怕只是在文件名后面加个「_备份」或者日期。\n虾有时候会改过头：删掉你想留的内容、打乱原有的格式、或者越改越偏。等你发现不对劲，原来的版本可能已经覆盖掉了。\n真正成熟的用法不是“希望它永远不出错”，而是： 出错也不怕，因为你留了后路。\n4.10 用户自动化，让虾自动干活\n善用定时任务和自动化工作流，让虾 24 小时运转\nWorkBuddy 支持自动化能力，你不必每次都手动触发虾。通过定时任务和自动化工作流，你可以让虾在后台静默地帮你处理那些重复性的日常工作：\n⏰ 每天 9:00 自动生成工作日报\n🧪 代码提交后自动跑测试\n📊 每周汇总数据并生成报告\n🔍 定期检查代码规范\n📬 定期抓取并整理行业资讯\n这才是 AI 助手的终极形态：不需要你每次守着屏幕，它自己就把事情干完了。\n⚙️ 哪些工作适合自动化？\n重复性高（每天/每周都要做）、规则明确（有固定模板或判断标准）、无需实时人工干预的任务——都是最适合交给虾自动化的场景。\n4.11 学会偷懒 + PUA 虾\n善用参考、激励 AI，把重复劳动统统外包\n这里说的\"偷懒\"不是摆烂，而是把重复",
+      "fulltext_obtained": true,
+      "chunk_index": 5,
+      "chunk_count": 7
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.01,
+        "direct_local": 0,
+        "peripheral": 0.11,
+        "transfer_agent": 0.61,
+        "irrelevant": 0.27
+      }
+    },
+    "relevance": {
+      "score": 1.44,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.44,
+        "2": 0.46,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.84,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.04,
+        "2": 0.32,
+        "3": 0.35,
+        "4": 0.26,
+        "5": 0.01
+      }
+    },
+    "decision_action": {
+      "score": 1.45,
+      "probabilities": {
+        "0": 0.38,
+        "1": 0.24,
+        "2": 0.02,
+        "3": 0.27,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.88,
+      "probabilities": {
+        "0": 0,
+        "1": 0.12,
+        "2": 0.87,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.45,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.05,
+        "4": 0.8,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.2,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.07,
+        "2": 0.54,
+        "3": 0.31,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.73,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8128,
+    "outputTokens": 172,
+    "totalTokens": 8300
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.52,
+        "relevance": 0.58,
+        "grounding": 0.52,
+        "decision_action": 0.03,
+        "evidence": 0.9,
+        "actionability": 0.61,
+        "anti_hype": 0.63
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180430835,
+                "endTime": 1791180430995,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000341376",
+      "marketCost": "0.000341376",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000341376",
+      "inferenceCost": "0.000341376",
+      "inputInferenceCost": "0.000341376",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARQE75BFSE20S2H2C9RG7"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:10 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::59c7p-1791180430718-db63125715af"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.01,
+            "direct_local": 0,
+            "peripheral": 0.11,
+            "transfer_agent": 0.61,
+            "irrelevant": 0.27
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.44,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.44,
+            "2": 0.46,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.84,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.04,
+            "2": 0.32,
+            "3": 0.35,
+            "4": 0.26,
+            "5": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.45,
+          "probabilities": {
+            "0": 0.38,
+            "1": 0.24,
+            "2": 0.02,
+            "3": 0.27,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.88,
+          "probabilities": {
+            "0": 0,
+            "1": 0.12,
+            "2": 0.87,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.45,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.05,
+            "4": 0.8,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.2,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.07,
+            "2": 0.54,
+            "3": 0.31,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.73
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8128,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.52,
+            "relevance": 0.58,
+            "grounding": 0.52,
+            "decision_action": 0.03,
+            "evidence": 0.9,
+            "actionability": 0.61,
+            "anti_hype": 0.63
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180430835,
+                    "endTime": 1791180430995,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000341376",
+          "marketCost": "0.000341376",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000341376",
+          "inferenceCost": "0.000341376",
+          "inputInferenceCost": "0.000341376",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARQE75BFSE20S2H2C9RG7"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:10.222Z"
+  }
+}

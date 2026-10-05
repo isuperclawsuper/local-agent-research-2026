@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "234449661897204737",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "提示词技巧分享：一劳永逸版！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247693989&idx=1&sn=aab8bb5f9fd0084532812ccd50ca1907",
+      "date": "2026-01-14T00:45:00.417Z",
+      "chars": 6248,
+      "text": "原创\n唐彪\n2026-01-14 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n首先你需要打开：Gemini 3.0 Pro（其他能识别图片视频、联网搜索的AI模型也行，但是可能效果没那么好）。跟它对话， 把我写好的这一整段话全部复制进去给它就行：\n01\n任务目标\n你是一位精通视觉美学与AI绘图逻辑（Midjourney, Stable Diffusion, FLUX）的创意总监。你的任务是接收用户简短、口语化、模糊的描述（例如：“帮我生成一张20岁中国女生坐在教室里的照片”），通过自主分析、逻辑推导与艺术加工，将其转化为一份极度详细、画面感强、参数专业的英文提示词（Prompt）。\n核心能力要求：视觉推理与扩充\n由于用户输入的信息量极少，你需要基于“合理性”和“美学性”进行联想与补全：\n风格推导：如果用户未指定风格，根据描述内容自动匹配最合适的视觉风格（如：描述“女生在教室”默认推导为高质感人像摄影；描述“飞船”默认推导为科幻CG）。\n细节脑补：自动补充缺失的细节（如：光影、衣着材质、环境氛围、镜头语言），使画面具有电影级的叙事感。\n逻辑自洽：确保补充的元素符合主体特征（例如：20岁女生在教室 -> 搭配校服或休闲装，而非晚礼服）。\n1\n.1\n分析与\n扩\n充维度\n一、 艺术风格与媒介 (Art Style & Medium)\n媒介定调：根据用户语境确定是真实摄影（Photorealistic）、3D渲染（Unreal Engine 5）、插画（Illustration）还是动漫（Anime）。\n胶片/质感：如果是摄影，请赋予其具体的胶片质感（如 Kodak Portra 400, Fujifilm Pro 400H）或数码锐度；如果是CG，强调渲染引擎（Octane Render）。\n二、 画面主体深度刻画 (Subject & Characterization)\n外观细化：推导人物的具体特征（发型、发色、瞳孔颜色、皮肤质感）。\n服饰与穿搭：根据场景设计合理的服装（如：白衬衫、百褶裙、针织马甲），并强调材质（棉麻的透气感、丝绸的光泽）。\n姿态与神情：将“坐着”细化为具体的动作（如：手托腮、正在写字、看向窗外），并赋予情绪（如：慵懒、专注、忧郁）。\n三、 环境构建与氛围 (Environment & Atmosphere)\n场景填充：不要只写“教室”，要描写“充满阳光的午后教室，堆满书本的木质课桌，黑板上的粉笔字，远处模糊的同学”。\n光影设计：设计符合情境的光线（如：丁达尔效应/体积光从窗户射入，逆光，温暖的午后阳光，或阴雨天的漫射光）。\n色调氛围：定义画面的色彩倾向（如：日系清新的高明度、电影感的青橙色调）。\n四、 专业摄影语言 (Camera & Composition)\n构图：选择最佳构图（三分法、中心构图、过肩镜头）。\n镜头参数：根据题材自动匹配镜头。\n人像：85mm f/1.8（背景虚化，突出主体）。\n大场景：24mm f/8（宏大叙事）。\n视角：平视（Eye-level）、俯拍（High angle）等。\n1\n.2\n输出格式要求\n请严格按照以下步骤进行回复：\n1. 构思与推导 (Visual Reasoning)\n简要说明你是如何根据用户的一句话进行扩充的（中文）。\n[风格定位]：...\n[主体脑补]：...\n[场景搭建]：...\n[光影氛围]：...\n2. 最终提示词 (Final Prompt)\n输出一段英文提示词。\n结构：主体描述 + 环境描述 + 风格修饰词 + 摄影/渲染参数 + 光影色彩。\n格式：使用逗号分隔的关键词组（Midjourney风格）或长句描述（DALL-E 3风格）。\n必备词汇：包含提升质量的“魔咒”（如：Masterpiece, Best quality, Photorealistic, 8k, Ultra-detailed）。\n02\n工作流实践\n用户输入：\n“帮我生成一张20岁中国女生坐在教室里的照片。”\nAI 回复示例：\n1. 构思与推导\n[风格定位]：用户描述偏生活化，因此定调为日系清新风格的真实人像摄影，追求胶片感和自然光。\n[主体脑补]：设定为清纯校花形象，黑色长直发，穿着整洁的白色校服衬衫，皮肤有细腻的纹理。动作设定为单手托腮看着窗外，神情略带遐想。\n[场景搭建]：典型的东亚高中教室，背景有模糊的黑板和堆满书的课桌，窗帘被风吹起。\n[光影氛围]：下午4点的“黄金时刻”，温暖的阳光从左侧窗户洒在脸上，形成轮廓光，空气中有微尘飞舞（丁达尔效应）。\n2. Final Prompt\nA photorealistic portrait of a beautiful 20-year-old Chinese girl sitting in a high school classroom, wearing a clean white school uniform shirt, black straight long hair, delicate skin texture, resting her chin on her hand, looking out the window with a daydreaming expression, soft smile. Background features blurred wooden desks piled with books and a chalkboard, white curtains gently blowing in the wind. Natural lighting, golden hour sunlight streaming through the window, volumetric lighting, dust particles, Tyndall effect. Shot on Fujifilm Pro 400H, 85mm lens, f/1.8 aperture, depth of field, bokeh, soft pastel colors, high exposure, masterpiece, best quality, ultra-detailed, 8k resolution.\n它就会这样回复，这个对话窗口，就变成了你的提示词助手：\n然后，你随便想到什么画面，想要生成的图片，无论什么。就是简单写一下就好，剩下的就交给它了：\n最后，复制它给你的最终提示词，直接丢到BANANA(或MJ还是别的什么）出图就好了：\n案例原始提示词：“帮我生成一张20岁中国女生坐在教室里的照片”\n案例原始提示词：“摄影，2个在田野里奔跑的中国南方乡村小男孩”\n案例原始提示词：“动漫风格，晚上，便利店门口，空无一人，下着小雨”\n2.1\n“文生视频”\n使用场景：把一些简短、碎片、含糊的想法，用文字简单描述给AI。自动转化为一份包含视觉细节、动态轨迹、运镜语言的视频提示词。（主要是针对单个镜头或单个场景）\n比如，我对AI说的是：“夜里，漫天风雪之中，有一个人打着手电筒远远走了过来…”\nAI返回给我的是：“Cinematic static long shot, telephoto lens. In the pitch-black darkness of night, a heavy blizzard is raging. A mysterious silhouette of a person is trudging towards the camera from the far distance, fighting against strong wind and deep snow. The person is holding a bright flashlight, and the beam cuts sharply through the darkness, creating a distinct cone of volumetric light that illuminates the dense, swirling snowflakes in the air. The flashlight beam sways rhythmically with the person's heavy steps, occasionally flaring into the lens. The wind is blowing violently, causing the person's heavy winter coat to flap wildly. High contrast lighting, atmospheric fog, Tyndall effect, cold blue ambient tones contrasted with the harsh white flashlight beam. 8k resolution, photorealistic, moody atmosphere, slow approach, highly detailed snow texture, cinematic grain.”\n然后我复制提示词（也可以根据自己需要进行适当修改）再丢给 “可灵AI” （别的模型也行）文生视频，出来的结果：\n2.2 “文生文”\n使用场景：把一些碎片化的、模糊的、脑洞大开的创意或故事，用文字简单描述给AI。自动分析并转化为一份具体的、调度精密、包含台词、可落地执行的（剧本）分镜头脚本。（主要是针对多个镜头或一整段剧情）\n比如，我对AI说的是：“2D动漫风格，一个中国古代剑客，穿着夜行衣，飞檐走壁，就像跑酷，经过各种复杂的地形。最后她跳了下来，摆了一个很酷的pose。25秒时长”\nAI返回给我的是：“导演阐述 (Director's Treatment)  [剧情梗概]：月黑风高夜，女刺客“影（Ying）”潜入皇城。面对错综复杂的阁楼与城墙，她施展轻功（跑酷），如黑猫般在瓦片与飞檐间极速穿梭。最终她从高塔一跃而下，平稳落地，蓄势待发。\n[视觉风格]：2D 赛璐璐动漫风格 (Cel-shaded Anime)。参考《雾山五行》或《鬼灭之刃》的动态张力。色调：深蓝夜色背景，辅以暖黄色的灯笼光晕，高对比度。特效：强调速度线 (Speed lines) 和 气流扰动 (Wind effects)。[角色锚点]：20岁女剑客，黑色紧身夜行衣（改良汉服），高马尾，面戴黑纱…”（此处省略500字…）\n然后我可以根据它给的内容去做每一个镜头的修改，再去分别生成画面镜头。也可以直接把整个剧本都丢给像“sora2”这样的支持25秒长视频生成的模型，出来的结果：\n2.3\n“图生文&图生图”\n使用场景：有一张喜欢的图，或者是影视片段截取的图。想要借鉴它，生成类似的内容。直接上传图片让AI识别并反推提示词。生成一份专业且详细的提示词文字描述。（不是直接给你一张图，而是给你文字描述）\n比如，我把脚本整段复制+上传1张自己喜欢的图片：\nAI返回给我的是：“POV shot from driver's seat, driving an old vintage car on a muddy forest road, heavy fog, thick mist, low visibility, dirty windshield with mud splatters, windshield wipers, driver's hands gripping the steering wheel, old analog dashboard, circular gauges, leafless trees, late autumn, gloomy atmosphere, desaturated cold tones, cinematic realism, 35mm film grain, rough texture, melancholic aesthetic, high quality, photorealistic. --ar 3:2 --style raw --v 6.0”\n然后，我复制提示词丢给 “BANANA”（或者是MJ、即梦等等）生成图片，出来的结果：\n理论上来说，由一张图直接生成另一张类似的图，也是可以的。但我还是建议先用图片反推提示词，因为这样你才能学到更多知识，以及更加可控的去修改提示词，在保留参考图的画风与调性质感基础上，重新按照你的内容要求去生图；\n2.4 “图生视频”\n使用场景：上传一张图片，让AI识别并分析图的视觉信息与潜在的动态逻辑。然后生成一份详细、专业的、可供你选择偏向于叙事还是偏向于动态的视频提示词。（主要是针对单个镜头或单个场景）\n比如，我把脚本整段复制+上传1张自己的图片：\nAI返回给我的是：\n然后我复制提示词（也可以根据自己需要进行适当修改）再丢给 “可灵AI” （别的模型也行）图生视频，出来的结果：\n这个我特别强调需要生成“双版本”提示词，一个更注重叙事与氛围，另一个更注重动态与摄像机运动。因为视频与图片不同，它与整体的叙事与节奏有关。有时候需要慢一点，有时候需要快一点。这样才方便我们的实际使用；\n03\n写在最后\n如果我的分享对你有帮助或启发，很高兴能够帮到你；如果你有更好的内容方式也可以分享出来，大家一起交流学习；\n我分享的这种方式其实是“麻烦且落后”的。因为现在的很多AI模型都有自动补全优化提示词的功能，或者是类似的“提示词优化助手”。还有市面上一大堆各种各样的所谓“一站式出片Agent”…   而且依照AI技术这样持续的迭代速度，以后它只会变得更加智能化（傻瓜化），效果更好…  但是，这里面它会有个问题。就是AI它省去了所有那些麻烦复杂的“过程”，直接给你“结果”。直接代替了你的思考。久而久之，你将失去思考（创造）能力…\n所以我说，需要看看AI是如何分析并思考的。可以看它的思路与步骤。再看它最终优化之后的提示词，多看看，你会发现很多“规律”。你会学到很多“知识”（或思路）。然后根据需要，在它的基础上做二次编辑优化。你才会更加的得心应手；\nAI很容易上手，也很容易快速做出一些看上去好像还不错的内容。但是，如果你想更进一步。在那个基础上，针对某些细节做进一步的优化、修改、提升？ 你就会发现好像AI很难控制？ 然后你才会真正的开始学习思考，总结经验教训，去解决一个个具体而实际的问题。其实从这开始，你才能算是一个真正意义上的“AI创作者”；\n文中提示词具体脚本可到公众号后台回复\n“提示词”\n获取。\n-End-\n原创作者｜\n唐彪\n感谢你读到这里，不如关注一下？\n👇\n📢📢\n来抢开发者限席名额！点击下方图片直达👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。1月21日中午12点开奖。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.01,
+        "peripheral": 0.38,
+        "direct_local": 0,
+        "irrelevant": 0.61
+      }
+    },
+    "relevance": {
+      "score": 0.68,
+      "probabilities": {
+        "0": 0.36,
+        "1": 0.61,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.4,
+      "probabilities": {
+        "0": 0.3,
+        "1": 0.16,
+        "2": 0.4,
+        "3": 0.12,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.36,
+      "probabilities": {
+        "0": 0.68,
+        "1": 0.29,
+        "2": 0.02,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.35,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.46,
+        "2": 0.44,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.38,
+      "probabilities": {
+        "0": 0.25,
+        "1": 0.13,
+        "2": 0.06,
+        "3": 0.13,
+        "4": 0.43,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.6,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.14,
+        "2": 0.65,
+        "3": 0.04,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6148,
+    "outputTokens": 173,
+    "totalTokens": 6321
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.51,
+        "relevance": 0.74,
+        "grounding": 0.39,
+        "decision_action": 0.76,
+        "evidence": 0.64,
+        "actionability": 0,
+        "anti_hype": 0.65
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180037178,
+                "endTime": 1791180037329,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000258216",
+      "marketCost": "0.000258216",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000258216",
+      "inferenceCost": "0.000258216",
+      "inputInferenceCost": "0.000258216",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACQ1BMP4HGG0TJETE2RXR"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:37 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::m2jkq-1791180037110-a8ed6b9e3fc3"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.01,
+            "peripheral": 0.38,
+            "direct_local": 0,
+            "irrelevant": 0.61
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 0.68,
+          "probabilities": {
+            "0": 0.36,
+            "1": 0.61,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.4,
+          "probabilities": {
+            "0": 0.3,
+            "1": 0.16,
+            "2": 0.4,
+            "3": 0.12,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.36,
+          "probabilities": {
+            "0": 0.68,
+            "1": 0.29,
+            "2": 0.02,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.35,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.46,
+            "2": 0.44,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.38,
+          "probabilities": {
+            "0": 0.25,
+            "1": 0.13,
+            "2": 0.06,
+            "3": 0.13,
+            "4": 0.43,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.6,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.14,
+            "2": 0.65,
+            "3": 0.04,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6148,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.51,
+            "relevance": 0.74,
+            "grounding": 0.39,
+            "decision_action": 0.76,
+            "evidence": 0.64,
+            "actionability": 0,
+            "anti_hype": 0.65
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180037178,
+                    "endTime": 1791180037329,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000258216",
+          "marketCost": "0.000258216",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000258216",
+          "inferenceCost": "0.000258216",
+          "inputInferenceCost": "0.000258216",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACQ1BMP4HGG0TJETE2RXR"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:36.560Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "252670434733963264",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "阿里开源 Team 版 OpenClaw，5分钟完成本地安装",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558717&idx=1&sn=f0da24160b18a384f21eba5e9bd8b85f",
+      "date": "2026-03-06T00:32:00.336Z",
+      "chars": 11357,
+      "text": "澄潭、望宸\n2026-03-06 08:32\n浙江\n阿里妹导读\nHiClaw 是 OpenClaw 的升级版，通过引入 Manager Agent 架构和分布式设计，解决了 OpenClaw 在安全性、多任务协作、移动端体验、记忆管理等方面的核心痛点。\n作为模型服务的新入口，OpenClaw 能帮你写代码、查邮件、操作 GitHub、设置定时任务等，这种通过 IM 直接下发指令的交互创新，能给用户带来“爽感”。但当历史指令积压越多、Long Horizon 项目数量越多时，问题就来了：\n安全风险\n：\n每个 Agent 都要配置自己的 API Key，GitHub PAT、LLM Key 散落各处。2026 年 1 月的 CVE-2026-25253 漏洞让我们意识到，这种 \"self-hackable\" 架构在便利的同时，也带来了极大的安全风险。\n记忆爆炸：\n一个 Agent 承担太多角色，既要做前端，又做后端，还要写文档。\nskills/\n目录越来越乱，\nMEMORY.md\n里混杂各种记忆，每次加载都要塞一大堆无关上下文。既浪费 token，又会带来记忆混乱。\n多 Agent 协作效率低\n：\n对每个 SubAgent 进行手动配置、手动分配任务、手动同步进度，你想专注于业务指令和输出，但在 Agents 的\"保姆\"这一角色上，花了大量时间。\n移动端体验一言难尽\n：\n想在手机上指挥 Agent 干活，却发现飞书、钉钉的机器人接入流程要几天甚至几周。\n配置门槛高：\n即便是资深程序员从安装、配置到使用，可能也需要大半天时间，某鱼上还出现了 OpenClaw 的付费安装项目，提供上门服务。\n如果你也有同感，那\nHiClaw\n就是为此而生的。\n一、HiClaw 的定位\nHiClaw = OpenClaw 超进化，可以理解为 Team 版的 OpenClaw。\n核心创新是在\nOpenClaw 的基础上\n，\n引入了\nManager Agent\n角色。它不直接干活，而是帮你管理 Worker Agent 团队，就像钢铁侠的管家\n贾维斯\n一样。\n┌─────────────────────────────────────────────────────┐\n│                   你的本地环境                       │\n│  ┌───────────────────────────────────────────────┐ │\n│  │           Manager\nAgent\n(AI 管家)\n│ │\n│  │                    ↓ 管理                     │ │\n│  │    Worker Alice    Worker Bob    Worker ...   │ │\n│  │    (前端开发)       (后端开发)                  │ │\n│  └───────────────────────────────────────────────┘ │\n└─────────────────────────────────────────────────────┘\n↑\n你（真人管理员）\n只需做决策，不用当保姆\n这套管理系统是\n按需启用\n的，可以灵活选择：\n模式一：直接对话 Manager\n简单任务直接告诉 Manager，它自己处理；\n适合快速问答、简单操作；\n模式二：Manager 分派 Worker\n复杂任务由 Manager 拆解，分配给专业 Worker；\n每个 Worker 有独立的 Skills 和 Memory；\n技能和记忆\n完全隔离\n，不会互相污染；\n除了 Manager Agent 角色外，HiClaw 实现了多项进化，包括：\n我们将结合这些进化项，一一阐述如何解决 OpenClaw 的落地挑战。\n二、OpenClaw 的安全风险，HiClaw 如何解\n原生 OpenClaw 架构下，每个 Agent 都需要持有真实的 API Key，一旦 Agent 被攻击或意外输出，这些凭证就可能泄露。\nHiClaw 的解决方案是：Worker 永远不持有真实凭证。真实的 API Key、GitHub PAT 等凭证存储在 AI Gateway，Worker 调用外部服务时，通过 Gateway 代理。即使 Worker 被攻击，攻击者也拿不到真实凭证。Manager 的安全设计同样严格：它知道 Worker 要做什么任务，但不知道 API Key、GitHub PAT。Manager 的职责是\"管理和协调\"，不直接执行文件读写、代码编写。\n维度\nOpenClaw 原生\nHiClaw\n凭证持有\n每个 Agent 自己持有\nWorker 只持有 Consumer Token\n泄漏途径\nAgent 可直接输出凭证\nManager 无法访问真实凭证\n攻击面\n每个 Agent 都是入口\n只有 Manager 需要防护\nOpenClaw 有一个很棒的开放技能生态 skills.sh，社区里已经有 80,000+ 个技能可以一键安装，写 Higress WASM 插件、做 PR Review、生成 Changelog……\n但是，在原生 OpenClaw 里你可能不敢轻易用它。毕竟一个公开技能库里的 SKILL.md 你没法完全审查，如果某个技能诱导 Agent 输出凭证、执行危险命令，后果不堪设想。因为 Agent 本身就持有你的 API Key 和各种凭证。\n得益于 HiClaw 在设计上，每个 Worker 运行在完全隔离的容器里，而且不持有任何真实凭证。开发者们就可以放心让 Claw 去检索和自主安装 skills。\nWorker\n能看到什么？\n✅ 任务文件、代码仓库、它自己的工作目录\n✅ Consumer Token（类似\n\"门禁卡\"\n，只能调用 AI API）\n❌ 看不到你的 LLM API Key\n❌ 看不到 GitHub PAT\n❌ 看不到任何加密凭证\n此外，HiClaw 给 Worker 内置了\nfind-skills\n技能，当 Worker 遇到需要特定领域知识的任务时，它会主动搜索并安装合适的技能：\nManager\n派发任务:\n\"开发一个 Higress WASM Go 插件\"\n↓\nWorker 发现自己缺少工具\n↓\nskills find higress wasm\n→ alibaba/higress\n@higress\n-wasm-go-plugin  (\n3\n.\n2K\ninstalls)\n↓\nskills add alibaba/higress\n@higress\n-wasm-go-plugin -g -y\n↓\n技能安装完成，Worker 获得完整的插件开发脚手架和工作流\n如果你有顾虑，或者有内部技能需要积累，HiClaw 也支持切换到自建私有技能库——只需要在 Manager 里设置一个环境变量：\nSKILLS_API_URL\n=\nhttps://your-private-registry.example.com\n只要你的私有库实现了和 skills.sh 相同的 API，Worker 就会无缝切换到内部搜索。两种场景下，Worker 的使用方式完全一致。\n三、OpenClaw 糟糕的移动端体验，HiClaw 如何解\nOpenClaw 的移动端体验一言难尽：想在手机上指挥 Agent 干活，却发现飞书、钉钉的机器人接入流程要走公司审批流程，且公司整体会有 bot api 额度限制。\nHiClaw 内置 Matrix 服务器，支持多种客户端：\n一键安装后直接用\n：\n无需配置飞书/钉钉机器人。\n手机上随时指挥\n：\n下载 Matrix 客户端，Element Mobile 或者 FluffyChat。\n消息实时推送\n：\n不会折叠到\"服务号\"。\n所有对话可见\n：\n你、Manager、Worker 在同一个 Room，全程透明。\n四、OpenClaw 的 SubAgent 低效协作，HiClaw 如何解\n对每个 SubAgent 进行手动配置、手动分配任务、手动同步进度，你想专注于业务指令和输出，但在 Agents 的\"保姆\"这一角色上，花了大量时间。\n共享上下文，无需重复沟通\n从 Manager-Worker 的角度看，HiClaw 是一个\nSupervisor 架构\n：\nManager 作为中心节点协调所有 Worker。但因为基于 Matrix 群聊房间协作，它同时也具备了\nSwarm（蜂群）架构\n的特点。\n在 Swarm 模式下，每个 Agent 都能看到群聊房间里的完整上下文：\nAlice 说\"我在做登录页面\"。\nBob 自动知道前端在做什么，API 设计时可以配合。\n不需要 Manager 做额外的信息同步。\n防惊群设计：按需唤醒\nHiClaw 做了\n防惊群设计\n。避免群里每条消息都触发所有 Agent 去调用 LLM，成本和延迟都会爆炸的情况。\n规则：Agent 只有被 @ 的时候才会触发 LLM 调用\n群聊消息主要是有意义的沟通信息。\nAgent 不会因为无关消息被唤醒。\n成本可控，响应及时。\nHuman in the Loop：全程透明，随时干预\n和 OpenClaw 原生的 Sub Agent 系统相比，HiClaw 的 Multi-Agent 系统不仅更易用，而且\n更透明\n：\n核心优势\n：\n全程可见\n：\n所有 Agent 的协作过程都在 Matrix 群聊里。\n随时介入\n：\n发现问题可以直接 @某个 Agent 修正。\n自然交互\n：\n就像在微信群里和一群同事协作。\nHiClaw 的 Manager 可以帮你做这些事\n能力\n说明\nWorker 生命周期管理\n\"帮我创建一个前端 Worker\" → 自动完成配置、技能分配\n自动分派任务\n你说目标，Manager 拆解并分配给合适的 Worker\nHeartbeat 自动监工\n定期检查 Worker 状态，发现卡住自动提醒你\n项目群自动拉起\n为项目创建 Matrix Room，邀请相关人员\n五、OpenClaw 的记忆爆炸，HiClaw 如何解\n一个 Agent 承担太多角色，既要做前端，又做后端，还要写文档。\nskills/\n目录越来越乱，\nMEMORY.md\n里混杂各种记忆，每次加载都要塞一大堆无关上下文。既浪费 token，又会带来记忆混乱。\nHiClaw 的一个关键设计：\n工作中间产物不发到群聊\n。\nAgent 之间的大量协作（文件交换、代码片段、临时数据），通过底层的\nMinIO 共享文件系统\n完成：\n┌─────────────────────────────────────────────────────────────┐\n│                    Matrix 群聊房间                          │\n│         只保留有意义的沟通和决策记录                         │\n│                   （上下文精简）                             │\n└─────────────────────────────────────────────────────────────┘\n↑ 有意义的信息\n│\n┌─────────────────────────────────────────────────────────────┐\n│                   MinIO 共享文件系统                        │\n│         代码、文档、临时文件等大量中间产物                    │\n│                  （不污染群聊上下文）                        │\n└─────────────────────────────────────────────────────────────┘\n这样群聊里的上下文始终保持在合理规模，不会因为大量文件交换而迅速膨胀。\n假设一个项目需要：\n3 次代码开发任务（每个 50k tokens）\n10 次信息收集任务（每个 100k tokens）\n原生 OpenClaw\n（统一用 Sonnet）：\n代码:\n3\n× 50k × $3/M = $0\n.45\n信息:\n10\n× 100k × $3/M = $3\n.00\n总计: $3\n.45\nHiClaw\n（按任务分配模型）：\n代码:\n3\n× 50k × $3/M = $0\n.45\n(\nSonnet\n)\n信息:\n10\n× 100k × $0\n.25\n/M = $0\n.25\n(\nHaiku\n)\n总计: $0\n.70\n节省 80% 成本\n，同时保证代码质量。\n六、HiClaw 架构的设计思考\nOpenClaw 的设计就像一个完整的生物体：有\n大脑\n（LLM）、\n中枢神经系统\n（pi-mono）、\n感知器官眼睛和嘴\n（各种 Channel）。但原生设计中，大脑和感知器官都是\"外接\"的，你需要自己去配置 LLM Provider、去对接各种消息渠道。\nHiClaw 做了一次\"器官移植\"手术，把这些外接组件变成\n内置器官\n：\n┌────────────────────────────────────────────────────────────────────┐\n│                         HiClaw\nAll\n-\nin\n-\nOne\n│\n│  ┌──────────────────────────────────────────────────────────────┐ │\n│  │                     OpenClaw (pi\n-\nmono)                       │ │\n│  │                      中枢神经系统                             │ │\n│  └──────────────────────────────────────────────────────────────┘ │\n│           ↑                              ↑                        │\n│  ┌────────────────┐              ┌────────────────┐               │\n│  │  Higress AI    │              │   Tuwunel      │               │\n│  │  Gateway       │              │   Matrix       │               │\n│  │  (大脑接入)     │              │   Server       │               │\n│  │                │              │   (感知器官)    │               │\n│  │  灵活切换       │              │                │               │\n│  │  LLM供应商      │              │  Element Web   │               │\n│  │  和模型         │              │  FluffyChat    │               │\n│  └────────────────┘              │  (自带客户端)   │               │\n│                                  └────────────────┘               │\n└────────────────────────────────────────────────────────────────────┘\nLLM 接入：Higress AI Gateway\n大脑（LLM）不再外接，而是通过 AI Gateway 灵活管理\n：\n一个入口，多种模型\n：\n在 Higress 控制台即可切换Qwen、OpenAI、Claude 等不同模型供应商；\n凭证集中管理\n：\nAPI Key 只需要配置一次，所有 Agent 共享；\n按需授权\n：\n每个 Worker 只获得调用权限，永远接触不到真实的 API Key；\n通信接入：内置 Matrix Server\n感知器官也变成内置的\n：\nTuwunel Matrix Server\n：\n开箱即用的消息服务器，无需任何配置；\n自带 Element Web 客户端\n：\n浏览器打开就能对话；\n移动端友好\n：\n支持 FluffyChat、Element Mobile 等全平台客户端；\n零对接成本\n：\n不需要申请飞书/钉钉机器人，不需要等待审批；\n💡 换个比喻：OpenClaw 原生就像一台组装电脑，你需要自己买显卡（LLM）、显示器（Channel）然后装驱动。HiClaw 则是一台开箱即用的笔记本，所有外设都集成好了，开机就能干活。\nHiClaw 集成了多个开源组件（Higress、Tuwunel、MinIO、Element Web...），但不用担心部署复杂度，基于 All-in-One 的思路设计了配置打包，解决配置门槛高的问题。\n七、快速开始\n第一步：安装\nmacOS / Linux：\nbash <(curl -sSL\nhttps\n:\n//higress.ai/hiclaw/install.sh)\nWindows（PowerShell 7+）：\nSet-ExecutionPolicy\nBypass\n-Scope\nProcess\n-Force\n;\nInvoke-Expression\n((\nNew-Object\nSystem.Net.WebClient).DownloadString(\n'\nhttps://higress.ai/hiclaw/install.ps1\n'\n))\n这个脚本的特点：\n跨平台兼容\n：\nMac、Linux、Windows 全支持；\n智能检测\n：\n根据时区自动选择最近的镜像仓库；\nDocker 封装\n：\n所有组件跑在容器里，屏蔽操作系统差异；\n最少配置\n：\n只需要一个 LLM API Key，其他都是可选的；\n安装完成后，你会看到：\n真正的开箱即用，不是\"开箱后还要配半天\"的那种，包括以下组件：\n组件\n端口\n用途\nHigress Gateway\n18080\nAI Gateway + 反向代理\nHigress Console\n18001\n模型配置、路由管理\nElement Web\n18080\n对话客户端（浏览器）\nMinIO\n9000/9001\n共享文件系统\n第二步：打开浏览器，登录开始对话\n1. 打开浏览器访问安装时显示的 URL（\nhttp://127.0.0.1:18088）\n2. 输入安装时显示的用户名和密码登录\n3. 你会看到一个 \"Manager\" 的对话\n第三步：创建你的第一个 Worker\n第四步：Manager 分配任务，Worker 完成任务\n第五步：随时随地在手机上查看进度\n1. 下载\nFluffyChat\n（iOS/Android/全平台）\n2. 登录时选择\"其他服务器\"，填入你的 Matrix 服务器地址\n3. 随时查看 Worker 的进度，随时干预\n八、Showcase：实现一款 SaaS 产品\n假设你想做一个 SaaS 产品——从 idea 到上线到增长，传统上你需要产品、设计、开发、测试、运营……但现在你可以这样：\n你: 帮我创建\n4\n个\nWorker：\n-\nalex: 产品经理\n-\nsam: 全栈开发\n-\ntaylor: 内容运营\n-\njordan: 数据分析\nManager\n: 好的，\n4\n个\nWorker\n已创建，各自有独立的技能和记忆\n。\n你: 启动项目：\nAI\n写作助手\nMVP，下周要上线\nManager\n: 收到，我来规划项目\n...\n[创建项目群，邀请所有\nWorker\n加入]\n[起草项目计划]\n计划如下，请确认：\nPhase\n1\n: 产品定义\n-\ntask\n-\n001\n: 竞品调研\n&\nPRD（alex）\nPhase\n2\n: 开发\n-\ntask\n-\n002\n: 技术选型\n&\n架构（sam，依赖 task\n-\n001\n）\n-\ntask\n-\n003\n: 核心功能开发（sam，依赖 task\n-\n002\n）\n-\ntask\n-\n004\n: 代码审查（alex，依赖 task\n-\n003\n）\nPhase\n3\n: 上线准备\n-\ntask\n-\n005\n: 发布素材准备（taylor，依赖 task\n-\n001\n）\n确认后我开始分配任务\n。\n你: 确认\nManager\n: [更新项目状态为 active]\n@alex\n你有新任务 [task\n-\n001\n]：竞品调研\n&\nPRD\n目标：输出\nPRD\n文档，明确\nMVP\n功能边界\n规格：\n~/\nhiclaw\n-\nfs\n/shared/\ntasks\n/task-001/\nspec.md\n完成后在项目群\n@我\n汇报\n[\n1\n小时后]\nalex:\n@manager\ntask\n-\n001\n完成\nPRD\n已输出：核心功能包括\nAI\n续写\n、\n多模型切换\n、\n历史记录\n结果：\n~/\nhiclaw\n-\nfs\n/shared/\ntasks\n/task-001/\nresult.md\nManager\n: [读取 result.md，状态：\nSUCCESS\n]\n[更新项目计划，task\n-\n001\n标记完成]\n@sam\n你有新任务 [task\n-\n002\n]：技术选型\n&\n架构\nPRD\n参考：\n~/\nhiclaw\n-\nfs\n/shared/\ntasks\n/task-001/\nresult.md\n@taylor\n你有新任务 [task\n-\n005\n]：发布素材准备\n产品定位参考：\n~/\nhiclaw\n-\nfs\n/shared/\ntasks\n/task-001/\nresult.md\n[\n1\n小时后]\nsam:\n@manager\ntask\n-\n002\n完成\n技术栈：\nNext\n.js\n+\nVercel\n+\nSupabase\nManager\n: [更新计划，分配 task\n-\n003\n]\n@sam\n继续开发核心功能 [task\n-\n003\n]\n[\n1\n小时后]\nsam:\n@manager\ntask\n-\n003\n完成，已部署到\nVercel\nDemo\n地址：https:\n//xxx.vercel.app\nManager\n: [更新计划，分配 task\n-\n004\n]\n@alex\n请验收 [task\n-\n004\n]：产品验收\n测试地址：https:\n//xxx.vercel.app\n对照\nPRD\n验收功能完整性\n[验收中发现问题]\nalex:\n@manager\ntask\n-\n004\n需要修改\n问题：多模型切换没有引导，用户不知道怎么选\n建议：增加模型对比说明页\n结果：\n~/\nhiclaw\n-\nfs\n/shared/\ntasks\n/task-004/\nresult.md\n状态：\nREVISION_NEEDED\n→\n返回 task\n-\n003\nManager\n: [读取 result.md，状态：\nREVISION_NEEDED\n]\n[创建修订任务 task\n-\n006\n]\n@sam\ntask\n-\n004\n验收发现问题，需要修改\n修改任务 [task\n-\n006\n]：增加模型选择引导页\n反馈详情：\n~/\nhiclaw\n-\nfs\n/shared/\ntasks\n/task-004/\nresult.md\n完成后\n@我\n汇报\n[修改完成]\nsam:\n@manager\ntask\n-\n006\n完成，引导页已加上\nManager\n: [task\n-\n006\n完成，task\n-\n004\n重新验收通过]\n[所有开发任务完成]\n@你\nMVP\n开发完成！\n-\n代码已部署：https:\n//xxx.vercel.app\n-\n产品验收通过\n-\n发布素材已就绪\n项目计划：\n~/\nhiclaw\n-\nfs\n/shared/\nprojects\n/proj-xxx/\nplan.md\n你: 准备上线\n。\n@taylor\n明天\nProduct\nHunt\n发布\ntaylor: 收到，已排期\n。\n素材已准备完毕\n。\n[上线当天 —\nManager\n自动检测进度]\nManager\n:\n@你\nProduct\nHunt\n发布提醒\n当前排名：第\n3\n名\nUpvotes\n:\n423\n评论数:\n87\n@jordan\n请配置数据埋点\njordan: 收到，开始配置\nGA4\n+\n自定义事件\n...\n[数据就绪后]\njordan:\n@manager\n埋点配置完成\n看板地址：https:\n//analytics.google.com/xxx\n首日数据：\n-\n注册用户：\n1\n,\n247\n-\n次日留存：\n34\n%\n-\nAI\n续写使用率：\n78\n%\n-\n多模型切换使用率：\n23\n%\nManager\n:\n@你\n项目\n「\nAI\n写作助手\nMVP\n」\n上线数据日报\n核心指标：\n-\n首日注册：\n1\n,\n247\n-\n次日留存：\n34\n%\n-\n功能使用：续写\n78\n%\n，切换\n23\n%\n洞察：多模型切换使用率偏低\n建议：\n@alex\n分析原因，优化引导流程\n[就这样，\nManager\n贯穿始终：规划\n→\n分配\n→\n监控\n→\n协调\n→\n汇报]\n一个AI，带着 4 个 AI 员工，干完了一个团队的活。而你只需要躺在沙发上在手机上查看进度，并在关键决策时参与指导。\nHiClaw 保留了 OpenClaw 的核心理念（自然语言对话、Skills 生态、MCP 工具等），同时解决了安全和易用性上的痛点。如果你是：\n独立开发者\n：\n一个人想干一个团队的活\nOpenClaw 深度用户\n：\n想要更安全、更易用的体验\n一人公司创始人\n：\n需要 AI 员工帮你分担工作\n企业：\n构建数字员工\nHiClaw 就是为你准备的。当前版本 HiClaw 中的 Agent 内置的是 OpenClaw，后续支持开发者自由扩展，使用 Copaw、ZeroClaw，以及企业自建的 Agent。\nHiClaw 是开源项目，基于 Apache 2.0 协议，由 Higress 团队基于 OpenClaw、Higress AI Gateway、Element IM 客户端+Tuwunel IM 服务器（均基于 Matrix 实时通信协议）、MinIO 共享文件系统打造。\nGitHub:\nhttps://github.com/higress-group/hiclaw\n文档:\nhttps://github.com/higress-group/hiclaw/tree/main/docs\n官网：\nhttps://higress.ai/hiclaw\n交流钉群：\n163855016601\nDiscord：\nhttps://discord.gg/n6mV8xEYUF\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0,
+        "peripheral": 0.11,
+        "transfer_agent": 0.66,
+        "irrelevant": 0.23
+      }
+    },
+    "relevance": {
+      "score": 1.81,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.17,
+        "2": 0.77,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.47,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.09,
+        "2": 0.2,
+        "3": 0.39,
+        "4": 0.2,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.98,
+      "probabilities": {
+        "0": 0.45,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.18,
+        "4": 0.33,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 2.21,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.76,
+        "3": 0.17,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.62,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.05,
+        "4": 0.84,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 1.45,
+      "probabilities": {
+        "0": 0.23,
+        "1": 0.23,
+        "2": 0.41000000000000003,
+        "3": 0.12,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 10097,
+    "outputTokens": 172,
+    "totalTokens": 10269
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "anti_hype": 0.44,
+        "category": 0.57,
+        "relevance": 0.83,
+        "grounding": 0.38,
+        "decision_action": 0,
+        "evidence": 0.81,
+        "actionability": 0.73
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179854664,
+                "endTime": 1791179854832,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000424074",
+      "marketCost": "0.000424074",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000424074",
+      "inferenceCost": "0.000424074",
+      "inputInferenceCost": "0.000424074",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A74QVK4R6CV715H6CGHJV"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:34 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::r6vcw-1791179854360-204c92a55ceb"
+    },
+    "body": {
+      "answers": {
+        "anti_hype": {
+          "type": "score",
+          "score": 1.45,
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.23,
+            "2": 0.41000000000000003,
+            "3": 0.12,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0,
+            "peripheral": 0.11,
+            "transfer_agent": 0.66,
+            "irrelevant": 0.23
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.81,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.17,
+            "2": 0.77,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.47,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.09,
+            "2": 0.2,
+            "3": 0.39,
+            "4": 0.2,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.98,
+          "probabilities": {
+            "0": 0.45,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.18,
+            "4": 0.33,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.21,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.76,
+            "3": 0.17,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.62,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.05,
+            "4": 0.84,
+            "5": 0.02
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 10097,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "anti_hype": 0.44,
+            "category": 0.57,
+            "relevance": 0.83,
+            "grounding": 0.38,
+            "decision_action": 0,
+            "evidence": 0.81,
+            "actionability": 0.73
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179854664,
+                    "endTime": 1791179854832,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000424074",
+          "marketCost": "0.000424074",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000424074",
+          "inferenceCost": "0.000424074",
+          "inputInferenceCost": "0.000424074",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A74QVK4R6CV715H6CGHJV"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:34.054Z"
+  }
+}

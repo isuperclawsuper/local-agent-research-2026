@@ -1,0 +1,351 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1117950888783118337",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "TencentDB Agent Memory 全球正式开源：让 Agent 沉淀经验，让人专注创造",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695568&idx=2&sn=000c9b3c8c00fe6e2fd675360a016edb",
+      "date": "2026-05-19T00:46:00.030Z",
+      "chars": 3405,
+      "text": "腾讯云数据库\n2026-05-19 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n今天，腾讯云数据库团队全球正式开源\nTencentDB Agent Memory\n。\n一套面向 AI Agent 的分层记忆引擎，项目采用\nMIT 协议\n开源，开箱即用。\n⭐\n项目主页：\nhttps://github.com/Tencent/TencentDB-Agent-Memory\n在当前主流的 Agent 架构中，Memory 已经从\"加分项\"变成了\"标配组件\"。\n无论是面向 C 端的对话助手，还是面向开发者的长周期 Agent，底层都依赖类似的\"记忆层\"承\n载跨会话偏好与历史经验，并逐渐收敛出一套通用的接口范式。\nTencentDB Agent Memory 正是在这一背景下诞生的：让 Agent 学会你的工作流程、保留任务上下文、复用历史经验——以符号化记忆化解单次长任务的信息过载，以分层记忆沉淀跨会话的经验资产。\n在超长 session 评测中发现，Agent Memory 作为 OpenClaw 插件接入后：最高节省\n61.38\n%\nToken，通过率相对提升\n51.52\n%\n；PersonaMem 准确率从\n48%\n提升到\n76%\n。\n记忆能力\nBenchmark\nOpenclaw 成功率\n加插件后成功率\n相对变化\nOpenclaw Token   消耗\n加插件后 Token 消耗\n相对变化\n短期记忆\nWideSearch\n33%\n50%\n51.52%\n221.31M\n85.64M\n−61.38%\n短期记忆\nSWE-bench\n58.40%\n64.20%\n9.93%\n3474.1M\n2375.4M\n−33.09%\n短期记忆\nAA-LCR\n44.00%\n47.50%\n7.95%\n112.0M\n77.3M\n−30.98%\n长期记忆\nPersonaMem\n48%\n76%\n59%\n—\n—\n—\n目前，TencentDB Agent Memory 已作为 OpenClaw 记忆增强插件，在生产环境中验证效果。\n01\n准确\n当下主流 AI Agent 的记忆方案，大多做的是同一件事：把对话历史压缩成一段摘要，然后在下次会话时注入上下文。这在短对话里够用，但在真实的长周期任务中会暴露三个问题：\n●\n跨会话断裂\n：\n昨天反复确认的代码规范，今天新开会话又全忘了\n●\n事实与偏好混淆\n：\n用户说过\"我用 TypeScript\"和\"帮我查一下天气\"，这两条信息的价值完全不同，但被同等对待\n●\n上下文膨胀\n：\n任务越长，堆进上下文的历史信息越多，Token 消耗持续攀升，模型注意力也在衰减\nTencentDB Agent Memory 通过把不同粒度的信息放在不同的\"楼层\"，构建分层式长期记忆能力来解决以上长周期任务问题：\nL0 原始对话层全量保留每一轮交互；\nL1 原子记忆层自动提取事实、偏好、约束、阶段结论；\nL2 场景归纳层按任务自动聚合；\nL3 用户画像层持续蒸馏出稳定的长期画像\n每一层只做一件事，层与层之间通过提取-聚合-蒸馏的管道连接，任何一层都可以独立升级或替换，让Agent 不再因为换了一次会话就忘掉你是谁。\n02\n效率\n过去，\"更聪明的 Agent\"往往意味着\"更贵的 Agent\"，但 Agent 是按 Token 计费、按响应速度评价的，每多塞一段对话，就是成本和体验的双重损失。\nTencentDB Agent Memory 通过上下文卸载 + Mermaid 无限画布两项关键技术，把原始工具结果搬到外部文件，把任务结构折叠成可导航的画布，上下文里只保留摘要和索引。\n对于连续任务和大规模并发，每一个 Token 都影响着成本和体验，这套功能，使得原文不丢、结构可查、Token 不再线性增长。\n03\n稳定\n省 Token 之外，任务完成率也是检验记忆方案的重要指标。\n很多压缩方案能把 Token 砍下来，但任务跑偏、遗忘、重复分析的问题随之而来。\nTencentDB Agent Memory 在四个公开评测集上同时跑通了两条曲线：Token 下降，完成率上升。\n不过，「跑得稳」不只看评测分数，还得经得起底层架构的拷问——我们用 异构存储 + 全链路可溯源，确保了稳定与全量检索。\n这套能力已在生产环境经历真实验证——在编程、调研、文档分析、工作流编排四类长链路任务上稳定收敛。\n04\n快速开始\nGitHub 仓库中提供了 OpenClaw 、Hermes Gateway 接入方案，开箱即跑。\n1\n.\nOpenclaw\n一行\n安装\nopenclaw plugins install @tencentdb-agent-memory/memory-tencentdbopenclaw gateway restart\n2.\nHermes Gateway（Docker，需版本号 ≥ 0.3.\n4\n）\n除 OpenClaw 外，本插件也支持 Hermes Agent。（\nhttps://github.com/NousResearch/hermes-agent）\n一行命令即可启动带记忆能力的 Hermes：\ndockerrun-d\\--name hermes-memory \\--restart unless-stopped \\-p8420:8420\\-eMODEL_API_KEY=\"$MODEL_API_KEY\"\\-eMODEL_BASE_URL=\"$MODEL_BASE_URL\"\\-eMODEL_NAME=\"$MODEL_NAME\"\\-eMODEL_PROVIDER=\"$MODEL_PROVIDER\"\\-vhermes_data:/opt/data\\agentmemory/hermes-memory:latest\n镜像支持 linux/amd64 和 linux/arm64。内置腾讯云 DeepSeek-V3.2 默认配置，如需自定义模型可额外传入 MODEL_BASE_URL、MODEL_NAME、MODEL_PROVIDER。\n验证：\ncurl\nhttp://localhost:8420/health#\n检查 Gateway 状态dockerexec-ithermes-memoryhermes# 进入 Hermes 对话\n记忆不是让 AI 记住所有事，而是让人不必重复所有事。\n我们把 TencentDB Agent Memory 放到开源社区，是因为相信记忆这个产品远没有标准答案，比起做一个完美的方案，我们更想和开发者一起，把产品做得更丰富、更扎实、更可用，从而帮助更多 Agent 沉淀经验，让人更专注于创造。\n欢迎所有形式的共建——提一个 issue，发起一次discussion，对一个早期项目而言，每一种反馈，都是贡献。\n05\n相关链接\n资源\n链接\nGitHub\nhttps://github.com/Tencent/TencentDB-Agent-Memory\nnpm\nhttps://www.npmjs.com/package/@tencentdb-agent-memory/memory-tencentdb\n官网介绍\nhttps://cloud.tencent.com/product/agm\nPersonaMem 评测集\nhttps://github.com/bowen-upenn/PersonaMem\nOpenClaw\nhttps://github.com/openclaw/openclaw\nHermes\nGitHub -   NousResearch/hermes-agent: The agent that grows with you · GitHub\nTencentDB Agent Memory 由腾讯云数据库团队开发和维护。如果这个项目对你有帮助，欢迎在 GitHub 上给一个 ⭐。\n📢 活动预告\n5月29日，腾讯云「数据库+AI」发布会\n将首次完整披露从“AI-In-Database”原生融合，到全面支撑Agent的演进路径与核心能力。\n诚邀您见证“AI 原生重构数据库”的行业变革，共建下一代智能体应用的数据根基。\n👇 扫码即刻报名！席位有限，先到先得！\n-End-\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.83,
+        "irrelevant": 0.1,
+        "peripheral": 0.07,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.78,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.19,
+        "2": 0.79,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.28,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.4,
+        "2": 0.36,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.23,
+      "probabilities": {
+        "0": 0.85,
+        "1": 0.1,
+        "2": 0.03,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.57,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.17,
+        "3": 0.03,
+        "4": 0.79,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.61,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.05,
+        "4": 0.83,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 0.69,
+      "probabilities": {
+        "0": 0.49,
+        "1": 0.33,
+        "2": 0.17,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4194,
+    "outputTokens": 172,
+    "totalTokens": 4366
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "evidence": 0.71,
+        "actionability": 0.72,
+        "anti_hype": 0.54,
+        "category": 0.79,
+        "relevance": 0.85,
+        "grounding": 0.56,
+        "decision_action": 0.85
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 2,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": false,
+                "error": "Service temporarily unavailable",
+                "startTime": 1791180014863,
+                "endTime": 1791180014956,
+                "providerRequestId": "07f7f51e-4416-4be0-b426-d980a4e6fa68",
+                "statusCode": 503
+              },
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180014970,
+                "endTime": 1791180015158,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 2
+      },
+      "cost": "0.000176148",
+      "marketCost": "0.000176148",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000176148",
+      "inferenceCost": "0.000176148",
+      "inputInferenceCost": "0.000176148",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AC17QH115N5A5RDT9712M"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:15 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::mmcr7-1791180014727-6a57303ecc15"
+    },
+    "body": {
+      "answers": {
+        "evidence": {
+          "type": "score",
+          "score": 3.57,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.17,
+            "3": 0.03,
+            "4": 0.79,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.61,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.05,
+            "4": 0.83,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.69,
+          "probabilities": {
+            "0": 0.49,
+            "1": 0.33,
+            "2": 0.17,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.83,
+            "irrelevant": 0.1,
+            "peripheral": 0.07,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.78,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.19,
+            "2": 0.79,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.28,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.4,
+            "2": 0.36,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.23,
+          "probabilities": {
+            "0": 0.85,
+            "1": 0.1,
+            "2": 0.03,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4194,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "evidence": 0.71,
+            "actionability": 0.72,
+            "anti_hype": 0.54,
+            "category": 0.79,
+            "relevance": 0.85,
+            "grounding": 0.56,
+            "decision_action": 0.85
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 2,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": false,
+                    "error": "Service temporarily unavailable",
+                    "startTime": 1791180014863,
+                    "endTime": 1791180014956,
+                    "providerRequestId": "07f7f51e-4416-4be0-b426-d980a4e6fa68",
+                    "statusCode": 503
+                  },
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180014970,
+                    "endTime": 1791180015158,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 2
+          },
+          "cost": "0.000176148",
+          "marketCost": "0.000176148",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000176148",
+          "inferenceCost": "0.000176148",
+          "inputInferenceCost": "0.000176148",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AC17QH115N5A5RDT9712M"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:14.389Z"
+  }
+}

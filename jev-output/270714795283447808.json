@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "270714795283447808",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "好用的Token Plan凭啥不能便宜？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695442&idx=1&sn=75ccd4bfd0bcb6da1121d4c63fcaed07",
+      "date": "2026-04-24T09:37:00.300Z",
+      "chars": 966,
+      "text": "腾讯云开发者\n2026-04-24 17:37\n北京\n三体人都知道 AI 好用。\nAgent 能写代码、做 PPT、搜资料、盯进度，一个顶三个用，属实省心。\n但 token 烧起来，家里没矿真遭不住。\n一次复杂的 Agent 工作流，几十甚至上百次 API 调用，账单一出来，心跳比跟对象第一次联调成功还快。\n为什么 token 这么贵？说到底就一件事：全球算力紧缺。\n高端 GPU 供不应求，推理成本居高不下。对开发者来说，我不用 AI 是因为我不想吗？有本事你拿货来卖呀！\n好消息是，混元这次把成本打下来了，骄傲脸。\n混元团队在重建模型基础设施的时候，定过一条铁律：性价比追求。\n具体怎么做到的？两个核心动作：\n第一，MoE 架构压成本。\nHy3 preview 是快慢思考融合的混合专家模型，总参数 295B，但每次推理只激活 21B。换句话说，脑子大，但干活的时候只调用需要的部分，算力不浪费。\n第二，模型架构和推理框架一起设计。\n这是真正拉开差距的地方。大多数模型是\"训完再想办法跑\"，混元是把推理成本当架构问题来设计的——从训练阶段就考虑推理效率，不是事后优化。\n结果就是：同样的能力水平，Hy3 的推理成本显著更低。\n成本低了，计费模式也得跟上。腾讯云推出定制化 Hy Token Plan，个人版低至 28 元/月起，享有 3500 万Tokens，可执行约 70 轮问答！\n便宜不代表妥协。Hy3 preview 在 SWE-Bench Verified、Terminal-Bench 2.0等代码智能体基准，以及 BrowseComp、WideSearch 等搜索智能体基准中，都取得了强竞争力结果。\n在 CodeBuddy / WorkBuddy 的实际运行中：首 token 延迟降低 54%、端到端时长降低 47%、成功率 99.99%+。\n成本低，能力强，这才叫性价比。\n谁说好用的 Token Plan 不能便宜？\n28元/月，一个能干活的数字员工。\n让你收到账单后的心跳，像是跟对象联调十年后一样，波澜不惊。\n各位彦祖亦菲，这边请👇\n购买地址：\nhttps://cloud.tencent.com/act/pro/tokenplan\n腾讯云大模型Token Plan_畅享龙虾和编码自由\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "peripheral",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.25,
+        "peripheral": 0.73,
+        "transfer_agent": 0.01,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.39,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.52,
+        "2": 0.43,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.04,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.76,
+        "2": 0.13,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.52,
+      "probabilities": {
+        "0": 0.62,
+        "1": 0.29,
+        "2": 0.07,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.76,
+      "probabilities": {
+        "0": 0,
+        "1": 0.52,
+        "2": 0.33,
+        "3": 0.01,
+        "4": 0.14,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.34,
+      "probabilities": {
+        "0": 0.21,
+        "1": 0.35,
+        "2": 0.35,
+        "3": 0.07,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.08,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.03,
+        "2": 0.02,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.83,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 2634,
+    "outputTokens": 174,
+    "totalTokens": 2808
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.42,
+        "anti_hype": 0.95,
+        "category": 0.66,
+        "decision_action": 0.65,
+        "evidence": 0.49,
+        "grounding": 0.83,
+        "relevance": 0.68
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "digitalocean",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180019658,
+                "endTime": 1791180020096,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000110628",
+      "marketCost": "0.000110628",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000110628",
+      "inferenceCost": "0.000110628",
+      "inputInferenceCost": "0.000110628",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AC5B4YBJK0SQKKR1NDJFC"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:20 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::8rvnx-1791180018547-6ce5ba65bd47"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 1.34,
+          "probabilities": {
+            "0": 0.21,
+            "1": 0.35,
+            "2": 0.35,
+            "3": 0.07,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.08,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.03,
+            "2": 0.02,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "category": {
+          "type": "choice",
+          "choice": "peripheral",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.25,
+            "peripheral": 0.73,
+            "transfer_agent": 0.01,
+            "transfer_business": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.52,
+          "probabilities": {
+            "0": 0.62,
+            "1": 0.29,
+            "2": 0.07,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.76,
+          "probabilities": {
+            "0": 0,
+            "1": 0.52,
+            "2": 0.33,
+            "3": 0.01,
+            "4": 0.14,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.83
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.04,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.76,
+            "2": 0.13,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.39,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.52,
+            "2": 0.43,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 2634,
+        "outputTokens": 174
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.42,
+            "anti_hype": 0.95,
+            "category": 0.66,
+            "decision_action": 0.65,
+            "evidence": 0.49,
+            "grounding": 0.83,
+            "relevance": 0.68
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "digitalocean",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180019658,
+                    "endTime": 1791180020096,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000110628",
+          "marketCost": "0.000110628",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000110628",
+          "inferenceCost": "0.000110628",
+          "inputInferenceCost": "0.000110628",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AC5B4YBJK0SQKKR1NDJFC"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:19.327Z"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "237050712541959168",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "别再手写提示词！需求澄清 + 50多专业提示词框架自动匹配，效率提升10倍！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557769&idx=1&sn=25073739d70b5443176974b3925d4670",
+      "date": "2026-01-22T00:30:00.188Z",
+      "chars": 4414,
+      "text": "原创\n悟鸣\n2026-01-22 08:30\n浙江\n一、痛点\n当前\n用户撰写提示词\n存在很多难点：\n可能表达不清楚，存在遗漏、歧义；\n知道的提示词框架非常有限，很难挑选最适合的提示词框架；\n知道提示词框架自己套用非常浪费时间。\n当前很多\n提示词优化工具\n的\n主要缺点：\n缺乏澄清与确认，你提供的信息可能会存在歧义和错误，那么它们也会直接生成。\n很多提示词优化工具产出的提示词，虽然很结构化，看起来也很专业，但大多是相对通用的提示词框架。\n支持的模型非常有限。\n我设计了一个名为\nprompt-optimizer\nskill，通过以下方式解决这些问题：\n根据用户描述场景选择最适合的专业提示词框架（50多个全球顶尖的提示词框架）。\n如果发现缺失、歧义或错误会主动和用户确认。\n自动套用最适合的提示词框架。\n可以试用自己喜欢的模型。\n二、素材准备\n我们前面学了 Skill，虽然已经大概掌握了 Skill 的结构，但是真正亲手去写还是有很大门槛。\n详情参见：\n极速开发出一个高质量 Claude Agent Skills 最佳实践\n我们应该尽量秉承“AI First” 的理念，很多任务首先想到的是 “AI 能不能做好”，“如何让 AI 帮我干得更好”。\n那么我们就需要把\n任务拆解到大模型的能力边界以内\n，然后\n把\n任务交代清楚\n，然后\n给大模型提供充足准确的信息\n。\n具体到咱们这个场景，我们具体要怎么做？\n把自己的想法表达清楚\n：\n我希望你按照 Skill 规范，帮我把“提示词框架”这个文件夹改造成 “提示词优化专家”（需要改成英文）的 skill。当用户想要优化提示词时启用该功能。\n流程： 用户直接发送需求或者原始提示词，AI 需要从   中选择最匹配的场景，然后匹配最适合的框架名称，读取框架名称对应的框架描述文件，然后判断用户的输入的需求或原始提示词是否存在歧义或缺失，和用户进行核对，核对清楚以后，按照匹配的最佳提示词框架产出最终提示词。\n要求：请你按照 Skill 规范，生成对应的 Skill。确保文件夹名称，结构啥的都符合 Skill 规范，且功能的正确性\n充足准确的上下文\n：\n那我们需要把这些专业的提示词框架给它。\n我们可以在网上找到一些专业的 AI 框架，如：\nhttps://juuzt.ai/knowledge-base/prompt-frameworks/\n然后让 AI Coding 工具（如 Qoder、Cursor 等）通过 MCP 的方式把这些框架抓下来。\n如果 Qoder 的 Fetch MCP。\n如 Cursor 中使用\n：\nhttps://www.firecrawl.dev/\nMCP\n那么，\n如何更好地利用「渐进式式加载」的机制\n？\n我们可能有几十个，未来可能有上百个提示框架，哪怕 Claude 支持渐进式加载，它也\n无法在没有加载完所有的提示词框架前就能够判断出来该使用哪些框架\n。\n因此，我们需要\n主动\n让 AI 帮助我们根据当前的所有框架生产出一份摘要\n。\n这样智能体就可以\n先根据摘要锁定对应的框架\n，然后再\n提取对应的框架文件\n了解详情。\n当然，也可以考虑转为 JSON 格式，对 Agent 更友好一些。\n由于上下文不太长，而且本身是 Markdown 表格，目前看效果已经很不错。\n三、工具封装\n3.1 Claude Skills\nAI Coding 工具创建\nAI Coding 工具，有很多，我最常用的 AI Coding 工具之一是 Qoder。\n我们可以把 Anthropic 官方的 Skill 仓库拉下来。传送门：\nhttps://github.com/anthropics/skills\n因为这里有很多官方的例子，还有一些相关的说明。\n通常，我会先用 Qoder 的仓库 Wiki 功能生成一份专业详细的Wiki，快速了解关键信息，有任何疑问直接提问。\n我们把前面准备的这些材料放到文件夹里，放到官方的 skills 目录，然后把我们想要做的事情说清楚，让 AI 自动帮我们生成对应的 skill。\n那么很快它就会按照 Skills 的规范，根据我们提供的要求和相关资料，生成出一个非常专业、高质量的 Skills。\n该 Skill 已开源，需要的朋友欢迎安装体验，\n欢迎前来 star\n！\nhttps://github.com/chujianyun/skills\n官方 skill-creator\nClaude 的 Skills 仓库提供了一个创建 Skill 的 Skill：skill-creator\ncd 到准备好的素材目录，然后发送同样的提示词，Claude Code 会根据该 Skill 自动帮我们创建好提示词。\n安装体验\n安装方法参见：\nhttps://github.com/anthropics/skills\n在 Claude Code 中增加\n我的\n插件市场\n/plugin marketplace add chujianyun/skills\n插件市场安装我们的 提示词优化 Skill\n/plugin install prompt-engineering-skills@chujianyun/skills\n说出自己需要提示优化，然后把原始提示词发给他。\n可以明显地看到，它会自动匹配\nprompt-optimizer\n这个 Skill，读取摘要文件，匹配最适合的框架，对需求进行澄清，给出对应的优化后的提示词。\n底层原理参见：\nhttps://github.com/numman-ali/openskills\n<\nskills_instructions\n>\nWhen users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively.\nHow to use skills:\n- Invoke skills usingthis tool with the skill name only(no arguments)\n- When you invoke a skill, you will see\n<\ncommand-message\n>\nThe \"{name}\" skill is loading\n</\ncommand-message\n>\n- The skill's prompt will expand and provide detailed instructions\nImportant:\n- Only use skills listed in\n<\navailable_skills\n>\nbelow\n- Do not invoke a skill that is already running\n</\nskills_instructions\n>\n<\navailable_skills\n>\n<\nskill\n>\n<\nname\n>\npdf\n</\nname\n>\n<\ndescription\n>\nComprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms...\n</\ndescription\n>\n<\nlocation\n>\nplugin\n</\nlocation\n>\n</\nskill\n>\n<\nskill\n>\n<\nname\n>\nxlsx\n</\nname\n>\n<\ndescription\n>\nComprehensive spreadsheet creation, editing, and analysis with support for formulas, formatting, data analysis...\n</\ndescription\n>\n<\nlocation\n>\nplugin\n</\nlocation\n>\n</\nskill\n>\n</\navailable_skills\n>\n安装好插件或 Skill，提示词中会暴漏可用工具。Claude Code 运行时匹配到对应 Skill 以后，调用\nSkill(\"技能名称\")\n方式触发，渐进式披露。\n3.2 Chrome 浏览器插件\n考虑到有些同学不太会用 Skill。同时，也是为了验证 AI Coding 现在的水平，周末使用 Qoder 尝试\n将 Skill 转为 Chrome 插件\n，想了解\n实现难度和成本\n。\n新建一个文件夹，把 Skill 文件夹放进去，使用 Qoder Quest 模式进行需求澄清。\n用 Quest 模式生成核心代码\n。\n然后，\n右侧 Agent 中通过几轮对话\n，就可以生成比较符合预期的浏览器插件。\n花了大概半小时的时间就开发出来了，超出预期。\nGithub 仓库地址：\nhttps://github.com/chujianyun/prompt-optimizer-extension\n使用非常方便，配置自己的大模型 API，通过对话的方式就可以进行提示词的优化啦！\n四、写在最后\n我自己智能体很多提示词都是用这种方式来生成的，\n有些业务智能体提示词也会尝试用这种方案来澄清和优化\n，明显可以感觉到有些提示词，用专业的提示词框架效果会更好。\n比如说头脑风暴，很多人都觉得‘你帮我们头脑风暴一下’这就够了。实际上你用专业的头脑风暴框架，能够挖掘出来的、能够发散出来的方面，能够挖掘出来的价值是完全不一样的。\n当然也不是所有的场景都需要套用专业的提示词框架，尤其是简单场景，说清楚即可。可能更多的还是你需要把它搞成一个智能体，相对更专业的场景可以去试试。\n提示词优化的 Skill 侧面展示了，现在“Do” 的成本已经大大降低，关键是 “Think”。\n已经从 “Talk is Cheap，Show Me Your Code” 转向 “Code is Cheap，Show Me Your Talk”。\n随着模型的能力越来越强，\n未来 Think 的价值，比 DO 更高\n。\n关键是能不能把任务拆解到大模型能力范围以内（不管手动还是自动），人是否能表达清楚自己的需求（不管有没有 AI 的辅助），AI 可以获取到充足和准确的上下文（不管是人提供，还是通过 Skill、MCP）。\n当然，Skill 不是万能的，\nSkill 的效果也依赖模型能力\n，通常模型越强大效果通常越好。\n希望本提示词优化 Skill 对大家撰写提示词能够有帮助。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

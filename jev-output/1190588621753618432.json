@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1190588621753618432",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "ICLR 2026 | 基于视觉自回归模型的前馈式主体驱动图像生成算法 EchoGen",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650544719&idx=1&sn=42fb0cb0fe7c292ac867355c9bb61062",
+      "date": "2026-07-08T06:22:00.376Z",
+      "chars": 4756,
+      "text": "原创\n音视频技术\n2026-07-08 14:22\n浙江\nEchoGen 首创基于 VAR的主体驱动生成，双路径注入兼顾质量与效率，1024图像生成仅5.2秒，速度提升2倍以上。\n中国科学技术大学与淘天集团-音视频技术团队在 ICLR 2026上提出的 EchoGen，作为首个基于视觉自回归模型的前馈式主体驱动图像生成框架，通过创新的双路径主体注入策略（解耦高层语义身份与低层细节纹理）有效攻克了该领域长期存在的质量与效率难以兼顾的难题，在 DreamBench 基准测试和人类评测中实现了与扩散模型相当的生成质量与主体保真度，同时将1024×1024图像的生成延迟大幅压缩至5.2秒，较现有扩散方案加速2-18倍，为主体驱动生成在直播互动、商品实时渲染等强时效性工业场景的落地提供了高效可行的新技术路径。\n论文背景介绍\nICLR（International Conference on Learning Representations），又称国际表征学习大会，是机器学习领域全球顶级学术会议之一，重点关注与深度学习相关的前沿研究。该会议每年举办一次，其收录的论文往往代表了未来几年 AI 技术演进的风向标。ICLR 2026 收到创纪录的近 19,000 篇有效投稿，整体录用率约 28%。此篇被收录论文聚焦于\n主体驱动图像生成（Subject-Driven Generation）领域，由中国科学技术大学与淘天集团-音视频技术团队联合完成\n。\n在主体驱动生成领域，现有方法长期受困于“质量 vs. 效率”的两难抉择：基于测试时微调的方案（如 DreamBooth）虽能精准保留主体身份，却需为每个新主体单独训练数十分钟乃至数小时；基于扩散模型的前馈方案虽然摆脱了逐主体训练的束缚，却继承了扩散模型迭代去噪带来的高推理延迟。如何在不牺牲生成质量的前提下大幅压缩延迟，是主体驱动生成走向工业级实时应用必须跨过的门槛。针对这一痛点，团队\n首次构建了基于视觉自回归（Visual Auto-Regressive, VAR）模型的前馈式主体驱动图像生成框架\n——\nEchoGen\n，通过创新的双路径主体注入策略，在 DreamBench 基准与人类评测上达到与扩散方法相当的效果，同时将 1024×1024 图像的生成延迟压缩至\n5.2 秒\n，相比 SOTA 扩散方案实现至少\n2× 加速\n。\n论文下载链接：\nhttps://arxiv.org/abs/2509.26127\n项目开源地址：\nhttps://github.com/drx-code/EchoGen\n论文摘要\n此篇论文提出了\nEchoGen\n，一种基于视觉自回归（Visual Auto-Regressive, VAR）模型的前馈式主体驱动图像生成方法。在主体驱动生成领域，现有 SOTA 方法面临一组难以兼顾的取舍：基于测试时微调的路线虽能精准保留主体身份，但需为每个新主体单独训练，既耗时又难以满足零样本生成的实际需求；基于扩散模型的前馈路线虽实现了零样本生成，却继承了扩散过程迭代去噪的高延迟瓶颈。VAR 模型凭借快速采样与高质量生成的双重优势，本应是破解这一两难的理想基座，但其在主体驱动方向的潜力始终未被充分挖掘。\n为此，本文创新性地提出了\"\n双路径主体注入\n\"策略，将主体的高层语义身份与低层细节纹理解耦后分别注入生成过程：一路通过语义编码器提取主体的语义信息，经解耦交叉注意力机制引导整体构图；另一路通过内容编码器捕获精细视觉细节，经多模态注意力机制实现纹理与结构的高保真重建。据我们所知，\nEchoGen 是首个基于 VAR 模型构建的前馈式主体驱动生成框架\n。大量实验表明，EchoGen 在主体保真度和图像质量上均可与扩散方法相媲美，同时推理延迟显著更低，为主体驱动生成开辟了一条全新的技术路径。\n图1 EchoGen生成示例\n具体方法\n在前馈主体驱动生成的新范式下，如何在保留视觉自回归模型固有\"快采样、高质量\"优势的前提下，向其注入足够丰富、且细粒度可控的主体条件信号，是技术核心难题。团队从\n主体特征注入策略\n与\n模型架构设计\n两个维度进行了重新设计。\n▐\n核心痛点\n主体驱动生成长期由扩散模型主导，但迭代去噪带来的高推理延迟在直播互动、商品图实时生成、AIGC 创作工具等强实时性业务场景中难以接受。Visual Auto-Regressive（VAR）模型采用\"由粗到细\"的下一尺度预测（next-scale prediction）范式，天然具备更快的采样速度，但其在可控生成、特别是主体驱动方向上的研究几乎空白；同时，简单将扩散模型常用的主体注入方案迁移到 VAR，往往因架构差异导致语义对齐不良、细节丢失等问题。\n▐\n双路径主体注入策略\n图2  EchoGen 整体框架与 EchoGen Block 内部结构示意图\n如图2所示，EchoGen 的核心思想是：\n一个主体的信息由\"高层语义\"与\"低层细节\"共同定义，二者应被解耦后分别注入，而非通过单一通道简单融合。\n语义路径：身份保真\n为防止生成过程中的\"身份漂移\"，团队使用预训练视觉基础模型 DINOv2 提取参考图的语义特征，并分两个层级注入。其中\n细粒度语义特征\n经解耦交叉注意力（Decoupled Cross Attention）与文本条件并行注入，引导主体的结构与风格；\n全局语义 token\n作为前缀拼接至输入 token 序列，并经\nAdaptive LayerNorm\n调制 EchoGen Block，确保整体构图的语义一致性。得益于解耦交叉注意力的设计，文本路径与语义路径的 K/V projector 完全独立，且文本路径与查询 projector 保持冻结，\n仅训练语义路径的 K/V projector\n——既实现了从语义视觉空间到生成器潜在空间的对齐映射，又最大程度避免微调对预训练知识的扰动。\n内容路径：细节保真\n仅靠 DINOv2 语义特征往往无法重建主体的精细纹理与局部细节（如毛发走向、织物肌理、文字 logo 等）。为此，EchoGen 引入第二条注入路径：使用 FLUX.1-dev VAE 提取参考图的低层内容特征，经精心设计的多模态注意力（Multi-Modal Attention）模块注入生成流程。其关键设计在于注意力掩码：生成 token 可访问参考 token，同时参考 token 对生成序列保持因果不可见。\n▐\n主体分割预处理\n真实场景中用户提供的参考图常包含复杂背景，会污染主体特征注入。EchoGen 设计了基于 Qwen2.5-VL + GroundingDINO 的主体分割流水线：如图3所示，先由 VLM 识别主体语义并生成描述文本，再由 GroundingDINO 基于该文本定位主体边界框，最后裁剪并以纯白背景替换非主体区域。\n图3 主体分割预处理流水线示意图\n▐\n主体-文本联合无分类器引导（Subject-Text CFG）\n为支持用户在“主体保真”与“文本对齐”之间灵活权衡，EchoGen 在标准 CFG 基础上引入\n双系数引导\n：\n其中\n与\n分别调控文本与主体的引导强度。训练时以 10% 概率独立丢弃文本与主体条件，使得推理时可在不重训的前提下动态切换控制偏好。\n实验论证与结果\n我们在\nDreamBench\n标准基准上与三大类共 14 项对比方案进行了全面定量评测，并在人类评测环节进一步引入\nDreamBench++\n作为补充。\n▐\n定量评估\n如表1所示，\nEchoGen-2B 在 DINO（0.755）、CLIP-I（0.835）、CLIP-T（0.325）三项核心指标上均位列前列\n，全面超越或持平所有基线方法；而推理延迟仅\n5.2 秒\n，相比 OmniGen（93.4s）、MS-Diffusion（39.6s）、OminiControl（27.5s）、EasyControl（25.4s）、IP-Adapter（16.9s）、ELITE（11.0s）等扩散方案最高实现\n18× 加速\n。\n表1 DreamBench 定量对比结果\n▐\n定性评估\n图4可视化对比展示了 EchoGen 在主体保真与文本一致性两方面的优势：\n结构重建\n：在皮靴、陶壶等刚性物体上，EchoGen 能精确复现轮廓与边缘线条，而 IP-Adapter、OminiControl 常出现结构扭曲或边缘模糊；\n纹理质感\n：在毛绒玩具、虎斑猫等高频纹理对象上，EchoGen 生成的毛发根根分明、肤质自然，避免了过度平滑；\n文本\n：在\"鸭子玩具漂在水面\"、\"虎斑猫在雪地\"等复合场景下，EchoGen 严格遵循文本约束，而 IP-Adapter 等出现明显的语义偏移。\n图4 与基线方法在 DreamBench 上的定性对比\n▐\n人类评测\n在\n25 位生成模型领域专家、共 450 份评估\n中，EchoGen-2B 在主体保真度（37%）\n与\n照片真实感（34%）两项关键人类感知指标上以显著优势胜出；文本对齐度（30%）与最强对比方法 EasyControl 持平，并明显优于其他基线。\n表2 人类评测三项指标偏好率对比\n▐\n速度-质量权衡分析\n通过调整扩散方案中的去噪步数，我们绘制了图5所示的“采样延迟–性能”曲线。结果表明，EchoGen 在所有采样延迟区间内始终位于帕累托前沿，说明其速度优势并非以牺牲生成质量为代价。\n图5 EchoGen 与基线方案的采样延迟-性能曲线对比\n总结与展望\n我们提出了\nEchoGen\n——首个基于视觉自回归模型的前馈主体驱动生成框架。通过创新的双路径主体注入策略，EchoGen 在保留 VAR 模型快采样优势的同时，在 DreamBench 与人类评测上达到与扩散方法相当甚至更优的水平，并将 1024×1024 图像的生成延迟压缩至\n5.2 秒\n，为主体驱动生成的实时落地提供了全新技术路径。\n尽管效率优势明显，当前 EchoGen-2B 仍依赖 2B 参数的 Infinity 基座模型，对长尾稀有主体的泛化能力以及多主体复合生成场景尚有提升空间。未来工作将围绕三个方向展开：（1）\n模型蒸馏与轻量化\n，进一步压缩 EchoGen-0.1B 系列的部署成本，探索单步/少步 VAR 采样；（2）\n多主体组合生成\n，扩展至多主体协同与复杂关系约束的复杂场景；（3）\n视频主体驱动生成\n，将该范式从图像扩展至视频，赋能直播、短视频等核心业务场景。\n团队介绍\n该工作由淘天音视频技术团队与高校合作完成。音视频技术团队服务于国民 app 淘宝中直播、逛逛、首页信息流、商品详情等核心视频业务场景，长期聚焦技术创新与应用落地，致力于持续提升用户内容消费体验。团队成员来自海内外知名高校，多次在 MSU 世界编码器大赛，CVPR NTIRE 视频增强超分竞赛这样的权威赛事上夺魁，并重视与学界的合作与交流。\n团队主导设立了淘天博士后工作站，持续强化前沿技术研发与高层次人才培养能力。自成立以来，已累计招收十余位博士后，发表高水平论文近20篇，多项成果已在淘宝核心业务场景规模化落地。\n团队兼顾算法创新与工程应用，围绕视频生产、视频修复与生成、视频编码等完整链路持续深耕，保障视频、图片相关业务的流畅度和音画质体验，并在多媒体 AIGC 方向积累了多模态理解、图像生成与编辑、可控视频生成等关键能力，为直播、信息流、搜索推荐等业务场景提供技术支撑。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.88,
+        "direct_local": 0,
+        "peripheral": 0.09,
+        "transfer_business": 0.01,
+        "transfer_agent": 0.02
+      }
+    },
+    "relevance": {
+      "score": 1.12,
+      "probabilities": {
+        "0": 0.25,
+        "1": 0.38,
+        "2": 0.37,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.63,
+      "probabilities": {
+        "0": 0.53,
+        "1": 0.35,
+        "2": 0.1,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.11,
+      "probabilities": {
+        "0": 0.9,
+        "1": 0.1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.94,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.01,
+        "3": 0.02,
+        "4": 0.96,
+        "5": 0.01
+      }
+    },
+    "actionability": {
+      "score": 3.07,
+      "probabilities": {
+        "0": 0.17,
+        "1": 0.07,
+        "2": 0.02,
+        "3": 0.07,
+        "4": 0.61,
+        "5": 0.06
+      }
+    },
+    "anti_hype": {
+      "score": 1.55,
+      "probabilities": {
+        "0": 0.22,
+        "1": 0.09,
+        "2": 0.62,
+        "3": 0.07,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6039,
+    "outputTokens": 173,
+    "totalTokens": 6212
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.85,
+        "relevance": 0.58,
+        "grounding": 0.58,
+        "decision_action": 0.93,
+        "evidence": 0.95,
+        "actionability": 0.3,
+        "anti_hype": 0.59
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179882678,
+                "endTime": 1791179882831,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000253638",
+      "marketCost": "0.000253638",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000253638",
+      "inferenceCost": "0.000253638",
+      "inputInferenceCost": "0.000253638",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8057A77Y2Y2EPC6Z97VB"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:02 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::sc44n-1791179882649-891cef0b041e"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.88,
+            "direct_local": 0,
+            "peripheral": 0.09,
+            "transfer_business": 0.01,
+            "transfer_agent": 0.02
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.12,
+          "probabilities": {
+            "0": 0.25,
+            "1": 0.38,
+            "2": 0.37,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.63,
+          "probabilities": {
+            "0": 0.53,
+            "1": 0.35,
+            "2": 0.1,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.11,
+          "probabilities": {
+            "0": 0.9,
+            "1": 0.1,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.94,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.01,
+            "3": 0.02,
+            "4": 0.96,
+            "5": 0.01
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.07,
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.07,
+            "2": 0.02,
+            "3": 0.07,
+            "4": 0.61,
+            "5": 0.06
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.55,
+          "probabilities": {
+            "0": 0.22,
+            "1": 0.09,
+            "2": 0.62,
+            "3": 0.07,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6039,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.85,
+            "relevance": 0.58,
+            "grounding": 0.58,
+            "decision_action": 0.93,
+            "evidence": 0.95,
+            "actionability": 0.3,
+            "anti_hype": 0.59
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179882678,
+                    "endTime": 1791179882831,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000253638",
+          "marketCost": "0.000253638",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000253638",
+          "inferenceCost": "0.000253638",
+          "inputInferenceCost": "0.000253638",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8057A77Y2Y2EPC6Z97VB"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:02.068Z"
+  }
+}

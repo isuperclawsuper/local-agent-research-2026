@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "261665037201963008",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "CoPaw深度解析：源码架构和功能实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559269&idx=1&sn=a87c6b0f00c2ccee4a25901df995c65b",
+      "date": "2026-03-31T00:30:00.005Z",
+      "chars": 12377,
+      "text": "原创\n李德\n2026-03-31 08:30\n浙江\n写在最前面，2月28日通义实验室AgentScope团队发布了自研的独立部署开源桌面Agent工具：CoPaw\nhttps://copaw.agentscope.io/\nCoPaw是整体架构上类似openclaw的工具，用的agentscope框架搭建，整体的灵活性和可扩展性非常大，支持用户自定义skills和Agent模块组件，极大降低agent开发和部署的门槛，并且可以接入主流的社交软件频道QQ、钉钉、飞书等；欢迎大家体验。\n本文会对CoPaw的技术底层架构深度解析，包括Copaw Agent模块（Prompt、SKills、Memory、MCP），BaseModel Provider，Channels、Agent Execution Workflow、Scheduled Tasks，并且基于本地环境和云端环境部署CoPaw的实际功能体验。\n一、Agent Skill\n在解释CoPaw的架构之前，有一个概念Agent Skills需要被单独提前说明， Agent Skills是当前AI助理工具的框架基础，目前流行的openclaw、copaw、claude等工具全部采用了Skills，Skills也是CoPaw能够实现各类复杂工作任务关键Agent组件。\nAgent Skill简单来说，是一个用于指导Agent完成某个具体的任务的标准化流程，包括前置说明、关键指令、逻辑代码、其他资源等，由Anthropic首次提出的标准化流程，目前已成为Agent行业内的通用兼容协议，类似openai格式的LLM请求是大模型调用的通用框架。\nhttps://agentskills.io/what-are-skills\n1.1 Agent Skill和LLM、function/tool的主要区别\nAgent Skill其实是基于LLM和function call的第三层技术流程，LLM基础模型是第一层，LLM+tool让基础模型拥有agent的能力这是第二层，他本质上是一个标准化的指导agent如何工作的流程，因此他是基于agent之上的流程，整体的关系可以参考如下图：\n第一层是基础模型+提示词，对用户问题做回答。\n第二层是Agent，在第一层基础模型上增加了tools，让基础模型能够处理本地或远程的可执行的任务，比如执行代码、调用组件、读取文件等。\n第三层是Agent Skills，是指导Agent如何处理具体任务的标准化流程，包括需要调用什么工具，读取什么文件，先做什么后做什么，他依赖于Agent Tools的能力，是属于第三层的指导方法。\n1.2 Skill的具体解释\nSkill一般是一个目录，具体结构如下：\nmy\n-skill/\n├── SKILL.md\n# Required: instructions + metadata\n├── scripts/\n# Optional: executable code\n├── references/\n# Optional: documentation\n└── assets/\n# Optional: templates, resources\nSKILL.md 是必须的文件，这个markdown格式的文件包括skill的说明和具体如何执行的指令：\n---\nname: pdf-processing\ndescription: Extract text and tables from PDF files, fill forms, merge documents.\n---\n# PDF Processing\n## When to use this skill\nUse this skill when the user needs to work with PDF files...\n## How to extract text\n1. Use pdfplumber for text extraction...\n## How to fill forms\n...\nskill.md两部分组成前置说明frontmatter和指令instructions，frontmatter里name字段和description字段必须存在，name表示该skill的名称，description是核心字段，表示skill的作用和什么时候使用该skill，这是Agent判断是否启用该skill的关键，类似Agent function里的description。\nfrontmatter\n---\nname: pdf-processing\ndescription: Extract text and tables from PDF files, fill forms, merge documents.\n---\n指令instructions如下，用markdown的格式告诉Agent怎么具体的按流程执行这个skill，包括执行的时机、执行的操作步骤、需要引入什么参考、执行什么代码。\n# PDF Processing\n## When\nto\nuse\nthis skill\nUse\nthis skill when the user needs\nto\nwork with PDF files...\n## How\nto\nextract\ntext\n1\n.\nUse\npdfplumber for\ntext\nextraction...\n## How\nto\nfill\nforms\n...\n在instructions里可以添加要求Agent执行某个代码或者参考某个外部来源，让Agent有更强的复杂任务执行能力：\n代码执行的定义：需要明确写出某个代码文件的具体的执行命令，同时代码的路径采用同目录下的scripts目录的相对路径，这是因为不同的终端环境不一样，需要尽可能的规范化执行操作。\n## Available scripts\n-\n**`scripts/validate.sh`**\n— Validates configuration files\n-\n**`scripts/process.py`**\n— Processes input data\n## Workflow\n1.\nRun the validation script:\n```bash\nbash scripts/validate.sh \"$INPUT_FILE\"\n```\n2.\nProcess the results:\n```bash\npython3 scripts/process.py --input results.json\n```\n同时因为代码是需要依赖外部库的，外部库的版本会影响代码能否成功运行，因此需要预先设定一个shell文件，用uv/pipx等方法去安装代码执行所需要的库，例如\nuvx\nruff@\n0\n.\n8\n.\n0\ncheck .\nuvx\nblack@\n24\n.\n10\n.\n0\n.\npipx\nrun 'black==\n24\n.\n10\n.\n0\n' .\npipx\nrun 'ruff==\n0\n.\n8\n.\n0\n' check .\n代码执行必然会遇到报错的情况，把一些可能遇到的edge cases和error信息放在instructions里也能提高skill的兼容性，例如\n# Good: clear error with guidance\n$ python scripts/deploy.py\nError: --\nenv\nis required. Options: development, staging, production.\nUsage: python scripts/deploy.py --\nenv\nstaging --tag v1.2.3\n如果代码里需要input外部的文件或者数据例如txt、jpg、wav、csv、xlsx，该文件可以放在同目录的assets目录下，用相对路径引入。\n2.\nProcess\nthe\nresults\n:\n```bash\npython3 scripts/process.py --input assets/data.json\n`\n``\n参考外部来源的定义：因为instruction需要尽可能的保持低复杂度、高确定性的特征来避免提示词幻觉，对一些很长的参考来源的文件，可能是文本、图片、音频、视频等，不应该放在instruction主体里，应该放在同目录的references或者assets下，然后在instruction里引入他们；同样的，在代码执行时也可以把这些数据文件作为输入。\n## Available references\n-\n**`references/r1.pdf`**\n— r1.pdf\n-\n**`references/r2.jpg`**\n— r2.jpg\n## Workflow\n1.\nRead the reference r1.pdf:\nUse File-Read Tool to extract all content in references/r1.pdf, then summarize it\n2.\nRead the reference r2.jpg:\nUse Image-Read Tool to read the main content in references/r2.jpg, then summarize it\n外部参考需要尽量的领域化和类别化，例如金融问题设定保险、理财、股票等专门的外部参考文件，每个文件里明确说明定义，让Agent能清楚的根据问题去读取某一个特定的参考文件。\n1.3 Skills的工作方式：progressive disclosure\n为了节省tokens和减少幻觉，skills采用逐步导入的方法来最大化的提升效果，Agent导入其他内容的方法是用file-read tool，该工具可以自定义本地函数，也可以用现成的方法，这个tool是Agent工作过程中最常用的tool，输入是文件路径，输出是文本内容。\n以下是具体步骤：\nAgent在启动时会导入所有的skills目录，读取每个skill的name和description，会存储到后台；\nAgent接收到用户问题时，会判断该问题需要调用什么skills来解决（根据skill的description判断），然后导入需要的skills的主体instruction到提示词；\n如果skill的主体instruction里有调用代码或外部参考，会一并导入到提示词；\n然后Agent根据提示词里的内容，依次按顺序调用tools获取结果；\n最后Agent根据所有结果，给出最终回答；\n二、CoPaw技术架构\nCoPaw是基于AgentScope框架开发的AI工具，AgentScope框架是自研的集成化AI Agent开发框架，可以自定义skills、memory、rag等常见的AI组件，提高开发效率，以下是AgentScope在百炼上搭建高代码AI应用的操作指南：\nhttps://bailian.console.aliyun.com/cn-beijing/?spm=5176.12818093_47.overview_recent.3.3be916d0Ql8Tff&tab=doc#/doc/?type=app&url=2983030\nCoPaw是开源工具，源代码地址在github，本文主要参考源码解析架构：\nhttps://github.com/agentscope-ai/CoPaw?tab=readme-ov-file\nCoPaw的架构主要分为8个模块，\nCoPaw Agent，Skills， MCP clients， Memory，Model Provider，Channels、Agent Execution Workflow、\nCron Jobs\n；每个模块分别控制不同的功能，以下会分别展示源代码片段和功能。\n模块\n功能\n代码地址\nCoPaw Agent\n核心的Agent类，自定义工具和skills，管理记忆，多频道交互通信机制\nhttps://github.com/agentscope-ai/CoPaw/blob/92dfc44e/src/copaw/agents/react_agent.py#L65-L557\nSkills\n可扩展的CoPawAgent子模块，自定义标准化skills，注册skills成为toolkit\nhttps://github.com/agentscope-ai/CoPaw/blob/92dfc44e/src/copaw/agents/react_agent.py#L206-L229\nMCP clients\nCoPawAgent子模块，引入外部工具，有稳定的重连机制\nhttps://github.com/agentscope-ai/CoPaw/blob/92dfc44e/src/copaw/agents/react_agent.py#L338-L418\nMemory\nCoPawAgent子模块，agent记忆管理，实现短期记忆、长期记忆+记忆聚合\nhttps://github.com/agentscope-ai/CoPaw/blob/92dfc44e/src/copaw/agents/react_agent.py#L242-L291\nModel Provider\n核心的基础模型类，提供云端+本地两种模型调用模式\nhttps://github.com/agentscope-ai/CoPaw/blob/main/src/copaw/local_models/chat_model.py\nChannels\n消息平台，双向消息队列，支持多种社交平台\nhttps://github.com/agentscope-ai/CoPaw/blob/main/src/copaw/app/channels/manager.py\nAgent Execution Workflow\nAgent执行具体任务的类，支持MCP召回、记忆召回、Agent刷新、shell命令\nhttps://github.com/agentscope-ai/CoPaw/blob/92dfc44e/src/copaw/app/runner/runner.py#L37-L267\nCron Jobs\n定时任务和心跳任务，Agent在指定时间主动处理的任务；\nhttps://github.com/agentscope-ai/CoPaw/blob/92dfc44e/src/copaw/app/crons/manager.py\n2.1 CoPaw Agent\nCoPawAgent类是CoPaw工具的核心类，在react_agent.py中定义，该类继承自agentscope的ReActAgent类，并且类别中加入了自定义的工具、skills，指定多频道交互通信的方式，加入记忆管理组件。\n模块：\nReAct模式：逐步的理解任务并调用skill和工具解决，AgentScope定义；\n内置工具toolkit：Shell execution, file operations, browser automation, desktop screenshots, current time；\n自定义skills：skills放在/.copaw/skills下，可以自定义，启动时会读取所有skills；\n记忆管理：支持长期记忆存储和聚合；\n会话保持：Session ID实现会话长期live和回溯；\n整体的模块架构如下图：\n2.2 Skills\nSkills是Agent的子模块，他的工作原理和上文提到的完全一致，也在react_agent.py中定义，skills模块是可扩展的，用户可以用内置的skills，也可以依据Anthropic标准格式自定义新的skills，所有的skills放在/.copaw/skills目录下，通过CoPawAgent的register_skills函数去读取所有的skills，并临时存储。\n特点：\n逐步导入：Agent启动时先导入所有的skills description，判断和问题相关的skill，再导入instruction执行；\ntoolkit注册：通过toolkit.register_skills()函数把skills注册为toolkit工具箱中的工具，实现标准化调用；\n标准结构：每个skill在导入检查时，会检查skill的结构是否标准化；\n2.3 MCP clients\nMCP client也是Agent子模块，通过app/mcp/manage.py中定义的MCPClientManager类，可以从config中读取MCP的建联信息，支持stdio和http/sse两种传输协议，stdio是本地的进程，http/sse面向远程的HTTP server；同时还引入client监控，根据client的状态实时的增加/删除/替换client。\n定义完的MCPClient在react_agent.py中引用，注册toolkit，并加入连接MCP时的恢复和重连机制。\n特点：\n热实时更新：MCPClientManager会定时检查config.json，如果client的配置信息变化，可以重新修改client，重新注册，无需重新启动Agent；\n双传输协议：stdio和http/sse，支持本地和远程多种连接模式；\n稳定性：重连机制，连接失败时，从存储的copaw_rebuild_info读取metadata，存储的shared_reference读取client状态，快速rebuild client；\nMCP Client的架构如下图：\n2.4 Memory\nCoPawAgent子模块，在react_agent.py中定义，用于Agent长期记忆管理，对历史上下文对话做总结摘要，并存储在/.copaw/memory目录下，并定义memory_search_tool对存储的记忆做检索召回，回溯到上下文。\n特点：\n短期记忆：缓存实现多轮对话的短期记忆；\n动态长期记忆：不仅支持长对话的存储，当上下文非常长时还会动态的进行记忆聚合，Agent会对最近自定义轮数的messages计算tokens，如果tokens超过阈值，这部分历史messages会被总结摘要，存储到长期记忆；\nMemory的实现架构如下图：\n2.5 Model Provider\nModel Provider模块是基础模型的调用类，有两种调用方式，一种是云端模型的API调用例如openai、百炼，这种stream方式在copaw/providers/openai_chat_model_compat.py中定义，该类继承自OpenAIChatModel，能用api key和url调用openai；\nhttps://github.com/agentscope-ai/CoPaw/blob/main/src/copaw/providers/openai_chat_model_compat.py\n第二种方式是本地部署的模型，支持llama.cpp,Ollama,MLX，本地部署的模型受到本地机器算力的影响，因此小尺寸的模型比较合适，这种方式在copaw/local_models/chat_model.py中定义，该类继承自ChatModelBase，定义了本地模型部署和调用的方式；\nhttps://github.com/agentscope-ai/CoPaw/blob/main/src/copaw/local_models/chat_model.py\n配置云端或者本地模型的方法可以参考如下：\nhttps://github.com/agentscope-ai/CoPaw/blob/92dfc44e/README.md\n#L266\n-L296\n特点：\n云端+本地双部署：两种部署模式，满足用户本地验证和云端调用和多种需求；\nModel Provider的整体架构如下图：\n2.6 Channels\nChannels是CoPaw的消息平台，用来接受和发送messages，除了和模型/用户的交互外，还集成了钉钉/飞书/QQ/discord/telegram等多种国内外主流社交平台，Channels通过copaw/app/channels/manager.py中定义的ChannelManager类来实现，这个类里集成了消息队列用于消息的异步接收和处理，消息队列中的消息会作为Agent Request发送到Agent Execution，获取到Agent的回答后再用消息队列转发Agent Response给用户。\nChannels的配置可以参考：\nhttps://github.com/agentscope-ai/CoPaw/blob/92dfc44ebbc1ddbdd7d5040d2198fd7f26dbb1a6/website/public/docs/channels.en.md\n特点：\n消息队列：用于消息的接收和转发；\n标准化消息格式：转换其他平台的消息为AgentScope的Msg格式；\n双向通道：接收用户的消息，转发给Agent；接收Agent的回复，转发给用户；\n多平台支持：\nChannel\n类\n传输方式\n钉钉\nDingTalkChannel\nStream API\n飞书\nFeishuChannel\nWebSocket\nDiscord\nDiscordChannel\ndiscord.py\nQQ\nQQChannel\nTencent QQ Bot API\nTelegram\nTelegramChannel\npython-telegram-bot\nChannels Manager对消息处理的方式如下图：\n2.7 Agent Execution Workflow\nAgent执行工作流是Agent获取channel消息AgentRequest，调用tools/skills生成回答AgentResponse的工作流，是解决实际用户query的工作流，该工作流通过copaw/app/runner/runner.py中定义的AgentRunner类来实现，继承自Runner类，类里定义了消息处理函数query_handler, MCP调用方法mcp_manager，记忆检索召回memory_manager，系统命令运行run_command等多种方法。\n特点：\n会话状态保存：保存单次query的状态和上下文，多轮对话时根据session id引入上下文；\nAgent刷新：没有query时Agent实例释放，Agent状态信息保存在config，有query时快速建立Agent实例，节省资源占用；\n执行系统命令：内置了执行系统级shell命令的工具；\n记忆检索召回：检索召回长期记忆，提升回答的准确性；\nMCP召回：召回MCP/tools的内容，提升回答准确性；\nworkflow的流程如下图：\n2.8 Cron Jobs\n定时任务和心跳任务，是CoPaw开发的创新功能，是为了让Agent拥有主动工作的能力，一般情况下Agent在接收用户问题后开始工作，这属于接收指令的被动工作；定时任务指的是在某一个特点的时间段，给Agent发送一个任务，Agent执行返回结果，例如定时巡检状态、定时发送祝福等，看起来就是在这个时间Agent主动在做工作；心跳任务算是一种特殊的定时任务，在每隔一定时间间隔，给Agent发送请求，特别适合Agent自检任务；定时任务还可以和channels集成，发送结果到各个社交平台。\nCron Jobs是基于copaw/app/crons/manager.py中定义的CronManager类实现，该类中定义了定时的时间段，预先设定的AgentRequest格式，发送任务结果到Channels等方法。\n特点：\n主动服务：Agent具备在特定时间段主动执行任务的能力；\n多平台消息推送：定时任务的结果可以推送到各个channels，方便检查；\n三、CoPaw功能实践\n3.1 本地环境部署\n本地部署的完整操作文档如下：\nhttps://github.com/agentscope-ai/CoPaw/blob/main/README_zh.md\n本文主要通过pip安装并在本地环境使用\n首先pip安装启动copaw（需要预装python）\n## Available references\n-\n**`references/r1.pdf`**\n— r1.pdf\n-\n**`references/r2.jpg`**\n— r2.jpg\n## Workflow\n1.\nRead the reference r1.pdf:\nUse File-Read Tool to extract all content in references/r1.pdf, then summarize it\n2.\nRead the reference r2.jpg:\nUse Image-Read Tool to read the main content in references/r2.jpg, then summarize it\n也可以通过命令行ux虚拟环境一键安装\ncurl\n-fsSL\nhttps://copaw.agentscope.io/install.sh\n| bash\n云端环境如ECS、ACS需要走docker镜像安装\ndocker pull agentscope/copaw:latest\ndocker run -p 127.0.0.1:8088:8088 -v copaw-data:/app/working agentscope/copaw:latest\n浏览器进入CoPaw主界面\nhttp://127.0.0.1:8088/chat\n配置云端模型，可以选择modelscope、openai、dashscope、anthropic等多来源，配置完url和api key，选择模型即可使用。\n也可以选择本地部署模型，要先下载模型到本地，输入模型ID，copaw会自动从huggingface和modelscope上下载，Ollama框架已内置，可以方便的一键部署。\n随后在主界面即可和Agent对话，Agent可以和本地文件/.copaw目录下交互，可以读写该目录下的所有文件，例如分析pdf的内容，读取excel的数据，写一个py代码；真正做到和终端的交互。\nchannel配置：channel需要双端配置，钉钉为例，CoPaw端需要配置client id和client secret，钉钉端需要在钉钉开发者平台搭建一个机器人应用，app的id和secret填入CoPaw页面即可，最后在钉钉应用平台上配置CoPaw部署的服务器的公网IP，具体流程可以参考：\nhttps://copaw.agentscope.io/docs/channels/#%E9%92%89%E9%92%89%E6%8E%A8%E8%8D%90\n配置完成后可以在钉钉聊天框搜索你的机器人应用，和CoPaw对话。\n会话Session ID会存储在这里，方便状态保存和多轮对话交互。\n最后是定时任务和心跳，定时任务需要配置执行时间，发给agent的请求消息体，目标channel的会话ID和用户ID，最大超时时间，并发数等。\n心跳任务更简单，适合agent自检任务，可以发送到channel，也可以不发送在后台日志中查看。\n整体在前端和CoPaw的交互操作，实际在后台终端日志都可以看到实际服务器接收到的指令和执行的操作，可以导出日志做后续分析。\n3.2 云端环境ACS部署\nSandbox yaml\n（参考\nhttps://copaw.agentscope.io/docs/quickstart#%E6%96%B9%E5%BC%8F%E4%BA%94Docker\n）\napiVersion: agents.kruise.io/v1alpha1\nkind: Sandbox\nmetadata:\nlabels:\napp: copaw\nname: copaw\nnamespace: default\nspec:\ntemplate:\nmetadata:\nlabels:\nalibabacloud.com/acs:\n\"true\"\napp: copaw\nspec:\ncontainers:\n- image: agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/copaw:latest\nimagePullPolicy: IfNotPresent\ncommand\n: [\n\"copaw\"\n,\n\"app\"\n,\n\"--host\"\n,\n\"0.0.0.0\"\n]\nname: copaw\nports:\n- containerPort: 8088\nresources:\nlimits:\ncpu:\n\"2\"\nmemory: 4Gi\nrequests:\ncpu:\n\"2\"\nmemory: 4Gi\n部署 sandbox，\n创建完成后，会沙箱创建同名的 pod， pod 启动完成。\n$\nkubectl create\n-f\ncopaw.yaml\nsandbox.agents.kruise.io/copaw created\n配置Copaw\n1. 在本地配置 kubectl 流量转发，访问到集群中的 CoPaw 服务进行配置（需要配置kubectl）\n$ kubectl port-forward copaw\n8088\n:\n8088\nForwarding\nfrom\n127.0.0.1\n:\n8088\n->\n8088\nForwarding\nfrom\n[::\n1\n]:\n8088\n->\n8088\n2.本地机器直接访问\n127.0.0.1:8088\n配置百炼 Api-key（其余同本地部署）\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.03,
+        "transfer_agent": 0.84,
+        "irrelevant": 0.13,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.75,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.21,
+        "2": 0.77,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.35,
+      "probabilities": {
+        "0": 0.76,
+        "1": 0.16,
+        "2": 0.08,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.58,
+      "probabilities": {
+        "0": 0.69,
+        "1": 0.17,
+        "2": 0.03,
+        "3": 0.08,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.95,
+      "probabilities": {
+        "0": 0,
+        "1": 0.06,
+        "2": 0.92,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.65,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.05,
+        "4": 0.86,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.04,
+      "probabilities": {
+        "0": 0.2,
+        "1": 0.59,
+        "2": 0.2,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8832,
+    "outputTokens": 172,
+    "totalTokens": 9004
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.79,
+        "relevance": 0.83,
+        "grounding": 0.77,
+        "decision_action": 0.61,
+        "evidence": 0.95,
+        "actionability": 0.76,
+        "anti_hype": 0.71
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179847789,
+                "endTime": 1791179847974,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000370944",
+      "marketCost": "0.000370944",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000370944",
+      "inferenceCost": "0.000370944",
+      "inputInferenceCost": "0.000370944",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6Y3018TCT7VRRQ091B3B"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:27 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::9q64z-1791179847695-9db8d212a4aa"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.03,
+            "transfer_agent": 0.84,
+            "irrelevant": 0.13,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.75,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.21,
+            "2": 0.77,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.35,
+          "probabilities": {
+            "0": 0.76,
+            "1": 0.16,
+            "2": 0.08,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.58,
+          "probabilities": {
+            "0": 0.69,
+            "1": 0.17,
+            "2": 0.03,
+            "3": 0.08,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.95,
+          "probabilities": {
+            "0": 0,
+            "1": 0.06,
+            "2": 0.92,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.65,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.05,
+            "4": 0.86,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.04,
+          "probabilities": {
+            "0": 0.2,
+            "1": 0.59,
+            "2": 0.2,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8832,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.79,
+            "relevance": 0.83,
+            "grounding": 0.77,
+            "decision_action": 0.61,
+            "evidence": 0.95,
+            "actionability": 0.76,
+            "anti_hype": 0.71
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179847789,
+                    "endTime": 1791179847974,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000370944",
+          "marketCost": "0.000370944",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000370944",
+          "inferenceCost": "0.000370944",
+          "inputInferenceCost": "0.000370944",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6Y3018TCT7VRRQ091B3B"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:27.237Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "269740487056802816",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "MNN-Sana-Edit-V2：端侧运行的图像漫画风编辑大模型",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543249&idx=1&sn=77581e427502183f7b367489c86269c2",
+      "date": "2026-04-22T09:02:00.993Z",
+      "chars": 5323,
+      "text": "原创\nMeta技术团队\n2026-04-22 17:02\n浙江\nMNN-Sana-Edit-V2 是淘宝与杭电联合研发的端侧图像编辑大模型，基于Sana架构和MetaQuery思想，融合冻结的Qwen3-0.6B文本理解能力与可学习Query，支持本地化漫画风格转换（iPhone 17 Pro仅需14.7秒），隐私安全、低延迟。\nMNN-Sana-Edit-V2 是由淘宝 Meta 团队联合杭州电子科技大学研发的端侧图像漫画风编辑大模型，基于 Sana 和 MetaQuery 学术成果创新构建，采用 Qwen3-0.6B 作为冻结的预训练 LLM，通过 Learnable Query 和 Connector 模块桥接文本理解与图像生成，结合 Linear DiT、Deep Compression Autoencoder 等高效架构设计，并依托 MNN 框架实现 4/8bit 量化部署，使全部模型可在手机端本地运行；该模型在 iPhone 17 Pro 上仅需约 15 秒即可完成 512×512 图像的漫画风格转换，较云端方案提速 2.5 倍，同时保障用户隐私与推理效率，目前已集成至 MNN Chat 应用（支持 iOS/Android），相关代码与模型权重已在 GitHub、HuggingFace 及 ModelScope 全面开源。\n前言\n随着生成式人工智能技术的持续演进，端侧部署能力逐渐成为模型落地的重要考量。在图像编辑领域，兼顾隐私安全与推理效率，一直是技术探索的重点方向。\nMNN-Sana-Edit-V2 是淘宝业务技术 Meta 团队联合杭州电子科技大学研发的端侧图像编辑大模型，该模型在参考 Sana 和 Metaquery 等学术界论文的基础上，基于文生图框架，创新性地增加了图像编辑功能，基于淘宝 MNN LLM 和 MNN Diffusion 的端侧量化部署能力，做到了所有模型本地运行，既能保护隐私，避免用户信息泄漏，又能做到快速运行，减少等待时间。通过测试，在 iPhone 17 Pro 上，MNN-Sana-Edit-V2 模型能够在 15 秒内完成任意图像的漫画风格转换，相比 OpenAI 的图像编辑能力，提速 2.5 倍。目前该功能已经在 MNN Chat 应用中正式上线，支持 Android 平台和 iOS 平台，同时所有模型和推理代码已经在 MNN 仓库进行开源，欢迎大家尝鲜使用。\nMNN-Sana-Edit-V2 漫画风编辑效果\nMNN Chat App下载地址：\niOS:\nhttps://apps.apple.com/us/app/mnn-chat/id6748348797\nAndroid (Google Play) :\nhttps://play.google.com/store/apps/details?id=com.alibaba.mnnllm.android.release\nMNN Chat Android 和 iOS App 使用 MNN-Sana-Edit-V2 效果截图：\n下面我们将从网络框架设计，核心技术详解，训练策略，MNN 端侧部署优化几个方面对这个工作进行介绍。\n网络框架设计\n▐\n系统架构设计\nMNN-Sana-Edit-V2 整体采用 Sana 图像生成模型的网络架构，同时为了更好地利用预训练 LLM 对 Prompt 的理解能力，我们结合 MetaQuery 论文中提出的 Learnable Query 思想，利用可学习的一组网络参数来桥接预训练 LLM 与图像生成与编辑过程。\n具体来说，MNN-Sana-Edit-V2网络包括下面组件：\n预训练 LLM 采用 Qwen3-0.6B，使用保持 freeze 状态，参数不变，用于更好地理解 Prompt\nLearnable Query: 256 维的可学习参数，用于桥接文本理解和图像生成\nConnector 模块：负责将 LLM 的语义表示对齐到 DiT 的输入空间\nReference Image: 输入参考图像\nNoise: 输入的高斯噪声\nDiT 模块：将输入的高斯噪声与参考图进行联合去噪声，得到编辑后的图像\n核心技术详解\n▐\nLearnable Query: 连接理解与生成的桥梁\nLearnable Query是可学习的\"问题\"向冻结的 LLM \"提问\"，提取适合图像生成的条件。\n具体实现上，Learnable Query 作为一组可学习参数，采用正态分布进行初始化。在提取条件时，Learnable Query与 Text Embedding 一起输入到 LLM 模型中。模型输出的最后 N 个 Hidden States 参数即为生成条件。\n实际使用时我们选择 N = 256 个 Learnable Query 参数。\n▐\nConnector 模块: 跨模态对齐\nConnector 负责将 LLM 的语义表示对齐到 DiT 的输入空间，为图像生成过程中提供了强大的文本理解能力。\n网络设计上，Connector 模块包含 Connector 网络和 Projector 网络。Connector 网络采用 Transformer 结构，用来高效提取信息；Projector 网络采用线性层作为实现，用来将 Connector 网络输出的特征对齐到 DiT 的维度。\nDeep Compression Autoencoder\n传统的 AE 压缩倍数大多为 8 倍，而 Sana 网络中采用了 32 倍的压缩设计（DC-AE-F32C32），相比别的8x的AEs, latent token的数量大大减小，既加速了训练，又减少了推理时的开销，适合端侧场景使用。\nLinear DiT\n线性注意力机制是 Sana 论文中的关键创新。传统注意力的计算复杂度为 O(N²)，而 Sana 论文中将 DiT 中的 Attention 层都修改为了 Linear Attention， 计算复杂度\n为 O(N)，减少计算量，加速推理，且通过实验验证，生图无质量损失。\nMix-FFN 模块在传统 FFN 的基础上，增加了 Depthwise 卷积，用于更好地捕捉局部信息。具体来说，Mix-FFN 包含三个组件：倒残差块、3×3 深度卷积、Gated Linear Unit。采用 Mix-FFN 的目的是去掉 Position Encoding，达到 NoPE 的效果。NoPe 即 No Positional Encoding，也即移除位置编码。\n▐\n文本编码器: Qwen3-0.6B\nSana 论文中采用选择Gemma-2 作为文本编码器具，我们的方案中，采用 Qwen3-0.6B 作为预训练 LLM。Qwen3-0.6B 相比 Gemma-2 的 2.6B，参数量更小，且文本理解能\n力更强，尤其是在中文 Prompt 场景。\n另外，训练稳定性也至关重要。Sana 发现，直接使用 Decoder-only LLM 的文本嵌入会导致训练不稳定，原因在于传统的生图算法采用 T5 等模型，Embedding 层数值较小，而 Decoder-only LLM Embedding 层权重较大，直接沿用之前的训练方案，会导致数值爆炸。\n为了解决这个问题，我们也采用 Sana 中的方案，增加RMSNorm 层，归一化文本 Embedding，同时引入小的可学习缩放因子，进一步稳定训练。\n▐\nReference Latent\n图像编辑需要原始图像作为输入，在我们的方案中，我们通过 VAE Encoder 获取源图像的 Latent, 作为参考输入 DiT 生图网络，引导编辑过程，保持图像结构一致性，实现更精确的图像编辑。\n训练策略\n三阶段训练\n为了达到最佳的编辑效果，训练过程中我们分三个 Stage 来训练网络。\nStage 1 是预训练阶段，针对文本到图像任务，目标是对齐预训练 LLM 和图像生成任务。具体来说，该阶段只训练Learnable Query 和 Connector 部分的权重，别的模块保持权重固定。这个阶段，我们采用 2 M 的文本-图像对数据训练约 100K Step。\nStage 2 是图像生成微调阶段，训练 Learnable Query，Connector以及图像生成 DiT 模块的权重。基于内部收集的 60K 文本-图像对数据训练约 10K Step。\nStage3 是图像编辑微调阶段，在 Stage2 的基础上，增加参考图像作为额外输入，可训练参数同 Stage2。基于内部收集的 10K 图像编辑数据对训练约 100K Step。\nMNN 端侧部署优化\n模型转换\n在 Pytorch 中训练好权重后，我们先将 Pytorch 模型转换为 ONNX 格式，然后再转换为 MNN 格式。由于 MNN 在长期的迭代中已经支持了绝大部分的 ONNX 算子，因此模型转换部分的流程比较顺畅。更多转换细节请参考MNN文档。\n量化技术\nMNN-Sana-Edit-V2 推理流程涉及多个模型，包括预训练的 LLM，VAE 的 Encoder 和 Decoder，以及去噪模型 DiT 等。通过合理的量化设置，能够显著减少模型内存占用，提高推理速度，且不对最终效果造成明显损失。\n具体来说，对预训练的 LLM 模型权重，我们采用了 4Bit 非对称量化，别的模型均采用 8Bit 非对称量化。这个配置能最好地平衡推理性能和生图效果。\n真机速度测试\n我们在真机上，测试了 512x512 配置下的图像编辑速度：\n操作系统\n机器型号\n芯片版本\n生成图片整体耗时(s)\niOS\ni\nPhone 17 Pro （2025 年 9 月发布）\nA19 Pro\n1\n4.7\niOS\niPhone 16 Pro （2024 年 10 月发布）\nA18 Pro\n18\niOS\niPhone 15 Pro （2023 年 9 月发布）\nA17 Pro\n20\nAndroid\n一加13 (2024 年 10 月发布)\nSnapdragon 8 Elite\n45\nA\nn\ndroid\nXiaomi 12 Pro （2021 年 12 月发布）\nSnapdragon 8 Gen 1\n62\n经测试，OpenAI 的吉卜力风格图像生成耗时 38s-45s，我们在 iPhone 17 Pro 上，以端侧模型比云端模型的配置，做到了 2.5 倍的提速。\n运行要求\n内存占用：5.5G\n系统要求：iOS A16 及以上版本，Android\n骁龙 8\n及以上版本\n最优超参说明\n输入图像尺寸：建议使用是以正方形图片作为输入，非正方形图片生成效果可能会有下降。\n输入图像内容：建议输入单张正脸人像，效果最佳，多人或者非人场景效果可能会有下降。\n输出分辨率：目前模型输出分辨率固定为\n512x512\n。\n图像编辑提示词：本模型流程中已固定提示词，无需额外设置，修改提示词可能汇降低效果。\n图像生成 step：建议使用\n10\n步，步数过低会有效果损失，步数增加效果无明显提升，且增加运行耗时。\n源码和模型下载\n源码：\nhttps://github.com/alibaba/MNN\n文档：\nhttps://github.com/alibaba/MNN/blob/master/apps/sana/README.md\n模型权重：\nhuggingface:\nhttps://huggingface.co/taobao-mnn/MNN-Sana-Edit-V2\nmodelscope:\nhttps://modelscope.cn/models/MNN/MNN-Sana-Edit-V2\n参考论文\nSANA: Efficient High-Resolution Image Synthesis with Linear Diffusion Transformers\nTransfer between Modalities with MetaQueries\n团队介绍\n本文作者\n蔚山\n，来自淘天集团-\nMeta技术团队\n。本团队\n目前负责面向消费场景的3D/XR基础技术建设和创新应用探\n索，创造以手机及XR 新设备为载体的消费购物新体验。团队在端智能、端云协同、商品三维重建、真人三维重建、3D引擎、XR引擎等方面有着深厚的技术积累，先后发布深度学习引擎MNN、商品三维重建工具Object Drawer、3D真人数字人TaoAvatar、端云协同系统Walle等。团队在OSDI、MLSys、CVPR、ICCV、NeurIPS、TPAMI等顶级学术会议和期刊上发表多篇论文。欢迎视觉算法、3D/XR引擎、深度学习引擎研发、终端研发等领域的优秀人才加入，共同走进3D数字新时代。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.9,
+        "transfer_agent": 0.01,
+        "direct_local": 0,
+        "peripheral": 0.09
+      }
+    },
+    "relevance": {
+      "score": 1.05,
+      "probabilities": {
+        "0": 0.39,
+        "1": 0.18,
+        "2": 0.43,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.35,
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.16,
+        "2": 0.08,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.06,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.05,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.39,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.24,
+        "3": 0.07,
+        "4": 0.68,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.33,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.69,
+        "5": 0.08
+      }
+    },
+    "anti_hype": {
+      "score": 1.32,
+      "probabilities": {
+        "0": 0.32,
+        "1": 0.14,
+        "2": 0.45,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5809,
+    "outputTokens": 173,
+    "totalTokens": 5982
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.87,
+        "relevance": 0.37,
+        "grounding": 0.76,
+        "decision_action": 0.96,
+        "evidence": 0.59,
+        "actionability": 0.45,
+        "anti_hype": 0.42
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179893688,
+                "endTime": 1791179893844,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000243978",
+      "marketCost": "0.000243978",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000243978",
+      "inferenceCost": "0.000243978",
+      "inputInferenceCost": "0.000243978",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8AX81V66BZEMZ670KN7H"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:13 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::k4k6v-1791179893661-1988026b55bd"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.9,
+            "transfer_agent": 0.01,
+            "direct_local": 0,
+            "peripheral": 0.09
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.05,
+          "probabilities": {
+            "0": 0.39,
+            "1": 0.18,
+            "2": 0.43,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.35,
+          "probabilities": {
+            "0": 0.75,
+            "1": 0.16,
+            "2": 0.08,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.06,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.05,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.39,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.24,
+            "3": 0.07,
+            "4": 0.68,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.33,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.69,
+            "5": 0.08
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.32,
+          "probabilities": {
+            "0": 0.32,
+            "1": 0.14,
+            "2": 0.45,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5809,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.87,
+            "relevance": 0.37,
+            "grounding": 0.76,
+            "decision_action": 0.96,
+            "evidence": 0.59,
+            "actionability": 0.45,
+            "anti_hype": 0.42
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179893688,
+                    "endTime": 1791179893844,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000243978",
+          "marketCost": "0.000243978",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000243978",
+          "inferenceCost": "0.000243978",
+          "inputInferenceCost": "0.000243978",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8AX81V66BZEMZ670KN7H"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:13.070Z"
+  }
+}

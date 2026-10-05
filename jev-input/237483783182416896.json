@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "237483783182416896",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "TRAE IDE 10 大热门 MCP Server 推荐",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518328&idx=1&sn=50779cd8927dd77e50ca545745d9ce90",
+      "date": "2026-01-23T09:04:00.960Z",
+      "chars": 12507,
+      "text": "TRAE\n2026-01-23 17:04\n北京\n以下文章来源于：TRAE.ai\nTRAE.ai\nTRAE，The Real AI Engineer｜字节跳动旗下的AI编程产品，你的专属AI开发工程师。欢迎在PC端官网直接下载，免费使用。\n本文作者：\nJiaqi，TRAE 技术文档工程师\n通过引入合适的 MCP Server，智能体可以深度参与到日常开发流程中，协助完成项目文件读取、官方文档获取、浏览器自动化、代码仓库管理，以及跨会话的上下文维护等任务。\n本文将基于真实开发场景，介绍 TRAE IDE 中常用的 10 个 MCP Server，并梳理了它们的核心能力、使用场景与可用工具，帮助你在不同开发阶段选择合适的 MCP Server，从而提升你的日常开发效率。\nMCP 介绍\nModel Context Protocol (MCP) 是一种协议，它允许大型语言模型（LLMs）访问自定义的工具和服务。TRAE 中的智能体作为 MCP 客户端可以选择向 MCP Server 发起请求，以使用它们提供的工具。你可以自行添加 MCP Server，并添加到\n自定义的智能体\n中来使用。\n在 TRAE IDE 中，MCP Server 支持三种传输类型：stdio 传输、SSE 传输、Streamable HTTP 传输。\n概览\n以下是在 TRAE IDE 中的 10款热门 MCP Server。\nMCP Server\n简介\nContext7\nContext7 MCP Server 提供面向 AI 模型的文档检索与上下文注入能力，可实时获取官方文档的最新内容和指定版本的代码示例。\nPuppeteer\nPuppeteer MCP Server 提供浏览器自动化能力，使 LLM 能够在真实的浏览器环境中与网页进行交互、截取屏幕截图，并执行 JavaScript。\nSequential Thinking\nSequential Thinking MCP Server 通过结构化的思维流程，为动态且具反思性的问题求解提供工具。\nGitHub\nGitHub MCP Server 基于 GitHub API，允许 LLM 直接访问并管理 GitHub 上的仓库、代码、用户、Issue 与 Pull Request。\nFigma AI Bridge\nFigma AI Bridge MCP Server 针对设计到实现阶段，提供查看、分析和提取 Figma 设计数据的能力，帮助 LLM 理解设计的结构并辅助精确还原设计稿中内容。\nPlaywright\nPlaywright MCP Server 基于 Playwright 提供浏览器自动化能力，使 LLM 能够在真实的浏览器环境中与网页交互、截取屏幕截图、生成测试代码、抓取网页内容，并执行 JavaScript。\nMemory\nMemory MCP Server 通过本地知识图谱（Knowledge Graph）持久化记忆，使 LLM 能够跨会话保留用户相关的上下文信息。\nExcel\nExcel MCP Server 用于读取 Microsoft Excel 文件中的电子表格数据，或向其中写入数据。\nFile System\nFile System MCP Server 提供基于文件系统的文件读取能力。\nChrome DevTools MCP\nChrome DevTools MCP 让 AI 智能体能够直接控制并深入检查 Chrome 浏览器。它向 AI 开放了 Chrome DevTools 的全部能力，使其能更精准、高效地完成网页自动化测试、故障排查及性能分析等任务。\nMCP 具体介绍\nContext7\nContext7 MCP Server 提供面向 AI 模型的文档检索与上下文注入能力，可实时获取官方文档的最新内容和指定版本的代码示例，确保模型在回答问题、生成代码或提供方案时，基于最新的官方信息。\n核心功能\n官方文档实时检索：\n直接从官方文档源获取内容，而非依赖模型训练阶段的静态知识，支持检索最新或指定版本的 API 参考与示例代码。\n文档上下文注入：\n将检索到的文档内容直接注入到 LLM 的上下文中，使模型在“已阅读官方文档”的前提下进行回答或生成代码。\n库与文档的标准化解析：\n将模糊的库名映射为 Context7 可识别的库 ID，确保后续可准确查询到目标文档。\n使用场景\nAPI 开发：\n获取最新框架或 SDK 的 API 定义与示例，避免误用已废弃或不存在的接口。\n配置与脚本编写：\n编写 Cloudflare Workers、中间件，或构建、部署相关配置时，确保配置项和字段名称与官方文档中的内容一致。\n代码生成与重构：\n在生成或重构代码时，确保实现方式符合当前的官方推荐做法，减少因文档过时导致的返工。\n问题排查与最佳实践查询：\n基于官方文档获取错误说明、使用限制和推荐方案，提高问题定位与解决的准确性。\n工具\nContext7 MCP Server 为 LLM 提供以下可调用的工具：\n工具\n描述\nresolve-library-id\n将通用的库名称解析为 Context7 兼容的库 ID。\nquery-docs\n使用 Context7 兼容的库 ID 获取指定库的文档。\nPuppeteer\nPuppeteer MCP Server 提供浏览器自动化能力，使 LLM 能够在真实的浏览器环境中与网页进行交互、截取屏幕截图，并执行 JavaScript。\n核心功能\n浏览器控制自动化：\n在真实浏览器中进行页面导航，支持点击、悬停、表单填写等基础网页交互操作，模拟用户行为。\nJavaScript 执行：\n直接在浏览器控制台中执行 JavaScript，既能读取当前页面的各类状态信息，也能完成计算任务或触发页面的内置逻辑。\n页面捕获：\n对整个页面或指定元素进行截图，为 AI 模型提供直观、可验证的页面渲染结果。\n控制台日志监控：\n获取浏览器控制台的输出信息，包括页面脚本产生的所有 console 日志，辅助调试与问题定位。\n使用场景\n网页功能验证与调试：\n验证网页交互功能是否符合预期效果，同时结合捕获的控制台日志，辅助开发人员快速定位并调试前端问题。\n页面状态与渲染检查：\n通过截图功能确认网页的 UI 渲染效果是否达标，同时可对比不同操作前后的页面变化，验证操作对页面的影响。\n工具\nPuppeteer MCP Server 为 LLM 提供以下可调用的工具：\n工具\n描述\npuppeteer_navigate\n在浏览器中导航到任意 URL。\npuppeteer_screenshot\n对整个页面或指定元素进行截图。\npuppeteer_click\n点击页面中的元素。\npuppeteer_hover\n将鼠标悬停在页面元素上。\npuppeteer_fill\n填写输入框。\npuppeteer_select\n选择带有 SELECT 标签的元素。\npuppeteer_evaluate\n在浏览器控制台中执行 JavaScript。\nSequential Thinking\nSequential Thinking MCP Server 通过结构化的思维流程，为动态且具反思性的问题求解提供工具。\n核心功能\n将复杂问题拆解为可管理的步骤。\n随着理解加深，对思路进行修订和完善。\n在不同的推理路径之间进行分支探索。\n动态调整整体思考步骤的数量。\n生成并验证解决方案假设。\n使用场景\n拆解复杂问题，并按步骤逐步解决。\n需要预留修改空间的规划与设计过程。\n可能需要中途调整方向的分析任务。\n一开始难以完全明确问题范围的场景。\n需要在多个步骤中持续保持上下文的任务。\n需要过滤无关信息、聚焦关键信息的情况。\n工具\nSequential Thinking MCP Server 为 LLM 提供以下可调用的工具：\n工具\n描述\nsequential_thinking\n为问题求解和分析提供细致的、逐步推进的思考过程。\nGitHub\nGitHub MCP Server 基于 GitHub API，允许 LLM 直接访问并管理 GitHub 上的仓库、代码、用户、Issue 与 Pull Request。\n该 MCP Server 支持的所有操作\n仅作用于\nGitHub 上的远程资源：所有文件操作均发生在 GitHub 仓库中，通过 Commit 与 Pull Request 提交，\n不会读取或修改用户本地的文件系统。\n核心功能\n仓库与文件管理：\n支持全面管理代码库，包括仓库的创建、Fork、搜索及分支管理；同时具备精细的文件操作功能，允许直接读取内容、创建或更新文件以及批量推送代码。\nIssue 追踪：\n聚焦于项目进度的管理与协同，支持对 Issue 进行创建、筛选、状态更新及评论。\nPull Request 协作：\n涵盖代码合并的全生命周期，从发起 Pull Request、查看变更详情、同步分支最新改动，到最终合并代码。\n代码评审与信息检索：\n支持发起和管理代码评审，获取评审意见；同时提供强大的搜索能力，可快速定位代码片段、用户或相关评论。\n使用场景\nAI 辅助代码开发：\n自动执行从代码修改、分支创建到变更提交的全流程。在遵循版本控制规范的前提下，实现开发需求的快速落地与代码历史的清晰记录。\n自动化协作工作流：\n全面接管 Issue 追踪与 Pull Request 管理。自动完成任务创建、上下文补充、评审及分支合并，减少人工操作成本。\n项目调研与分析：\n深度解析仓库的架构、代码逻辑及变更历史。结合全局检索能力，快速定位核心信息并梳理项目脉络，然后生成调研报告。\n智能的仓库管理：\n将 AI 作为团队协作的一部分，执行重复性的 GitHub 操作，提升个人或团队的开发效率。\n工具\nGitHub MCP Server 为 LLM 提供以下可调用的工具：\n工具\n描述\ncreate_or_update_file\n在仓库中创建或更新单个文件。\npush_files\n在一次提交中推送多个文件。\nsearch_repositories\n搜索 GitHub 仓库。\ncreate_repository\n创建新的 GitHub 仓库。\nget_file_contents\n获取文件或目录内容。\ncreate_issue\n创建新的 Issue。\ncreate_pull_request\n创建新的 Pull Request。\nfork_repository\nFork 一个仓库。\ncreate_branch\n创建新分支。\nlist_issues\n列出并筛选仓库 Issue。\nupdate_issue\n更新已有 Issue。\nadd_issue_comment\n为 Issue 添加评论。\nsearch_code\n在 GitHub 上搜索代码。\nsearch_issues\n搜索 Issue 和 Pull Request。\nsearch_users\n搜索 GitHub 用户。\nlist_commits\n获取仓库某个分支的提交记录。\nget_issue\n获取仓库中指定 Issue 的内容。\nget_pull_request\n获取指定 Pull Request 的详情。\nlist_pull_requests\n列出并筛选仓库的 Pull Request。\ncreate_pull_request_review\n为某个 Pull Request 创建评审。\nmerge_pull_request\n合并 Pull Request。\nget_pull_request_files\n获取某个 Pull Request 中变更的文件列表。\nget_pull_request_status\n获取某个 Pull Request 的所有状态检查的汇总状态。\nupdate_pull_request_branch\n使用 base 分支的最新更改更新某个 Pull Request 分支（等同于 GitHub 中的 “Update branch” 按钮）。\nget_pull_request_comments\n获取某个 Pull Request 的评审评论。\nget_pull_request_reviews\n获取某个 Pull Request 的评审记录。\nFigma AI Bridge\nFigma AI Bridge MCP Server 针对设计到实现阶段，提供查看、分析和提取 Figma 设计数据的能力，帮助 LLM 理解你的设计思路并辅助你精确还原设计稿中的内容。\n核心功能\nFigma 设计解析：\n获取 Figma 文件或指定节点的布局与结构信息。在无法直接获得节点 ID 的情况下，仍可分析整个设计文件。\n设计资源下载：\n根据图像或图标节点 ID，自动下载设计中使用的 SVG / PNG 图片，便于在实现阶段直接复用设计资产。\n为 AI 提供可理解的设计上下文：\n将 Figma 中的设计信息转换为 AI 可消费的数据，为后续的代码生成、样式还原或布局分析提供依据。\n使用场景\n设计还原与前端实现：\n辅助 AI 理解设计的结构，提高实际实现与设计稿的一致性。\n设计资产自动提取：\n自动下载图标、图片等资源，减少手动操作。\n设计到代码的自动转换：\n为代码生成提供设计思路相关的准确上下文，作为从设计到实现链路中的关键一环。\nAgent 驱动的 UI 分析与实现：\n让 AI 在理解设计思路的基础上分析 UI 布局并思考实现方案。\n工具\nFigma AI Bridge MCP Server 为 LLM 提供以下可调用的工具：\n工具\n描述\ndownload_figma_images\n根据图像或图标节点的 ID，下载 Figma 文件中使用的 SVG 和 PNG 图片。\nget_figma_data\n当无法获取节点 ID 时，用于获取整个 Figma 文件的布局信息。同时支持获取某个 Figma 文件或文件中指定节点的相关信息。\nPlaywright\nPlaywright MCP Server 基于 Playwright 提供浏览器自动化能力，使 LLM 能够在真实的浏览器环境中与网页交互、截取屏幕截图、生成测试代码、抓取网页内容，并执行 JavaScript。\n相较于基础浏览器自动化，它进一步扩展了测试代码生成、网络请求控制与多设备模拟等能力，适合更复杂、结构化的网页测试。\n核心功能\n自动化浏览器控制\n支持页面导航、点击、悬停、表单填写、拖拽、键盘操作等交互。\n覆盖普通 DOM 以及 iframe 场景。\n代码生成与测试录制（Codegen）\n支持开启代码生成会话，记录浏览器操作。\n自动生成可复用的 Playwright 测试代码文件。\n页面内容捕获\n对页面或指定元素进行截图。\n提取页面可见文本或 HTML 内容。\n支持将页面保存为 PDF。\nJavaScript 执行与控制台调试\n在浏览器上下文中执行 JavaScript。\n获取并过滤浏览器控制台日志，用于调试与分析。\n网络请求与响应控制\n主动发起 HTTP 请求。\n支持等待并断言特定网络响应，便于接口级验证。\n多设备与浏览器环境模拟\n调整浏览器视口大小或使用设备预设。\n内置 143+ 设备模型，提供正确的 User-Agent 与触控模拟，支持自定义 User-Agent。\n使用场景\n自动化测试与测试代码生成\n执行由 AI 驱动的网页测试并录制真实操作，生成 Playwright 测试脚本。\n回归测试、端到端测试。\n复杂网页交互验证\n验证页面在不同设备、分辨率和 User-Agent 下的交互逻辑。\n处理 iframe、文件上传、标签页切换等复杂交互。\n请求级调试与验证\n同时验证前端交互与后端接口响应。\n适合需要精确控制请求与响应的调试场景。\nAgent 驱动的网页操作与信息采集\n抓取可见内容或结构化 HTML。\n在真实浏览器上下文中完成端到端任务。\n工具\nPlaywright MCP Server 为 LLM 提供以下可调用的工具：\n工具\n描述\nstart_codegen_session\n开始一个新的代码生成会话，用于记录 Playwright 操作。\nend_codegen_session\n结束代码生成会话并生成测试文件。\nget_codegen_session\n获取关于代码生成会话的信息。\nclear_codegen_session\n清除代码生成会话而不生成测试文件。\nplaywright_navigate\n导航到一个 URL。\nplaywright_screenshot\n对当前页面或特定元素进行截图。\nplaywright_click\n点击页面上的元素。\nplaywright_iframe_click\n点击 iframe 中的元素。\nplaywright_iframe_fill\n在页面中的 iframe 里填充某个元素。\nplaywright_fill\n填写输入字段。\nplaywright_select\n使用 Select 标签选择页面上的元素。\nplaywright_hover\n悬停在页面的元素上。\nplaywright_upload_file\n将文件上传到页面中的 input[type=\"file\"] 元素。\nplaywright_evaluate\n在浏览器控制台执行 JavaScript。\nplaywright_console_logs\n检索浏览器的控制台日志（带过滤选项）。\nplaywright_resize\n使用自定义尺寸或设备预设来调整浏览器视口大小。支持 143 种以上的设备预设，包括 iPhone、iPad、各类 Android 设备以及桌面浏览器，并提供正确的 User-Agent 和触控（Touch）模拟。\nplaywright_close\n关闭浏览器并释放所有资源。\nplaywright_get\n执行 HTTP GET 请求。\nplaywright_post\n执行 HTTP POST 请求。\nplaywright_put\n执行 HTTP PUT 请求。\nplaywright_patch\n执行 HTTP PATCH 请求。\nplaywright_delete\n执行 HTTP DELETE 请求。\nplaywright_expect_response\n请求 Playwright 开始等待某个 HTTP 响应。该工具只会启动等待操作，但不会阻塞或等待该操作完成。\nplaywright_assert_response\n等待并校验之前已发起的 HTTP 响应等待操作。\nplaywright_custom_user_agent\n为浏览器设置自定义 User-Agent。\nplaywright_get_visible_text\n获取当前页面的可见文本内容。\nplaywright_get_visible_html\n获取当前页面的 HTML 内容。默认情况下，输出结果会移除所有 <script> 标签，除非显式将 removeScripts 设置为 false。\nplaywright_go_back\n在浏览器历史中后退。\nplaywright_go_forward\n在浏览器历史中前进。\nplaywright_drag\n将元素拖动到目标位置。\nplaywright_press_key\n按下键盘键。\nplaywright_save_as_pdf\n将当前页面保存为 PDF 文件。\nplaywright_click_and_switch_tab\n点击一个链接并切换到新打开的标签页。\nMemory\nMemory MCP Server 通过本地知识图谱（Knowledge Graph）持久化记忆，使 LLM 能够跨会话保留用户相关的上下文信息。\n它的\n核心目标是将零散、非结构化的用户信息转化为可结构化、可查询、可演化的长期记忆，并在后续对话中被持续维护和利用。\nMemory MCP Server 采用知识图谱作为记忆模型，由以下三类核心概念共同构成一个可扩展的记忆网络：\n概念\n描述\nEntity\n知识图谱中的主要节点，表示一个具体、可识别的对象。\nRelation\n用于定义 Entity 之间的有向连接。它们始终以主动语态存储，用于描述 Entity 之间的交互方式或相互关系。\nObservation\n关于某个 Entity 的离散信息片段，可不断新增、修改或删除。\n核心功能\n结构化、持久化记忆：\n将用户相关信息以 Entity-Relation-Observation 的形式存储。存储的信息会跨会话持续存在，不随单次对话结束而丢失。\n记忆的增量演化：\n支持向已有 Entity 不断添加新的 Observation，以及创建和调整 Entity 之间的 Relation。\n查询与维护记忆：\n支持按条件搜索节点。可读取整个知识图谱，便于调试和理解记忆。\n清理记忆：\n支持删除指定 Entity 及其关联的 Relation；支持删除指定 Observation 或 Relation，避免记忆污染。\n使用场景\n跨会话用户记忆：\n记住你的偏好、背景、项目状态等信息，从而在后续对话中提供更连续、一致的体验。\nAgent 的长期状态管理：\n让 AI Agent 拥有可演化的“内部状态”，支撑长期任务与多轮协作。\n复杂上下文的结构化管理：\n避免将大量历史信息堆叠在 Prompt 中，提高上下文可控性与可维护性。\n可解释的 AI 记忆系统：\n通过知识图谱，清晰展示模型所记住的信息，便于调试和人工干预。\n工具\nMemory MCP Server 为 LLM 提供以下可调用的工具：\n工具\n描述\ncreate_entities\n在知识图谱中创建多个新 Entity。\ncreate_relations\n在 Entity 之间创建多条新关系。\nadd_observations\n向已有 Entity 添加新 Observation。\ndelete_entities\n删除 Entity 及其所有 Relation。\ndelete_observations\n从 Entity 中删除指定的 Observation。\ndelete_relations\n从知识图谱中删除指定的 Relation。\nread_graph\n读取整个知识图谱。\nsearch_nodes\n根据查询条件搜索节点。\nopen_nodes\n按名称获取指定节点。\nExcel\nExcel MCP Server 用于读取 Microsoft Excel 文件中的电子表格数据，或向其中写入数据。\n核心功能\n读取 / 写入文本值\n读取 / 写入公式\n创建新的工作表\n(仅 Windows) 实时编辑\n(仅 Windows) 为工作表截图\n使用场景\n自动化数据处理：\n批量读取、整理和写入 Excel 数据，自动生成结构化表格与计算公式。\n报表生成：\n自动生成分析报表或业务数据表。\n办公自动化与 Agent 流程：\n作为 AI Agent 操作办公文件的重要接口，可以与其他 MCP Server 协同使用。\n可视化结果校验（Windows）：\n通过截图方式确认表格的布局与内容是否符合预期。\n工具\n工具\n描述\nexcel_describe_sheets\n列出指定 Excel 文件中的所有工作表信息。\nexcel_read_sheet\n以分页方式读取 Excel 工作表中的数据。\nexcel_screen_capture\n（仅 Windows） 以分页方式为 Excel 工作表截图。\nexcel_write_to_sheet\n向 Excel 工作表写入数据。\nexcel_create_table\n在 Excel 工作表中创建表格。\nexcel_copy_sheet\n将现有工作表复制为一个新的工作表。\nexcel_format_range\n为 Excel 工作表中的单元格设置样式格式。\nFile System\nFile System MCP Server 提供基于文件系统的文件读取能力。\n主要功能\n通过 MCP 实现无缝的文件读取。\n命令行式的 API Key 配置。\n使用场景\n文档与配置读取：\n在对话或自动化流程中直接读取项目文档、配置文件或说明文件，为模型提供准确的上下文。\n代码与资源分析：\n读取源代码、脚本或资源文件，辅助进行代码理解、审查或问题定位。\n工作流集成：\n将文件读取能力集成到现有流程中，减少手动复制粘贴文件内容，提高自动化水平。\n工具\nFile System MCP Server 为 LLM 提供以下可调用的工具：\n工具\n描述\nread-file\n从文件系统读取文件。\nChrome DevTools MCP\nChrome DevTools MCP 让 AI 智能体能够直接控制并深入检查 Chrome 浏览器。它向 AI 开放了 Chrome DevTools 的全部能力，使其能更精准、高效地完成网页自动化测试、故障排查及性能分析等任务。\n主要功能\n浏览器自动化：\n通过 Chrome DevTools Protocol 在 Chrome 中自动化各类操作，并自动等待结果。\n性能洞察：\n使用 Chrome DevTools 记录性能追踪（traces）数据，并提取可执行的性能优化策略。\n浏览器调试：\n分析网络请求、截取屏幕截图，并检查浏览器控制台信息。\n使用场景\n浏览器相关操作自动化：\n由 AI 直接控制 Chrome 来执行页面交互（导航、点击、输入、等待等），实现稳定、可复现的自动化流程。\n前端调试与问题排查：\n访问控制台日志、网络请求和页面状态，辅助定位前端错误、接口异常等问题。\n性能分析与优化：\n记录并分析性能追踪数据，获取性能洞察和 Core Web Vitals 指标，用于发现并处理页面的性能瓶颈。\n工具\nChrome DevTools MCP 为 LLM 提供以下可调用的工具：\n工具\n描述\nclick\n点击指定的元素。\nclose_page\n根据页面索引关闭页面。最后一个打开的页面不能被关闭。\ndrag\n将一个元素拖拽到另一个元素上。\nemulate\n在选中的页面上模拟多种特性。\nevaluate_script\n在当前选中的页面中执行一个 JavaScript 函数，并将响应以 JSON 形式返回，使返回值可被 JSON 序列化。\nfill\n在输入框或文本区域中输入文本，或从 <select> 元素中选择一个选项。\nfill_form\n一次性填写多个表单元素。\nget_console_message\n根据 ID 获取一条控制台消息。你可以通过调用 list_console_messages 获取所有消息\nget_network_request\n根据可选的 reqid 获取一条网络请求；如果省略，则返回 DevTools Network 面板中当前选中的请求。\nhandle_dialog\n如果打开了浏览器对话框，使用该命令进行处理。\nhover\n将鼠标悬停在提供的元素上。\nlist_console_messages\n列出自上次导航以来，当前选中页面的所有控制台消息。\nlist_network_requests\n列出自上次导航以来，当前选中页面的所有网络请求。\nlist_pages\n获取浏览器中打开的页面列表。\nnavigate_page\n将当前选中的页面导航到一个 URL。\nnew_page\n创建一个新的页面。\nperformance_analyze_insight\n针对追踪记录结果中高亮显示的某个 Performance Insight，提供更详细的信息。\nperformance_start_trace\n在选中的页面上开始性能追踪记录。该记录可用于查找性能问题并获取改进页面性能的洞察，同时还会报告页面的 Core Web Vital（CWV）分数。\nperformance_stop_trace\n在所选中页面上，停止活跃的性能追踪记录。\npress_key\n按下某个按键或组合键。当无法使用其他输入方式（如 fill（））时使用（例如键盘快捷键、导航键或特殊组合键）。\nresize_page\n调整所选中页面的窗口的大小，使页面具有指定的尺寸。\nselect_page\n选择一个页面，作为后续工具调用的上下文。\ntake_screenshot\n对页面或元素进行截图。\ntake_snapshot\n基于 a11y（Accessibility）树，对当前选中的页面生成文本快照。快照会列出页面元素及其唯一标识（uid）。始终使用最新快照。\n相比截图，优先使用快照。快照会指示 DevTools Elements 面板中选中的元素（如果有）。\nupload_file\n选择一个页面，作为后续工具调用的上下文。\nupload_file\n通过提供的元素上传文件。\nwait_for\n等待指定文本出现在选中的页面上。\n如何添加这些 MCP Server？\n你可以直接从 TRAE IDE 内置的 MCP 市场添加。\n1.\n进入 MCP 设置中心：\nIDE 模式：\n在 IDE 模式界面中，点击界面右上角的\n设置\n图标，进入设置中心。\nSOLO 模式：\n在 SOLO 模式界面中，点击对话面板右上角的\n设置\n图标，进入设置中心。\n2.\n在左侧导航栏中，选择\nMCP\n，打开\nMCP\n窗口。\n3.\n在\nMCP\n窗口的右上角，点击\n添加 > 从市场添加\n。若你是首次添加 MCP Server，还可以直接点击窗口中部的\n从市场添加\n按钮。\n4.\n在 MCP 市场中找到所需的 MCP Server。\n5.\n点击右侧的\n+\n按钮。\n6.\n在弹窗中填入 MCP Server 的配置信息。\n对于标记为 “Local” 的 MCP Server，需要在本地安装 NPX 或 UVX 后才能使用。\n配置内容中的 env 信息（例如 API Key、Token、Access Key 等字段）需替换为真实信息。\n7.\n点击\n确认\n按钮，即代表配置成功。\n结语\n以上是在 TRAE IDE 中的 10个 热门 MCP Server 的详细介绍，快来立即体验使用吧！\n更多 MCP 的使用技巧讨论，均在 TRAE 官方飞书交流群，点击\n阅读原文\n立即入群，和 3w+ TRAE 友在线交流！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

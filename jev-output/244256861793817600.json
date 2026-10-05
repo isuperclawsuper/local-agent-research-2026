@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "244256861793817600",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Fluss在阿里双11万亿规模场景下的落地实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509154&idx=1&sn=11652959f94704b4604b429b996e7bfc",
+      "date": "2026-02-11T00:30:00.797Z",
+      "chars": 5697,
+      "text": "2026-02-11 08:30\n浙江\n阿里在双11万亿级场景中落地Fluss流存储系统，通过多级分区、过滤下推和列式存储显著降本增效，并实现湖流一体统一架构。\n本文整理自阿里采集分析平台工程技术负责人吴宝国（木深），在 Flink Forward Asia 2025 城市巡回深圳站中的分享。\n这是\n2026\n年的第\n6\n篇文章\n（ 本文阅读时间：15分钟 ）\n01\n前言：从采集实时复杂度催生出的流存储需求\n首先简单介绍一下Fluss弹内技术团队：我们同时负责集团内部统一的用户行为采集与分析平台，也就是大家常说的 A+ 平台。我们的核心职责是为手淘、钉钉、高德、饿了么等众多集团内应用提供端到端的用户行为数据采集、处理、分析及服务能力。\n在底层，我们构建了覆盖 Web、小程序、APP（包括 Android、iOS、PC、IOT、鸿蒙、VR 等）以及服务端的全场景采集 SDK 矩阵。在此之上，我们不仅采集用户的行为日志（比如点击、曝光、滑动等），还会融合业务数据（如用户标签、商品信息、订单数据等），构建服务于整个集团的流量域数据公共层。最终，我们通过分析产品帮助业务团队洞察用户行为，驱动运营和产品决策，例如提升广告效果、优化用户体验等。\n为了支撑这一庞大体系的实时性需求，我们引入了开源流存储系统 Fluss 作为核心的日志数据实时采集通道。\n接下来，我们将从为什么选择 Fluss、如何保障大规模落地稳定性、具体业务实践案例以及未来规划四个方面展开分享。\n02\n为什么选择Fluss？—解决两大核心痛点\n在引入 Fluss 之前，我们的实时数据架构长期面临两个根本性挑战：\n（1）成本高昂：行式消息队列导致资源浪费严重\n我们过去主要依赖阿里内部的行式消息队列 TT（TimeTunnel）。以手淘的实时流量公共层为例，这张表包含了首页、闪购、搜索等多个业务的数据。每个下游业务（比如推荐系统）都需要一个独立的 Flink 作业来消费这张全量表，然后在作业内进行过滤，只保留自己关心的部分。\n这种模式带来了三重成本问题：\n•\n存储与流量成本倍增：\n计费通常基于读写流量。即使每个业务只关心 1% 的数据，也需要为 100% 的全量数据付费。如果有 N 个业务，就要支付 N 倍的费用。\n•\nFlink CU 资源浪费：\nFlink 作业需要消耗大量计算单元（CU）来读取、反序列化并丢弃无用的数据。很多时候，作业空跑不做任何逻辑处理，但依然产生高昂开销。\n•\n字段冗余读取：\n一张表可能包含数百个字段，但单个业务往往只需要其中几个。行式存储迫使消费者读取整行数据，造成巨大的 IO 和网络带宽浪费。\nFluss 通过其三大核心能力完美解决了上述问题：\n•\n多级分区（Multi-level Partitioning）：\n支持按业务、按场景等维度对数据进行精细划分。\n•\n过滤下推（Filter Pushdown）：\n消费者可以在订阅时声明过滤条件，数据在源头即可被精确过滤，避免全量拉取。\n•\n列式存储（Columnar Storage）：\n允许消费者只读取所需的字段，极大降低数据消费量和 Flink CU 消耗。\n（2）湖流割裂：Lambda 架构的运维与一致性困境\n业界经典的 Lambda 架构虽然能同时提供实时和离线视图，但维护两套独立的批处理和流处理链路，带来了开发、运维成本高企以及数据统计口径不一致等问题。\n随着数据湖技术（如 Paimon、Hudi）的发展，湖仓一体架构成为主流，但它通常只能提供分钟级的数据新鲜度。对于搜索、推荐等要求秒级延迟的核心场景，我们仍需引入 Kafka 这类流式中间件，这实际上又回到了 Lambda 架构的老路，导致“湖”与“流”的割裂。\nFluss 的出现为我们提供了一个统一的解决方案：它既能作为高性能的流存储提供秒级数据新鲜度，又能通过其内置的分层存储（Tiering）能力无缝对接数据湖（如阿里内部的 Alake），真正实现了“湖流一体”，消除了双架构的痛点。\n03\n首次双11落地情况：大规模生产验证\n2025 年的双 11 是 Fluss 在阿里集团的首次大促实战。目前，Fluss 已稳定服务于淘天（含通天塔、阿里妈妈等）、集团数据公共层、饿了么、淘宝闪购、高德、阿里影业等多个核心业务，核心场景主要集中在搜索、推荐、流量等。\n在本次双十一期间，Fluss 展现了强大的承载能力：\n数据量：\n4 PB/天\nTPS峰值：\n1 亿\nBPS峰值：\n100 GiB/s\n这些数据充分证明了 Fluss 在大规模、高并发场景下的稳定性和可靠性。\n04\n集群部署架构\n阿里集团内部的业务特点与云上有所不同，因此我们的部署架构也进行了针对性设计。我们采用了“大集群 + 区域化部署”的模式。不同地域（如张北、上海）拥有独立的 Fluss 集群，而同一地域内的不同业务（如高德、钉钉、淘天）则通过数据库（DB）级别进行逻辑隔离。数据持久化在阿里自研的分布式文件系统 盘古 上，并通过 Tiering Service 同步至内部数据湖 Alake。\n此架构的优势在于：\n资源复用：\n多个业务共享一个大集群，提高资源利用率。\n版本收敛：\n集群数量少，便于统一升级和管理。\n运维集约：\n减少运维复杂度。\n但也带来挑战：\n运维压力：\n单一集群机器数量庞大，运维难度增加。\n资源隔离：\n需要额外机制保障不同业务间的资源隔离。\n为此，我们开发了独立的 Fluss Manager 来管理账号权限和集群配置，并在 VVP（Fluss 专有空间）中独立部署 Tiering Service（Flink Job），确保其稳定运行。为了保障如此大规模集群的稳定运行，我们在多个方面进行了深度建设。\n（1） 机架感知（Rack Awareness）\n为防止物理机或机架故障导致数据丢失，我们实现了严格的副本放置策略。\n机架感知前：\n三个副本可能分配在同一台物理机上的三个 Pod 上。一旦该物理机故障，将导致三副本数据丢失！\n机架感知后：\n三副本规避策略，不允许分配在同机房-同机架-同物理机上。即使一台物理机故障，仍有两副本工作，保障数据安全。\n（2） 监控告警体系\n我们建立了覆盖全栈的立体化监控告警体系：\n基础设施监控：\n包括物理机性能（磁盘容量、读写IO、网络流量、CPU、内存）和 Pod 性能。\n服务端监控：\n监控 CoordinatorServer、Tablet Server 等核心组件的 Metrics 和日志。\n远程存储监控：\n监控 Remote Storage (OSS/Pangu/HDFS) 的 QPS、读写延迟、带宽和容量。\n数据湖监控：\n监控 Alake 的水位、读写情况，防止因数据灌入过载而影响湖仓。\n告警服务：\n基于 Prometheus + SLS 的监控系统，实现及时告警。\n05\n稳定性建设\n（1） 集群扩缩容（Rebalance Feature）\n随着业务增长，集群需要动态扩容。我们实现了 Rebalance 功能：\nAdminClient\n发起\nRebalanceRequest\n。\nCoordinatorServer\n收到请求后，\nGoalOptimizer\n生成\nRebalancePlan\n。\nRebalanceExecutor\n执行计划，通知 Tablet Server 迁移 Bucket Leader 和 ISR。\n新节点加入后，负载均衡，完成扩容。\n（2） 表扩缩容（Bucket Rescale）\n当单表流量增大时，可通过\nALTER TABLE\n增加 Bucket 数量。\nClient 发起\nALTER TABLE\n命令。\nCoordinator 计算新增 Bucket 的分布，并更新 Zookeeper 中的\nTableAssignment\n。\nCoordinator 通知所有 Tablet Server 创建新的 Bucket Replica。\nTablet Server 创建 Replica 并开始接收数据。\n注意：客户端需重启以感知新分区，期间消费任务可能有短暂波动。\n（3） 无感升级（Controlled Shutdown）\n为保障升级过程对在线作业无明显影响，我们实现了无感升级：\n待下线 Tablet Server 发送\ncontrolledShutdownRequest\n给 Coordinator。\nCoordinator 执行\n步骤1：重选 Leader（新 Leader 上线）。\n步骤2：下线 Follower。\n步骤3：关闭其他资源。\n整个过程保证读写延迟波动小于 1 分钟，Leader 持续在线。\nK8s 侧支持：支持灰度升级、滚动升级和原地升级（kill pod 并秒级拉起），提升升级效率。\n（4） Coordinator HA\nCoordinator 是集群的“大脑”。我们为其构建了高可用架构：\n主备选举：\n通过 Zookeeper 实现主备选举。\n状态同步：\n副节点持续监听 ZK 节点变化，保持\nCoordinatorContext\n一致。\n故障恢复：\n主节点宕机后，副节点自动选举为新主节点，并从 ZK 恢复上下文信息，确保元数据连续性。\n（5） 压缩率与网络传输优化\n为应对大规模集群的网络带宽瓶颈，我们集成了 ZSTD 列压缩算法。\n实测效果：\n在淘系数据上，开启 ZSTD 后，存储空间下降 6 倍（8.88TB → 1.52TB）。\n性能影响：\n写吞吐略有提升（3.33M/s → 3.51M/s），读吞吐基本持平（3.06M/s → 3.25M/s），CPU/内存开销可控。\n（6） 上线前故障演练计划\n上线前，我们执行了详尽的故障演练计划，模拟极端场景：\nCoordinatorServer：\n随机宕机、反复切换 leader、大量建表和分区。\nTableServer：\n随机宕机、Remote 存储堆积、Bucket 的 Replica 宕机。\nClient：\n读写流量压测、一致性测试、冷数据追数据延迟测试。\n其他：\n网络拥塞、磁盘挂掉、Zookeeper 故障等。\n通过这些演练，全面验证了系统的健壮性、容错能力和数据一致性。\n06\n湖流一体：统一架构的演进\n在湖流一体这块，我们会直接从 Fluss Manager 发起“湖流一体表”的创建操作。创建完成后，会使用 Fluss 的生产账号（而不是业务自己的账号），在 Paimon 中为业务直接创建一张对应的 Paimon 表。\n这张 Paimon 表与 Fluss 中的表在命名上完全一致，包括 Namespace 和 DB 名称都保持统一。这样一来，业务在 Paimon 侧可以给这张表打上“湖流一体表”的标记，在 Fluss 侧也能看到它是“湖流一体表”，对业务来说是一张“看起来统一”的表，但在底层实际上是两张独立的物理表。\n数据同步方面，我们通过 Tailing Service 集群配合内部 Flink 集群，由生产账号将 Fluss 中的数据以分钟级或秒级的粒度同步到 Paimon。与此同时，在 Tailing Service 上做了一系列 Native 级别的优化，使得整体性能相较于通用的 Flink 接入方式（Flink Native）会更好一些。\n07\n业务实践案例与核心收益\nFluss 的落地为多个业务场景带来了显著收益，下面我将逐一介绍。\n（1）淘宝数据平台：实时数仓重构\n原架构：\n依赖行式消息队列（TT）和离线数仓（MaxCompute/ODPS），数据新鲜度在小时级。\n新架构：\n采用 Fluss + Paimon 湖仓架构，数据新鲜度提升至秒级。\n收益：\n替代行式消息队列，整体成本降低 40% 以上。\n基于 Fluss 的列更新特性，离线/实时数据回刷时只需更新变更字段，回刷成本大幅降低。\n简化了数据链路，下游 OLAP 引擎（如 StarRocks）可直接查询 Paimon 表。\n（2）淘宝闪购：实时监控与加工\n将流量实时 DWD 公共层写入 Fluss，并通过 Tiering Service 持久化到 Paimon。此架构既保障了秒级时效性，又支持高效的 OLAP 分析，真正实现了实时监控，产出效率远超旧版基于物化视图定时调度的方案。\n（3）通天塔（AB实验平台）：降本增效\n痛点：\n行式存储导致整行消费，资源消耗高（曝光表 44 个字段，平台仅需 13 个）；数据探查困难；大 State 作业运维复杂、不稳定。\n方案：\n利用 Fluss 的列裁剪能力，结合 Paimon 存储和 StarRocks 查询。\n收益：\n读 Fluss 的 Flink 作业\nCPU 占用减少 59%，内存占用减少 73%，IO 减少 20%\n。同时，通过 KV 表的 Merge 引擎和 Delta Join 技术，解耦了作业与状态，提升了灵活性。\n（4）A+ 采集分析平台：全链路优化\n在流量公共层应用 Fluss 的多级分区能力，显著降低了下游消费的数据量，使得下游 Flink CU 消耗\n降低约 35%\n，全链路成本\n降低约 70%\n。\n08\n未来规划\n展望未来，我们将从以下方向持续投入：\n扩大服务规模：\n将 Fluss 服务推广至更多集团业务，巩固其作为统一实时数据通道的地位。\n全面推进湖流一体：\n深化 Fluss 与 Paimon/Alake 的集成，打造更成熟、易用的湖流一体解决方案。\n追求更高性能：\n持续优化 Fluss 内核，在吞吐、延迟、资源利用率等方面达到业界领先水平。\n探索新场景：\n构建业界领先的 Agent 采集与评测一体化平台，为 AI Agent 在代码、电商、数据等场景的效果评估与优化提供数据基石。\n点击\n“阅读原文”\n阅读Fluss官方文档\n欢迎留言一起参与讨论~\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "peripheral": 0,
+        "irrelevant": 0.9,
+        "transfer_agent": 0.08,
+        "transfer_business": 0.02,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.7,
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.04,
+        "2": 0.8,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.03,
+      "probabilities": {
+        "0": 0.58,
+        "1": 0.1,
+        "2": 0.09,
+        "3": 0.18,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.24,
+      "probabilities": {
+        "0": 0.91,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.01,
+        "4": 0.01,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 3.8,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.06,
+        "3": 0.08,
+        "4": 0.86,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.68,
+      "probabilities": {
+        "0": 0.2,
+        "1": 0.05,
+        "2": 0.09,
+        "3": 0.21,
+        "4": 0.44,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 1.51,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.18,
+        "2": 0.3,
+        "3": 0.22,
+        "4": 0.01,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6564,
+    "outputTokens": 173,
+    "totalTokens": 6737
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.87,
+        "relevance": 0.78,
+        "grounding": 0.31,
+        "decision_action": 0.84,
+        "evidence": 0.86,
+        "actionability": 0.1,
+        "anti_hype": 0.33
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179809542,
+                "endTime": 1791179809707,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000275688",
+      "marketCost": "0.000275688",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000275688",
+      "inferenceCost": "0.000275688",
+      "inputInferenceCost": "0.000275688",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5RQPRPQC7ESZ5G92B716"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:49 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::nn8jz-1791179809488-6bd248860129"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "peripheral": 0,
+            "irrelevant": 0.9,
+            "transfer_agent": 0.08,
+            "transfer_business": 0.02,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.7,
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.04,
+            "2": 0.8,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.03,
+          "probabilities": {
+            "0": 0.58,
+            "1": 0.1,
+            "2": 0.09,
+            "3": 0.18,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.24,
+          "probabilities": {
+            "0": 0.91,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.01,
+            "4": 0.01,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.8,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.06,
+            "3": 0.08,
+            "4": 0.86,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.68,
+          "probabilities": {
+            "0": 0.2,
+            "1": 0.05,
+            "2": 0.09,
+            "3": 0.21,
+            "4": 0.44,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.51,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.18,
+            "2": 0.3,
+            "3": 0.22,
+            "4": 0.01,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6564,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.87,
+            "relevance": 0.78,
+            "grounding": 0.31,
+            "decision_action": 0.84,
+            "evidence": 0.86,
+            "actionability": 0.1,
+            "anti_hype": 0.33
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179809542,
+                    "endTime": 1791179809707,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000275688",
+          "marketCost": "0.000275688",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000275688",
+          "inferenceCost": "0.000275688",
+          "inputInferenceCost": "0.000275688",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5RQPRPQC7ESZ5G92B716"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:48.931Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "243511047844124672",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "借助 AI Coding 快速打造 AI Agent 系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558316&idx=1&sn=6a53c77fe9bdb8b35a1d513897c4a472",
+      "date": "2026-02-09T00:31:00.990Z",
+      "chars": 11873,
+      "text": "原创\n柏慕\n2026-02-09 08:31\n浙江\n一、前言\n在AI驱动的电商运营时代，如何让运营同学通过自然语言快速生成个性化购物场景，并自动关联优质商品搭建会场，成为提升运营效率的关键问题。购物场景生成AI Agent应运而生，通过智能化的场景生成和商品匹配，让运营可以用一句话，就能自动生成包含场景标题、描述、一二级标签的完整购物场景，并智能查询热点知识库，关联相关商品，对商品进行信息补全和相关性过滤，最终快速对接会场搭建来产出一个完整的场景导购会场。\n然而，随着业务复杂度的提升和技术栈的演进，原有基于低代码的流程编排方案逐渐暴露出扩展性和灵活性的瓶颈。因此我们启动了向\nLangGraph + Agent Skills + A2A + MCP\n工程方案的技术迁移，并借助 AI Coding 工具的力量，在几天时间内完成了整个 Agent 系统的重构和上线，实现了从\"单体流程编排\"到\"模块化技能体系 + 智能规划 + 标准化协议互联\"的全方位架构跃迁。\n二、项目背景与挑战\n2.1 业务需求\n当运营同学输入一句自然语言描述后，系统需要理解其购物场景意图，识别关键的品类和属性，生成结构化的场景数据，然后基于场景的一级标签生成二级标签关键词，使用二级标签调用商品搜索获取匹配商品，最终输出可直接用于建立会场模版的完整数据结构。这个过程涉及多个AI模型的协同工作：意图理解模型需要准确识别用户的购物场景需求，场景生成agent要创造出吸引人的标题、文案和标签，商品匹配则要确保推荐的商品与场景高度相关。更重要的是，整个流程需要支持多轮交互，运营可能会基于初次生成的结果进行调整和优化，系统必须能够理解上下文并进行相应的修改，这个过程涉及多个 AI 模型的协同工作：\n我们需要构建一个AI Agent，核心功能包括：\n1. 多轮对话交互：用户可以多轮对话逐步完善购物场景需求；\n2. 意图识别&智能内容生成：识别用户购物场景创建需求，基于LLM生成个性化消费场景，场景标签；\n3. MultiAgent协作：A2A对接包含商品信息补全Agent、商品相关性过滤Agent等，确保场景商品的丰富度和精准度；\n4. MCP协议和RAG集成：通过标准化的Model Context Protocol连接外部工具（商品搜索、缓存写入），实现工具调用的解耦与复用\n，\nRAG查询热点知识库、URL内容提取与二创等\n，确保生成内容紧跟潮流；\n5. 持久化：存储用户生成的场景和商品、支持对接会场搭建、存储工作流状态等；\n6. 企业级部署：支持多机部署，日志查询，trace追踪等。\n2.2 技术挑战\n1. 复杂状态管理：多轮对话场景下，需要在跨机器的环境中维护复杂的上下文状态，同时控制Token消耗和避免上下文污染。\n2. 异构协议融合：无缝集成MCP、HSF（内部RPC）、HTTP等多种异构服务协议，解决鉴权、序列化和错误处理的差异。\n3. Agent Skills 扩展：如何定义标准化的 Agent 技能接口，使得工具调用更加灵活、可组合和可复用。\n4. MultiAgent通信协作：实现主Agent与商品补全、过滤等子Agent之间的高效通信和状态同步，确保多智能体协同工作的一致性。\n5. 工程化\n落地鸿沟：从单机Python应用到TPP平台部署的迁移，面临环境隔离、依赖冲突、并发适配等挑战。\n6. 不确定性控制：\n如何让 Agent 具备自主规划能力，在复杂的多步骤任务中不遗漏关键环节，避免顺序混乱，\n在强业务规则约束下（如必须包含特定标签、商品数量限制），如何有效控制LLM的幻觉，确保输出结果的结构化和准确性。\n7. 未来扩展性：借助LangGraph未来支持扩展更多Agent特性\n原有的流程编排低代码平台在项目初期确实帮助我们快速验证了业务可行性，通过可视化的流程编排，我们能够将各个AI组件连接起来形成完整的处理链路。但随着业务逻辑的复杂化，低代码方案的局限性开始显现：复杂的条件分支难以用图形化方式清晰表达，错误处理和异常恢复机制不够灵活，性能优化\n空间有限，更重要的是，当需要与企业内部的各种服务系统进行深度集成时，低代码平台的扩展能力显得力不从心。\n三、核心架构升级\n面对挑战，我们构建了基于 LangGraph 的新一代 Agent 架构，重点增强了技能体系、智能规划、知识检索和标准协议支持。下面将详细阐述每个核心组件的设计理念、实现细节和创新点。\n3.1 LangGraph 的核心优势\nLangGraph是LangChain团队开发的用于构建AI Agent的框架。它的思想是：\n将AI Agent的执行过程抽象为一个有向图\n。\n专注于构建有状态、可控制的AI智能体的框架，它通过图形化结构定义智能体交互流程，使开发者能够创建复杂、可靠的AI应用。\nLangGraph的\n核心优势\n在于它将复杂的AI工作流抽象为有向图结构，每个节点负责特定的处理逻辑，节点间通过共享状态进行数据传递。这种设计不仅让代码结构更加清晰，也为并行处理、错误重试、状态持久化等高级特性提供了天然的支持。对于我们的场景购项目，这意味着可以将意图识别、场景生成、商品搜索等步骤解耦为独立的节点，既保持了逻辑的清晰性，又获得了更好的可测试性和可维护性。\n在\n工具集成\n方面\n，LangGraph天然支持MCP等标准化协议，这意味着我们可以轻松接入各种外部工具和服务。未来当需要集成新的AI能力时，比如图像生成、或者专业领域的知识库，都可以通过MCP协议进行标准化接入，而无需修改核心的工作流逻辑。这种插件化的扩展方式让系统具备了应对未来技术发展的灵活性。\n在\nAI推理模式\n方面，LangGraph支持多种先进的Agent架构模式。我们可以在现有的链式推理基础上，轻松扩展支持ReAct模式，让AI在执行过程中能够基于中间结果动态调整后续的行动策略。比如当系统发现用户的需求比较模糊时，可以主动提出澄清性问题；当商品搜索结果不理想时，可以自动调整搜索策略或者扩展搜索范围。这种自适应的推理能力将让场景生成变得更加智能和精准。\n循环与记忆\n：\n天然支持多轮对话的循环结构，通过 Checkpointer 实现持久化记忆。Agent 可以在中断后恢复执行，用户的每一轮对话都能基于完整的历史上下文。\n细粒度控制\n：\n开发者可以精确控制每一步的跳转逻辑，实现 Human-in-the-loop（人机回环）确认机制。例如，在提交重要操作前，可以暂停工作流等待用户确认。\n状态共享与隔离\n：\n通过 TypedDict 定义的 State，可以在不同节点间共享数据，同时避免全局变量污染。\n条件分支\n：\n支持基于 LLM 输出或业务规则的动态路由。例如，根据 LLM 是否返回 tool_calls 来决定下一步是执行工具还是结束流程。\n3.2 Agent Skills：标准化的能力封装\nAgent S\nkills\n是本次架构升级的核心。我们将 Agent 的能力模块化为一个个独立的 Skill，每个 Skill 负责一个特定领域的功能，通过标准接口对外暴露，采用\n渐进式披露的思想，优化上下文，提高复用性\n。\n在旧版 Agent 中，所有工具（Tools）平铺在一个列表里：\n# 传统做法：多个工具混在一起\ntools\n= [\ngenerate_scene_blueprint,\nprocess_scene_blueprint,\ngenerate_scene_tags,\nsearch_products,\nfilter_products,\nenrich_products,\nformat_output,\n...\n]\n存在的问题\n：\n1. 难以管理\n：\n工具数量多时，难以找到特定功能的工具。\n2. 重复开发\n：\n多个 Agent 需要类似功能时，工具代码被重复实现。\n3. 职责不清\n：\n工具之间的依赖关系不明确，容易出现调用顺序错误。\n4. 协议异构\n：\n本地函数、远程 API、MCP 服务混杂，调用方式不统一。\nSkills 体系的解决方案\n：\n将工具按照业务领域分组，每组形成一个 Skill：\napp/skills/\n├── scene-generation/\n# 场景生成技能（Skill）\n│   ├── SKILL.md\n# 元数据：Skill 名称、描述、使用说明\n│   ├── script/\n# 脚本\n│   └── references/\n# 领域知识：如场景设计规范、Few-shot 示例\n├── product-service/\n# 商品服务技能（Skill）\n│   ├── SKILL.md\n│   ├── script/\n# 脚本\n│   └── references/\n# 领域知识：如选品规则、过滤逻辑说明\n├── persistence-service/\n# 持久化技能（Skill）\n│   ├── SKILL.md\n│   ├── script/\n# 脚本\n│   └── references/\n├── scene-format/\n# 格式化技能（Skill）\n│   ├── SKILL.md\n│   ├── script/\n# 脚本\n│   └── references/\n在应用启动时，通过\nSkillLoader\n自动扫描并加载所有 Skills的元信息，拼接到规划Agent的prompt上。\nSkills 体系的核心价值\n：\n1.\n动态扩展：\n新增 Skill 只需在\napp/skills/\n目录下添加文件夹，无需修改 Agent 代码\n2.\n职责清晰：\n每个 Skill 的 SKILL.md 文档明确了其包含的 Tools 及职责和用法\n3.\n可复用：\n多个 Agent 可以共享相同的 Skills\n4.\n可测试：\n每个 Skill 内的 Tools 可以独立测试\n5.\n渐进式披露\n（Progressive Disclosure）：通过三层架构解决上下文爆炸问题\nLayer 1 元数据：Agent 初始只加载 Skill 的\nname\n和\ndescription\nLayer 2 技能主体：当 Agent 决定使用某 Skill 时，动态加载完整指令\nLayer 3 附加资源：具体的脚本或参考文档仅在执行时按需加载\n3.3 Planner：让 Agent 具备\"全局规划\"能力\n在复杂的场景生成任务中，Agent 需要执行 8-10 个步骤才能完成。传统的 ReAct 模式是\"边做边想\"，容易出现步骤遗漏或顺序混乱。我们引入的\nPlanner\n节点\n让 Agent 具备了\"先规划再执行\"的能力。\n3.3.1 为什么需要 Planner？\n传统 ReAct 模式的问题\n：\n用户: \"生成一个冬日红豆年糕汤场景\"\nAgent: [调用 generate_scene_blueprint]\nAgent: [调用 generate_scene_tags]\nAgent: [调用 assemble_scene]\nAgent: \"场景生成完成！\"  ❌ 遗漏了商品搜索和持久化步骤\n在我们的实际测试中，传统 ReAct 模式生成结果的不可用比例太高。\nPlanner 的解决方案\n：\n在执行任务前，先生成一个完整的执行计划。\n核心设计理念是：Planner 输出的是计划 Plan和要用到的 Skill（技能），然后系统根据 Skill 把对应的 Tool 动态加载到 LLM 上\n。\n这种设计的优势在于：\n按需加载\n：\n只有当 Planner 规划出需要某个 Skill 时，该 Skill 下的 Tools 才会被加载到上下文中，避免了一次性加载所有 Tools 导致的上下文膨胀\n领域聚焦\n：\n每个 Skill 封装了一组相关的流程和 Tools，Planner 只需要思考\"需要哪些能力\"，而不是\"需要调用哪个具体函数\"\n灵活扩展\n：\n新增 Skill 不影响现有流程，Planner 会自动发现并在合适的场景使用\nPLANNER_PROMPT =\n\"\"\"你是场景导购任务规划器。请先生成一个结构化的执行计划。\n输出严格为 JSON 数组，每个元素包含以下字段：\n{\n\"step\n\": \"\n步骤名称\n\",\n\"skill\n\": \"\n需要激活的 Skill 名称（如 scene-generation、product-service）\n\",\n\"inputs\n\": \"\n该步骤需要的关键输入字段\n\",\n\"expected\n\": \"\n该步骤预期产出\n\"\n}\n规划约束：\n1) 必须覆盖：生成蓝图 -> 处理蓝图 -> 标签生成 -> 组装 -> 格式化输出 -> 持久化\n2) 需要加入商品搜索步骤（使用 product-service Skill）\n3) 最后一定要包含持久化步骤（使用 persistence-service Skill）\n生成的计划会被注入到主 Agent 的 System Prompt 中，作为\"参考手册\"。\n执行流程\n：\nPlanner 分析用户需求，输出需要的 Skill 列表（如\nscene-generation\n、\nproduct-service\n）；\n系统根据 Skill 列表，动态加载对应的 参考文档和相关的Tools 到 LLM 的可用工具集中；\nLLM 在执行每个步骤时，只能看到当前 Skill 相关的 Tools，保持上下文精简；\n关键发现\n：\n1. Planner 显著减少了步骤遗漏，尤其是容易被忽略的持久化步骤；\n2. 有计划的 Agent 执行的步骤更完整；\n3. 顺序混乱大幅减少，因为 Planner 提供了逻辑顺序的指导；\n四、具体实现-AI Coding加速开发实践\n4.1 AI Coding工具选型\n基于实际使用经验，我们采用了\n双工具协同\n的策略：\n面对快速完成迁移的紧迫时间线，我决定充分利用AI Coding工具来加速开发过程。在工具选择上，我选择采用了Cursor和AoneCopilot相结合的策略：Cursor负责复杂的系统架构设计和核心代码生成，AoneCopilot则承担日常的代码优化和调试任务，同时使用AoneCopilot方便查阅内部文档保障信息安全。\n为了保证迁移后功能的一致性，我决定根据线上流程编排平台导出的DSL文件复现LangGraph工程，从 DSL（领域特定语言）工作流定义转换为可执行的 Python 代码，然后进行进一步的架构升级和扩展。﻿\nCursor\n：\n负责复杂的系统架构设计、DSL 到 LangGraph 的核心代码转换、Agent Skills 的脚手架生成等。\nAoneCopilot\n：\n负责内部私有协议的代码补全、文档查询和代码优化等。\n4.2 DSL驱动的迁移策略\n大致的工作流程如下：\n1.根据线上原有的流程编排，导出dsl的yaml文件，DSL (Domain Specific Language) 领域特定语言，指原有低代码/零代码平台用于描述业务流程的配置语言，通常以JSON或YAML格式存在。它定义了节点（Nodes）、边（Edges）、条件分支（Branches）以及每个节点的配置参数（如Prompt、模型参数等），是业务逻辑的“数字蓝图”。它连接“旧系统”与“新LangGraph工程”的桥梁，保证了业务逻辑迁移的准确性，避免了人工重新梳理逻辑的遗漏。\n2.根据文档和dsl设计项目架构，这一步至关重要，AI需要结合两类信息：一是DSL中的业务流程逻辑（有哪些节点、如何跳转），二是新平台的技术规范（TPP平台的接口要求、LangGraph的图结构定义）。通过AI的分析，将线性的或树状的DSL结构映射为LangGraph的有向循环图（Graph），并设计出符合架构的工程目录结构，确定State状态对象的字段定义，为后续的代码生成打下坚实的地基。\n4.3 AI Coding工具使用策略详解\n4.3.1 知识库准备（提供给AI查询）、AI提示工程优化策略、\nRule\n限制\n知识库文档\n在项目目录新建doc文件夹，将项目需要查阅的文档集中存放在里面标明每个文档的名称方便AI自主查询﻿。\nMarkdown准备材料清单：\n✅ TPP Python平台文档\n✅ HSF服务接口文档和调用示例\n✅ LangGraph官方文档和最佳实践\n✅ Hologres/Tair API文档和配置说明\n✅ 内部模型服务（IdeaLAB API）接口文档\n✅ 根据dsl生成LangGraph代码的提示词模版\n✅ 生成的技术方案文档、架构设计文档\n······等等\n文档类型\nAI工具选择\n查询策略\n内部API文档\nAoneCopilot\n内部文档安全查询\n开源文档\nCursor\n利用强大模型理解复杂技术文档\n代码示例\n混合使用\n代码生成用Cursor，代码优化用AoneCopilot\nAI提示工程优化\nMarkdown高效AI协作的提示模板：\n1.\n代码生成提示\n：\n\"基于现有的\n[\n具体文件名\n]\n实现，为新的DSL节点\n[\n节点类型\n]\n生成Python代码，\n需要保持相同的错误处理模式、日志记录格式和异步调用风格\"\n2.\n调试优化提示\n：\n\"以下是运行日志\n[\n粘贴日志/日志文件\n]\n，请分析性能瓶颈并给出具体的代码优化建议，\n重点关注\n[\n具体问题点\n]\n\"\n3.\n架构设计提示\n：\n\"基于现有项目架构\n[\n架构文档\n]\n，为新需求\n[\n具体需求\n]\n设计实现方案，\n保持架构一致性和可扩展性\"\n根据DSL文件生成代码的提示词\n# DSL到LangGraph代码转换：AI Coding提示词指南\n本文档旨在指导AI Coding工具如何理解DSL（YAML格式）文件，并将其转换为LangGraph Python工程代码。通过本指南，AI工具能够自动化完成从DSL到Python实现的转换过程。\n## DSL文件结构理解\n### DSL文件的核心组成\nDSL文件（YAML格式）主要包含三个核心部分：\n```yaml\n# 1. 元信息\nid: xxx\nname: \"工作流名称\"\nversion: \"1.0\"\n# 2. 节点定义 (nodes)\nnodes:\n- id: \"node_id\"\ntype: \"node_type\"\ndata:\n# 节点配置参数\nposition: {x: 100, y: 200}\n# 3. 边定义 (edges)\nedges:\n- id: \"edge_id\"\nsource: \"source_node_id\"\ntarget: \"target_node_id\"\nsourceHandle: \"output_handle\"\ntargetHandle: \"input_handle\"\n```\n**关键理解点：**\n- `nodes`数组定义了工作流中的所有处理单元\n- `edges`数组定义了节点之间的连接关系和数据流向\n- `position`字段仅用于可视化，代码转换时可忽略\n当接收到DSL文件时，应按以下步骤执行转换：\n```\n步骤1: 解析DSL文件结构\n- 读取YAML文件\n- 提取nodes和edges数组\n- 统计节点类型分布\n步骤2: 生成状态定义\n- 分析所有节点的输入输出变量\n- 推断状态字段的类型\n- 生成SceneGuideState类\n步骤3: 转换节点函数\n- 按节点类型选择转换规则\n- 生成对应的Python函数\n- 添加类型注解和文档字符串\n步骤4: 生成路由函数\n- 为if_else节点创建条件函数\n- 为question_classifier创建路由函数\n- 确保返回值与边定义匹配\n步骤5: 构建图结构\n- 创建StateGraph\n- 添加所有节点\n- 根据edges添加边\n- 处理条件边和普通边\n步骤6: 添加工程化支持\n- 集成checkpointer（状态持久化）\n- 添加日志记录\n- 添加错误处理\n- 配置环境变量\n步骤7: 生成测试代码\n- 为每个节点生成单元测试\n- 生成端到端测试\n- 生成性能测试\nRule：模板和规范遵循规则\nRule 是 AI Coding 工具（如 Cursor）的一个核心概念，它允许我们定义一系列的规则和约束，确保 AI 生成的代码符合我们的项目规范。在本项目中，我们将项目规范、代码风格、架构约束等写入 .cursorrules 文件，让 AI 在生成代码时心中有数。这就像是给 AI 戴上了紧箍咒，防止它生成风格迥异、不符合团队规范的代码，从而大幅降低了后续 Code Review 和人工修改的成本。﻿\n## LangGraph工作流规范\n### 节点函数规范\n```python\nasync\ndef\nnode_function_name\n(\nstate: SceneGuideState\n) -> SceneGuideState:\n\"\"\"\n节点功能简要描述\nArgs:\nstate: 当前状态对象\nReturns:\n更新后的状态对象\n\"\"\"\ntry\n:\n# 1. 参数验证\nrequired_field = state.get(\n'field_name'\n,\n''\n)\nif\nnot\nrequired_field:\nreturn\n{\n\"error\"\n:\n\"缺少必要参数\"\n}\n# 2. 核心业务逻辑\nresult =\nawait\nprocess_logic(required_field)\n# 3. 日志记录\nlogging.info(\nf\"[node_name] 处理结果:\n{result}\n\"\n)\n# 4. 返回状态更新\nreturn\n{\n\"result_field\"\n: result}\nexcept\nException\nas\ne:\nlogging.exception(\nf\"[node_name] 执行失败:\n{e}\n\"\n)\nreturn\n{\n\"error\"\n:\nf\"节点执行失败:\n{\nstr\n(e)}\n\"\n}\n```\n### 状态定义规范\n- 所有状态字段必须在SceneGuideState中定义\n- 使用TypedDict确保类型安全\n- 可选字段使用`NotRequired[]`标注\n- 状态字段命名使用snake_case\n### 条件路由规范\n```python\ndef\nshould_route_to_next\n(\nstate: SceneGuideState\n) ->\nstr\n:\n```\n### Python代码规范\n- 严格遵循PEP\n8\n编码规范\n- 使用Black进行代码格式化\n- 使用\ntype\nhints进行类型注解，所有函数必须有返回类型\n- 使用TypedDict定义状态结构，确保类型安全\n- 所有公共API必须有详细的docstring\n-\n### 异步编程规范\n- 所有I/O操作必须使用\nasync\n/\nawait\n- 节点函数统一使用`\nasync\ndef\n`定义\n- 外部服务调用（LLM、HSF、Tair）必须异步化\n- 使用`asyncio.gather()`进行并发调用\n### 日志规范\n- 使用Python标准库logging模块\n- 日志级别：DEBUG用于详细信息，INFO用于关键流程，ERROR用于异常\n- 异常处理必须使用`logging.exception()`记录完整堆栈\n- 结构化日志格式：`logging.info(\nf\"[\n{node_name}\n] 描述:\n{detail}\n\"\n)`\n4.3.2 需求分析与架构设计\n任务\n具体操作\nDSL文件分析\n• 上传线上DSL YAML文件\n• AI分析节点类型和边关系\n• 生成节点映射表和状态定义\n架构设计\n• 生成新项目架构文档，生成技术方案文档﻿\n• AI设计6层架构（平台→应用→工作流→服务→持久化→外部）﻿﻿\n技术选型\n• 基于要求技术栈（LangGraph）\n• AI推荐合适的模型和中间件\n• 生成requirements.txt\n4.3.3 核心框架搭建\n组件\nAI辅助策略\n输出物\n项目结构\nCursor分析项目架构和需求生成项目结构\n项目结构\n状态定义\nAI基于DSL生成TypedDict\nSceneGuideState类型定义\n基础配置\n基于内部文档生成配置模板\n环境变量、日志配置、TPP配置\n4.4 代码审查与重构\n在完成核心功能后，我们使用AoneCopilot 进行全量代码审查：\n审查发现的问题\n：\n1. 代码重复\n：\n工具节点中有多处重复的参数补全逻辑\n2. 错误处理不足\n：\n多处 try-except 块只记录日志，未向用户反馈\n3. 性能问题\n：\n每次调用 get_cached_tools() 都重新遍历所有 Skills﻿\n阶段\nAI输入\nAI输出\n执行动作\n错误诊断\n错误日志 + 堆栈信息\n根因分析 + 修复建议\n自动生成修复代码﻿\n性能优化\n执行时间 + 资源使用\n瓶颈识别 + 优化方案\n代码重构建议\n逻辑完善\n业务日志 + 用户反馈\n逻辑漏洞 + 改进建议\n工作流优化﻿\n五、总结与回顾\n5.1 加速开发的关键技巧\n技巧\n实施方法\n预期效果\n模板复用&文档齐全\n将现有代码作为模板，AI基于模板生成新代码。有完善的参考文档，帮助AI理解项目\n提速编码，保持代码风格一致性\n增量开发\n每完成一个模块立即测试，AI协助快速调试\n减少集成问题，提高成功率\n并行开发\n不同模块用不同AI工具并行开发\n充分利用AI工具优势\n智能重构\nAI分析代码质量和运行日志，提供重构建议\n代码质量提升，维护成本降低\n5.2 项目总结\n通过 AI Coding 工具的深度集成，我们不仅在 几天内完成了从低代码到 LangGraph 的迁移，更实现了一次技术架构的跃迁：\n5.2.1 架构升级总结\n1. 能力升级\n：\n引入 Agent Skills ，使 Agent 具备了更强的工具使用能力。\n2. 智能规划\n：\n引入 Planner 节点，从\"边做边想\"升级为\"先规划再执行\"，任务完成率提升 20%。\n3. 标准互通\n：\n适配A2A 协议，打通了与集团生态和 Agent 生态的连接。\n4. 架构灵活\n：\nLangGraph 的图结构和子图机制，为未来的复杂业务编排提供了无限可能。\n5. 技能模块化\n：\nSkills 体系实现了工具的标准化封装、动态加载和跨 Agent 复用。\n6. 高可用保障\n：\nFallbackCheckpointSaver 确保在分布式环境下的状态可靠性。\n5.2.2 AI Coding 的价值体现\n1. 开发提速 5 倍\n：\n原本需要 2 周的开发工作，几天内完成\n2. 代码质量提升\n：\nAI 辅助设计的架构更加清晰、可扩展、易维护\n3. 知识传承\n：\nAI 生成的代码和文档降低了团队的学习成本\n4. 创新加速\n：\nAI 提供的架构建议（如 Planner、Skills）成为系统的核心竞争力\n5. 减少返工\n：\n通过 AI 代码审查，在开发阶段就发现并修复潜在问题\n5.3 关键启示\n5.3.1. 人机协作的最佳实践\n人类负责：业务理解、需求拆解、架构决策、创新方向\nAI 负责：代码生成、模式识别、最佳实践推荐、重复工作\n关键是：多轮对话、逐步细化，而非一次性生成\n5.3.2. 标准化\n通过 Skills、A2A、MCP 等标准化接口，我们构建了一个\"可组合\"的 Agent 生态\n关键成功要素：充分利用AI工具优势，建立人机协作的高效开发模式。\n回顾这次技术迁移，AI Coding工具的引入无疑是成功的关键因素之一。它不仅加速了开发过程，更重要的是确保了代码质量和架构的合理性。通过AI的辅助，我们能够在短时间内实现复杂的系统设计，同时避免了许多常见的工程化陷阱。\n然而，我们也认识到AI Coding并非万能的。在业务逻辑的深度定制、复杂的性能优化、以及特殊的集成需求方面，仍然需要资深开发者的专业判断和手工优化。AI Coding更像是一个高效的助手，它能够处理大量的标准化开发任务，让开发者能够将更多精力投入到核心业务逻辑和创新性工作上。\n展望未来，我们计划进一步深化AI Coding在系统维护和优化中的应用。通过分析生产运行数据，AI可能能够主动发现性能瓶颈和优化机会，甚至自动生成优化方案。同时，我们也在探索将AI Coding应用到测试用例生成、文档维护等更多的开发环节中。﻿\n团队介绍\n我们是淘天集团-自营技术-导购&商详团队，致力于打造智能化、体系化的天猫超市消费者导购链路，通过产品架构设计与持续优化，构建覆盖私域全链路的导购产品体系。我们深度融合AI技术，积极探索内容化、场景化等创新导购形态，为用户提供更精准、更沉浸的购物体验，同时为猫超自营业务提供从B端到C端的一体化导购解决方案，驱动业务增长与商业价值提升。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0.17,
+        "transfer_agent": 0.61,
+        "direct_local": 0,
+        "irrelevant": 0.21,
+        "peripheral": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.9,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.09,
+        "2": 0.86,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.73,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.1,
+        "2": 0.12,
+        "3": 0.4,
+        "4": 0.3,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.27,
+      "probabilities": {
+        "0": 0.46,
+        "1": 0.17,
+        "2": 0.06,
+        "3": 0.28,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.56,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.49,
+        "3": 0.47,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.73,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.07,
+        "4": 0.85,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 2.4,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.08,
+        "2": 0.45999999999999996,
+        "3": 0.41,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 11168,
+    "outputTokens": 172,
+    "totalTokens": 11340
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.52,
+        "relevance": 0.9,
+        "grounding": 0.42,
+        "decision_action": 0.16,
+        "evidence": 0.63,
+        "actionability": 0.8,
+        "anti_hype": 0.61
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179862250,
+                "endTime": 1791179862427,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000469056",
+      "marketCost": "0.000469056",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000469056",
+      "inferenceCost": "0.000469056",
+      "inputInferenceCost": "0.000469056",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7C6T05111VWFPAA8H0DW"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:42 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::r8pgx-1791179861275-fedca45ec51c"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0.17,
+            "transfer_agent": 0.61,
+            "direct_local": 0,
+            "irrelevant": 0.21,
+            "peripheral": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.9,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.09,
+            "2": 0.86,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.73,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.1,
+            "2": 0.12,
+            "3": 0.4,
+            "4": 0.3,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.27,
+          "probabilities": {
+            "0": 0.46,
+            "1": 0.17,
+            "2": 0.06,
+            "3": 0.28,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.56,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.49,
+            "3": 0.47,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.73,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.07,
+            "4": 0.85,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.4,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.08,
+            "2": 0.45999999999999996,
+            "3": 0.41,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 11168,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.52,
+            "relevance": 0.9,
+            "grounding": 0.42,
+            "decision_action": 0.16,
+            "evidence": 0.63,
+            "actionability": 0.8,
+            "anti_hype": 0.61
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179862250,
+                    "endTime": 1791179862427,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000469056",
+          "marketCost": "0.000469056",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000469056",
+          "inferenceCost": "0.000469056",
+          "inputInferenceCost": "0.000469056",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7C6T05111VWFPAA8H0DW"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:41.668Z"
+  }
+}

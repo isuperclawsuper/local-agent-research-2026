@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "268993803842470912",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "Codeindex · 让大模型更好地理解你的代码",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543241&idx=1&sn=d5c2de59eea1b5e190a394b7913c7577",
+      "date": "2026-04-20T09:13:00.536Z",
+      "chars": 5131,
+      "text": "原创\n跨端技术团队\n2026-04-20 17:13\n浙江\n本文介绍了一款专为解决大模型在处理大型代码仓库时面临的上下文理解难题而设计的工具\nCodeindex\n。针对代码量大、分支多及依赖关系复杂等痛点，Codeindex 提供了代码语义化索引、检索以及函数依赖图生成能力。其核心技术亮点包括：利用增量索引与摘要生成技术提升大模型对代码意图的理解，采用分层架构与图数据库（KuzuDB/Postgres）精准构建函数上下游依赖关系。该工具通过 OpenAPI 和 SDK 两种形式，支持 CodeWiz 代码检索、AICR 智能代码审查及 CodeWiki 自动生成文档等应用场景，旨在帮助开发者更高效地构建基于代码的 AI 应用。\n前⾔\n在\n⽇\n常\n开\n发\n⼯\n作\n中\n你\n有\n没\n有\n这\n样\n的\n想\n法\n：\n想\n⾃\n⼰\n实\n现\n⼀\n个\nAgent\n助\n⼿\n来\n回\n答\n关\n于\n代\n码\n的\n⼀\n些\n问\n题\n，\n但\n是\n代\n码\n仓\n库\n过\n⼤\n，\n都\n塞\n给\n⼤\n模\n型\n也\n不\n太\n现\n实\n...\n想\n对\n仓\n库\n代\n码\n做\n分\n析\n，\n但\n还\n要\n考\n虑\n不\n同\n仓\n库\n不\n同\n分\n⽀\n的\n⽂\n件\n变\n化\n...\n想识别函数的\n上下\n游\n依\n赖\n，\n使⼤\n模型更\n准确\n地\n理解代码\n，\n还\n要单独实现函数依\n赖\n的\n上下\n游\n能\n⼒\n...\n现\n在\n，\n你\n可\n以\n使\n⽤\nCodeindex\n来\n帮\n助\n你\n解\n决\n这\n些\n问\n题\n：\n增\n量\n语\n义\n化\n索\n引\n&\n检\n索\n你\n的\n代\n码\n仓\n库\n，\n召\n回\n相\n关\n的\n代\n码\n⽚\n段\n增\n量\n⽣\n成\n代\n码\n⽚\n段\n&\n⽂\n件\n级\n别\n的\n代\n码\n摘\n要\n根\n据\n函\n数\n声\n明\n&\n调\n⽤\n⽣\n成\n函\n数\n依\n赖\n关\n系\n图\n，\n可\n获\n取\n函\n数\n依\n赖\n的\n上\n下\n游\n函\n数\n下\n⾯\n就\n来\n介\n绍\n下\nCodeindex\n⽀\n持\n的\n能\n⼒\n以\n及\n可\n以\n实\n现\n的\n场\n景\n。\n介绍\n。\nCodeindex\n是\n⼀个\n代码语义化\n索引\n、\n检索\n和函数依\n赖图\n⽣成⼯具\n，\n并\n⽀持增\n量\n索引\n。\n借助\ncodeindex\n，\n你可以对你的⼤\n型\n代码仓\n库进\n⾏\n索引\n，\n通过\n语义化描\n述检索\n代码仓\n库\n中的相关代码\n⽚\n段\n，\n此\n外你\n还\n可以\n获\n取\n这段\n代码或\n者\n其对\n应\n⽂件的语义化摘要\n，\n从\n⽽\n帮\n助⼤\n模型更\n好\n地\n理解代码意\n图。\n整体架构\nCodeindex\n提\n供\nSDK\n与\nOpenAPI\n两\n种\n服\n务\n，\nOpenAPI\n依\n赖\nNode.js\nSDK\n实\n现\n，\n⼆\n者\n均\n提\n供\n如\n下\n能\n⼒\n：\n建\n⽴\n索引\n：\n根\n据仓\n库\n及分⽀对代码\n建\n⽴语义化\n索引\n，\n并\n存储⽂件哈\n希值\n信\n息\n，\n⼆\n次索引\n可\n复⽤\n，\n实现增\n量\n索引\n。\n查\n询\n索\n引\n进\n度\n：\n因\n索\n引\n过\n程\n中\n涉\n及\n⽂\n本\n模\n型\n及\n向\n量\n模\n型\n的\n调\n⽤\n，\n⼤\n型\n项\n⽬\n的\n索\n引\n时\n间\n较⻓\n，\n可\n通\n过\n该\n能\n⼒\n实\n时\n查\n询\n索\n引\n进\n度\n。\n语义化\n检索\n：\n索引\n完成之后可\n通过\n⼀\n段\n语义化描\n述检索\n代码仓\n库\n中相关的代码\n⽚\n段\n及其语\n义化摘要\n。\n查\n询\n⽂\n件\n摘\n要\n：\n可\n查\n询\n单\n个\n⽂\n件\n的\n语\n义\n化\n摘\n要\n，\n可\n⽤\n于\nCodewiki\n等\n应\n⽤\n。\n查\n询\n函\n数\n声\n明\n：\n可\n查\n询\n⽂\n件\n中\n声\n明\n的\n函\n数\n⽚\n段\n。\n查\n询\n函\n数\nDeps\n：\n查\n询\n某\n个\n函\n数\n的\n上\n下\n游\n函\n数\n依\n赖\n，\n可\n⽤\n于\nAI CR\n等\n场\n景\n，\n辅\n助\n⼤\n模\n型\n判\n断\n代\n码\n变\n更\n是\n否\n合\n理\n。\n部分细节解析\n▐\n语\n义\n化\n摘\n要\n语\n义\n化\n摘\n要\n依\n赖\n代\n码\nChunk\n拆\n分\n的\n结\n果\n，\n在\n分\n块\n过\n程\n中\n会\n使\n⽤\n如\n下\n策\n略\n：\n1. codeChunker\n：\ncodeChunker\n利\n⽤\nTree-sitter\n解\n析\n器\n⽣\n成\nAST\n，\n并\n基\n于\n语\n法\n结\n构\n进\n⾏\n分块\n：\n若\nClass\n内\n代\n码\n超\n出\nchunk token\n上\n限\n，\n会\n对\n内\n部\n的\n函\n数\n体\n省\n略\n，\n保\n持\nClass\n的\n整\n体\n代\n码\n结\n构\n完\n整\n对 Class 内部的函\n数\n成\n员\n⼆\n次\n处\n理\n，\n单\n独\n进\n⾏\nChunk\n拆\n分\n。\n2. basicChunker\n：\nbasicChunker\n是\n⼀\n个\n简\n单\n的\n基\n于\n⾏\n的\n分\n块\n器\n，\n适\n⽤\n于\n纯\n⽂\n本和\nMarkdown\n⽂\n件\n，\n会\n按\n照\nChunk\ntoken\n上\n限\n进\n⾏\n拆\n分\n。\nChunk\n拆\n分\n完\n成\n之\n后\n会\n⽣\n成\n语\n义\n化\n代\n码\n摘\n要\n，\n代\n码\n⽚\n段\n会\n按\n照\n如\n下\n结\n构\n发\n送\n给\n⼤\n模\n型\n，\n最\n外\n层\n为\ndocum\nent\n标\n签\n，\n表\n示\n单\n个\n⽂\n件\n，\npath\n属\n性\n为\n⽂\n件\n路\n径\n；\n内\n部\n的\ncode\n标\n签\n为\n当\n前\n⽂\n件内\n拆\n分\n的\n代\n码\n⽚\n段\n，\nstart_line\n与\nend_line\n分\n别\n表\n示\n代\n码\n⽚\n段\n的\n开\n始\n⾏\n号\n和\n结\n束\n⾏\n号\n。\n<document path=\n\"lib/utils.js\"\n>\n<code start_line=\n\"0\"\nend_line=\n\"2\"\n>\nfunction\nformatDate(\ndate\n) {\nreturn\ndate.toISOString().\nsplit\n(\n'T'\n)[0];\n}\n</code>\n<code start_line=\n\"3\"\nend_line=\n\"5\"\n>\nfunction\nvalidateEmail(email) {\nreturn\n/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);\n}\n</code>\n</document>\n我\n们\n会\n将\n上\n述\n信\n息\n发\n送\n给\n⼤\n模\n型\n让\n其\n做\n摘\n要\n，\n返\n回\n结\n果\n为\n如\n下\n结\n构\n的\nJSON\n对\n象\n[\n{\n\"summary\"\n:\n\"文件维度的代码摘要\"\n,\n\"path\"\n:\n\"文件路径\"\n,\n\"chunks\"\n:\n[\n{\n\"start_line\"\n:\n\"开始行号\"\n,\n\"end_line\"\n:\n\"结束行号\"\n,\n\"summary\"\n:\n\"代码片段级别的代码摘要\"\n}\n]\n}\n]\n▐\n函\n数\n依\n赖\n图\n代\n码\n依\n赖\n图\n可\n以\n⽤\n在\nAI\nCR\n等\n场\n景\n中\n，\n它\n可\n以\n查\n询\n函\n数\n依\n赖\n的\n上\n下\n游\n，\n从\n⽽\n为\n⼤\n模\n型\n提\n供\n更\n完\n备\n的\n上\n下\n⽂\n信\n息\n。\n由\n于\n涉\n及\n到\n多\n种\n编\n程\n语\n⾔\n以\n及\n数\n据\n库\n语\n法\n差\n异\n，\n函\n数\n依\n赖\n图\n部\n分\n整\n体\n采\n⽤\n分\n层\n架\n构\n设\n计\n：\nParser\n适\n配\n层\n，\n所\n有\n语\n⾔\n的\n依\n赖\n图\n解\n析\n均\n通\n过\n拓\n展\n该\n层\n的\n⽅\n式\n实\n现\n，\n对\n外\n暴\n露\nAPI\n⼀\n致\n，\n内\n部\n采\n⽤\ntree-sitter\n对\n代\n码\n进\n⾏\n解\n析\n，\n分\n析\n其\n内\n部\n的\n函\n数\n依\n赖\n。\nGraphDB\n适\n配\n层\n，\n由\n于\n涉\n及\n到\nSDK\n与\nopenapi\n，\n故\n需\n要\n考\n虑\n本\n地\n与\n线\n上\n两\n种\n存\n储\n介\n质\n，\n所\n以\n对\nKuzuDB\n与\nPostgres\n数\n据\n库\n对\n外\n暴\n露\n接\n⼝\n标\n准\n化\n，\n⽆\n缝\n切\n换\n存\n储\n介\n质\n。\n函\n数\n依\n赖\n图\n⽣\n成\n时\n序\n图\n总结一下上面的时序图，SDK 内部会查询文件内部声明了哪些函数、函数内部有没有嵌套声明函数、函数内部调用了哪些函数、被调用的函数是来自内部声明还是外部引用。获取到这些信息之后可以合并为图数据结构存储在图数据库中。\n图\n数\n据\n存\n储\n⽅\n⾯\n，\n嵌\n⼊\n式\n图\n数\n据\n库\n采\n⽤\nKuzuDB\n，\n线\n上\n使\n⽤\nPostgres Age\n插\n件\n，\n⼆\n者\n均\n设计\n了\n如\n下\n表\n结\n构\n⽤\n于\n存\n储\n图\n数\n据\n结\n构\n：\nFiles:\n节\n点\n表\n，\n存\n储\n代\n码\n库\n中\n每\n个\n⽂\n件\n的\n基\n本\n信\n息\n。\nFunctions:\n节\n点\n表\n，\n存\n储\n代\n码\n中\n定\n义\n的\n函\n数\n信\n息\n。\nContains:\n关\n系\n表\n，\n表\n示\n⽂\n件\n与\n函\n数\n之\n间\n的\n包\n含\n关\n系\n(Files\n->\nFunctions)\n。\nFunctionCalls:\n关\n系\n表\n，\n记\n录\n函\n数\n之\n间\n的\n调\n⽤\n关\n系\n(Functions\n->\nFunctions)\n。\nFileCalls:\n关\n系\n表\n，\n记\n录\n⽂\n件\n直\n接\n调\n⽤\n函\n数\n的\n关\n系\n(Files\n->\nFunctions)\n。\nImports:\n关\n系\n表\n，\n表\n示\n⽂\n件\n之\n间\n的\n导\n⼊\n/\n导\n出\n关\n系\n(Files -> Files)\n。\nExports:\n关\n系\n表\n，\n表\n示\n⽂\n件\n导\n出\n函\n数\n的\n关\n系\n(Files\n->\nFunctions)\n。\nFunctionContains:\n关\n系\n表\n，\n表\n示\n函\n数\n内\n部\n定\n义\n了\n其\n他\n函\n数\n的\n关\n系\n（\n嵌\n套\n函\n数\n），(Functions -> Functions)。\n借\n助\n上\n述\n的\n图\n数\n据\n表\n可\n以\n查\n询\n函\n数\n的\n多\n级\n依\n赖\n。\n可\n以\n⽣\n成\n类\n似\n下\n⾯\n的\n关\n系\n图\n应⽤\nCodeWiz\n集\n成\nCodeWiz\n基\n于\ncodeindex\n的\n索\n引\n/\n检\n索\n能\n⼒\n实\n现\n了\n代\n码\n库\n索\n引\n功\n能\n，\n并\n为\n⼤\n模\n型\n提\n供\n检\n索\n⼯\n具\n，\n可\n在\nChat\n过\n程\n中\n获\n取\n上\n下\n⽂\n，\n从\n⽽\n更\n好\n地\n为\n⽤\n户\n解\n决\n问\n题\n。\nAI CR\nAgent\nAI CR\n是\n聚\n焦\n中\n后\n台\n场\n景\n、\n具\n有\n智\n能\n上\n下\n⽂\n分\n析\n能\n⼒\n的\nAgent\n应\n⽤\n，\n其\n内\n部\n依\n赖\n了\nCodeindex\n来\n获\n取\n函\n数\n依\n赖\n的\n上\n下\n游\n信\n息\n，\n以\n帮\n助\n⼤\n模\n型\n更\n好\n地\n判\n断\n当\n前\n变\n更\n是\n否\n对\n已\n有\n功\n能\n产\n⽣\n影\n响\n。\nCodeWiki\nCodeWiki\n可\n根\n据\n仓\n库\n中\n的\n代\n码\n基\n于\nQwen\n⼤\n模\n型\n⽣\n成\nwiki\n⽂\n档\n。\nCodeindex\n索\n引\n过\n程\n中\n会\n⽣\n成\n代\n码\n⽚\n段\n以\n及\n全\n⽂\n语\n义\n化\n摘\n要\n，\n将\n⽂\n件\n路\n径\n及\n其\n摘\n要\n发\n送\n给\n⼤\n模\n型\n可\n以\n帮\n助\n⼤\n模\n型\n更\n准\n确\n地\n输\n出\nWiki\n结\n构\n，\nCodewiki\n前\n置\n会\n先\n⽣\n成\n对\n应\n仓\n库\n的\nCodeindex\n索\n引\n，\n后\n续\n会\n基\n于\n其\n拆\n分\n的\n代\n码\n⽚\n段\n以\n及\n语\n义\n化\n摘\n要\n⽣\n成\n⽂\n档\n。\n总结\n总\n结\n⼀\n下\n，\nCodeindex\n是\n⼀\n个\n代\n码\n语\n义\n化\n索\n引\n&\n检\n索\n⼯\n具\n，\n并\n且\n可\n以\n⽣\n成\n代\n码\n⽚\n段\n/\n⽂\n件\n级\n别\n的\n语\n义\n化\n摘\n要\n和\n函\n数\n依\n赖\n图\n，\n你\n可\n以\n使\n⽤\n这\n些\n能\n⼒\n来\n构\n建\n你\n的\nAI\n应\n⽤\n。\n⽬\n前\nCodeindex\n同\n时\n提\n供\n了\nOpenAPI\n和\nSDK\n两\n种\n⽅\n式\n，\nOpenAPI\n中\n已\n经\n配\n置\n好\n了\nSDK\n，\n只\n需\n要\n传\n⼊\n你\n的\n仓\n库\n信\n息\n就\n可\n以\n为\n你\n的\n仓\n库\n⽣\n成\n索\n引\n。\n团队介绍\n本文作者\n崇野\n，来自\n淘天集团-跨端技术团队。本团队服务于淘宝基础用户产品，是淘宝重要的业务线之一。团队以前端、Weex、Native端的技术解决方案框架和研发模式不断完善自己，持续探索端智能等创新，打造极致的体验和工程技术，保障多端设备的适配和稳定运行，致力于让亿级规模的交付能够更丝滑、更稳定。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "transfer_agent": 0.46,
+        "irrelevant": 0.54,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.66,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.12,
+        "2": 0.77,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.35,
+      "probabilities": {
+        "0": 0.27,
+        "1": 0.3,
+        "2": 0.25,
+        "3": 0.17,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.17,
+      "probabilities": {
+        "0": 0.88,
+        "1": 0.09,
+        "2": 0.03,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.05,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.88,
+        "3": 0.08,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.01,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.12,
+        "4": 0.64,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.66,
+      "probabilities": {
+        "0": 0.49,
+        "1": 0.4,
+        "2": 0.09,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6455,
+    "outputTokens": 173,
+    "totalTokens": 6628
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.42,
+        "relevance": 0.77,
+        "grounding": 0.41,
+        "decision_action": 0.89,
+        "evidence": 0.92,
+        "actionability": 0.33,
+        "anti_hype": 0.56
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179893904,
+                "endTime": 1791179894078,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00027111",
+      "marketCost": "0.00027111",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00027111",
+      "inferenceCost": "0.00027111",
+      "inputInferenceCost": "0.00027111",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8B40QFR8TGQPJRSR3GPX"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:14 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::4pkr5-1791179893881-328d5438f091"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "transfer_agent": 0.46,
+            "irrelevant": 0.54,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.66,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.12,
+            "2": 0.77,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.35,
+          "probabilities": {
+            "0": 0.27,
+            "1": 0.3,
+            "2": 0.25,
+            "3": 0.17,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.17,
+          "probabilities": {
+            "0": 0.88,
+            "1": 0.09,
+            "2": 0.03,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.05,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.88,
+            "3": 0.08,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.01,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.12,
+            "4": 0.64,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.66,
+          "probabilities": {
+            "0": 0.49,
+            "1": 0.4,
+            "2": 0.09,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6455,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.42,
+            "relevance": 0.77,
+            "grounding": 0.41,
+            "decision_action": 0.89,
+            "evidence": 0.92,
+            "actionability": 0.33,
+            "anti_hype": 0.56
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179893904,
+                    "endTime": 1791179894078,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00027111",
+          "marketCost": "0.00027111",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00027111",
+          "inferenceCost": "0.00027111",
+          "inputInferenceCost": "0.00027111",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8B40QFR8TGQPJRSR3GPX"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:13.313Z"
+  }
+}

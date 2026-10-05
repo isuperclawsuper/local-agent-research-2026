@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "271431736809744384",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "工作流的 Skill 怎么写？从 7 个顶级 Skill 中提炼的模式与最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559690&idx=1&sn=fed34d2ade198ea8fb75ad5b768c9229",
+      "date": "2026-04-27T00:54:00.012Z",
+      "chars": 9210,
+      "text": "青斧\n2026-04-27 08:54\n浙江\n一、Skill 是什么\nSkill 是一个文件夹，核心是\nSKILL.md\n文件，使用\nYAML frontmatter + Markdown\n正文\n的格式。当 LLM 判断需要某个\nSkill\n时，会调用\nskill\n工具加载它，SKILL.md 的全部内容会作为 tool-result 注入到对话上下文中，LLM 读到后自主决定怎么执行。\nmy\n-skill/\n├── SKILL.md\n# 主文件（必须）\n├── scripts/\n# 可执行脚本（可选）\n├── references/\n# 详细参考文档（可选，按需加载）\n├── resources/\n# 模板、清单等资源（可选）\n└── examples/\n# 示例（可选）\n关键机制\n：\nSkill 本质是\"知识注入\"——它不会动态生成新工具，而是把指令文本注入到 LLM 的上下文中，LLM 用已有的工具（bash、read、edit 等）来执行这些指令。\n二、Frontmatter：\n决定 Skill 是否被加载的\"门面\"\n2.1 必填字段\n字段\n作用\n示例\nname\n唯一标识符，小写连字符\ntest-driven-development\ndescription\n最关键\n——LLM 通过它决定是否加载\n见下方对比\n2.2 Description 的写法决定加载率\n# ✅ 好的 description — 包含触发短语和关键词\ndescription: Deploy applications\nand\nwebsites to Vercel. Use when the user\nrequests deployment actions like\n\"deploy my app\"\n,\n\"push this live\"\n,\nor\n\"create a preview deployment\"\n.\n# ✅ 好的 description — 定义时序位置\ndescription: Use when implementing\nany\nfeature\nor\nbugfix, before writing\nimplementation code\n# ❌ 差的 description — 太模糊\ndescription: Helps\nwith\ndeployment stuff\n核心原则\n：\n列举触发短语\n：\n把用户可能说的话写进去（\"deploy my app\"、\"push this live\"）\n定义时序位置\n：\n说明\"在什么之前/之后\"使用（\"before writing implementation code\"）\n包含产品关键词\n：\n如果覆盖大平台，把所有产品名列出来\n2.3 可选扩展字段\n从 7 个 Skill 中观察到的扩展字段：\n字段\n来源\n作用\nreferences\nOpenCode cloudflare\n声明最重要的参考文档\nallowed-tools\nGoogle Labs stitch-loop\n声明需要的工具权限\ntype\nDean Peters discovery-process\n声明 Skill 类型（workflow/component）\nbest_for\nDean Peters discovery-process\n最适合的场景列表\nscenarios\nDean Peters discovery-process\n具体的触发场景示例\nestimated_time\nDean Peters discovery-process\n预估执行时间\n三、5 种核心设计模式\n模式 1：线性流程\n适用场景\n：\n部署、安装、迁移等有明确步骤的操作。\n代表\n：\nopenai/skills — vercel-deploy\n（77 行）\n结构\n：\n#\n标题\n#\n# Prerequisites（前置条件）\n#\n# Quick Start（主流程：Step 1 → 2 → 3）\n#\n# Fallback（降级方案）\n#\n# Troubleshooting（故障排除）\n关键技巧\n：\n技巧\n示例\n为什么有效\n安全默认值\n\"Always deploy as preview, not production\"\n防止 LLM 做出危险操作\n具体命令\n每步给出可直接执行的 bash 命令\nLLM 不需要猜测\n超时提示\n\"Use a 10 minute (600000ms) timeout\"\n防止 LLM 因超时中断\n降级方案\nCLI 失败有 Fallback 脚本\n提供 B 计划\n负面指令\n\"Do not curl the deployed URL to verify\"\n明确禁止不该做的事\n适用判断\n：\n如果你的 Skill 可以用\"先做 A，再做 B，最后做 C\"描述，就用线性模式。\n模式 2：决策树 + 按需加载\n适用场景\n：\n大型平台选型、产品导航、问题诊断。\n代表\n：\nopenai/skills — cloudflare-deploy\n（224 行）\n结构\n：\n#\n标题\n#\n# Authentication（认证前置）\n#\n# Quick Decision Trees（决策树）\n#\n## \"I need to run code\"（按用户意图分类）\n#\n## \"I need to store data\"\n#\n## \"I need AI/ML\"\n#\n# Product Index（产品索引表）\n关键技巧\n：\n技巧\n示例\n为什么有效\n用户意图分类\n\"I need to run code\" 而非 \"Compute products\"\n用用户语言而非技术术语\n树形导航\n├─ 边缘无服务器函数 → workers/\nLLM 快速定位正确产品\n渐进式披露\n主文件 7KB，references/ 按需展开到几十万字\n不浪费上下文窗口\n产品索引表\nProduct → Reference 的映射表\n结构化的快速查找\n适用判断\n：\n如果你的 Skill 覆盖的知识域有 10+ 个分支，且每个分支都有大量详细文档，就用决策树模式。\n进阶\n：\n同一个知识域可以拆成两个 Skill——\n导航型\n（cloudflare）：只做选型，不涉及操作\n操作型\n（cloudflare-deploy）：包含认证、命令、故障排除\n模式 3：循环迭代\n适用场景\n：\nTDD、代码审查、设计评审等需要反复执行的流程。\n代表\n：\nobra/superpowers — test-driven-development\n（371 行）\n结构\n：\n#\n标题\n#\n# The Iron Law（铁律——不可违反的核心原则）\n#\n# Red-Green-Refactor（循环体）\n#\n## RED — 写失败的测试\n#\n## Verify RED — 验证确实失败\n#\n## GREEN — 写最少的代码\n#\n## Verify GREEN — 验证确实通过\n#\n## REFACTOR — 清理\n#\n## Repeat（回到 RED）\n#\n# Common Rationalizations（借口反驳表）\n#\n# Verification Checklist（退出条件）\n关键技巧\n：\n技巧\n示例\n为什么有效\n强硬语气\n\"Delete it. Start over.\"\nLLM 倾向于\"灵活变通\"，强硬语气提高遵从率\nGood/Bad 对比\n用\n<Good>\n和\n<Bad>\n标签包裹代码示例\n对比教学效果最好\n借口反驳表\n预判 LLM 可能的 12 种偷懒借口并逐一反驳\n堵死所有逃避路径\n验证清单\n8 项 checklist 作为循环退出条件\n确保质量达标才能结束\n人类兜底\n\"ask your human partner\"\n不确定时交给人\n适用判断\n：\n如果你的 Skill 需要 LLM 反复执行\"做→验证→改进\"的循环，就用迭代模式。\n模式 4：接力棒循环（跨 Session 持久化）\n适用场景\n：\n多次迭代的长期项目，需要跨多个 session 持续工作。\n代表\n：\ngoogle-labs-code/stitch-skills — stitch-loop\n（203 行）\nhttps://github.com/google-labs-code/stitch-skills/tree/main/skills/stitch-loop\n结构\n：\n#\n标题\n#\n# Overview（接力棒模式概述）\n#\n# The Baton System（接力棒文件规范）\n#\n# Execution Protocol（6 步执行协议）\n#\n## Step 1: Read the Baton（读接力棒）\n#\n## Step 2: Consult Context Files（查阅上下文）\n#\n## Step 3: Generate（执行任务）\n#\n## Step 4: Integrate（集成结果）\n#\n## Step 5: Update Documentation（更新文档）\n#\n## Step 6: Prepare the Next Baton ⚠️（写下一个接力棒——关键！）\n#\n# File Structure Reference（文件协议）\n#\n# Orchestration Options（编排方式）\n关键技巧\n：\n技巧\n示例\n为什么有效\n文件即状态\nnext-prompt.md\n作为接力棒\nLLM 不需要记住\"上次做到哪了\"\n续命机制\nStep 6 标记为 Critical + MUST\n忘了写接力棒循环就断了\n文件协议\n每个文件有明确职责\nLLM 只需按协议读写文件\n编排无关\nCI/CD、人在回路、Agent 链都能驱动\n同一个 Skill 适配多种自动化环境\n适用判断\n：\n如果你的 Skill 需要跨多个 session 持续工作，或者需要多个 Agent 协作，就用接力棒模式。\n与模式 3 的区别\n：\n维度\n循环迭代（TDD）\n接力棒循环（Stitch Loop）\n状态存储\nLLM 对话上下文\n外部文件系统\n跨 session\n❌\n✅\n循环退出\nChecklist 全部打勾\n路线图清空\n适用时长\n单次会话（分钟~小时）\n长期项目（天~周）\n模式 5：多阶段 + 检查点 + Skill 编排\n适用场景\n：\n复杂的多周流程，需要在关键节点做 Go/No-Go 决策。\n代表\n：\ndeanpeters/Product-Manager-Skills — discovery-process\n（502 行）\n结构\n：\n#\n标题\n#\n# Key Concepts（核心概念 + 反模式）\n#\n# Phase 1: Frame the Problem（阶段 1）\n#\n## Activities（调用哪些子 Skill）\n#\n## Outputs（阶段产出）\n#\n## Decision Point 1（检查点：YES/NO + 时间影响）\n#\n# Phase 2-6...（重复相同结构）\n#\n# Complete Workflow（端到端时间线）\n#\n# Common Pitfalls（常见陷阱）\n#\n# References（引用的子 Skill 列表）\n关键技巧\n：\n技巧\n示例\n为什么有效\n统一阶段模板\n每个 Phase 都有 Activities → Outputs → Decision Point\nLLM 快速理解结构\n决策检查点\n\"达到饱和了吗？YES → 下一阶段，NO → +1 周\"\n防止盲目推进\nSkill 编排\n调度 10+ 个子 Skill 完成各阶段\n编排器模式，大 Skill 调度小 Skill\n时间影响\n每个 NO 路径标注\"+2-3 days\"、\"+1 week\"\n让用户了解延迟成本\n交互协议分离\n引用\nworkshop-facilitation\n定义交互方式\n关注点分离\n适用判断\n：\n如果你的 Skill 跨越多天/多周，有明确的阶段划分和 Go/No-Go 决策点，就用多阶段模式。\n特殊模式：思维框架（控制 LLM \"怎么想\"）\n适用场景\n：\n安全审计、代码审查、架构分析等需要深度思考的场景。\n代表\n：\ntrailofbits/skills — audit-context-building\n（302 行）\n结构\n：\n#\n标题\n#\n# Purpose（定位：控制思维方式，不是控制行为）\n#\n# When to Use / When NOT to Use\n#\n# Rationalizations（借口反驳表）\n#\n# Phase 1: Initial Orientation（定向扫描）\n#\n# Phase 2: Ultra-Granular Function Analysis（逐行分析——核心）\n#\n## Per-Function Checklist（函数微分析清单）\n#\n## Cross-Function Flow Analysis（跨函数追踪）\n#\n## Output Requirements（输出格式 + 量化阈值）\n#\n## Completeness Checklist（完整性检查）\n#\n# Phase 3: Global System Understanding（全局理解）\n#\n# Stability Rules（反幻觉规则）\n#\n# Non-Goals（明确禁止做的事）\n关键技巧\n：\n技巧\n示例\n为什么有效\n思维工具\n第一性原理、5 Why、5 How\n给 LLM 分析框架而非具体命令\n量化阈值\n\"每个函数最少 3 个不变量、5 个假设\"\n强制 LLM 达到足够的分析深度\n非目标约束\n\"不要识别漏洞、不要提出修复\"\n克制 LLM 最想做的事，先理解再判断\n反幻觉规则\n\"Never reshape evidence to fit earlier assumptions\"\n防止 LLM 自我欺骗\n子 Agent 指导\n何时以及如何使用 function-analyzer Agent\n分而治之\n适用判断\n：\n如果你的 Skill 需要 LLM 进行深度分析而非快速执行，需要控制的是\"思维质量\"而非\"操作步骤\"，就用思维框架模式。\n四、通用写作技巧\n4.1 防止 LLM 偷懒的 4 种武器\n武器\n原理\n示例来源\n强硬语气\nLLM 对命令式语气的遵从率更高\nTDD：\"Delete it. Start over.\"\n借口反驳表\n预判 LLM 的自我合理化路径并堵死\nTDD：12 种借口 + 反驳；审计：6 种借口\n量化阈值\n给出硬性的最低标准\n审计：\"最少 3 个不变量、5 个假设\"\n负面指令\n明确说\"不要做 X\"\nvercel-deploy：\"Do not curl the URL\"\n4.2 教学的 3 种有效方式\n方式\n原理\n示例来源\nGood/Bad 对比\n对比学习效果最好\nTDD：\n<Good>\nvs\n<Bad>\n代码示例\n具体命令\nLLM 擅长执行具体指令\nvercel-deploy：每步都有 bash 命令\n完整示例\n展示期望的输出格式\n审计：引用\nFUNCTION_MICRO_ANALYSIS_EXAMPLE.md\n4.3 安全与边界的 3 条原则\n原则\n做法\n示例来源\n安全默认值\n默认选择最安全的选项\nvercel-deploy：\"Always deploy as preview\"\n权限最小化\n只在必要时提升权限\nvercel-deploy：\"Do not escalate the installation check\"\n人类兜底\n不确定时交给人\nTDD：\"ask your human partner\"\n4.4 知识组织的 3 层架构\n第 1 层：Frontmatter（~100 tokens）\n→ LLM 扫描所有 Skill 的 description，决定是否加载\n第 2 层：SKILL.md 正文（<5K tokens）\n→ 核心指令、决策树、流程步骤\n第 3 层：references/ 和 resources/（按需加载）\n→ 详细文档、示例、清单，LLM 用\nread\n工具按需读取\nToken 预算参考\n：\n层级\nToken 预算\n内容\nFrontmatter\n~100 tokens\nname + description\n主文件\n2K-5K tokens\n核心指令\n参考文档（单个）\n1K-3K tokens\n按需加载\n总上下文占用\n<10K tokens\n主文件 + 1-2 个参考文档\n五、模式选择决策树\n你的\nSkill\n需要做什么？\n│\n├─\n执行一个有明确步骤的操作\n│\n└─\n→\n模式\n1\n：线性流程\n│\n├─\n在大量选项中帮用户选择正确的方向\n│\n└─\n→\n模式\n2\n：决策树\n+\n按需加载\n│\n├─\n在单次会话中反复执行\n\"做→验证→改进\"\n│\n└─\n→\n模式\n3\n：循环迭代\n│\n├─\n跨多个 session 持续推进一个长期项目\n│\n└─\n→\n模式\n4\n：接力棒循环\n│\n├─\n跨越多天\n/多周，有阶段划分和 Go/\nNo\n-\nGo\n决策\n│\n└─\n→\n模式\n5\n：多阶段\n+\n检查点\n│\n└─\n需要\nLLM\n进行深度分析而非快速执行\n└─\n→\n特殊模式：思维框架\n六、快速上手模板\n最小可用 Skill（线性模式）\n---\nname: my-skill\ndescription: [一句话描述做什么 + 什么时候触发]\n---\n# Skill 名称\n[一句话核心原则 + 安全默认值]\n## Prerequisites\n-\n[前置条件 1]\n-\n[前置条件 2]\n## Steps\n### Step 1: [动作]\n\\\n`\\`\n\\`bash\n[具体命令]\n\\\n`\\`\n\\`\n### Step 2: [动作]\n[具体指令]\n### Step 3: [动作]\n[具体指令]\n## Troubleshooting\n| Issue | Solution |\n|-------|----------|\n| [问题 1] | [解决方案] |\n循环迭代 Skill 模板\n---\nname: my-loop-skill\ndescription: [描述 + 触发时机]\n---\n# Skill 名称\n#\n# Core Principle\n[不可违反的铁律]\n#\n# The Loop\n#\n## Phase A — [动作]\n[具体指令]\n#\n## Verify A\n[验证命令]\n#\n## Phase B — [动作]\n[具体指令]\n#\n## Verify B\n[验证命令]\n#\n## Repeat\n回到 Phase A。\n#\n# Rationalizations\n| Excuse | Reality |\n|--------|---------|\n| \"[借口 1]\" | [反驳] |\n#\n# Completion Checklist\n- [ ] [条件 1]\n- [ ] [条件 2]\n七、参考资源\n官方规范\n1. Agent Skills 开放标准\nhttps://agentskills.io/\n2. anthropics/skills — 官方模板\nhttps://github.com/anthropics/skills/tree/main/template\n3. anthropics/skills — 规范文档\nhttps://github.com/anthropics/skills/tree/main/spec\n精选仓库\n1. openai/skills\n— OpenAI Codex 官方 Skill 目录\nhttps://github.com/openai/skills\n2. obra/superpowers\n— 14 个工作流型 Skill\nhttps://github.com/obra/superpowers\n3. google-labs-code/stitch-skills\n— 设计到代码的 Skill\nhttps://github.com/google-labs-code/stitch-skills\n4. deanpeters/Product-Manager-Skills\n— 40+ 产品管理 Skill\nhttps://github.com/deanpeters/Product-Manager-Skills\n5. trailofbits/skills\n— 安全审计 Skill\nhttps://github.com/trailofbits/skills\n6. openclaw/clawhub\n— Skill 注册中心\nhttps://github.com/openclaw/clawhub\n精选列表\n1. VoltAgent/awesome-agent-skills\n— 500+ Skill 索引\nhttps://github.com/VoltAgent/awesome-agent-skills\n2. travisvn/awesome-claude-skills\n— 精选列表 + Skill vs MCP 对比\nhttps://github.com/travisvn/awesome-claude-skills\n八、本文分析的 7 个 Skill 速查表\n#\nSkill\n来源\n模式\n行数\n一句话精髓\n1\nvercel-deploy\nOpenAI\n线性\n77\n最小但完整的 Skill 模板\n2\ncloudflare-deploy\nOpenAI\n线性+决策树\n224\n大平台的渐进式披露\n3\ncloudflare\nOpenCode\n纯决策树\n211\n导航型 vs 操作型的区别\n4\ntest-driven-development\nobra\n循环迭代\n371\n堵死 LLM 偷懒的所有退路\n5\nstitch-loop\nGoogle Labs\n接力棒循环\n203\n文件即状态，跨 session 持久化\n6\ndiscovery-process\nDean Peters\n多阶段+检查点\n502\n编排器模式，调度 10+ 子 Skill\n7\naudit-context-building\nTrail of Bits\n思维框架\n302\n控制 LLM \"怎么想\"而非\"做什么\"\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

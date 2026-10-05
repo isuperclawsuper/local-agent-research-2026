@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "256335049560949760",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "重磅！腾讯QQ机器人接入OpenClaw，官方“养虾”指南来了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800749&idx=1&sn=81457fa979262f0a230b4ebba2a9aa7c",
+      "date": "2026-03-16T09:37:00.959Z",
+      "chars": 7902,
+      "text": "原创\n腾讯程序员\n2026-03-16 17:37\n广东\nQQBot快速接入、插件使用、能力示例&Skills应用\n作者：腾讯\nQQ机器人团队\n快速注册一个 QQBot\nQQ 机器人开放平台提供了快捷创建 QQ 机器人\n的通道，三步即可创建一个可用的 QQBot，用于接入 OpenClaw。\nPC 端打开：\nhttps://q.qq.com/qqbot/openclaw/login.html\n，QQ 扫码登录。\n点击创建机器人。点击后会立刻成功，此时 BOT 会给你 QQ 发一条成功消息，头像昵称可按用户喜好自定义编辑。\n复制 AppID 和 AppSecret 到 🦞 部署地配置即可，配置成功后，即可通过 QQ 使唤你的 🦞。\n这个 BOT 仅创建人可用，暂时不支持将 BOT 拉入QQ群内。\n机器人创建成功后，此时你的 BOT 还没有“灵魂”，需要接入到你自己的 OpenClaw 运行环境，这里也推荐使用腾讯云的 Lighthouse 接入。\n“云上养虾”教程：\n🔥玩转 OpenClaw｜云上 OpenClaw(Clawdbot) 快速接入 QQ 指南\nOpenClaw 官方安装教程：\nOpenClaw — Personal AI Assistant\n其实也并不复杂，在终端执行个命令，按部就班配置一些 model、skills、channel 即可。\nQQ 作为 OpenClaw 的通讯渠道，需要在 OpenClaw 安装配置 QQBot 插件，才能与 QQBot 通信。多数云平台（如腾讯云）帮你简化了该步骤，用户仅需复制粘贴相关密钥到云上的管理端页面即可。以下内容讲述如何手动安装 QQBot 插件与更新。\nQQ Bot 插件消息收发能力总览：\n在原生 OpenClaw 中安装 QQBot 插件\n本文介绍在原生 OpenClaw 环境中安装或升级 QQBot 插件的几种常见方式。你可以根据自己的使用习惯，选择远程一键执行、本地脚本执行，或手动安装\nQQBot 插件官方仓库：\nhttps://github.com/tencent-connect/openclaw-qqbot\n欢迎大家前往查看最新代码与更新说明，也欢迎通过 Issue 和 PR 提出问题反馈与改进建议，共同完善插件能力与接入体验。\n。\n方式一：远程一键安装升级（推荐）\n适合希望快速完成安装或升级的场景，无需手动 clone 仓库。\n首次安装时，需提供 QQBot 通道凭证：\ncurl -fsSL\nhttps://raw.githubusercontent.com/tencent-connect/openclaw-qqbot/main/scripts/upgrade-via-npm.sh\n\\\n| bash -s -- --appid YOUR_APPID --secret YOUR_SECRET\n该命令会自动完成以下步骤：\n下载安装脚本\n清理旧插件\n安装新插件\n配置 QQBot 通道\n启动或重启 OpenClaw 服务\n完成后即可打开 QQ 开始使用。\n如果此前已经完成过通道配置，后续升级可直接执行：\ncurl -fsSL\nhttps://raw.githubusercontent.com/tencent-connect/openclaw-qqbot/main/scripts/upgrade-via-npm.sh\n| bash\n说明：\n如果想要升级QQBot官方插件版本，也可以执行该脚本，这个脚本\n是带升级能力的\n，而且默认行为是\n升级到 npm 上的 latest 版本\n。如果是想安装指定版本，后面可以跟\n--version\n命令：\ncurl -fsSL\nhttps://raw.githubusercontent.com/tencent-connect/openclaw-qqbot/main/scripts/upgrade-via-npm.sh\n| bash -s -- --version 1.5.7 --appid YOUR_APPID --secret YOUR_SECRET\n常用参数如下：\n参数\n说明\n--appid <id> --secret <secret>\n配置通道。首次安装必填，或在更换凭证时使用\n--version <版本号>\n安装指定版本\n--self-version\n升级到当前仓库 package.json 里声明的版本\n-h\n/\n--help\n查看完整帮助信息\n方式二：源码安装升级\n适合希望先查看仓库内容、在本地执行脚本，或希望更灵活控制安装流程的场景。\n先拉取仓库：\ngit\nclone\nhttps://github.com/tencent-connect/openclaw-qqbot.git\ncd\nopenclaw-qqbot\n通过本地脚本进行源码安装或升级（该脚本同样具有升级到最新版本的能力）：\nbash ./scripts/upgrade-via-source.sh --appid YOUR_APPID --secret YOUR_SECRET\n说明：脚本执行到后面会让选择\n是否后台重启 openclaw 网关服务？[Y/n]\n，一般选择\nY\n。如果后台启动正常，会执行\nopenclaw logs --follow\n持续输出 OpenClaw 运行日志。后面看到有日志持续输出代表已经正常启动了，\n不代表还没升级完，可以\nCtrl+C\n关掉前台日志\n。\n正常执行脚本到最后会输出日志：\n方式三：npm方式手动安装升级\n适合希望完全手动控制安装步骤，或需要排查安装问题的场景。\n安装命令：\n# （首次安装可跳过）卸载qqbot旧插件，卸载openclaw-qqbot旧版本插件\nopenclaw plugins uninstall qqbot\nopenclaw plugins uninstall openclaw-qqbot\n# 安装openclaw-qqbot最新版本\nopenclaw plugins install @tencent-connect/openclaw-qqbot@latest\n# 配置通道（首次安装必做）\nopenclaw channels add --channel qqbot --token\n\"AppID:AppSecret\"\n# 启动 / 重启服务\nopenclaw gateway restart\n已安装官方openclaw-qqbot，升级版本命令：\n# 通过npm 包升级（适用于之前插件本身就是通过可更新来源安装的情况：openclaw plugins install @tencent-connect/openclaw-qqbot）\nopenclaw plugins update openclaw-qqbot\n# 启动 / 重启服务\nopenclaw gateway restart\n安装选择建议\n想快速安装：优先使用\n方式一：远程一键安装升级\n想先查看脚本再执行：使用\n方式二：本地源码安装升级\n想自行控制每一步：使用\n方式三：npm方式手动安装升级\n安装结果检查\nQQBot 插件是否正常加载\n安装完成后，可通过以下命令检查插件是否已成功加载：\nopenclaw plugins list | grep openclaw-qqbot\n如果输出中存在对应插件条目，且状态为\nloaded\n，说明\nQQBot 插件已经安装好了，而且已经被 OpenClaw 成功加载。\n但并不能说明通道一定连上了。\nQQBot 通道是否正常连通\n执行以下命令查看通道状态：\nopenclaw channels status\nopenclaw channels status\n中 QQ Bot 通道显示为\nenabled, configured, running\n，且机器人实际可以正常收发消息或\nin/out\n时间持续更新时，可认为QQBot 通道已正常连通。\n这里的\nin:2m ago, out:2m ago\n说明：\nin:2m ago\n：2 分钟前还有入站消息\nout:2m ago\n：2 分钟前还有出站消息\n插件的能力及消息示例\nOpenClaw QQBot 插件提供了\n富媒体收发支持\n，覆盖图片、语音、视频、文件的双向交互。需要声明的是，QQ Bot 插件仅作为消息通道使用——负责在 QQ 与 OpenClaw 之间中转消息。诸如图像理解、语音转录、绘图等功能，取决于您所配置的 AI 模型以及 OpenClaw 内部已安装的技能，而非本插件本身。\nAI 能接收什么\n除了接收日常的文本消息以外，QQBot 通道还支持接收多种媒体消息。\n接收语音配置示例\n其中语音消息（STT）需要单独配置模型能力，用于语音转文字后交给文本大模型处理，配置方式如下：\nSTT 支持两级配置，按优先级查找：\nchannels.qqbot.stt\n（插件专属）->\ntools.media.audio.models[0]\n（框架级回退）。以框架级配置为例：\n{\n\"tools\"\n: {\n\"media\"\n: {\n\"audio\"\n: {\n\"models\"\n: [\n{\n\"provider\"\n:\n\"xxx\"\n,\n\"model\"\n:\n\"模型名称\"\n}\n]\n}\n}\n}\n}\n这里的\nprovider\n引用\nmodels.providers\n中的 key，自动继承\nbaseUrl\n和\napiKey\n，支持任何 OpenAI 兼容的 STT 接口，也可在条目中直接写\nbaseUrl\n/\napiKey\n覆盖。\n另外，插件版本1.5.6已经支持当 STT 未配置或转写失败时，使用 QQ 平台内置 ASR 文本作为低置信度兜底结果，方便没有STT模型的用户可以使用QQ机器人平台侧提供的语音转文本结果。\nAI 能发送什么\n除了常用的 markdown 消息、文本消息以外，QQBot 插件通道支持发送语音、文件、图片、视频等常用的多媒体消息。\n发送语音配置示例\n语音（TTS）需要单独配置模型能力，把文字转成语音通过 QQ 发给你。配置 TTS 后，AI 可以把文字变成语音消息发出来。比如让它讲个笑话，回复直接就是一条语音。\nTTS 同样支持两级配置：\nchannels.qqbot.tts\n（插件专属）->\nmessages.tts\n（框架级回退）。以插件专属配置为例：\n{\n\"channels\"\n: {\n\"qqbot\"\n: {\n\"tts\"\n: {\n\"provider\"\n:\n\"xxx\"\n,\n\"model\"\n:\n\"模型名称\"\n,\n\"voice\"\n:\n\"模型名称:音色名称\"\n}\n}\n}\n}\nprovider\n引用\nmodels.providers\n中的 key，自动继承\nbaseUrl\n和\napiKey\n。可通过\nvoice\n选择音色，设置\nenabled: false\n可禁用。\n另外如果没有现成可使用的 TTS 模型，也可以使用 TTS/Edge（OpenClaw 原生支持的一种 TTS provider），配置如下（在\nmessages\n里增加\ntts\n的配置）：\n{\n\"messages\"\n: {\n\"tts\"\n: {\n\"auto\"\n:\n\"inbound\"\n,\n\"provider\"\n:\n\"edge\"\n,\n\"edge\"\n: {\n\"enabled\"\n:\ntrue\n,\n\"voice\"\n:\n\"zh-CN-XiaoxiaoNeural\"\n,\n\"lang\"\n:\n\"zh-CN\"\n}\n}\n}\n}\n验证通道发送图片或者文件正常\n可以用以下方式验证 QQ Bot 通道发送图片/文件能力是否正常：发给模型一张图片，让模型把这张图回给你。如果能正常回复，说明通道能力正常。注意，生成图片或者对文件进行理解等都是 OpenClaw 自己的能力，需要配置对应的模型或者 Skills，QQ Bot 插件只负责传输。\n体验演示场景\n以下是几个可以直接复现的玩法：\n如何配置 Skills\n在腾讯云 Lighthouse 安装 clawhub 的 Skills\n在 Lighthouse 实例的应用管理页面上可以直接安装 skills，如图：\n点击页面上【获取更多 skills】的链接跳到\n开源社区 ClawHub 的官网\n，选择你需要的 skills。注意这里 skills 的名字，就是点击跳转某个 skills 的页面链接 URL 最后的内容：\n确定名字后，直接在 Lighthouse 应用管理页面上点击【安装技能】即可。\n手动安装 clawhub 的 Skills\n如果想手动安装 ClawHub 上的 skills，具体步骤如下：\n# 1. 安装 clawhub cli\nnpm i -g clawhub\n# 2. 装完确定下是否可用：\nclawhub --\nhelp\n# 3. 进入 OpenClaw workspace\ncd\n~/.openclaw/workspace\n# 4. 搜索 skill\nclawhub search\n\"你想要的功能关键词\"\n# 5. 安装 skill\nclawhub install <skill-slug>\n# 6. 检查是否识别到\nopenclaw skills list\nopenclaw skills check\n# 7. 如需配置 API Key，则编辑配置文件\nvi ~/.openclaw/openclaw.json\n# 8. 重启 gateway\nopenclaw gateway restart\n# 9. 看日志\nopenclaw logs --follow\n# 10. 检查目前已经安装了哪些 skills\nopenclaw skills list --eligible\nopenclaw skills info <这里填 list 里显示的某个 skills 的名字>\n如果完成以上安装后，agent 提示仍找不到对应 skills，可以通过和 agent 对话的方式让 OpenClaw 分析问题并完成安装：\n也推荐大家遇到各种包括 skills 安装在内的问题时，尝试习惯通过和 agent 交流，让它帮你分析并解决问题。\n手动安装自己写的 Skills\n安装自己写的 skills，最主要的就是把你的 skills 建一个文件夹放在\n~/.openclaw/workspace/skills/\n目录下。\n这里提供了一个安装\nmy-demo-skill\n的简单示例：\n# 1. 创建 skills 目录，假设这里的 skills 叫 my-demo-skill\nmkdir -p ~/.openclaw/workspace/skills/my-demo-skill\n# 2. 写入 skills，或者把已经写好的 skills 放在对应目录下\ncat > ~/.openclaw/workspace/skills/my-demo-skill/SKILL.md <<\n'SKILL_EOF'\n---\nname: my_demo_skill\ndescription: A simple custom skill\nfor\ntesting.\n---\n# My Demo Skill\n当用户要求测试自定义 skill 时，优先遵循这里的说明。\n触发示例：\n- “调用 my demo skill”\n行为：\n- 回复：“已命中 my_demo_skill”\nSKILL_EOF\n# 3. 让 OpenClaw 重新发现这个 skill，可以通过对话让 agent “refresh skills”，或者直接重启 gateway\nopenclaw gateway restart\nopenclaw skills list\nopenclaw skills info my_demo_skill\n通过对话验证\nmy-demo-skill\n触发成功：\nFAQ（持续更新）\nQ：为什么一直输出“你好，我不能提供相关信息”？\nA：模型输入输出内容会进行安全审查，可以尝试以下方法：\n通过\n/new\n开启新对话\n更换模型后再试\nQ：为什么设置好 QQ 机器人信息后，与机器人对话时小灰条提示“我的灵魂不在线”等错误？\nA1：如果是第一次配置，OpenClaw 与机器人建立联系可能需要一点时间，可以尝试重启几次\nopenclaw gateway restart\nA2：如果原来已经有机器人，又重新更换配置了新的APPID，如果机器人无法回复：\n● 解决方式1：删除\n~/.openclaw/qqbot/sessions/session-default.json\n然后重启\n● 解决方式2：更新 QQBot 插件（见前文插件更新教程）\nA3：如果一直提示此错误，是因为机器人没有在线，检查机器人APPID和密钥配置是否正常。\nQ：机器人提示已经被注销怎么办？\nA：解决方案：检查是否删除了机器人，如果删除了7天内可以前往\nQQ开放平台\n进行恢复。\nQ：为什么在群里面@机器人，遇到提示：\"该机器人当前服务状态异常，暂时无法回复消息\"？创建的openclaw机器人是否支持加群？\nA：因为openclaw机器人暂不支持加群，仅支持个人用户私聊使用。如果有下一步支持计划，会及时更新文档通知大家。\nQ：快速创建的openclaw机器人是否支持在开放平台修改信息？\nA：支持，方式如下：\nQ：机器人为什么回复“401 not authorized”？\nA：模型配置没有成功，请注意检查下模型 api key 配置，注意并不是 qqbot 的 secret 哦。\nQ：机器人为什么回复“API rate limit reached. Please try again later.”\nA：模型调用频率太快了，请检查模型使用情况或更换模型。\nQ：如何联系官方人员？\nA：可加入讨论群、讨论频道或添加机器人进行反馈，见文本最后的二维码。\nQ：如何查询日志？\nA：请登录openclaw运行的机器，使用终端输入“openclaw logs --follow”以显示实时日志。\nQ：为什么openclaw机器人发不出图片？\nA：可以发一张图片让机器人原样会给你，验证下是通道的问题，还是模型没有画图skills工具。如果是需要画图能力，需要自己配置画图skills，一般需要自己购买生图模型获得生图的api key。\nQ：如果我从其他渠道的 qqbot 插件想升级到官方插件\n@tencent-connect/openclaw-qqbot\n，\n应该怎么操作？\nA：升级方式参考本文里的【原生 OpenClaw 安装插件 QQBot 插件】这部分内容。\n交流与反馈\n如果QQ 交流群已经满员，可前往 PC 管理端扫码添加最新群聊：\nhttps://q.qq.com/qqbot/openclaw/login.html\n最\n后，QQBot 官方接入指南仍在持续更新，欢迎访问在线文档\n《QQ机器人接入 OpenClaw 的官方“养虾”指南》\n查看最新内容。如果你在养虾过程中遇到问题，或有任何建议与反馈，也欢迎随时交流。我们会持续补充和完善文档内容，陪大家一起把虾养得更轻松、更顺手。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

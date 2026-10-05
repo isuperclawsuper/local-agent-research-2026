@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "ngineer角色）、企业级 Agent 编排平台\n典型场景示例\n：\n用户:\n\"帮我开发一个完整的电商后台管理系统\"\nCEO\nAgent\n: 拆为三大模块\n├── 前端经理\nAgent\n:\n│     ├──\nWorker\n: 实现商品列表页\n│     ├──\nWorker\n: 实现订单管理页\n│     └──\nWorker\n: 实现用户管理页\n├── 后端经理\nAgent\n:\n│     ├──\nWorker\n: 实现商品\nAPI\n│     ├──\nWorker\n: 实现订单\nAPI\n│     └──\nWorker\n: 实现用户\nAPI\n└── 测试经理\nAgent\n:\n├──\nWorker\n: 前端自动化测试\n└──\nWorker\n: 后端接口测试\n优势\n：适合超大型任务、自然模拟团队协作、每层只处理自己关心的粒度\n劣势\n：层级增加延迟和通信成本、容易\"传话走样\"（信息在层级间失真）、实现复杂度极高\n适用场景\n：大型工程项目（需要多模块协作、多角色分工）\n模式五：竞争选优（Competition / Voting）\n类比\n：考试阅卷——多位老师分别打分，取平均分或投票选出最佳答案。\n┌─────────────────────────────────────────────────────────────────┐\n│                    Competition 模式                               │\n│                                                                 │\n│                    ┌──────────────┐                              │\n│                    │   同一问题    │                              │\n│                    └──────┬───────┘                              │\n│                           │                                     │\n│              ┌────────────┼────────────┐                        │\n│              │            │            │  同一问题分发给多个Agent │\n│              ▼            ▼            ▼                        │\n│       ┌───────────┐┌───────────┐┌───────────┐                  │\n│       │ Agent\nA\n││ Agent\nB\n││ Agent C   │                  │\n│       │ (方案一)  ││ (方案二)  ││ (方案三)  │                  │\n│       │           ││           ││           │                  │\n│       │ 用GPT-\n4\no  ││ 用Claude  ││ 用Gemini  │  或同模型不同策略 │\n│       └─────┬─────┘└─────┬─────┘└─────┬─────┘                  │\n│             │            │            │                        │\n│             └────────────┼────────────┘                        │\n│                          │                                     │\n│                          ▼                                     │\n│              ┌────────────────────────┐                        │\n│              │      Judge Agent       │                        │\n│              │                        │                        │\n│              │  评估策略:              │                        │\n│              │  • 投票制（多数胜出）   │                        │\n│              │  • 评分制（打分选最高） │                        │\n│              │  • 综合制（取各方精华） │                        │\n│              └────────────────────────┘                        │\n│                          │                                     │\n│                          ▼                                     │\n│                    最优方案输出                                  │\n└─────────────────────────────────────────────────────────────────┘\n代表产品\n：LLM-as-Judge 框架、AlphaCode（生成大量代码候选 → 过滤选优）、self-consistency（多次采样投票）\n典型场景示例\n：\n问题:\n\"这段代码的 bug 在哪里？\"\nAgent\nA\n(逐行分析策略)\n:\n\"第15行的空指针检查缺失\"\nAgent\nB\n(执行追踪策略)\n:\n\"第15行 user 可能为 null，会崩\"\nAgent\nC\n(模式匹配策略)\n:\n\"第23行的循环边界有 off-by-one\"\nJudge: A 和 B 都指向第\n15\n行，高置信度 → 输出\n\"第15行空指针问题\"\nC 的发现作为补充建议\n优势\n：结果质量高（多方验证）、鲁棒性强（单个 Agent 失误不影响最终结果）、天然适合需要高可靠性的场景\n劣势\n：Token 成本是单 Agent 的 N 倍、延迟取决于最慢的 Agent、对简单问题过度使用是浪费\n适用场景\n：高可靠性要求（代码 bug 检测、安全审计）、创意生成（需要多样化方案）、决策质量要求极高\n模式六：评估反馈（Generator-Critic / Self-Refinement）\n类比\n：作者写初稿 → 编辑审稿批注 → 作者修改 → 再审 → 直到编辑满意。\n┌─────────────────────────────────────────────────────────────────┐\n│\nGenerator\n-\nCritic\n模式                          │\n│                                                                 │\n│         ┌───────────────────────────────────────────┐           │\n│         │                循环                        │           │\n│         │                                           │           │\n│         │  ┌──────────────┐     ┌──────────────┐   │           │\n│         │  │\nGenerator\n│     │\nCritic\n│   │           │\n│         │  │  (生成者)     │     │  (评估者)    │   │           │\n│         │  │              │     │              │   │           │\n│         │  │  生成/修改    │────→│  评估质量    │   │           │\n│         │  │  方案        │     │  给出反馈    │   │           │\n│         │  │              │←────│              │   │           │\n│         │  │  根据反馈    │     │  判断是否    │   │           │\n│         │  │  改进方案    │     │  达标        │   │           │\n│         │  └──────────────┘     └──────┬───────┘   │           │\n│         │                              │           │           │\n│         └──────────────────────────────┘           │           │\n│                                        │ 达标       │           │\n│                                        ▼           │           │\n│                                  输出最终结果       │           │\n│                                                     │           │\n│  最大迭代次数限制（防止无限循环）                      │           │\n└─────────────────────────────────────────────────────────────────┘\n代表产品\n：Reflexion、Self-Refine、Constitutional AI、本项目中 Skill 内的 ReAct + 验证步骤\n典型场景示例\n：\n任务:\n\"写一篇关于 RAG 的技术博客\"\n第\n1\n轮:\nGenerator\n: 生成初稿（\n2000\n字）\nCritic\n:\n\"缺少代码示例、RAG 评估部分太浅、没有图表\"\n→ 评分:\n6\n/\n10\n，不达标\n第\n2\n轮:\nGenerator\n: 基于反馈修改（加了代码示例、扩充评估、加了流程图）\nCritic\n:\n\"整体好多了，但开头太学术化，不够吸引人\"\n→ 评分:\n8\n/\n10\n，不达标\n第\n3\n轮:\nGenerator\n: 改写开头为案例引入\nCritic\n:\n\"很好，结构清晰、内容完整、表达生动\"\n→ 评分:\n9\n/\n10\n，达标 → 输出\n优势\n：输出质量持续提升、有明确的质量标准、生成者和评估者可以用不同模型（如生成用快模型、评估用强模型）\n劣势\n：多轮迭代增加延迟和成本、Critic 本身可能不可靠（\"评委水平不行\"）、可能过度修改（改了不该改的地方）\n适用场景\n：需要高质量输出的创作任务（写作、代码生成）、有明确评估标准的任务（测试通过/代码风格达标）\n模式七：动态路由（Router / Dispatch）\n类比\n：医院分诊台——护士根据症状把病人分配到不同科室的专科医生。\n┌─────────────────────────────────────────────────────────────────┐\n│                    Router 模式                                    │\n│                                                                 │\n│                    ┌──────────────┐                              │\n│                    │  用户请求    │                              │\n│                    └──────┬───────┘                              │\n│                           │                                     │\n│                    ┌──────▼───────┐                              │\n│                    │   Router     │                              │\n│                    │  (分诊台)    │                              │\n│                    │              │                              │\n│                    │ 意图识别:    │                              │\n│                    │ 写代码?      │                              │\n│                    │ 查日志?      │                              │\n│                    │ 问知识?      │                              │\n│                    │ 闲聊?        │                              │\n│                    └──────┬───────┘                              │\n│                           │                                     │\n│         ┌─────────────────┼─",
+      "fulltext_obtained": true,
+      "chunk_index": 6,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.19,
+        "transfer_business": 0.01,
+        "irrelevant": 0.15,
+        "transfer_agent": 0.65
+      }
+    },
+    "relevance": {
+      "score": 1.62,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.38,
+        "2": 0.59,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.98,
+      "probabilities": {
+        "0": 0.32,
+        "1": 0.41000000000000003,
+        "2": 0.26,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.58,
+      "probabilities": {
+        "0": 0.66,
+        "1": 0.15,
+        "2": 0.16,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.41,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.53,
+        "2": 0.38,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.67,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.13,
+        "2": 0.13,
+        "3": 0.6,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.82,
+      "probabilities": {
+        "0": 0,
+        "1": 0.06,
+        "2": 0.11,
+        "3": 0.78,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.68,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6374,
+    "outputTokens": 172,
+    "totalTokens": 6546
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.55,
+        "relevance": 0.72,
+        "grounding": 0.59,
+        "decision_action": 0.61,
+        "evidence": 0.66,
+        "actionability": 0.61,
+        "anti_hype": 0.81
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180419253,
+                "endTime": 1791180419426,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000267708",
+      "marketCost": "0.000267708",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000267708",
+      "inferenceCost": "0.000267708",
+      "inputInferenceCost": "0.000267708",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARC57BFYEW46XMKZHH510"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:06:59 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::8pmsk-1791180419233-8803c34cca10"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.19,
+            "transfer_business": 0.01,
+            "irrelevant": 0.15,
+            "transfer_agent": 0.65
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.62,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.38,
+            "2": 0.59,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.98,
+          "probabilities": {
+            "0": 0.32,
+            "1": 0.41000000000000003,
+            "2": 0.26,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.58,
+          "probabilities": {
+            "0": 0.66,
+            "1": 0.15,
+            "2": 0.16,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.41,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.53,
+            "2": 0.38,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.67,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.13,
+            "2": 0.13,
+            "3": 0.6,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.82,
+          "probabilities": {
+            "0": 0,
+            "1": 0.06,
+            "2": 0.11,
+            "3": 0.78,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.68
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6374,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.55,
+            "relevance": 0.72,
+            "grounding": 0.59,
+            "decision_action": 0.61,
+            "evidence": 0.66,
+            "actionability": 0.61,
+            "anti_hype": 0.81
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180419253,
+                    "endTime": 1791180419426,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000267708",
+          "marketCost": "0.000267708",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000267708",
+          "inferenceCost": "0.000267708",
+          "inputInferenceCost": "0.000267708",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARC57BFYEW46XMKZHH510"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:06:58.656Z"
+  }
+}

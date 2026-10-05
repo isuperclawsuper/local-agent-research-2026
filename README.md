@@ -28,7 +28,7 @@
 - feed-map.json：RSS与Folo ID映射。
 - SHA256SUMS：上传前文件校验值。
 
-本次 checkpoint 位于全年下载完成、全量 Jev 评分之前。Jev评分尚未执行。此前最新60篇评分不能代表全年结果。
+评分前 checkpoint 为 `5dc21ec`，原始正文和分页均保留。现在775篇已全部完成Jev评估：766篇单次全文、9篇由于输入长度上限改为完整连续分段评分，按段长加权汇总（非整体判断等价物）。详见 [深读报告](REPORT.md)、[全年索引](INDEX.md)、scores.csv、rubric.json及jev-input/jev-output。此前最新60篇评分不能代表全年结果。评分仅评估文字、不识别图中文字；未做专家校准，小分差无可靠统计意义。
 
 ## 安全和授权
 

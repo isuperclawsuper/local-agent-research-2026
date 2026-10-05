@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1157184638146252800",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "用 AI Skills 打通中间件迁移：定位服务从 Android 到鸿蒙的完整实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650544335&idx=1&sn=4bd077bfe079f01874d3cebe4b1e80ab",
+      "date": "2026-06-15T06:06:00.150Z",
+      "chars": 5104,
+      "text": "原创\n用户&内容技术\n2026-06-15 14:06\n浙江\nAndroid 迁移鸿蒙实战：用 AI Skills 解决领域知识断层，154 个服务节省 25 小时，实现从“面向人”到“面向 AI”的知识资产化转型。\n本文以Android到鸿蒙的定位服务迁移为实战案例，深入剖析了AI辅助开发中通用智能与领域知识断层的根本矛盾，提出并验证了“AI + Skills”解决方案。该方案通过将API映射、枚举细节、回调差异及常见陷阱等隐性知识转化为结构化、AI可读的Skills文档，明确了AI负责通用逻辑生成、Skills提供精准领域知识的分工模型，实现了从“面向人”到“面向AI”的知识传递转变。实践表明，相比纯AI翻译的低准确率和人工查源码的低效率，AI + Skills模式不仅将单服务迁移时间缩短至30分钟且零编译错误，更在154个服务的规模化迁移中节省25小时，实现了知识的资产化、可复用与持续演进，最终展望了从静态文档向知识图谱、主动建议及组织级知识中台发展的未来路径。\n引言：AI 辅助开发的根本矛盾\n又双叒叕经历从0到1翻译一个安卓应用到鸿蒙的需求，并且近期Skill的概念很火，想着能通过Skill真正的解决一些实际业务遇到的一些问题，所以开始着手维护一个鸿蒙依赖分析的Skill，为了协助Curosr更好的理解端侧的二方包，最后我得出了两个暴论：\n1、目前很多知识库是冗余的，随着模型能力越来越强，需要提供的业务知识库是需要减负的\n2、未来我们各种二方包的接入方式都会以Skill的形式提供，从面向人转到面向AI\n▐\n现状：AI 很强大，但不够\"准确\"\n场景还原\n：\n// 你向 AI 提问：\"帮我将 Android 定位服务迁移到鸿蒙\"\n// AI 生成的代码（看起来很专业）\nLocationExpires\n.\nONE_MINUTE\n// ❌ 这个枚举值不存在\nparams.\nonSuccess\n=\n(\nresult\n) =>\n{ ... }\n// ❌ 回调位置错误\n// 编译器提示：13 个错误\nProperty\n'ONE_MINUTE'\ndoes not exist on\ntype\n'LocationExpires'\n开发者的困惑\n：\nAI 不是能理解代码吗？为什么会犯这种低级错误？\n文档明明存在，为什么 AI 不看文档？\n第一次踩坑修好了,第二次还会踩,知识怎么沉淀？\n▐\n本质：AI 的能力边界\n根本矛盾\n：\n重新定义问题\n▐\n这不只是\"代码翻译\"问题\n表面问题\n：Android 代码如何迁移到鸿蒙？\n深层问题\n：\n知识获取\n：开发者如何快速掌握新平台的 API？\n知识传递\n：团队如何避免重复踩坑？\n知识演进\n：API 更新后如何快速同步？\nAI 协同\n：如何让 AI 使用最新的领域知识？\n对比传统方式\n：\n▐\n这是一个\"知识工程\"问题\n软件工程的两大知识库\n：\n知识的三个状态\n：\n隐性知识：\n在老员工脑子里（\"这里要用 ONE_MIN，别用 ONE_MINUTE\"）\n显性知识：\n在文档里（但分散、滞后、难搜索）\n可执行知识：\n在 Skills 里（结构化、可索引、AI 可读）\nAI + Skills 的价值\n：\nAI + Skills 方法论\n▐\n核心概念\n定义\n：\nAI + Skills = AI 的通用能力 + 可执行的领域知识包\n类\n比理解\n：\n▐\n分工模型\n▐\n工作流程\n完整闭环\n：\n关键环节\n：\n输入阶段：\nAI 加载 Skills 获取领域知识\n生成阶段：\nAI 使用 Skills 中的映射表\n验证阶段：\n编译/测试验证准确性\n反馈阶段：\n问题 → 提炼 → 更新 Skills\n沉淀阶段：\n成功经验 → 记录到 Skills\n实战案例 安卓定位服务 - 鸿蒙代码迁移\n▐\n问题背景\n业务场景\n：穿搭业务需要从0到1迁移到鸿蒙\n技术挑战\n：\n154 个 Android 服务需要迁移\n每个服务涉及不同的 API 映射\n团队中大部分人不熟悉鸿蒙 API\n传统方式的成本\n：\n▐\n三种方式对比\n方式 1：纯 AI 翻译（❌ 快但不准）\n操作\n：\n提问：\"帮我将 Android 的 LBSService 翻译到鸿蒙\"\nAI 生成的代码\n：\n// AI 基于\"常识\"猜测的枚举值\nLocationExpires\n.\nONE_MINUTE\n// ❌ 实际是 ONE_MIN\nLocationExpires\n.\nFIVE_MINUTE\n// ❌ 实际是 FIR_MIN\nLocationAccuracy\n.\nMID_MODE\n// ❌ 这个枚举不存在\n// AI 推测的回调方式\nconst\nparams =\nnew\nLocationRequestLocationParams\n();\nparams.\nonSuccess\n=\n(\nresult\n) =>\n{ ... };\n// ❌ 回调不在这里\n结果\n：\n编译错误：\n13 个\n调试时间：无法估计\n根本原因：AI 没有准确的 API 文档\n方式 2：查源码 + 人工修正（✅ 准但慢）\n操作流程\n：\n打开 Mega Location 源码\n查看实际的枚举定义\n逐个修正 AI 生成的错误\n测试验证\n发现的真相\n：\n// ✅ 实际的枚举定义（非常反直觉）\nexport\nenum\nLocationExpires\n{\nONE_MIN\n=\n\"ONE_MIN\"\n,\n// 不是 ONE_MINUTE\nSEC_MIN\n=\n\"SEC_MIN\"\n,\n// 不是 TWO_MINUTE (SEC = SECOND)\nTHR_MIN\n=\n\"THR_MIN\"\n,\n// 不是 THREE_MINUTE (THR = THREE)\nFOR_MIN\n=\n\"FOR_MIN\"\n,\n// 不是 FOUR_MINUTE (FOR = FOUR)\nFIR_MIN\n=\n\"FIR_MIN\"\n// 不是 FIVE_MINUTE (FIR = FIVE)\n}\n// ✅ 实际的回调方式\nconst\noptions\n:\nLocation\n.\nLocationRequestOptions\n= {\nonSuccess\n:\n(\nresult\n:\nLocationData\n) =>\n{ ... }\n// 回调在 options 内\n};\n结果\n：\n编译错误：\n0 个\n耗时：\n40 分钟\n问题：知识留在开发者脑子里，下次还要重新查\n方式 3：AI + Skills（✅ 又快又准）\nStep 1：构建 Skills\n## 4. API 对比\n### 4.1 LocationExpires 枚举值映射\n| Android 常量 | 鸿蒙枚举 | 说明 |\n|-------------|---------|------|\n|\n\"1m\"\n| LocationExpires.ONE_MIN | ⚠️ 不是 ONE_MINUTE |\n|\n\"2m\"\n| LocationExpires.SEC_MIN | SEC = SECOND，不是 TWO_MIN |\n|\n\"3m\"\n| LocationExpires.THR_MIN | THR = THREE，不是 THREE_MIN |\n|\n\"4m\"\n| LocationExpires.FOR_MIN | FOR = FOUR，不是 FOUR_MIN |\n|\n\"5m\"\n| LocationExpires.FIR_MIN | FIR = FIVE，不是 FIVE_MIN |\n⚠️ **不存在的枚举值**（AI 经常错误生成）：\n- ❌\n`ONE_MINUTE`\n,\n`TWO_MINUTE`\n,\n`FIVE_MINUTE`\n- ❌\n`TEN_MINUTE`\n,\n`MID_MODE`\n### 4.2 定位请求方法对比\n| Android | 鸿蒙 | 差异说明 |\n|---------|------|---------|\n|\n`LocationServiceBridge.requestLocation()`\n|\n`Location.requestLocation()`\n| 回调方式不同 |\n#### 关键差异：回调设置方式\n**Android**（回调作为独立参数）：\n```kotlin\nLocationServiceBridge.requestLocation(\nparams,\n{ result -> ... },  // 成功回调\n{ error -> ... }    // 失败回调\n)\n鸿蒙\n（回调在 options 对象内）：\nconst\noptions\n:\nLocation\n.\nLocationRequestOptions\n= {\nbizName\n:\n'TB_SHOPPING_PROCESS'\n,\nonSuccess\n:\n(\nresult\n:\nLocationData\n) =>\n{ ... },\n// ✅ 在 options 内\nonFail\n:\n(\nerror\n:\nstring\n) =>\n{ ... }\n};\nLocation\n.\nrequestLocation\n(params, options);\n▐\n三种方式的本质差异\n关键洞察\n：\n▐\n规模化效果\n单个服务的迁移效率\n：\n154 个服务的总成本\n：\n节省时间\n：\n102 - 77 = 25 小时\n关键价值\n：\n⏰\n效率提升\n：节省 25 小时\n📚\n知识资产\n：154 个服务的迁移经验永久沉淀\n🚀\n团队加速\n：新人 0 学习成本\n🔄\n持续演进\n：API 更新后，只需更新 Skills\n方法论推广\n▐\n适用场景\nAI + Skills 模式不只适用于代码迁移，而是适用于所有\n需要领域知识的 AI 辅助开发场景\n：\n通用模式\n：\n有明确知识的场景 → 知识结构化为 Skills → AI 索引使用 → 提升质量和效率\n▐\n构建 Skills 的原则\n原则 1：AI 友好的结构化\n❌ 不友好的文档\n（人类可读，AI 难索引）：\n✅ AI 友好的文档\n（表格化、结构化）：\n原则 2：持续演进\nSkills 更新流程\n：\n遇到问题 → 查看源码 → 提炼规律 → 更新 Skills → 发布版本 → 团队同步\n原则 3：分层组织\nSkill 文档结构\n：\n未来展望\n▐\n从 Skills 到知识图谱\n当前：文档化的 Skills\n未来：知识图谱\n价值\n：\nAI 可以理解模块间的依赖关系\n自动推荐相关的 Skills\n提供跨模块的最佳实践\n▐\n从被动查询到主动建议\n当前：开发者主动询问 AI\n未来：AI 主动发现问题\n技术方案\n：\nIDE 插件实时分析代码\n匹配 Skills 中的常见陷阱\n编译前预警\n▐\n从静态文档到动态生成\n当前：人工编写 Skills\n工程师踩坑 → 查源码 → 编写文档 → 更新 Skills\n未来：AI 自动生成 Skills\n价值\n：\nSkills 永远是最新的\n0 人工维护成本\n覆盖所有场景\n▐\n从个人工具到组织能力\n当前：个人/团队使用\n开发者 → AI + Skills → 提升个人效率\n未来：组织级知识平台\n终极愿景\n：\n新人入职第一天就能高效工作（AI 教学）\n老人离职后知识不流失（Skills 沉淀）\n组织智慧持续积累（每次踩坑都是资产）\n结语：重新定义软件工程的知识传递\n▐\n传统模式的困境\n▐\nAI + Skills 的突破\n▐\n核心价值主张\n效率提升：\nAI 的速度 + 领域专家的准确度\n知识沉淀：\n从\"人脑记忆\"到\"组织资产\"\n持续演进：\n每次踩坑都让 Skills 更完善\n团队赋能：\n新人 0 学习成本，老人不再重复劳动\n团队介绍\n本文作者开益，来自淘天集团-用户终端技术团队。我们服务于淘宝基础用户产品，是淘宝最重要的业务线之一。首页、信息流推荐、消息聊天、搜索、我淘、用增、互动、内容等亿级用户规模产品，为我们带来大量业务/技术挑战及机会。\n团队在保证业务的同时，以先进的跨端框架和研发模式不断完善自己，打造最极致的体验和工程技术，保障多端设备的适配和稳定运行，并探索端智能等创新机会，通过技术高效驱动业务的良性发展。持续探索以AI为底座构建从需求到上线的端到端自动化与产品化能力，使亿级规模的交付更快、更稳、更可控。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0,
+        "peripheral": 0,
+        "direct_local": 0,
+        "transfer_agent": 0.39,
+        "irrelevant": 0.61
+      }
+    },
+    "relevance": {
+      "score": 1.67,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.16,
+        "2": 0.75,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.76,
+      "probabilities": {
+        "0": 0.21,
+        "1": 0.03,
+        "2": 0.05,
+        "3": 0.22,
+        "4": 0.49,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.6,
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.07,
+        "2": 0.06,
+        "3": 0.07,
+        "4": 0.04,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 3.68,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.07,
+        "3": 0.18,
+        "4": 0.75,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.68,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.11,
+        "4": 0.74,
+        "5": 0.07
+      }
+    },
+    "anti_hype": {
+      "score": 3.34,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.04,
+        "2": 0.06,
+        "3": 0.28,
+        "4": 0.57,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5533,
+    "outputTokens": 173,
+    "totalTokens": 5706
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.5,
+        "relevance": 0.77,
+        "grounding": 0.17,
+        "decision_action": 0.6,
+        "evidence": 0.78,
+        "actionability": 0.69,
+        "anti_hype": 0.55
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179885955,
+                "endTime": 1791179886163,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000232386",
+      "marketCost": "0.000232386",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000232386",
+      "inferenceCost": "0.000232386",
+      "inputInferenceCost": "0.000232386",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A83BJ2JQ5H48RDFSGET2Y"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:06 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::xftw4-1791179885934-64de2f4baaa6"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0,
+            "peripheral": 0,
+            "direct_local": 0,
+            "transfer_agent": 0.39,
+            "irrelevant": 0.61
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.67,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.16,
+            "2": 0.75,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.76,
+          "probabilities": {
+            "0": 0.21,
+            "1": 0.03,
+            "2": 0.05,
+            "3": 0.22,
+            "4": 0.49,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.6,
+          "probabilities": {
+            "0": 0.75,
+            "1": 0.07,
+            "2": 0.06,
+            "3": 0.07,
+            "4": 0.04,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.68,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.07,
+            "3": 0.18,
+            "4": 0.75,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.68,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.11,
+            "4": 0.74,
+            "5": 0.07
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.34,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.04,
+            "2": 0.06,
+            "3": 0.28,
+            "4": 0.57,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5533,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.5,
+            "relevance": 0.77,
+            "grounding": 0.17,
+            "decision_action": 0.6,
+            "evidence": 0.78,
+            "actionability": 0.69,
+            "anti_hype": 0.55
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179885955,
+                    "endTime": 1791179886163,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000232386",
+          "marketCost": "0.000232386",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000232386",
+          "inferenceCost": "0.000232386",
+          "inputInferenceCost": "0.000232386",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A83BJ2JQ5H48RDFSGET2Y"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:05.394Z"
+  }
+}

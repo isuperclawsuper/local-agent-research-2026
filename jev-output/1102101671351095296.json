@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1102101671351095296",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "天猫新品团队AI编码实战指南（下）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543388&idx=1&sn=7c5a8274283f465c9c7d01da938afda1",
+      "date": "2026-05-08T08:07:00.050Z",
+      "chars": 6232,
+      "text": "原创\n天猫新品营销技术\n2026-05-08 16:07\n浙江\n本⽂是关于 AI 辅助编码的全⾯实战指南，基于天猫新品团队的实践经验，从问题本质到解决⽅案，从理论框架到实战案例，系统性地介绍如何让 AI 更好地完成⼤部分需求。\n本\n⽂\n是\n关于\nA\nI\n辅\n助\n编\n码的全⾯实战指南\n，\n基于天猫新品\n团\n队的实践\n经\n验\n，\n从问题\n本\n质到解决⽅\n案\n，\n从理论\n框架\n到实战\n案\n例\n，\n系统\n性\n地\n介\n绍\n如何让\nA\nI\n更\n好\n地\n完成⼤\n部\n分需求。\n本文分上下两篇，\n天猫新品营销技术团队AI编码实战指南（上）\n包含：\n1.\n现\n状\n与\n问题诊\n断\n-\n深\n⼊剖\n析\nAI\n⽣码的\n四\n⼤痛点\n（\n写\n不\n对\n、\n写\n不\n好\n、\n写\n不\n了\n、\n改\n不动\n），\n并从项⽬知识\n、\n⽤户\n输\n⼊\n、\n任务复\n杂\n度\n、\n⾃检\n机\n制\n、\n模\n型\n能⼒等五\n个\n维\n度提供针对性解\n法。\n2.\n⽅\n法\n论\n与\n优化\n思\n路\n-\n提出\n\"\n最\n⼤化复⽤\n、\n⾃然语⾔第\n⼀\n、\n⼆⼋定律\n\"\n三\n⼤\n核\n⼼思想\n，\n并\n沿\n着\n\"\n前\n置\n准备\n→\n开发前\n→\n开发中\n→\n完成后\n\"\n的全\n流\n程\n，\n给\n出每\n个\n节点的可落\n地\n优化⼿段。\n3.\n分\n场景\n实\n战案\n例\n-\n根\n据验收\n标\n准和代码质量要求\n，\n将需求分为\n\"\n需求驱动\n型\n\"\n和\n\"\n⼯程主导\n型\n\"\n两\n类\n，\n通过\n⼩⼆端列表⻚和\nC\n端复\n杂\n业\n务的完整\n案\n例\n，\n展示\n不\n同\n场景\n下\n的\n最\n佳实践。\n本篇包含：\n4. 团\n队\n建\n设\n经\n验\n-\n分享新品\n团\n队\n在\n⼩⼆端\n（\n后端全\n栈\n化\n）\n和\nC\n端\n（\n视\n图\n分离\n、\n知识库建设\n、\n⼯作\n流沉淀\n）两个\n⽅向的探\n索\n，\n包括⼯具建设\n、\n⽂\n档沉淀、\n知识库⽅\n案\n等具体落\n地\n内容。\n5. 实⽤\n技\n巧集\n锦\n-\n涵\n盖\nUI\n重\n构、\n复\n杂\nPrompt\n构\n建\n、\n数据\n转\n换\n、\n多⽅\n案选\n优\n、\n⽂\n档\n⽣成\n等常⻅应⽤\n场景\n，\n以及\n严\n厉语⽓\n、\n合理质疑等提升准确度的技巧。\n我们团队做了什么\n▐\n背景\n为了顺应 AI 时代的潮流，我们团队开始了\n后端向前，前端向后\n的全栈化转型运动。转型前期，考虑将一些小二工作台与研发工具的开发交由后端 ( 主要是交付分割线下面的部分，即前面所提到的需求驱动型 ) ，而前端则是承担一些 C 端 solution 的编写。因此，我们从这两个角度都进行了一定程度的 AI 生码探索，也沉淀了一些相应的开发经验与内容。\n严苛程度\n典型场景\n错误容忍程度\n交互问题容忍程度\n代码要求\n视觉还原要求\n最为严苛\nC 端频道\n0 容忍\n明显则 0 容忍\n高\n高\n较为严苛\nB 端商家平台\n0 容忍\n特别明显则 0 容忍\n中\n中\n交付分割线\n普通严苛\n小二端工作台\n0 容忍\n影响主链路则 0 容忍\n低\n低\n低严苛\n研发自用工具与平台\n一定程度容忍\n没有 hack 绕过的方案则 0 容忍\n无\n无\n不严苛\n研发 DEMO\n能意会则能容忍\n怎么都能容忍\n无\n无\n关于我们在 AI 生码的思路：\n作为业务团队，在AI基建不断迭代背景下，我们的重点应该是沉淀自己团队的工作流与 AI 资产，从而在有颠覆性新产品出现时可以快速接入，且这部分是其他AI工具无法为代劳，只能由我们自己进行建设与沉淀的。\n基于此，我们在这一块的最主要思想就是\n通过最大化复用来提高整体效能\n，包括但不限于代码、知识、工作流、工具的复用，后面的内容也主要会围绕这一条主线来展开。\n▐\n小二端 - AI 主导的对话生码\n这部分需求的主要特点是：没有视觉还原度要求，实现形式较为自由，所以自然地避开了占较多开发时间的精调环节；且页面间独立性强，项目耦合度低，适合使用 AI 编码完成全部需求。\n在这类场景中，后端同学\n主要通过AI完成全部需求实现，基本不会去介入实际代码。\n初期 - 统一生成方案\n首先最要紧的就是，面向这么多前端练习生，以及他们各自使用的不同编码工具，怎么让他们\n尽可能地产出风格一致的代码，以及视觉风格贴近小二端视觉规范的页面\n；同时，还需要保证\n一定的AI迭代成功率\n。对此，我们最开始主要主要提供了这些辅助手段。\n小二端开发培训\n基础的代码实现规范\n基于小二端的特性，采用页面间完全解耦的结构，减少复杂度\n通过一些代码约束提高代码生成质量，从而提高迭代生码的成功率\n针对一些高频页面提供代码模版，进一步约束产出结果\n中期 - 辅助补齐前端经验短板\n在上面的基础上运行过一段时间以后，我们发现了一些后端同学由于前端经验不足而碰到的高频问题：\n需求描述不准确\n在实行初期，碰到最主要的问题就是，后端同学因为\n对前端一些的专业术语没有概念\n，没有办法精准地描述出自己脑海中的那个需求，导致频繁返工，AI 始终无法按需求完成内容。\n首先，我们在后台新增了「AI案例实践中心」，将B端常见的页面都归纳到了标准化的 prompt 模版，方便快速查找案例与实现。\n同时，我们还基于此提供了对应的MCP速查工具「天猫新品业务编码助手」，后端同学通过可以直接通过工具对话来获取自己想要的页面模版，输入自己的需求后，即可得到一份标准化的页面 PRD 来提供给 AI 进行页面生成。\n还有一种情况，就是后端同学已经在其他地方找到了参考的页面，只是\n不知道该如何对自己的 AI 进行需求描述\n。我们也提供了基于 Gemini 3.0 的多模态能力特调的图片生成提示词工具，尽可能保证系统化地描述页面，相较于直接传图给编程工具，转换后的结构化描述词有更好的页面还原效果。\n垂类场景 / 复杂问题没有经验\n对于初入前端开发的后端同学，还有一些经验带来的问题，比如：\n对一些常见场景 / 垂类场景的实现没有概念，没有经验，容易被AI的临时方案带跑；\n对一些坑没有经验，开发容易陷入死循环。\n借着这个机会，我们将 AI 生码省下来的时间提出来一部分用于生码沉淀，完成需求的过程中详细记录\n实现过程与踩坑心得\n。案例分为新增型需求和更新型需求，每个需求会详细描述清楚需求背景、实践步骤与功能的自测，最后还会有过程中的错误提示。整体上作为典型实践案例足以面向日常的需求开发。\n后期 - 需要更简单、无感、且一致的方案\n基于前面的工作，我们的后端全栈化已经平稳运行了一段时间，基于相关同学的体验反馈，我们又收集上来了以下几个问题：\n大部分人还是更倾向于使用基础的 Chat 对话模式来完成需求，不想使用类Spec的规划模式，也不想跳出编辑器进行额外的操作（甚至不想配mcp）；\n团队内业务复杂，相关仓库也很多，一些文档以及基础规范的改动无法及时同步，希望有实时更新的统一方案。\n所以，我们为小二端开发提供了一个轻量级的团队知识库（其实更多用在C端开发），以类Skill的形式封装了小二端开发的规范与代码模版，实现了无视开发工具，简单易用的公共知识库，通过公共知识库进行小二端 AI 开发的\n无感辅助。\n知识库直接使用 git 仓库进行管理，npm 包作为资源承载与版本管理的工具：\n以类Skill的形式封装了小二端开发的规范与代码模版，完成了团队内 AI 开发方案的统一收口；\n使用文件链接进行文档的多级管理与索引，渐进式披露，不会过度占用 token\nAI 可以直接通过 curl 命令读取 npm 包下的 cdn 资源，从中获取必要知识，\n不依赖具体编码工具\n，且接入简单，直接配置在编辑器Rules即可；\n甚至还可以直接借用CodeWiki进行知识库问答\n这时，就天然地实现了一个\n及时更新、不依赖编码工具、支持问答、使用无感\n的统一知识源，完成了团队内基础开发方案的统一收口。\n未来展望\n目前还剩下的一些问题需要进一步思考解法：\n精细化微调无法达到效果\n后端同学上手前端以后，也有了精调页面细节的热情，但是只用 AI 对话的场景下很难完成这些精细化的页面操作，有没有什么办法去 cover 这部分的编码需求？\n开放式场景如何保证尽量统一\n虽然对于枚举过的页面，现有的约束条件可以一定程度上约束产出内容，但是对于未枚举，或者无法枚举的页面，产出的页面就随着使用者或者编码工具的不同而开始天差地别，（有时候甚至可以通过页面风格判断是谁，用什么工具写的页面）有什么办法可以让这些部分也尽可能地有一个较为一致的视觉表现？\n▐\nC端 - 全栈开发模式下的 AI 辅助\n这部分主要有如下几个主要建设方向：\n这类需求代码质量与验收标准较高，且业务隐含逻辑多，没有办法直接通过AI完成全部内容，怎样提高AI在其中的参与度？\n整体开发链路长，涉及仓库多(包括前后端、组件库与工具库)，怎样进行有效串联，提高整体效率？\n对于开发链路上的一些高频高耗时的节点，怎样进行分析与优化？\n大部分内容前面C端实战部分已经提到过，这里不再赘述，主要总结下我们的主要 Action。\n主要 Action\n代码结构与公共组件的设计，提高生码效率与代码可控度\n多类高频开发流程的标准化 workflow 的沉淀\n基础团队知识库，提供统一的读取方案与快速的知识查询能力\n让 AI 基于知识库内容产出技术方案，并进行人工审核（后期考虑提供专用的技术方案 Agent，并进行技术方案的打分评测）\n开发流程中的工具辅助（走查辅助、接口查询、页面检查MCP）\n未来方向\n完善知识库的 生成与自动更新 方案，弱化人工参与度，提高资产沉淀效率\n建设更加 AI 友好的代码架构，提高整体的生码效果\n进一步提高整条链路的 AI 串联度，完成整体提效\n开发流程的串联\n现有工具的串联\n理想化的C端纯 AI Coding 流程\n活用 AI，掌握编码小技巧\n▐\n还能实现什么功能？\nUI 布局重构\n让 AI 解释旧布局，对旧页面结构进行区块划分与标记\n构思新布局，描述清楚旧内容的迁移方向，并增加新的功能\n让 AI 理解布局，让 AI 瞎子也能看得见\n复杂 prompt 构建\n案例【neko 智能参数调试面板功能】我希望用 AI 来生成一个调试界面，最终实现如下诉求：\n理解 http 请求 get/post 的参数/正文 字段格式；\n可分析出其中字段的业务语义或技术语义，可以精准的划分出来；\n基于这些字段实现一个重构后的表单面板，其技术栈要用原生 js，不能有前端构建过程；\n其表单要能正常以 iframe 的形式加载，并且要和外部 参数/正文 部分保持同步；\n请基于 postMessage 实现联动，当内外部有一方出现变动时，需要将信息实时同步到另一方；\n同步过程是非常频繁的，需要保持双方原本格式。\n场景功能就很复杂，比较难描述清楚其具体的 prompt。所以可以让 AI 理解你的朴素诉求，并根据诉求去生成 prompt。\n让 AI 去操作 AI，开发者只思考需求是什么\nAI 构建出的多功能复杂 prompt\n复杂的数据转换\n给出原始数据格式内容 与 目标数据格式。格式需要尽量全，覆盖所有的字段\n后续需要对转换过程做端到端的大量边缘 case 测试\nIDD 到 Neko 中间有极大的协议差别\n给 AI 最为完整例子让其解决协议转换，人只负责验收\n▐\n还能怎么辅助编程？\nAI 驱动 + 人工决策的多方案选优\n对不熟悉的项目，先让 AI 给出多种供选择的方案\n根据优劣和自身需求，选出倾向的方案\n确认方案工程层面对当前项目的改动大小\n开始实施\n不会做的需求也可以和 AI 聊出方案\n帮助写各种文档\n针对本次实现的目标需求，让 AI 来根据功能代码来反推出使用文档\n“针对之前 welcome 组件中对导入集合功能的重构，写一份功能文档，比如如何导入 IDD 集合，如何导入 CODE 仓库，如何导入 postman 第等的集合。”\n从代码反推出的功能是比较完整的\n总结页面信息\n现在很多编辑器支持用 MCP 或内置的工具访问页面并理解页面中的信息；\n基于此，我们可以实现很多之前难以想象的复杂任务；\n比如我们阿里云的课程，就可以由 AI 进行总结，并举一反三进行多种代码语言的转义。\n“\nhttps://github.com/AlibabaCloudDocs/aliyun_acp_learning/blob/main/大模型ACP认证教程/p2_构造大模型问答系统/2_6_构建Agent完成复杂任务.ipynb\n请你根据这个页面的信息，总结出一份摘要，并给出 js 代码实现的几个文中的代码例子。”\nAI 可以理解页面并分析信息\n和中英翻译一样，AI 可以快速实现代码语言之间的「翻译」\n用案例代替思考\n基于提示词工程中的 Few-Shot，完全案例替代需求描述：\nFew-Shot（少样本/少样例）: 提示词中包含多个示例。\n例如：“请模仿以下示例将中文翻译成英文。示例1：‘你好’ -> ‘Hello’。示例2：‘谢谢’ -> ‘Thank you’。示例3：‘再见’ -> ‘Goodbye’。请翻译：‘今天天气真好。’”\n“你需要改下权限判断的逻辑。我发现有些同学工号是 wb123432，存的实际是 WB123432，就是有大小写区别。有些同学工号是 014515，但是存着的工号是 14515，有首尾空号的区别。你需要对这些异常情况都处理好，确保他们都能有正常的权限。”\n函数将直接针对性解决案例场景\n▐\n还能怎么提升其准确度？\n严厉语气\n研究表明，\n非常严厉\n的语气在某些任务上的准确率可以超过\n非常礼貌约 4%。\nhttps://arxiv.org/pdf/2510.04950\n严厉语气比委婉语气效果好\n简而言之：如果怎么改都没有效果的提升，不妨试试说些狠话\n“你要不好好干，我就把你电源拔了”\n“你要不好好干，世界上就会有一只可爱的小猫咪被杀死”\n大盘新品时令分析里，严厉语气可明显提升输出格式准确度\n合理质疑\n模型常常以完成用户的需求作为第一优先级，这就导致其常常会奔着解决问题去而忽视项目架构的稳定性或维护成本，这个在修复 bug 的情况下出现的尤为明显。\n比如如下场景：AI 在修复依赖缺失问题时，强行希望将原本在 Node 环境中加载的功能包也加载进浏览器中。这个操作明显会导致项目的不稳定，而目前项目是有着 Node 和浏览器环境通信的成熟机制的，所以这种情况下需要明确质疑，并给出其优化方向。\n“请尊重项目原本的架构，把破坏性的改动归位，按照更合理的方式进行修复”\n“我认为你的实现有待商榷，你重新思考下这个问题并给我更好的解决方案”\n对 AI 不合理实现要质疑\n团队介绍\n本\n文作\n者\n卓屿\n，\n来自淘天集团-\n天猫新品营销技术团队。我们致力通过大数据、人工智能打造领先的数字化新品营销平台，服务于天猫新品全链路增长，面向品牌商家构建从新品研发、新品孵化到新品上新的⼀体化解决方案，负责「天猫小黑盒」/「天猫U先」/「TMIC」（天猫新品创新中心）/「淘系新品运营平台」等淘系核心的新品与新客业务，帮助商家连接淘系站内外流量、营销资源与数据，做规模化新品经营与确定性增长。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_business": 0.09,
+        "transfer_agent": 0.41,
+        "irrelevant": 0.48,
+        "peripheral": 0.02,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.93,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.05,
+        "2": 0.91,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.29,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.04,
+        "2": 0.04,
+        "3": 0.13,
+        "4": 0.67,
+        "5": 0.02
+      }
+    },
+    "decision_action": {
+      "score": 0.89,
+      "probabilities": {
+        "0": 0.57,
+        "1": 0.18,
+        "2": 0.06,
+        "3": 0.18,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.36,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.63,
+        "3": 0.36,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.43,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.03,
+        "2": 0.04,
+        "3": 0.2,
+        "4": 0.63,
+        "5": 0.04
+      }
+    },
+    "anti_hype": {
+      "score": 3.16,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.03,
+        "2": 0.15,
+        "3": 0.41,
+        "4": 0.39,
+        "5": 0.01
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.9,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7777,
+    "outputTokens": 173,
+    "totalTokens": 7950
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "decision_action": 0.41,
+        "evidence": 0.75,
+        "actionability": 0.56,
+        "anti_hype": 0.57,
+        "category": 0.35,
+        "relevance": 0.93,
+        "grounding": 0.5
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179892425,
+                "endTime": 1791179892565,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000326634",
+      "marketCost": "0.000326634",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000326634",
+      "inferenceCost": "0.000326634",
+      "inputInferenceCost": "0.000326634",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A89NT2HXEW9SREGZMMRW8"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:12 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::57gtm-1791179892294-2eb0df2fe2e9"
+    },
+    "body": {
+      "answers": {
+        "decision_action": {
+          "type": "score",
+          "score": 0.89,
+          "probabilities": {
+            "0": 0.57,
+            "1": 0.18,
+            "2": 0.06,
+            "3": 0.18,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.36,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.63,
+            "3": 0.36,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.43,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.03,
+            "2": 0.04,
+            "3": 0.2,
+            "4": 0.63,
+            "5": 0.04
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.16,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.03,
+            "2": 0.15,
+            "3": 0.41,
+            "4": 0.39,
+            "5": 0.01
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.9
+        },
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_business": 0.09,
+            "transfer_agent": 0.41,
+            "irrelevant": 0.48,
+            "peripheral": 0.02,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.93,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.05,
+            "2": 0.91,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.29,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.04,
+            "2": 0.04,
+            "3": 0.13,
+            "4": 0.67,
+            "5": 0.02
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7777,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "decision_action": 0.41,
+            "evidence": 0.75,
+            "actionability": 0.56,
+            "anti_hype": 0.57,
+            "category": 0.35,
+            "relevance": 0.93,
+            "grounding": 0.5
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179892425,
+                    "endTime": 1791179892565,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000326634",
+          "marketCost": "0.000326634",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000326634",
+          "inferenceCost": "0.000326634",
+          "inputInferenceCost": "0.000326634",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A89NT2HXEW9SREGZMMRW8"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:11.799Z"
+  }
+}

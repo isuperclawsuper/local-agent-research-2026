@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "259836960956227584",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "零废话！一文讲透从0构建AI Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694979&idx=1&sn=569b414bdfd11c1685727730d20a27c5",
+      "date": "2026-03-26T00:46:00.540Z",
+      "chars": 13875,
+      "text": "原创\ncfool\n2026-03-26 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n01\n概念全景图\nLLM（大语言模型）\n│\n│  厂商通过 HTTP 提供调用能力\n▼\nLLM API\n│\n│  客户端维护对话历史数组\n▼\nContext（上下文）\n│\n│  告诉 LLM\n\"你有哪些工具可用\"\n▼\nTool Calling（工具调用）\n│\n│  加入循环：思考 → 行动 → 观察\n▼\nAgent Loop（智能体循环）\n│\n├──────────────┬──────────────┐\n▼              ▼              ▼\nMCP 协议      Sub-Agent     Agent\nSkill\n(标准化工具对接)\n(分工协作)    (流程复用)\n02\n基础概念\n2.1 LLM（大语言模型）\nChatGPT、Claude、Gemini、DeepSeek 等都是 LLM。本质是\n超大号的\"文字接龙\"机器\n——给一段文字，按概率逐词预测下一个词。当参数量达到千\n亿级别，它就涌现出了写代码、写文章、做数学题的能力。\n2.2\nLLM API（大模型接口）\nLLM 跑在云端 GPU 集群上，厂商通过 HTTP API 提供调用能力：\n你的代码 → HTTP POST（带上问题） → LLM 服务 → HTTP 响应（返回回答）\n2.3\nContext（上下文）\nLLM 本身是\n无状态\n的——每次调用都是一次全新的请求，它不会记得上一句你说了什么。所谓\"上下文\"，就是你随请求一起发过去的\n所有信息\n，包括：\n对话历史：\n之前的每一轮问答\n系统提\n示词：\n告诉 AI \"你是谁、该怎么做\"的指令\n工具结果：\n上一步工具调用返回的数据\n第\n1\n次请求：\n[消息1]\n→ AI 回复\n1\n第\n2\n次请求：\n[消息1, 回复1, 消息2]\n→ AI 回复\n2\n第\n3\n次请求：\n[消息1, 回复1, 消息2, 回复2, 消息3]\n→ AI 回复\n3\n每次都把完整历史发过去，AI 才能\"记住\"之前聊了什么。\n\"记忆\"不在 AI 脑子里，而在你发送的数组里。\n每个模型有\n上下文窗口\n（Context Window）限制，比如 128K tokens。超出这个长度，最早的内容就会被截掉。\n2.4\nTool / Function Calling（工具调用）\n这是从\"聊天机器人\"进化到\"Agent\"的关键一步。普通 LLM 只能生成文字，但如果告诉它有个\nget_weather\n工具，它就能返回结构化的调用请求：\n{\n\"functionCall\"\n:\n{\n\"name\"\n:\n\"get_weather\"\n,\n\"args\"\n:\n{\n\"city\"\n:\n\"深圳\"\n}\n}\n}\nLLM 并没有真的查天气\n，它只是说\"我想调这个工具\"。真正执行的是你的代码。LLM 负责\"动脑\"决策，代码负责\"动手\"执行。\n2.5\nAI Agent（智能体）\nAgent 是一种\n架构模式\n，把上面三者串在一起：\nAgent\n= LLM（大脑） + Tools（手脚） + Loop（驱动循环）\nLLM\n负责理解任务、做出决策\nTools\n负责执行具体操作\nLoop\n让 AI 反复\"思考→行动→观察\"，直到任务完成\n2.6\nMCP（模型上下文协议）\n有了 Tool Calling，Agent 可以调用工具。但每接一个新工具，你都要写一套定义、解析、执行的代码。工具一多，维护成本爆炸。\nMCP（Model Context Protocol）\n定义了一套统一的协议，让 Agent 能以即插即用的方式对接外部工具和数据源——相当于 AI 世界的\nUSB 接口标准。\n2.7\nSub-Agent（子智能体）\n一个 Agent 什么都干，容易出错，上下文也会被塞满无关信息。\nSub-Agent\n模式是让主 Agent 把子任务委派给专门的小 Agent。每个子 Agent 有自己独立的上下文和专属工具，做完后只把结果交还给主 Agent。\n2.8\nAgent Skill（技能）\nTool 是单个动作（比如\"读文件\"），但很多任务是一套\n固定流程\n（比如\"生成 Git commit\"需要：查状态 → 看 diff → 写 commit message → 执行提交）。\nAgent Skill\n就是预定义好的\nprompt + 工具组合\n——把多个工具和 prompt 打包成一键触发的流程。\n2.9\nContext Management（上下文管理）\nLLM 的上下文窗口是有限的。对话越长，历史消息越多，总会塞满。而且 token 越多，\n响应越慢、费用越高。\n上下文管理就是在\"记住足够多\"和\"别超标\"之间找平衡，常见策略包括滑动窗口、摘要压缩、RAG 检索增强。\n03\n从零构建 Agent — 四个阶段\n整个构建过程分为四个递进阶段，每个阶段解锁一项新能力。\n3.1\n阶段一：单次对话（API 调用）\n最简单的起点——调用 LLM API，让 AI 回答一个问题。\nconst\nbody = {\nmessages\n: [\n{\nrole\n:\n\"system\"\n,\ncontent\n:\n\"你是一个有帮助的助手。\"\n},\n{\nrole\n:\n\"user\"\n,\ncontent\n:\n\"你好\"\n},\n],\n};\nconst\nres =\nawait\nfetch\n(apiEndpoint, {\nmethod\n:\n\"POST\"\n,\nheaders\n: {\n\"Content-Type\"\n:\n\"application/json\"\n,\n\"Authorization\"\n:\n`Bearer\n${apiKey}\n`\n,\n},\nbody\n:\nJSON\n.\nstringify\n(body),\n});\nconst\ndata =\nawait\nres.\njson\n();\nconsole\n.\nlog\n(data.\nchoices\n[\n0\n].\nmessage\n.\ncontent\n);\n关键参数：\n系统提示词（system prompt）：\n告诉 AI \"你是谁、该怎么做\"的隐藏指令，用户看不到，但 AI 会始终遵守。\n对话内容（messages）：\n用户实际发送的消息，每条消息带\nrole\n（谁说的）和\ncontent\n（说了什么）。\n能力：\n单轮问答，关掉程序就全忘。\n3.2\n阶段二：多轮对话（上下文维护）\nLLM 本身不记得上一句你说了什么——\n每次 API 调用都是一次全新的、独立的请求。\n解决方案是在客户端维护一个\nhistory\n数组，每次请求时带上完整历史：\nclass\nChat\n{\nprivate\nhistory: Message[] = [];\nasync send(text: string): Promise<string> {\nthis\n.history.push({ role:\n\"user\"\n, content: text });\nconst\nreply = await\nthis\n.client.sendMessage(\nthis\n.history,\nthis\n.systemPrompt);\nthis\n.history.push({ role:\n\"assistant\"\n, content: reply });\nreturn\nreply;\n}\n}\n每次调 API 都把完整对话历史发过去，LLM 本身是无状态的，\"记忆\"完全靠客户端的数组模拟。\n能力：\n多轮对话，但只会\"说\"不会\"做\"。\n3.3\n阶段三：工具调用（Function Calling）\nAI 能记住对话了，但它只能\"说\"，不能\"做\"。给 AI 一双\"手\"——\nTool Calling。\n工具注册表\n——用标准格式描述每个工具：\n{\nname:\n\"run_shell_command\"\n,\ndescription:\n\"Run a shell command on the user's machine...\"\n,\nparameters: {\ncommand: { type:\n\"string\"\n, description:\n\"The shell command to execute\"\n},\n},\nrequired: [\n\"command\"\n],\n}\n工具实现：\nexecute\n(\nparams\n:\nRecord\n<\nstring\n,\nunknown\n>):\nPromise\n<\nunknown\n> {\nconst\ncommand = params.\ncommand\nas\nstring\n;\nreturn\nnew\nPromise\n(\n(\nresolve\n) =>\n{\nexec\n(command, {\ntimeout\n: timeoutMs },\n(\nerror, stdout, stderr\n) =>\n{\nresolve\n({\nexitCode\n: error?.\ncode\n??\n0\n, stdout, stderr });\n});\n});\n}\n把工具列表随请求发给 API 后，AI 的回复可能从纯文本变成\n函数调用请求：\n// 纯文本回复\n{\n\"text\"\n:\n\"你好！有什么可以帮你的？\"\n}\n// 工具调用请求\n{\n\"functionCall\"\n:\n{\n\"name\"\n:\n\"run_shell_command\"\n,\n\"args\"\n:\n{\n\"command\"\n:\n\"ls -la\"\n}\n}\n}\nAI 没有真的执行命令，它只是下达指令，代码负责跑腿。\n3.4\n阶段四：Agent Loop（ReAct 循环）\n有了工具调用能力，但 AI 只能完成\"单步动作\"。现实任务通常需要多步协作。引入\nAgent Loop\n，即自动化的驱动循环——调完工具看结果，把结果喂回给 AI，让它继续判断下一步。\n这个过程通常被称为\nReAct (Reason + Act)：\nReasoning（推理）：\nAI 思考当前状况，决定下一步\nActing（行动）：\nAI 发出工具调用请求，代码执行工具\nObservation（观察）：\n代码将工具执行结果反馈给 AI\n核心循环代码：\nasync\nsend\n(\ntext:\nstring\n): Promise<\nstring\n>\n{\nthis\n.history.push({ role:\n\"user\"\n, content: text });\nfor\n(\nlet\ni =\n0\n; i < MAX_ROUNDS; i++) {\nconst\nresult =\nawait\nthis\n.client.sendMessage(\nthis\n.history, options);\nthis\n.history.push({ role:\n\"assistant\"\n, content: result });\nif\n(!result.functionCall) {\nreturn\nresult.text ??\n\"\"\n;\n}\nconst\n{ name,\nargs\n} = result.functionCall;\nconst\ntoolResult =\nawait\nthis\n.toolRegistry.execute(name,\nargs\n);\nthis\n.history.push({\nrole:\n\"tool\"\n,\ncontent: JSON.stringify({ name, result: toolResult }),\n});\n}\nthrow\nnew\nError(\n\"Max tool call rounds exceeded\"\n);\n}\n实际运行示例：\n用户：\n\"帮我看看当前目录有什么文件，然后统计代码行数\"\n第 1 圈：AI → 执行\nls\n-la → 代码返回结果\n第 2 圈：AI → 执行\nwc\n-l src/*.ts → 代码返回结果\n第 3 圈：AI → 返回文本总结 → 循环结束 ✅\nMAX_ROUNDS\n是安全阀，防止 AI 死循环。\n3.5\n工程化原则\n拥有 Agent Loop 后，Agent 已经能自主运行，但要真正可用，还需要关注以下工程化原则。\n1. 工具设计：从 \"万能胶\" 到 \"手术刀\"\n不要只提供一个\nrun_shell_command\n万能工具，而应该设计专门的工具：\nread_file\n：支持分页读取，避免大文件直接撑爆上下文\nedit_file\n：通过\nold_string\n→\nnew_string\n的方式修改代码，比让 AI 生成 shell 命令更安全且可靠\nlist_directory\n：返回结构化的 JSON 列表，包含文件大小和类型\n工具越\"原子化\"、越\"结构化\"，Agent 运行的成功率就越高。\n2. 上下文注入：给 Agent 戴上 \"扩增实境眼镜\"\n在每轮对话启动前，自动采集环境信息并注入到 Prompt 中：\n当前工作目录 (CWD)\n文件列表 (File List)\n当前时间 (Timestamp)\n这样 Agent 一开始就知道自己\"在哪里\"、\"手头有什么\"，不需要先花一轮工具调用去探索环境。\n3. 显示优化：让 \"黑盒\" 变透明\nAgent 在执行工具时，应该给用户清晰的反馈：\ninterface\nToolExecuteResult\n{\ndata\n:\nunknown\n;\n// LLM 需要的结构化原始数据\ndisplayText\n?:\nstring\n;\n// 用户在终端看到的友好提示\n}\n比如执行 shell 命令时显示\n$ ls -la\n，读取文件时显示\nRead src/index.ts (lines 1-20)\n，而不是把原始 JSON 甩给用户。\n4. 指令优化：从 \"聊天\" 到 \"工作\"\n系统提示词对 Agent 的行为影响巨大，为开发者工具场景应注意：\n强制要求：\n禁止废话，直接输出结果\n角色定位：\n明确自己是一个交互式 CLI Agent\n思考链：\n鼓励在调用工具前进行简短的推理\n04\n进阶架构\n4.1 上下文管理\n上下文窗口是 Agent 的\"工作记忆\"，但它有硬性限制。对话越长、工具调用越多，token 消耗越快。\n为什么需要上下文管理\n问题\n说明\nToken 限制\n每个模型有上下文窗口上限（如 128K tokens），超出就截断\n成本\nToken 数量直接决定 API 费用，历史越长越贵\n速度\n输入 token 越多，模型响应延迟越高\n常见策略\n策略 1：滑动窗口\n只保留最近 N 轮对话，丢弃更早的消息。\nfunction\nslidingWindow\n(\nhistory: Message[], maxTurns: number\n):\nMessage\n[] {\nif\n(history.\nlength\n<= maxTurns *\n2\n) {\nreturn\nhistory;\n}\nconst\nsystemPrompt = history[\n0\n];\nconst\nrecentMessages = history.\nslice\n(-(maxTurns *\n2\n));\nreturn\n[systemPrompt, ...recentMessages];\n}\n优点：\n实现简单，效果直接。\n缺点：\n早期信息完全丢失。\n策略 2：摘要压缩\n让 LLM 把旧的对话历史\n压缩成一段摘要。\n原始历史（5000 tokens）：\n用户问了天气 → AI 查了天气 → 用户问了新闻 → AI 查了新闻 → ...\n压缩后（200 tokens）：\n\"用户先查了深圳天气（25°C 晴），然后查了今日科技新闻（共 3 条），\n接着要求将新闻翻译成英文。\"\n优点：\n保留关键信息，压缩比高。\n缺点：\n压缩本身消耗 token，且可能丢失细节。\n策略 3：RAG 检索增强\n不把所有信息都塞进上下文，而是存到外部知识库，需要时\n按需检索。\n用户提问：\n\"上次讨论的数据库方案是什么？\"\n1.\n把问题转成向量 → 去向量数据库检索\n2.\n找到相关的历史片段 → 注入当前上下文\n3.\nLLM\n基于检索结果回答\n优点：\n上下文永远保持精简，可以\"记住\"无限量的历史。\n缺点：\n需要额外的向量数据库基础设施。\n策略组合\n实际项目中通常组合使用：\n┌─────────────────────────────────────────────┐\n│ 1. 系统提示词                    (始终保留)   │\n│ 2. 压缩摘要（旧历史）            (摘要压缩)    │\n│ 3. 检索到的相关知识片段           (RAG)       │\n│ 4. 最近 N 轮对话                 (滑动窗口)   │\n│ 5. 当前用户输入                  (始终保留)   │\n└─────────────────────────────────────────────┘\n上下文管理没有银弹，需要按场景组合不同策略。\n4.2\nMCP 协议\n每个工具都要写一套\"定义→解析→执行\"的胶水代码。工具一多，维护成本爆炸。MCP 就是为解决这个问题而生的\n标准化协议。\nMCP 解决的问题\n没有 MCP 时：\nAgent\nA\n对接 GitHub   → 写一套 GitHub 工具定义 + 执行逻辑\nAgent\nA\n对接 Slack    → 写一套 Slack 工具定义 + 执行逻辑\nAgent\nB\n对接 GitHub   → 再写一套（跟\nA\n的还不一样）\n...\nM 个 Agent × N 个工具 = M × N 套集成代码。\n有了 MCP：\nAgent\nA\n─┐                  ┌─ GitHub MCP Server\nAgent\nB\n─┤── MCP 协议 ──────┤─ Slack MCP Server\nAgent C ─┘   (标准接口)      └─ 数据库 MCP Server\nM + N 套代码就够了。\nMCP 的核心能力\nMCP 定义了三种核心原语：\nTools (工具)：\nAgent 可以调用的可执行函数，让模型\n执行操作\nResources (资源)：\nServer 暴露给 Agent 的只读数据，让模型\n读取上下文\nPrompts (提示词)：\nServer 提供的预定义 Prompt 模板，复用高质量的指令\nMCP 架构\n┌─────────────────────────────────────────────────┐\n│                    Host                         │\n│   (Agent 应用)                                  │\n│                                                 │\n│   ┌────────────┐  ┌────────────┐                │\n│   │ MCP Client │  │ MCP Client │  ...           │\n│   └─────┬──────┘  └─────┬──────┘                │\n└─────────┼───────────────┼───────────────────────┘\n│ MCP 协议       │ MCP 协议\n▼               ▼\n┌────────────┐  ┌────────────┐\n│ MCP Server │  │ MCP Server │\n│  (GitHub)  │  │ (Database) │\n└────────────┘  └────────────┘\nMCP 通信过程\nAgent(Host)              MCP Client              MCP Server\n│                        │                        │\n│\n1.\n启动时              │   ── initialize ──▶   │\n│                        │   ◀── 工具列表 ────    │\n│                        │                        │\n│\n2.\n用户提问            │                        │\n│  ──\"查 GitHub issue\"─▶ │                        │\n│                        │                        │\n│\n3.\nLLM 决定调工具      │                        │\n│  ── tool_call ──────▶ │   ──\nexecute\n────▶     │\n│                        │   ◀──\nresult\n─────    │\n│  ◀── tool_result ───── │                       │\n│                        │                        │\n│\n4.\nLLM 生成回复        │                        │\n│  ◀── 返回给用户         │                        │\n4.3\nSub-Agent 模式\n单 Agent 面临两个核心瓶颈：\n上下文污染\n（搜索代码的中间结果、测试日志等占满上下文）和\n任务过杂\n（需要在不同类型的工作间反复切换）。Sub-Agent 模式通过分工协作来解决这些问题。\nSub-Agent 架构\n用户：\n\"帮我调研 React 和 Vue 的优缺点，然后写一个技术选型报告\"\n┌──────────────┐\n│   主\nAgent\n│  ← 理解任务、拆分、汇总\n│(\nOrchestrator\n)│\n└───────┬──────┘\n┌─────────┼─────────┐\n▼         ▼         ▼\n┌───────────┐ ┌──────────┐ ┌──────────┐\n│调研\nAgent\n│ │调研\nAgent\n│ │写作\nAgent\n│\n│ (\nReact\n)   │ │ (\nVue\n)    │ │ (报告)   │\n└───────────┘ └──────────┘ └──────────┘\n每个子 Agent：\n有自己\n独立的上下文\n——互不干扰\n有自己\n专属的工具集\n——搜索 Agent 有搜索工具，写作 Agent 有文件工具\n做完后\n只返回结果\n——不带过程中的废料\nSub-Agent 定义\n每个 Sub-Agent 通常由以下元素组成：\nname: code-reviewer\n# 唯一标识\ndescription:\n\"Reviews code...\"\n# 描述信息，用于主 Agent 决策时选择\ntools: [read_file, list_dir]\n# 工具白名单\nmodel:\n\"model-name\"\n# 可覆盖默认模型\nmaxTurns: 15\n# 限制最大工具调用轮数\nprompt: |\n# 专属系统提示词\nYou are a code reviewer specialized\nin\nidentifying:\n- Security vulnerabilities\n- Performance issues\n...\n关键设计要点：\n工具白名单：\n限制子 Agent 只能用必要的工具，降低风险\n独立模型：\n可以为不同子任务选择最合适的模型\n轮数限制：\n每个子 Agent 有自己的\nmaxTurns\n，防止某个子任务失控\n执行流程\n主 Agent 决定委派任务\n│\n▼\n1.\n根据任务描述选择合适的 Sub-Agent\n│\n▼\n2.\n构建受限的工具集（只给白名单中的工具）\n│\n▼\n3.\n创建新的 Chat 实例（独立上下文）\n│\n▼\n4.\nSub-Agent 执行任务（在自己的 Agent Loop 中）\n│\n▼\n5.\n返回结果给主 Agent（只有最终结果，没有中间过程）\n4.4\nAgent Skill\nTool 是单个动作，但很多实际任务是一套\n固定流程\n，需要多个 Tool 配合加上特定的 prompt 指引。Skill 就是把这套流程\n打包成一个可复用的快捷操作。\nSkill 的本质\n一个 Skill =\nprompt 模板 + 元数据。\n┌─────────────────────────────────────────────────────┐\n│                   Agent Skill                       │\n│                                                     │\n│  元数据:                                             │\n│    name\n/\ndescription\n/\ntrigger\n│\n│                                                     │\n│  Prompt 模板:                                       │\n│    作为 prompt 注入主对话上下文                       │\n│    指导 Agent 按步骤执行任务                          │\n└─────────────────────────────────────────────────────┘\nSkill 与 Tool、Sub-Agent 的区别\nTool\nSkill\nSub-Agent\n粒度\n单个动作\n一套完整流程\n独立的子任务\n触发\nLLM 自动选择\n用户命令 / LLM 调用\nLLM 调用\n执行方式\n直接执行函数\nprompt 注入主对话上下文\n派生独立 Chat 实例\n上下文\n共享主 Agent 上下文\n共享主 Agent 上下文\n独立上下文\nSkill 定义示例\nname:\ncommit\ndescription: \"Generate a conventional commit message for staged changes\"\ntrigger\n:\n/\ncommit\nprompt:\n|\nAnalyze the staged changes\nand\ngenerate a\ncommit\nmessage\nfollowing the Conventional Commits specification.\nThe\ncommit\nmessage should:\n1.\nStart\nwith\na type: feat, fix, docs, style, refactor, test,\nor\nchore\n2.\nInclude a\nscope\nin\nparentheses if applicable\n3.\nHave a concise subject line (max\n50\nchars)\n4.\nInclude a body if the change\nis\ncomplex\n两种触发方式\n方式一：用户命令触发\n用户直接输入触发命令（如\n/commit\n），系统匹配到对应 Skill，将 prompt 注入对话：\nconst\nskillMatch = skillRegistry.match(userInput);\nif\n(skillMatch) {\nconst\ninjectedPrompt = skillLoader.load(skillMatch.skill, skillMatch.\nargs\n);\nconst\nreply =\nawait\nchat.send(injectedPrompt);\n}\n方式二：LLM 自主调用\n将 Skill 包装成一个 Tool，LLM 在 Agent Loop 中可以自主决定调用：\n{\n\"tool\"\n:\n\"skill\"\n,\n\"parameters\"\n:\n{\n\"skill_name\"\n:\n\"commit\"\n,\n\"task\"\n:\n\"为当前暂存的更改生成提交信息\"\n}\n}\nSkill 的价值\n场景\n不用 Skill\n用 Skill\n重复性流程\n用户每次手动描述每一步\n一条命令一键搞定\n领域知识\n用户需要知道具体步骤和参数\nSkill 封装了专家经验，自动执行\n团队协作\n每个人的操作方式不一致\n统一的 Skill 定义保证流程一致性\n4.5\n如何选择：Tool vs Skill vs Sub-Agent\n需求来了\n│\n├─ 是单个原子操作？（读文件、发请求、执行命令）\n│   └─ → 用 Tool\n│\n├─ 是固定流程？（每次步骤一样，只是输入不同）\n│   └─ → 用 Skill\n│\n├─ 需要独立上下文？（中间过程会污染主对话）\n│   └─ → 用 Sub-Agent\n│\n└─ 需要不同模型？（子任务适合用专门的模型）\n└─ → 用 Sub-Agent\n具体场景对照\n场景\n推荐方案\n理由\n读取一个文件\nTool\n单个原子操作\n生成 Git commit message\nSkill\n固定流程（查 diff → 写 message → 提交）\n调研某个技术方案\nSub-Agent\n需要大量搜索，中间结果会污染主上下文\n执行代码审查\nSub-Agent\n需要独立上下文，可能需要不同模型\n格式化代码\nTool\n单个操作，调用 formatter 即可\n生成单元测试\nSkill\n固定流程（读源码 → 分析 → 生成测试）\n同时调研 3 个竞品\nSub-Agent × 3\n并行执行，各自独立上下文\n组合使用\n实际项目中这三者经常组合使用\n：\n用户输入 /review（触发 Skill）\n│\n▼\nSkill prompt 指导主 Agent 拆分任务\n│\n├─ Sub-Agent 1：代码审查（使用 read_file Tool）\n├─ Sub-Agent 2：安全检查（使用 grep、read_file Tool）\n└─ Sub-Agent 3：性能分析（使用 run_command Tool）\n│\n▼\n主 Agent 汇总三个 Sub-Agent 的结果，生成报告\n05\n总结\n本文覆盖了从 LLM 到 Agent 的完整知识体系：\n基础概念：\nLLM\n是无状态的文字接龙机器，通过\nAPI\n调用\nContext\n是你发送的全部信息（历史 + 提示词 + 工具结果），\"记忆\"在数组里而不是 AI 脑子里\nTool Calling\n让 LLM 从\"只能说\"进化到\"能动手\"，但 LLM 只负责决策，代码负责执行\n构建过程（四个阶段）：\n单次对话\n→ 调 API，一问一答\n多轮对话\n→ 客户端维护 history 数组\n工具调用\n→ 注册工具，LLM 决定何时调用\nAgent Loop\n→ ReAct 循环，自动多步执行\n进阶架构：\n上下文管理：\n滑动窗口 摘要压缩 RAG，按场景组合\nMCP 协议：\n标准化工具对接，M × N → M + N\nSub-Agent：\n独立上下文的分工协作\nSkill：\n可复用的流程模板\n选择原则：\n原子操作用 Tool，固定流程用 Skill，需要独立上下文用 Sub-Agent\n推荐阅读\nLangChain Agent 概念 — Agent 框架的设计思路（\nhttps://docs.langchain.com/oss/python/langchain/overview\n）\nOpenAI Function Calling 文档 — Tool Calling 的实现参考\n（\nhttps://developers.openai.com/api/docs/guides/function-calling）\nAnthropic Tool Use 文档 — Claude 的工具调用指南（\nhttps://docs.anthropic.com/en/docs/build-with-claude/tool-use\n）\nReAct 论文 — Reasoning + Acting 的原始论文（\nhttps://arxiv.org/abs/2210.03629\n）\nMCP 官方规范 — Model Context Protocol 的完整定义（\nhttps://modelcontextprotocol.io/docs/getting-started/intro）\n配套源码：\nhttps://github.com/cfool/try-agent\nAI Agent 开发教程：\nhttps://cfool.github.io/try-agent/\n-End-\n原创作者\n｜\ncfool\n感谢你读到这里，不如关注一下？\n👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。4月2日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.09,
+        "transfer_agent": 0.47,
+        "peripheral": 0.44,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.72,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.28,
+        "2": 0.7,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.76,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.26,
+        "2": 0.22,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1,
+      "probabilities": {
+        "0": 0.5,
+        "1": 0.23,
+        "2": 0.07,
+        "3": 0.17,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2,
+      "probabilities": {
+        "0": 0,
+        "1": 0.03,
+        "2": 0.92,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.86,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.06,
+        "4": 0.91,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.22,
+        "2": 0.54,
+        "3": 0.23,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 10858,
+    "outputTokens": 172,
+    "totalTokens": 11030
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.33,
+        "relevance": 0.8,
+        "grounding": 0.49,
+        "decision_action": 0.33,
+        "evidence": 0.94,
+        "actionability": 0.9,
+        "anti_hype": 0.68
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180025188,
+                "endTime": 1791180025414,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000456036",
+      "marketCost": "0.000456036",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000456036",
+      "inferenceCost": "0.000456036",
+      "inputInferenceCost": "0.000456036",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACB9XEQWWNPQTHFE1X70M"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:25 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::zlxtz-1791180025041-05c84ecfdf4b"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.09,
+            "transfer_agent": 0.47,
+            "peripheral": 0.44,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.72,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.28,
+            "2": 0.7,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.76,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.26,
+            "2": 0.22,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1,
+          "probabilities": {
+            "0": 0.5,
+            "1": 0.23,
+            "2": 0.07,
+            "3": 0.17,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2,
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.92,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.86,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.06,
+            "4": 0.91,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.22,
+            "2": 0.54,
+            "3": 0.23,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 10858,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.33,
+            "relevance": 0.8,
+            "grounding": 0.49,
+            "decision_action": 0.33,
+            "evidence": 0.94,
+            "actionability": 0.9,
+            "anti_hype": 0.68
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180025188,
+                    "endTime": 1791180025414,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000456036",
+          "marketCost": "0.000456036",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000456036",
+          "inferenceCost": "0.000456036",
+          "inputInferenceCost": "0.000456036",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACB9XEQWWNPQTHFE1X70M"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:24.680Z"
+  }
+}

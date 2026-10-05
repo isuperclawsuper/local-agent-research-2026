@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1179043463409209344",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI+ Kuikly：7.5小时落地三端「多模态聊天 App」实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802388&idx=1&sn=de0a692908a858fefb435599a9476a42",
+      "date": "2026-06-30T09:44:00.236Z",
+      "chars": 7053,
+      "text": "原创\n腾讯程序员\n2026-06-30 17:44\n贵州\n全程零手写，不看代码\nKuikly 是腾讯开源的高性能跨端框架，基于 Kotlin Multiplatform 技术，覆盖 Android、iOS、HarmonyOS、H5、微信小程序、Mac 六大平台，支撑业务日活用户超5亿。当 Kuikly 搭配真正懂它的 AI，开发会怎样——零手写代码，仅凭自然语言，7.5 小时交付一套支持 Android、iOS、鸿蒙三端的 AI 聊天 App。看 AI 如何调研组件、扩展原生模块、自行定位 Bug，感受为什么「AI + Kuikly」是当下客户端开发效率最高的组合之一。\n用 28 轮对话、740 字自然语言，生成约 3500 行代码，完成一套三端可运行的多模态 AI 聊天 App。全程零手写，不看代码，1 天交付。\n放在传统开发里，同样的功能 iOS、Android、鸿蒙各写一遍，要 30 人天；就算用 Kuikly 手写，也得 7.5 人天。这次用 AI 辅助，实际只花了 7.5 小时。最终交付的 App 支持流式 Markdown、拍照识图、相册选取、SSE 长连接、本地会话管理，一套代码即可覆盖 Android、iOS、鸿蒙三端。\n这不是“Vibe Coding”的玄学叙事，而是一次“AI + Kuikly 跨端框架”的实弹演习。Skills 和 Rules 让 AI 始终保持在正确的技术上下文中，组件库开箱即用、三端模板一键生成，这套基础设施支撑起了“AI + Kuikly”的协同效率。之前\n搜狗输入法用 Spec Coding 把新页面开发从 3 天压到 1 天\n，\nQQ 音乐用 AI 智能转码实现 90%+ 代码采用率\n，效率红利正在被验证。\n说到底，这次实验就想回答一个问题：纯靠对话，能把事情做到什么程度？一天之后，我有了答案。\n下面是这一天的真实日记。\nAI Coding 全过程\n先把这一天的节奏拉成一条时间线：\n09:00 - 09:10｜环境准备：先把 AI 开发环境搭起来\n动手写代码前，得先把 AI 的“工作环境”备齐。\n先跟着\nKuiklyUI GitHub 仓库\n的指引装好 IDE 和 Kuikly 插件。我本地早就配好了，直接跳过这一步，开始创建模板工程。按向导填写信息、一路点下一步，Android、iOS、鸿蒙三端的工程文件就准备好了。\n觉得 Kuikly 有意思的话，欢迎给\nKuiklyUI GitHub 仓库\n点个 ⭐️ 关注，以后好找。\n接着，按照官网\nAI编程\n的指引在工程里安装 Kuikly AI 的 Skills 和 Rules。\nnpx skills add Tencent-TDS/KuiklyUI-AI/skills\n这一步很关键。Kuikly DSL 相对专有，通用大模型的训练语料覆盖并不充分，而 Skills 和 Rules 能把框架知识喂给模型，让 AI 像一个熟悉 Kuikly 的开发者一样工作。\n到这里，Kuikly 的 AI 开发环境就算准备好了，然后我切到 AI Coding 的主场：CodeBuddy。\n09:10 - 10:20｜需求分析与方案设计：先确定能复用什么，再决定自己写什么\n这是一个完整 App 而非单个页面，所以我没让它直接开写，而是先用 CodeBuddy superpowers 插件里的\nbrainstorming\n技能把需求拆清楚。\n给它的第一条指令：\n/brainstorming 使用 Kuikly 实现一个多模态 AI 聊天 App，一码三端，支持 Android、iOS、鸿蒙。核心能力包括：发送文本/图片消息、拍照发图、相册选图、AI 流式回复、Markdown 渲染、打开消息中的网址、本地会话管理、历史会话恢复。优先使用 Kuikly 官方和社区已有组件。\n这条 Prompt 写得比较完整，关键是两点：明确“一码三端”，不是只跑 Android 的 Demo；强调“优先使用已有组件”，避免它上来就造轮子。\n组件查询\nAI 随即调用查询第三方组件的技能，筛出一份匹配清单（\nKuiklyChatUI\n、\nKuiklyMarkdown\n、\nKuiklyAlbum\n、\nKuiklyCamera\n、\nKuiklySQLite\n、\nKuiklyWebview\n、\nKuiklyToast\n），接着并行访问它们的 GitHub 信息调研用法与平台支持。\n有个细节挺有意思：AI 本来在清单里选了\nKuiklyMarkdown\n来做 Markdown 渲染，但调研后发现\nKuiklyChatUI\n里的\nAiMessageText\n已覆盖 AI 消息的 Markdown 渲染场景，于是不再单独引入\nKuiklyMarkdown\n，最终落地 6 个组件。这就是 Skills 和 Rules 的第一个收益——AI 开始知道什么时候\n不该写\n。\n确定组件清单后，AI 还标出两个需要用 Kuikly 的 Module 机制扩展的能力缺口：\n现有\nNetwork\n不支持 SSE 长连接，需补一个\nSSEModule\n图片发给多模态模型前需统一压缩和 base64 编码，需补一个\nImageModule\n过去用 AI 写代码，最怕它把所有问题都包装成\"没问题，我来实现\"，然后一路写到编译报错。这次 AI 则表现得像一个资深的 Kuikly 开发者，我知道这是 Kuikly AI 的 Skills 和 Rules 的功劳。它们很好地充当了 AI 的缰绳，哪些用组件、哪些自研、用何种方式组织代码，都被框得很清楚。\n方案基本确定\n聊天主体用 KuiklyChatUI\nMarkdown 能力复用 AiMessageText\n拍照和相册分别用 KuiklyCamera、KuiklyAlbum\n会话历史用 KuiklySQLite\n外链打开用 KuiklyWebview\n轻提示用 KuiklyToast\nSSE 和图片压缩编码用自研 Module 补齐\nAI 接着推演了架构、数据结构和交互设计，整体合理，我基本没打断，很快就拿到了第\n一版开发  plan。\n10:20 - 11:10｜编码实现：AI 是怎么把代码写出来的\nplan 确认后，我基本就让 AI 自己往下跑了，中途没有太多打断。\n值得说一下的是它在不同环节调用的技能，这也是这次\"AI 真的懂 Kuikly\"的关键。\n补两个框架没覆盖的能力时，它用的是\n[skill:kuikly-expand-api]\n——也就是 Kuikly 官方提供的\"扩展原生 API / 自定义 Module\"技能。\nSSEModule\n和\nImageModule\n这两个跨端 Module 都是靠它生成的：从 commonMain 的接口定义，到三端 native 侧的桥接实现，技能里都有明确的规范可循，AI 不用凭记忆去猜 Kuikly 的 Module\n写法。\n实现聊天主页面和历史会话列表页面时，它用的是\n[skill:kuikly-ui-framework]\n和\n[skill:kuikly-reactive-observer]\n。前者负责 Kuikly DSL 的页面结构和组件用法，后者负责响应式状态——消息列表、流式回复这些需要随状态变化自动重渲染的地方，都是靠\nobservable\n把数据和 UI 绑起\n来的。\n整个过程给我的感觉是：AI 不是在\"硬写一种它半懂的 DSL\"，而是每到一个环节先加载对应的 Kuikly 技能，再按规范动手。该用哪个组件、该扩展哪个 API、状态怎么绑，基本没走偏。\n11:10 - 12:30｜集成自测：上真机测试，发现一个图片加载缺陷\nplan 执行完，我先在 Android 真机上跑。\n一次编译就成功了。\nApp 起来，界面干净，输入框、消息列表、发送按钮都在。我发出了第一条文字消息，AI 流式回复正常滚了出来，Markdown 也渲染\n对了。\n对于一个一码三端、还自带 SSE 长连接和多模态结构的工程来说，第一次真机运行就直接跑通文字链路，这个结果比我预期要好。\n文字链路没问题，我接着试图片消息。\n图片链路出问题：让 AI 自己定位\n点开相册，选图页面正常打开了——缩略图宫格布局也铺出来了，\n但每一格的缩略图都加载不出来\n，整片宫格只有一个个空白格子，看不到图，自然也没\n法选。\n我没有自己去翻代码，直接把现象和文件甩给 CodeBuddy，让它自己查：\n@ImagePickerPage.kt\n的图片加载不出来，请添加日志，用adb自行分析原因\nAI 按我说的先加日志、再用\nlogcat\n抓日志，用\nadb\n注入操作复现，顺着日志一步步缩小范围。\n很快它就定位到了根因：\n相册组件给每张缩略图的图片地址是\ncontent provider 格式\n（\ncontent://...\n），而模板工程默认实现的\nImageAdapter\n只处理了 base64、http、assets、file 几种来源，没有认\ncontent://\n这种 URI，所以每张缩略图都解码失败、显示空白。\n定位清楚后，它在\nImageAdapter\n加上了对 content URI 的识别，重新运行，相册缩略图全部正常显示，选图、发送也都通了。模型能正确识别画面主体并给出对应回答，说明多模态理解链路也跑\n通了。\n这个问题的链路其实很长：从\nKuiklyAlbum\n组件取出缩略图信息，到跨端的 UI 组织，再到原生图片控件上屏，每一步都可能是原因。但因为有 Kuikly AI 的知识库托底，AI 省去了研究框架源码，\n我只给出问题现象、相关文件和分析要求，它就能自己加日志、用 logcat + adb 把根因一路查到\nImageAdapter\n这一层\n，就这样轻描淡写地把问题解决了。它再一次扮演了一个资深 Kuikly 开发的角色。\n14:00 - 17:30｜迭代优化：把\"能用\"磨成\"好用\"\n文字和图片链路都通了，剩下的就是细节打磨。产品体验的反复推敲，在原生开发里最磨人，也最容易出现平台不一致。而跨端框架的优势正在于此：一次修改，三端同步改好；配合 Kuikly AI，很多修改进一步简化成了一句 Prompt。\n我基本是一条一条把问题丢给 AI，它改完我真机验证，再提下一个。\n1）键盘遮挡输入框\n最先碰到的是老问题：键盘弹起来，把输入框挡住了。\n我让 AI 监听\nkeyboardHeight\n，用外层容器的\npaddingBottom\n把输入区顶上去。它顺手还处理了一个细节——Kuikly 的键盘事件要挂在\nInput\n/\nTextArea\n上，而\nChatSession\n内部的输入框不暴露这个事件，于是它在页面内挂一个代理 Input 承接 Kuikly 的键盘事件回调。这个绕法挺地道，不是我提\n示的。\n2）鸿蒙上新建会话不生效\n在鸿蒙端验证时发现一个偏功能性的 bug：新建会话后，历史列表里始终只有那一条旧会话。\n把现象交给 AI，它顺着路由链路定位到根因落在鸿蒙的\nRouterAdapter\n，这是 Kuikly 处理页面跳转的模块，鸿蒙端默认的\nRouterAdapter\n没有考虑\"先\no\np\nenPage\n再\nclosePage\n\"的边界场景。因为有 Kuikly AI 的知识库托底，仅一轮对话就解决了问题。\n3）拍照/相册入口：从 ActionSheet 改成宫格按钮\n一开始点\"+\"弹的是系统 ActionSheet。我觉得这不够\"聊天 App\"，要求改成更常见的、类似微信那种在输入框下方展开的宫格快捷入口。\n这一条反而最折腾，一开始 AI 没意识到快捷入口面板和键盘抬升是互斥关系，从面板切到键盘的一瞬间，输入框会抬升\"面板 + 键盘\"的双重距离，跳一下才落回正常位置。描述澄清了好几轮，AI 才把面板和键盘收敛到同一套底部抬升逻辑里，共享同一个抬升量，保持输入框位置稳定，问题彻底解决。\n这也印证了一个共识：AI 从 0 到 1 很快，但从\"能用\"到\"细腻\"，还是得靠人一轮轮盯着调。\n4）各页面 UI 统一\n最后是收口。选图页、网页页这些后加的页面，UI 风格和主聊天页、会话列表页对不齐。我直接让 AI 把\nImagePickerPage\n、\nWebViewPage\n对齐到\nChatPage\n、\nSessionListPage\n的设计规范上。\n它先自己读了两个主页面，提炼出一套规范——紫色渐变背景、44dp 透明导航栏、\n‹\n返回按钮、17sp 白色居中标题、浅色内容区——再把另外两个页面逐项对齐。这种\"先归纳现有规范、再套用到新页面\"的做法，比我一条条描述样式高效得多。\n17:30 - 18:00｜验收复盘：一天，一码三端，一个能用的 AI 聊天 App\n到傍晚，这个 App 已经在 Android、iOS、鸿蒙三端真机上都跑通了。\n回看一下它最终具备的能力：\n文本 / 图片消息发送\n拍照、相册选图\nAI 流式回复（SSE 长连接）\nMarkdown 渲染、点链接打开网页\n多模态图文理解\n本地会话管理与历史恢复\n这不是一个截图演示用的 demo，而是一个交互完整、三端一致、真的能装到手机上聊起来的应用。而这一切，一个人、一天就做完了。\n思考总结\nKuikly 解决了什么\n如果用传统三端原生开发这样一个 App——iOS、Android、鸿蒙各派一人，设计只做一次，但每块各端相关功能都要写三遍：\n换成 Kuikly 一码三端，同样的功能只需一份代码：\n从 30 人天到 7.5 人天，Kuikly 最直接节省的，是这种重复劳动的成本，这个成本可能是开发者的工时，也可能是 AI 的 token 开销。\n更深一层节省的，是重复决策。拿\"ActionSheet 改成宫格按钮\"来说——伴随布局调整，还要连带解决键盘抬升与附件面板的冲突、UI 配色不协调等一连串问题，来回调了好几轮才稳下来。但所有这些轮次，都只在 shared 层发生了一次。如果没有 Kuikly，就要在 Android、iOS、鸿蒙上各来一遍，还要额外确保三端行为对齐。一码多端省掉的，正是这种\"同一件事做三遍\"的乘数效应。\nAI 解决了什么\n7.5 人天，是一个 Kuikly 熟手的工作量。而这次接上 AI 后，实际只花了约 7.5 小时：\n从 7.5 人天压到 1 天，靠的不是 AI 一秒生成几千行，而是 Kuikly AI 让它真的\"懂 Kuikly\"。这一天最大的感受是：在 Kuikly AI 的 Skills 和 Rules 加持下，AI 不止是一个\"会写 Kotlin 的通用模型\"，而更像一个熟悉 Kuikly 的资深开发。具体体现在几件事上：\n自定义 Module 写得很地道。\nSSE 和图片压缩这两个框架没覆盖的能力，AI 用\nkuikly-expand-api\n技能补齐——commonMain 定义接口、三端各实现 native 桥接，结构和官方 Module 如出一辙，不用我去纠正\"Kuikly 的 Module 到底该怎么写\"。\nDSL 和响应式理解到位。\n页面结构、组件用法、状态绑定都拿捏得准。消息列表、流式回复这些要随状态自动重渲染的地方，它直接用\nobservable\n把数据和 UI 绑起来，写法很贴合 Kuikly 的范式。\n自定义组件、扩展原生也不在话下。\n为了监听键盘，它自己加了一个零尺寸的代理\nInput\n；为了对接相册的\ncontent://\n地址，它改对了\nImageAdapter\n——这些都是要懂 Kuikly 渲染层和原生接缝才能下手的活。\n知道什么时候复用、什么时候自己写。\n该用\nAiMessageText\n就不再造 Markdown 轮子；该扩展能力就老实补 Module；遇到问题（相册缩略图）能自己\nlogcat + adb\n把根因查到\nImageAdapter\n，而不是把报错原样丢回来。\n这些恰恰是过去 AI 写客户端代码最容易翻车的地方——凭记忆瞎猜私有 API。Kuikly AI 把框架知识喂给模型，相当于补齐了\"资深 Kuikly 开发\"的上下文，让它在正确的知识边界内工作。\n\"AI + Kuikly\" 是当下客户端开发效率最高的组合之一。\n这一天下来，我的体验是，Kuikly 消灭了跨端的重复劳动，AI 消灭了框架层面的样板劳动，剩下留给人的是产品判断、体验打磨、工程把关。说得更具体一点——\"AI + Kuikly\" 让一个客户端开发，真的有了\"一个人顶一个三端小队\"的体感。把繁琐交给 Kuikly 和 AI，把判断力和创造力留给自己。\n关于 Kuikly\n当前Kuikly已经开源，有兴趣和有需要的产品，可以通过以下方式访问 Kuikly 仓库和文档，欢迎Star、Watch与体验：\n👉\nGithub 仓库\n|\n📚\n官方文档\nKuikly框架属于腾讯端服务联盟（tds.qq.com）的重要成员，欢迎关注及了解更多信息：\n●\n腾讯端服务官网：\nTDS 腾讯端服务\n●\nTDS Framework官网：\n跨平台框架\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

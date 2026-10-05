@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "257302641633130496",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深入理解OpenClaw技术架构与实现原理（上）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558933&idx=1&sn=926e244c855c44c818d83c6c7d57d4d3",
+      "date": "2026-03-19T00:32:00.643Z",
+      "chars": 6500,
+      "text": "原创\n踏天\n2026-03-19 08:32\n浙江\n一、背景\n最近OpenClaw如日中天，俨然已经是当下最热门并实用的个人助理。OpenClaw已经是我每日深度使用的效率工具，作为技术人，忍不住想系统性扒一下其技术架构与实现细节。当然了，本文也是通过与一堆Agent协作完成，包括OpenClaw、OpenCode、ClaudeCode、NotebookLLM、\nDeRisk\n等。\nOpenClaw 在面向个人助手方向上，不仅仅体现在其灵活先进的智能体架构，还有其围绕个人助手方向的各种工具与生态的完整实现，是各类技术与工具的集大成者。 最让人惊讶的是，这些能力的基本全部通过AI-Coding实现，可以说彻底改变了软件开发的范式，而且清晰简洁的架构设计与表达，比传统人类编程的系统具有更高的标准，可以说是开启新的软件构建范式的开山之作，非常值得深入的研究。\n由于OpenClaw涉及的技术点非常多，所以文章篇幅会显得很长。 这里建议大家按照感兴趣的模块，分模块阅读了解：\n1.统一控制平面Gateway网关\n2.Agentic Loop/Pi Loop\n3.定时任务系统\n4.工具系统\n5.Channels\n6.上下文管理\n7.SubAgent子智能体\n8.SandBox沙箱系统\n9.记忆管理\n10.Skills模块\n11.Session管理\n12.自进化机制\n13.工作区与Agent路由\n14.Nodes\n15.安全策略\n16.配置管理\n二、OpenClaw总体架构\n如下图所示为OpenClaw的技术架构图，其架构设计上是以\n本地优先(Local-First)多端联动\n为核心，建立一个高度灵活且可拓展的个人AI助手系统。其架构可以概括为一个以\nGateway(网关)\n为核心的控制平面的分布式系统。\n以下是对OpenClaw技术架构设计的详细解读:\n1.核心控制平面: Gateway(网关)\nGateway是OpenClaw的心脏，充当系统的单一控制平面\n功能职责\n: 负责管理会话(Sessions)、状态感知(Presence)、配置、定时任务(Cron)、网络钩子(Webhooks)以及控制界面(Control UI)和Canvas宿主\n通信协议\n: 基于WebSocket(WS) 网络构建，为所有客户端、工具和事件提供统一的连接通道。\n运行环境\n:\n推荐在\nNode ≥22\n环境下运行，通常作为守护进程（Daemon）常驻后台。\n2.智能体运行时: Pi Agent\nPi Agent是处理逻辑和生成回复的核心引擎:\nRPC模型:\nPi Agent以\nRPC(远程过程调用)\n模式运行，支持工具流(Tool Streaming)和块流(Block Streaming)，确保响应的高效与实时性。\n多智能体路由\n: 系统能够将来自不同频道、账户或同伴的输入路由到相互隔离的智能体(拥有独立的Workspace和会话)\n会话模型\n: 提供\nmain\n模式用户直接对话，并支持群组隔离、激活模式切换和队列管理。\n3.连接生态: Channels(频道)\nOpenClaw的一大特色是其极强的连接性，它将AI能力注入到用户已有的社交生态中。\n多频道集成\n：原生支持包括 WhatsApp、Telegram、Slack、Discord、Google Chat、Signal、iMessage、Microsoft Teams、Matrix 以及 Zalo 等多种通讯平台\n路由规则\n: 具备复杂的群组路由逻辑，包括提及门控（Mention gating）、回复标签处理以及针对不同频道的自动消息分块。\n4.设备节点与伴侣应用: Nodes & Apps\n通过将不同设备定义为“节点”，OpenClaw 实现了跨设备的硬件控制：\n跨平台支持\n：包括\nmacOS 菜单栏应用\n、\niOS 节点\n和\nAndroid 节点\n。\n硬件能力调用\n：通过\nnode.invoke\n协议，智能体可以远程调用各节点上的硬件功能，如\n摄像头拍照/录码、屏幕录制、地理位置获取\n以及 macOS 特有的系统命令执行（\nsystem.run\n）。\nVoice Wake & Talk Mode\n：利用 ElevenLabs 等技术，在 macOS/iOS/Android 上提供始终在线的语音唤醒和连续对话能力。\n5.工具与自动化：Tools & Skills\n架构中集成了丰富的生产力工具：\n浏览器控制\n：内置托管的 Chrome/Chromium 实例，支持快照、动作执行和文件上传。\nLive Canvas\n：基于\nA2UI\n构建的实时交互画布，允许智能体驱动视觉化的工作空间。\n技能平台 (ClawHub)\n：提供技能注册表，支持捆绑技能、托管技能和工作区技能的自动搜索与安装。\n6.安全与沙箱机制 (Security & Sandboxing)\n由于 OpenClaw 会连接到真实的社交媒体和本地文件系统，安全性被置于重要位置：\nDM 配对策略\n：默认情况下，未知发送者必须通过配对码验证，bot 才会处理其消息，以防止不受信任的输入。\nDocker 沙箱\n：支持将\n非主会话（如群组或外部频道）\n放入独立的\nDocker 容器\n中运行，限制其对主机的访问权限，并对敏感工具（如浏览器、系统命令）进行黑白名单管理。\n7.部署与远程访问\n本地/远程灵活部署\n：Gateway 可以运行在本地或小型 Linux 实例上。\n内网穿透\n：集成\nTailscale Serve/Funnel\n或 SSH 隧道，使用户能够安全地从远程访问 Gateway 面板和 WebSocket 服务。\n三、各系统模块详解\n3.1 统一控制平面Gateway网关\n3.1.1、核心定位\nGateway 是 OpenClaw 的\n统一控制平面\n，是一个 WebSocket 服务器，负责：\n1.\n消息路由\n- 所有频道（Telegram、Discord、Slack 等）的消息路由\n2.\n会话管理\n- Agent 会话的生命周期管理\n3.\n工具调用\n- Agent 工具的执行协调\n4.\n节点通信\n- iOS/Android 等移动节点的通信桥接\n5.\nHTTP API\n- 提供 OpenAI 兼容的 REST API\n3.1.2、架构模型\n┌─────────────────────────────────────────────────────┐\n│                   Gateway 进程                       │\n│  ┌──────────┐  ┌──────────┐  ┌──────────┐          │\n│  │WebSocket │  │ HTTP API │  │ Control  │          │\n│  │  Server  │  │ (OpenAI) │  │   UI     │          │\n│  └────┬─────┘  └────┬─────┘  └────┬─────┘          │\n│       │             │             │                 │\n│       └─────────────┴─────────────┘                 │\n│                     │                               │\n│              ┌──────┴──────┐                        │\n│              │  RPC Router │                        │\n│              └──────┬──────┘                        │\n│       ┌─────────────┼─────────────┐                 │\n│  ┌────┴────┐  ┌─────┴─────┐  ┌────┴────┐          │\n│  │Channels │  │  Agents   │  │  Nodes  │          │\n│  │(消息路由)│  │ (会话管理) │  │(设备节点)│          │\n│  └─────────┘  └───────────┘  └─────────┘          │\n└─────────────────────────────────────────────────────┘\n3.1.3、关键特性\n特性\n说明\n单端口复用\nWebSocket RPC + HTTP API + Control UI 共用一个端口（默认 18789）\n协议版本化\n客户端声明\nminProtocol/maxProtocol\n，服务端拒绝不匹配的连接\n角色分离\noperator\n（控制面）和\nnode\n（能力节点）两种角色\n作用域控制\n细粒度的 scopes 控制（\noperator.read\n、\noperator.write\n、\noperator.admin\n等）\n设备认证\n支持设备身份验证和配对机制\n热重载\n支持\nhot\n/\nrestart\n/\nhybrid\n三种配置重载模式\n3.1.4、协议机制\n连接握手流程\n：\nGateway\nClient\n│                                │\n│◄──── connect.challenge ────────│  (可选：带 nonce 的挑战)\n│                                │\n│─────── connect (req) ─────────►│  携带 auth + role + scopes\n│                                │\n│◄────── hello-ok (res) ─────────│  返回 policy + 设备令牌\n│                                │\n│◄─────── events ────────────────│  持续推送状态变更\n帧类型\n：\nRequest\n:\n{type:\"req\", id, method, params}\nResponse\n:\n{type:\"res\", id, ok, payload|error}\nEvent\n:\n{type:\"event\", event, payload, seq?, stateVersion?}\n3.1.5、认证模式\n模式\n使用场景\ntoken\n共享令牌认证（默认）\npassword\n共享密码认证\ntrusted-proxy\n反向代理认证（如 Pomerium）\ndevice-token\n设备身份认证（配对后自动获取）\n安全强制\n：\n非环回地址绑定\n必须\n启用认证\n明文\nws://\n禁止连接非本机地址（CWE-319）\n3.1.6、绑定模式\n模式\n地址\n用途\nloopback\n127.0.0.1\n默认，仅本机访问\nlan\n0.0.0.0\n局域网访问\ntailnet\nTailscale IP\nTailscale 网络\nauto\n自动选择\n根据环境自动判断\ncustom\n自定义地址\n特定绑定需求\n3.1.7、服务生命周期\nmacOS (launchd)\n：\nopenclaw\ngateway install\n# 安装 LaunchAgent\nopenclaw gateway start\n# 启动服务\nopenclaw gateway stop\n# 停止服务\nopenclaw gateway restart\n# 重启服务\nLinux (systemd)\n：\nopenclaw gateway install\nsystemctl\n--user\nenable\n--now\nopenclaw-gateway\n.service\n3.1.8、配置热重载\n模式\n行为\noff\n不重载\nhot\n仅应用安全热更新\nrestart\n需要重启时自动重启\nhybrid\n安全时热更新，必要时重启（默认）\n3.1.9、关键配置项\n{\n\"gateway\"\n:\n{\n\"port\"\n:\n18789\n,\n\"bind\"\n:\n\"loopback\"\n,\n\"mode\"\n:\n\"local\"\n,\n\"auth\"\n:\n{\n\"mode\"\n:\n\"token\"\n,\n\"token\"\n:\n\"your-token\"\n},\n\"tls\"\n:\n{\n\"enabled\"\n:\ntrue\n,\n\"certPath\"\n:\n\"/path/to/cert.pem\"\n,\n\"keyPath\"\n:\n\"/path/to/key.pem\"\n},\n\"reload\"\n:\n{\n\"mode\"\n:\n\"hybrid\"\n,\n\"debounceMs\"\n:\n300\n}\n}\n}\n3.1.10、常用命令\n# 启动网关\nopenclaw\ngateway --port\n18789\n# 查看状态\nopenclaw gateway status\nopenclaw gateway status --deep\n# 深度检查\n# 健康检查\nopenclaw gateway health\nopenclaw channels status --probe\n# 发现局域网网关\nopenclaw gateway discover\n# 查看日志\nopenclaw logs --follow\n3.1.11、核心源码位置\n模块\n路径\nCLI 入口\nsrc/cli/gateway-cli/\n客户端\nsrc/gateway/client.ts\n协议定义\nsrc/gateway/protocol/\n服务端 HTTP\nsrc/gateway/server-http.ts\n配置类型\nsrc/config/types.gateway.ts\n3.2 Agentic Loop / Pi Loop\n如下图所示为OpenClaw的整个推理循环架构，也是构成整个系统执行的大脑思考核心。系统中所有的运行逻辑都由推理循环架构来控制，也就是AgenticLoop，OpenClaw的推理循环是一个\n事件驱动\n的架构：\n1.\n主循环\n(\nrun.ts\n) 负责错误处理、重试、profile轮换\n2.\n尝试层\n(\nattempt.ts\n) 负责单次LLM调用的完整生命周期\n3.\n事件订阅\n(\nsubscribe.ts\n) 处理流式响应和工具调用\n4.\n工具循环\n由底层SDK自动管理，当模型返回\ntool_use\n时自动执行工具并继续调用。\n下面是OpenClaw推理(inference/reasoning)循环实现的核心设计流程。\n3.2.1 核心推理循环\n主循环架构 (\nrunEmbeddedPiAgent\nin run.ts:192)\nrunEmbeddedPiAgent\n()\n└──\nwhile\n(\ntrue\n) {\n// 行538 - 主重试循环\n├── 检查重试次数限制 (\nMAX_RUN_LOOP_ITERATIONS\n)\n├── 调用\nrunEmbeddedAttempt\n()\n// 单次推理尝试\n├── 处理 context overflow → 自动压缩\n├── 处理 auth failure → profile轮换\n├── 处理 timeout → 重试或报错\n└── 成功则返回 payloads\n}\n单次推理尝试 (\nrunEmbeddedAttempt\nin run/attempt.ts:306)\nrunEmb",
+      "fulltext_obtained": true,
+      "chunk_index": 1,
+      "chunk_count": 10
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.33,
+        "peripheral": 0.01,
+        "transfer_agent": 0.66,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.55,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.28,
+        "2": 0.63,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.12,
+      "probabilities": {
+        "0": 0.9,
+        "1": 0.09,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.28,
+      "probabilities": {
+        "0": 0.86,
+        "1": 0.06,
+        "2": 0.04,
+        "3": 0.02,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.14,
+        "2": 0.81,
+        "3": 0.03,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.93,
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.06,
+        "2": 0.04,
+        "3": 0.1,
+        "4": 0.62,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.74,
+      "probabilities": {
+        "0": 0.35,
+        "1": 0.56,
+        "2": 0.08,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.69,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6369,
+    "outputTokens": 172,
+    "totalTokens": 6541
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.57,
+        "relevance": 0.69,
+        "grounding": 0.92,
+        "decision_action": 0.82,
+        "evidence": 0.86,
+        "actionability": 0.28,
+        "anti_hype": 0.7
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180422767,
+                "endTime": 1791180422949,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000267498",
+      "marketCost": "0.000267498",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000267498",
+      "inferenceCost": "0.000267498",
+      "inputInferenceCost": "0.000267498",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARFK0Y75P9VYNG71TH9CN"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:02 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::jmnxt-1791180422750-4b704dec9d55"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.33,
+            "peripheral": 0.01,
+            "transfer_agent": 0.66,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.55,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.28,
+            "2": 0.63,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.12,
+          "probabilities": {
+            "0": 0.9,
+            "1": 0.09,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.28,
+          "probabilities": {
+            "0": 0.86,
+            "1": 0.06,
+            "2": 0.04,
+            "3": 0.02,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.14,
+            "2": 0.81,
+            "3": 0.03,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.93,
+          "probabilities": {
+            "0": 0.18,
+            "1": 0.06,
+            "2": 0.04,
+            "3": 0.1,
+            "4": 0.62,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.74,
+          "probabilities": {
+            "0": 0.35,
+            "1": 0.56,
+            "2": 0.08,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.69
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6369,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.57,
+            "relevance": 0.69,
+            "grounding": 0.92,
+            "decision_action": 0.82,
+            "evidence": 0.86,
+            "actionability": 0.28,
+            "anti_hype": 0.7
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180422767,
+                    "endTime": 1791180422949,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000267498",
+          "marketCost": "0.000267498",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000267498",
+          "inferenceCost": "0.000267498",
+          "inputInferenceCost": "0.000267498",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARFK0Y75P9VYNG71TH9CN"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:02.210Z"
+  }
+}

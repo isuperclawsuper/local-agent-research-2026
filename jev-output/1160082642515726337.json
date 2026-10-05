@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1160082642515726337",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "浙江大学经济学院百人计划研究员、博士生导师评价《2026 中国电商AI 应用白皮书》：AI 从技术可得走向经营能力平权",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650544373&idx=2&sn=a58194aeb4381a8ab85b695f74a853a5",
+      "date": "2026-06-17T06:19:00.300Z",
+      "chars": 1789,
+      "text": "袁哲\n2026-06-17 14:19\n浙江\n浙江大学经济学院百人计划研究员、博士生导师评价《2026 中国电商AI 应用白皮书》：AI 从技术可得走向经营能力平权\n作者：袁哲 浙江大学经济学院百人计划研究员、博士生导师。以下为教授评论全文——————\n从经济学视角看，AI 最值得重视的意义，不只是带来一轮技术效率提升，而在于它正在改变经营能力的分布方式。淘宝天猫发布的\n《AI 重塑经营：2026 中国电商AI 应用白皮书》\n，就把观察对象放在电商商家和真实经营场景中。过去我们讨论人工智能，常常从模型能力、算力投入和技术突破出发；但AI 是否真正具有普惠价值，最终要看它能否进入普通企业的日常经营流程，能否帮助中小商家降低成本、改善决策、提升市场响应能力，并在竞争中获得向上流动的机会。\n我的研究也支持这一判断。在一项研究中，我基于阿里数字平台企业级AI 工具使用日志，构建了企业人工智能应用指数。该指数显示，AI 应用已经从“技术可得”逐步走向“经营嵌入”。模块化、低成本、平台化的AI 工具，显著降低了企业接入先进数字技术的固定成本，使原本只有大企业才能配置的内容生成、商业分析、客服优化和市场洞察能力，开始被大量中小经营主体使用。这意味着AI 的普惠性首先体现为能力门槛下降：它不是简单替代某一类劳动，而是在帮助小企业获得过去难以负担的组织能力。\n更关键的是，AI 普惠并非停留在“大家都能用”的层面，而是体现在经营绩效的真实改善上。我的另一项研究发现，平台赋能的生成式AI 工具使成交额两万以下的小型企业的销售额增长达到75.8%，接近大型企业增幅的四倍。这说明，当AI 以较低成本嵌入数字市场时，它并不必然强化“强者恒强”，反而可能缩小中小企业与大型在位企业之间的能力差距。AI 通过降低劳动密集型运营成本、缓解价格信息和需求信息不对称、改善商品展示和商业分析能力，使小商家更容易被消费者发现，也更有能力理解市场、推出新品和改进服务。\nAI 的普惠价值应被理解为一种“经营能力平权”。在传统市场中，小企业往往受制于人力、数据、经验和专业服务不足，难以完成精细化运营。AI 工具把部分专业知识、分析能力和内容生产能力封装进低成本产品，使商家能够在更短时间内完成客服、选品、营销、定价、标题优化、履约管理等任务。这不仅提高单个企业效率，也可能扩大整体市场需求。进一步研究表明，AI 带来的增长并不只是企业之间重新分配存量订单，而是促进市场活动扩张和小企业向上流动，这正是数字经济高质量发展的重要基础。\n当然，普惠不等于平均化。新的数字鸿沟正在从“能否接入AI”转向“能否深度使用AI、能否把AI 转化为经营能力”。企业之间的差异，越来越体现在使用深度、模块组合、流程接入和组织吸收能力上。行业差异也不是简单由技术热度决定，而取决于经营任务结构：内容生产需求强、信息传递成本高、任务可数字化程度高的行业，更容易形成高强度AI 应用；而体验属性强、信任机制重要或履约责任复杂的行业，AI 短期内更多是辅助工具。地区差异同样不是经济发展水平的简单复制，中西部和东北部分地区也可能因特色产业和转型需求形成较高使用强度。\n淘宝天猫的这份白皮书以商家真实实践为基础，总结AI 在电商经营中的应用路径，有助于把AI 讨论从宏大叙事拉回微观机制：从效率工具转向增长工具，从技术扩散转向能力扩散，从单点应用转向全链路经营升级。让AI 真正嵌入经营流程，提升中小企业的市场能力，扩大需求，改善创新和服务质量。\n未来，AI 普惠的关键在于让更多企业不仅“用得上”，而且“用得好”。平台需要继续降低工具使用门槛，完善行业化场景，帮助商家完成从试用、学习、筛选到嵌入的动态过程；政策层面也应关注中小企业数字能力建设、数据基础设施和公平竞争环境。只有当AI 真正成为普通经营者可获得、可理解、可持续使用的生产力工具，它才不只是新技术革命的象征，而会成为推动包容性增长和市场活力提升的重要力量。\n请复制下方链接转到浏览器，获取《AI重塑经营：2026中国电商AI应用白皮书》PDF完整版。\nhttps://open.taobao.com/whitepaper/ai2026.htm\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_business",
+      "probabilities": {
+        "transfer_agent": 0,
+        "peripheral": 0.4,
+        "irrelevant": 0.1,
+        "direct_local": 0,
+        "transfer_business": 0.5
+      }
+    },
+    "relevance": {
+      "score": 2.34,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.31,
+        "2": 0.02,
+        "3": 0.65,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.14,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.7,
+        "2": 0.18,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.46,
+      "probabilities": {
+        "0": 0.27,
+        "1": 0.06,
+        "2": 0.63,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0.01
+      }
+    },
+    "evidence": {
+      "score": 1.23,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.8,
+        "2": 0.11,
+        "3": 0,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.19,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.56,
+        "2": 0.31,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.9,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.11,
+        "2": 0.83,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.91,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 3624,
+    "outputTokens": 172,
+    "totalTokens": 3796
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.37,
+        "relevance": 0.54,
+        "grounding": 0.78,
+        "decision_action": 0.56,
+        "evidence": 0.8,
+        "actionability": 0.7,
+        "anti_hype": 0.86
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179885550,
+                "endTime": 1791179885716,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000152208",
+      "marketCost": "0.000152208",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000152208",
+      "inferenceCost": "0.000152208",
+      "inputInferenceCost": "0.000152208",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A82YQMKZC250QVQDADA7N"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:05 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::tpp9n-1791179885516-cbbb969b2a4c"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_business",
+          "probabilities": {
+            "transfer_agent": 0,
+            "peripheral": 0.4,
+            "irrelevant": 0.1,
+            "direct_local": 0,
+            "transfer_business": 0.5
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.34,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.31,
+            "2": 0.02,
+            "3": 0.65,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.14,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.7,
+            "2": 0.18,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.46,
+          "probabilities": {
+            "0": 0.27,
+            "1": 0.06,
+            "2": 0.63,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0.01
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.23,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.8,
+            "2": 0.11,
+            "3": 0,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.19,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.56,
+            "2": 0.31,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.9,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.11,
+            "2": 0.83,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.91
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 3624,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.37,
+            "relevance": 0.54,
+            "grounding": 0.78,
+            "decision_action": 0.56,
+            "evidence": 0.8,
+            "actionability": 0.7,
+            "anti_hype": 0.86
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179885550,
+                    "endTime": 1791179885716,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000152208",
+          "marketCost": "0.000152208",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000152208",
+          "inferenceCost": "0.000152208",
+          "inputInferenceCost": "0.000152208",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A82YQMKZC250QVQDADA7N"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:04.941Z"
+  }
+}

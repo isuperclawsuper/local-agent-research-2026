@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "259105581515677696",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "龙虾盛宴下的冷思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694912&idx=1&sn=91591aff71737e548cfe33b649950194",
+      "date": "2026-03-24T00:46:00.818Z",
+      "chars": 5720,
+      "text": "原创\n蒋马灵\n2026-03-24 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\nOpenClaw 火了。Mac mini 断货了，「上门装虾」成了新职业，GitHub 30 万颗星超过了 React 十年的积累。\n但我身边一个很典型的现象是：很多人装完龙虾之后不知道拿它干什么。Mac mini 买了，Agent 跑起来了，然后呢？\n这个问题不只属于龙虾热。AI 编程工具也面临同样的拷问。我自己每天都在用 Claude Code、Cursor、Codebuddy，最近留意了推特和内部群里的讨论，结合自己的体感聊聊。\n01\n哪些是真需求，哪些是自我感动？\n龙虾热里「装了不知道干什么」只是冰山一角。不少同学花了大量时间做 Skill、迁移知识库，但实际用 AI 的时候发现之前做的东西好像一点用也没有。\n汗青 HQ 在推特上说过一个观点：AI 整理资讯是伪需求。他的原话大意是：不喜欢看文章的人不会因为有了 AI 就开始看，真喜欢看的人也不需要 AI 整理，算上折腾的时间省没省还不好说。\nAI 擅长的是对已有需求提效，或者让原本精力门槛太高、懒得做的事变得可行。但它不会凭空创造需求。不爱读文章的人，不会因为有了 AI 摘要就变成阅读爱好者。\n类似的声音在团队内部也听到过。有同事说：为了让 AI 输出正确代码，需要提供大量上下文信息，这个过程比自己直接改两行代码还要麻烦。「算上折腾的时间省没省还不好说」不只是汗青说的资讯场景，在编码场景里一样成立。\n这几件事背后我观察到一个共同模式：\n先造工具再找需求。\n龙虾热本身就是一个放大版的例子。\n更极端的例子来自腾讯云开发者的一篇文章。作者设计了三层 Agent 架构（Command → Agent → Skill）加九步工作流加 JSON 通信协议，结果花 15 分钟走完流程，只为改 1 秒钟的代码，直接在聊天框说一句话 5 分钟就搞定。花在「让 AI 理解流程」上的精力，会不会比花在「让 AI 理解业务」上的还多？\n最后全推翻了，回归一个 AGENTS.md 文件加 context 目录。他们总结的核心认知我觉得很到位：LLM 本身就是最好的解释器，不需要在它上面再搭一层「意图识别」或「路由调度」。\nOutput = f(来源, 输出格式)\n，f 已经够强了，问题在于怎么组织好输入，f 外面包多少层壳没有意义。\n这和 Skill 用不上是同一类问题的不同严重程度：做了 Skill 没人用是轻度，设计了整套编排架构然后推翻是重度。根源相同，优化的都不是真正的瓶颈。\n在我的经验里，被动消费式的 AI 整理很容易变成伪需求。但如果带输出环节的主动消化，情况不太一样。读完一篇文章，提炼出自己的判断，关联到正在做的事，这个过程是有价值的。\nSkill 也一样。从真实痛点长出来的才有生命力。\n比如我在用的日报 Skill，就是因为「每天写日报太麻烦」这个真实痛点才做的。它有效的原因我想过，日报是高频场景（每天都要写），输出格式相对固定，AI 容易做好。做完确实每天都在用。\n但为了做而做、为了「觉得应该有」而做的 Skill，大多活不过一周。我给自己的判断标准是：这个东西，我是因为真的需要才做，还是因为「觉得应该有」才做？\n02\nAI 写的代码，质量够不够用？\n这是我听到最多的一个问题。\n有人说 Vibe Coding 时代的软件质量，大家都是半成品。这话有点刺耳，但不是没道理。Karpathy 推文下面有条评论很扎心：「AI 写的代码出 bug，debug 要花 3 倍时间，因为你在理解一段自己没写过的代码。」\n自己写的代码，bug 在哪大致有感觉。AI 写的代码出了问题，得先搞明白它的思路，再去找 bug，等于多了一层认知成本。\n有个案例把这个问题展示得很极端。有人用 LLM 重写了一个 SQLite 的 Rust 版本，能编译、测试全过、文件格式兼容、README 写得很漂亮，但主键查找慢了\n20,171 倍。\n原因是查询规划器少了一行\nis_ipk\n检查，26 年持续性能分析（profiling）的积累。LLM 靠模式匹配学不到这种东西。\n「能跑」和「跑对了」之间的距离，可能比大多数人想象的大得多。LLM 优化的目标是「看起来合理」，不是「行为正确」。测试全过只能说明测试覆盖的场景没问题，不代表性能、边界、隐含约束都对了。\n团队内部也有类似的体感。有同事分享过：复杂场景下，AI 实现了 80%，等于实现了 0%。因为核心思路看似对但实际不对，整段逻辑只能推翻重来。而且一旦 AI 陷入了错误的实现方向，后续对话只会越改越错，停不下来。\nAgent 目前也有明显的边界。有人在 Karpathy 那条推文下回复：做生产代码，碰到 UI、网络、并发这些不好自动测试的场景，效果和去年差不多。\n更具体地说，有些任务 Agent 直接卡住了。另一个人让 Claude Opus 修一个 Swift 输入框的问题，试了 5 次都没搞定。\n这不是个例。从企业视角看更明确。阿里云开发者有篇文章指出，AI 和开发者之间存在大量隐性信息差：内部框架、团队规范、非公开技术栈，这些 AI 根本不知道。从我经历过的几次线上问题来看，不加限制地 Vibe Coding，线上稳定性很难不受影响。\n那怎么办？一个务实的方向是\nSpec Coding\n：让 AI 先写规约（做什么 + 怎么做），工程师审查 Spec 而非审查代码。按这个思路，Spec 才是需要重点关注的。Spec 是高级语言，AI 是编译器，代码是二进制产物，随时可以重新生成。\n更隐蔽的是，大部分人其实看不出 AI 产出是半成品。AI 生成前端 UI，不写前端的人惊呼「前端已死」，但内行看细节还差得远，AI 味很重。反过来，AI 生成的图片我觉得挺不错，发给学美术的朋友看，人家嗤之以鼻。每个人只在自己的领域是内行，所以「前端已死」喊得响，是因为喊的人不写前端。\n所以我觉得，在 AI 越来越能写代码之后，能看出「这个东西到底好不好」反而变重要了。生产成本被打下来了，但判断质量的能力还得靠人。\n从我的经验来看，AI 用得好不好，关键在于你怎么用它。\n举个我自己的例子：在电商项目里，商品列表页的 CRUD 逻辑、TypeScript 类型定义、接口联调的模板代码，这些任务交付标准很明确，接口对了、类型没报错、列表渲染正常，交给 Agent 做又快又稳。但像优惠叠加逻辑、涉及多个规则的交互细节，这些需要理解业务上下文、和产品反复对齐的任务，Agent 的产出往往需要大幅返工。\n我目前的做法是按任务类型分辨，适合的交给 Agent，不适合的自己来。\n03\n那到底该怎么用？\n吐槽归吐槽，工具还是要用的。问题是怎么用。说说我在实践中试过的一些做法。\n3.1\n先认清瓶颈在哪\n约束理论（Goldratt《目标》）有一个观点，大意是：整个系统的产出只能在约束环节得到改善，优化非约束环节没有显著收益。\n套到 AI 编程上就是：\n在我自己的工作流中，审查环节才是真正的瓶颈。\n我有亲身体验。用 CLI 同时开 3 个 Claude Code 会话并发跑任务，精力全花在审批操作上，这边弹出来问我允不允许，那边又蹦出一个要我点一下。各路 plan 一长串涌出来，挨个看很费劲。跑了大概半小时，事后发现有两处重复逻辑本来可以抽成公共函数，还有一处状态管理写得绕，如果当时盯着细看就不会这样写。\n并发确实快了，但代码细节没人盯，能写得更好的地方被忽略了。并发提速但质量降速，净效果存疑。\n反过来想，我自己也有过类似的阶段，觉得模型不行，但后来发现是自己 prompt 没控制好，或者想用一个 prompt 完成过于复杂的任务。当人本身成了瓶颈，模型再怎么升级也是杯水车薪。\n那瓶颈在审查环节，怎么办？除了逼自己审得更快，我在尝试另一种思路：\n用 Agent 去补审查环节。\n比如写完代码后，让多个 Agent 分别从复用性、代码质量、执行效率三个维度审查，审完直接改。这样我只需要看最终结果，审查压力小很多。\n当然这个做法我还在摸索，效果不确定，毕竟前面刚说了 Agent 写的代码质量有问题，凭什么相信 Agent 的审查更靠谱？我的理解是，审查比生成容易：给一段已有的代码挑问题，比从零写一段代码门槛低。\n3.2\n小心认知陷阱\n三元同学还提到一个点：Agent 返回的第一个方案，很容易成为你心中的「锚」。后续判断都围绕它微调，而不是退一步想想，这个方向对不对？需不需要推倒重来？\n我注意到 Agent 的语气总是很笃定，不管对错。这容易让人放松警惕，减少自己的独立判断。\n除了锚定效应，还有一个更隐蔽的陷阱：效率错觉。METR 做过一个随机对照实验，16 名经验丰富的开源开发者用 AI 辅助编程，实际效率反而慢了 19%，但他们自己以为快了 20%。主观感受和客观数据完全相反。AI 带来的「流畅感」本身就是一种认知陷阱，感觉在加速，实际可能在减速。\nKarpathy 推文评论区有句话说得好：「你可以外包你的思考，但你没法外包你的理解。」\n以前我觉得，保留理解就得自己写代码。现在觉得不一定。关键在于是否真的理解了这段逻辑在做什么、为什么这样做。\n有一次 Agent 给我生成了一段状态管理的逻辑，我没直接用，而是追问了几个问题：为什么用 computed 而不是 watch？如果用户连续快速点击「加入」会怎样？这个缓存策略在商品下架时怎么失效？问完之后我对这段逻辑的理解，比自己从零写的时候还清晰，因为我被迫从多个角度审视了它。\n保留理解的方式是通过提问，写代码只是路径之一。\n我试过几个应对锚定效应的方法：\n我会让 Agent 给 2-3 个备选方案，带优缺点对比\n看 Agent 输出前，我会先花 2 分钟列关键决策点，形成自己的「锚」\n对关键结论我会追问：这个方案在什么情况下会失败？你漏掉了什么？\n3.3\n按特长编排多模型分工\n社区里有人分享了一种做法：不同模型按特长编排。\n比如用 Opus 做需求分析和代码开发，它自主探索能力强，擅长从 0 到 1。用 Codex 做代码审查，它对架构问题和边界情况更敏锐。我自己的体验是，让 Opus 写完一段逻辑后丢给 Codex review，确实能发现一些自己和 Opus 都没注意到的细节。\n我自己试下来，按特长分工比指望一个模型包揽一切靠谱。\n04\n再往前想一步\n前面聊的都是现在的问题，最后说说方向。\n回到开头的龙虾盛宴。越来越多人开始讨论「卸载 OpenClaw」。装上了、跑了一阵子之后，真正的问题浮上来了：安全怎么兜底？长期挂着跑 token 成本怎么控制？它到底有没有在帮我？\n一个工具能不能长期待在工作流里，取决于它每天省了多少事。第一次用的时候多惊艳，反而不重要。\n那什么决定了它能不能每天都省事？我觉得核心在于它理不理解你的工作方式。\n现在的 Agent 本质上还是被动的。得先说、先写 prompt、先把上下文组织好，先给 skill，它才开始工作。但真实的开发不是这样。真实的开发是在 IDE、浏览器、文档、终端之间来回切。注意力消耗在一堆小操作上，很多时候我自己都说不清正在做什么。\n这和前面说的 Skill 用不上其实有关联。Skill 用不上，一部分原因是做了伪需求，另一部分原因是：系统根本不理解你的工作方式，每次都要从头解释自己在干什么。\n在我自己的工作流里，Claude Code 的 memory 机制其实已经在做这件事的雏形了。它会记住我的偏好、项目上下文、之前的决策，下次对话不用从零开始。日报 Skill 越用越顺，也是因为它在持续积累我的工作模式。但这些都还是碎片化的，离「理解你怎么工作」还有距离。\n如果有一天，AI 能先观察我怎么工作，识别重复模式，再推荐适合我的 Skill，体验可能完全不同。哪个工具越来越懂我的工作方式，我就越离不开它。\n我自己已经在小范围验证这个循环了。比如日报 Skill 刚开始每次都要解释项目背景，后来我把项目上下文沉淀到 memory 里，现在它能直接关联到我在做的事，省掉了大量重复解释。体验差距很明显：同样一个 Skill，有没有积累过上下文，完全是两个东西。\n05\n写\n在最后\nMac mini 还在断货，新的 AI Agent 工具还在涌现。\n但热闹过后，问题是一样的：METR 实验里那些开发者以为自己快了 20%，实际慢了 19%。工具在变强，但人对自己效率的判断也在失真。\n我给自己的标准很简单：一个工具如果连续一周没打开，就该想想是不是在自我感动了。\n参考引用\nhttps://x.com/karpathy/status/1886192184808149383\n及评论区讨论\nhttps://x.com/hq4ai/status/2028047870985633961\n「AI 整理资讯是伪需求」\nhttps://blog.katanaquant.com/p/your-llm-doesnt-write-correct-code\n— SQLite Rust 重写案例\nhttps://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/\n— 开发者用 AI 实际慢 19% 但自认为快 20%\nhttps://cloud.tencent.com/developer/article/2631822\n— 腾讯云开发者\n-End-\n原创作者｜\n蒋马灵\n感谢你读到这里，不如关注一下？\n👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。3月31日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.04,
+        "transfer_business": 0.01,
+        "transfer_agent": 0.75,
+        "irrelevant": 0.2
+      }
+    },
+    "relevance": {
+      "score": 1.78,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.28,
+        "2": 0.63,
+        "3": 0.08,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.64,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.03,
+        "2": 0.09,
+        "3": 0.11,
+        "4": 0.54,
+        "5": 0.19
+      }
+    },
+    "decision_action": {
+      "score": 1.4,
+      "probabilities": {
+        "0": 0.38,
+        "1": 0.03,
+        "2": 0.41,
+        "3": 0.17,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.01,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.19,
+        "3": 0.58,
+        "4": 0.22,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.76,
+      "probabilities": {
+        "0": 0,
+        "1": 0.05,
+        "2": 0.27,
+        "3": 0.54,
+        "4": 0.14,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 4.4,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0.6,
+        "5": 0.4
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.96,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6966,
+    "outputTokens": 172,
+    "totalTokens": 7138
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.67,
+        "relevance": 0.74,
+        "grounding": 0.5,
+        "decision_action": 0.35,
+        "evidence": 0.71,
+        "actionability": 0.65,
+        "anti_hype": 0.73
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180025573,
+                "endTime": 1791180025778,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000292572",
+      "marketCost": "0.000292572",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000292572",
+      "inferenceCost": "0.000292572",
+      "inputInferenceCost": "0.000292572",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ACBNTQH8GYJQBMHA3H6CZ"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:00:25 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::czh42-1791180025460-d2a8d9c70b6b"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.04,
+            "transfer_business": 0.01,
+            "transfer_agent": 0.75,
+            "irrelevant": 0.2
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.78,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.28,
+            "2": 0.63,
+            "3": 0.08,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.64,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.03,
+            "2": 0.09,
+            "3": 0.11,
+            "4": 0.54,
+            "5": 0.19
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.4,
+          "probabilities": {
+            "0": 0.38,
+            "1": 0.03,
+            "2": 0.41,
+            "3": 0.17,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.01,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.19,
+            "3": 0.58,
+            "4": 0.22,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.76,
+          "probabilities": {
+            "0": 0,
+            "1": 0.05,
+            "2": 0.27,
+            "3": 0.54,
+            "4": 0.14,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 4.4,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0.6,
+            "5": 0.4
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.96
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6966,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.67,
+            "relevance": 0.74,
+            "grounding": 0.5,
+            "decision_action": 0.35,
+            "evidence": 0.71,
+            "actionability": 0.65,
+            "anti_hype": 0.73
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180025573,
+                    "endTime": 1791180025778,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000292572",
+          "marketCost": "0.000292572",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000292572",
+          "inferenceCost": "0.000292572",
+          "inputInferenceCost": "0.000292572",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ACBNTQH8GYJQBMHA3H6CZ"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:00:25.008Z"
+  }
+}

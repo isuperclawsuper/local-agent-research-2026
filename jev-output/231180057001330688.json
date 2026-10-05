@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "231180057001330688",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "数据合成篇｜多轮ToolUse数据合成打造更可靠的AI导购助手",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557014&idx=1&sn=f3d44dce244d03c16c13033a1a9a0faf",
+      "date": "2026-01-06T00:31:00.294Z",
+      "chars": 18290,
+      "text": "原创\n漫希\n2026-01-06 08:31\n浙江\n一、引言\n近年来，大语言模型（LLM）的能力边界不断拓展：从检索增强生成（RAG），为大模型接上了外部知识库，让它能给出更可靠的答案；到引入思维链（COT）机制，通过显式地生成思考过程，增强了模型的逻辑分析与复杂问题拆解能力；再到如今的工具调用（Tool Use），模型真正被赋予了像人类专家一样的能力，主动思考、规划、并利用工具去解决未知复杂问题。这标志着模型正从“被动响应者”向“主动智能体”演进，让模型在复杂问题解决、响应鲁棒性和生成的透明度上发生质的飞跃。\n然而，“巧妇难为无米之炊”，要训练出这样的智能体，光有算法远远不够，数据才是真正的燃料。\nDeepSeek的研究工作确立了当前大模型训练的主流范式，即先是高质量数据驱动的冷启动阶段，再是基于强化学习的优化阶段。但Tool Use的冷启数据难以获取，\n通用模型通常在海量纯文本上预训练，再通过人工标注的指令数据微调，但这些数据几乎不包含“如何分步调用工具，分析工具返回结果，做出决策”的完整轨迹。人工标注不仅成本高昂、效率低下，还难以覆盖复杂场景的多样性。而特有业务场景的Tool Use数据更加稀缺。因此，合成数据成为破局关键。借助更强的大模型自动地生成大规模、高难度、可拓展的Tool Use训练数据。更重要的是，这套合成方案还能形成“数据飞轮”：训练出的更好模型，反过来生成更高质量的数据，推动智能体能力的持续优化。我们将以租赁导购助理“小不懂” One Model 架构为例，介绍一套面向真实业务需求的 Tool Use 训练数据合成方案。\n1.1. 租赁助理“小不懂”介绍\n“小不懂”作为支付宝芝麻租赁频道的官方智能助理，核心使命是同时满足用户的问题咨询与\n商品导购\n两大需求。这一业务特性决定了其工具调用能力与当前主流的 Deep Research 场景存在差异。在典型的 Deep Research 任务中，模型主要依赖知识检索工具来获取信息、验证事实或进行多步推理；而“小不懂”不仅需要具备类似的知识检索能力（例如查询租赁规则、用户权益、小红书种草内容或全网资讯），还必须能高效调用商品库检索工具——即在数万级租赁商品池中，根据品类、品牌、型号、功能特征、租金价格、租期选项及商家信誉等多维参数，动态筛选并推荐最匹配的商品。这使得现有公开的 Tool Use 数据集无法直接复用。因此，我们必须从零构建一套贴合租赁场景、融合知识理解与商品决策的合成数据体系，才能真正训练出懂业务、会导购、能闭环的智能助理。\n技术上，我们采用One-Model架构，通过单一基座模型实现多工具协同，涉及的工具如下：\n1.2. LLM Tool Use 推理&训练流程介绍\n接下来，我将分\n推理流程\n和\n训练流程\n两部分简要介绍如何让模型在实际交互中利用Tool解决用户问题，以及如何让模型学习到Tool Use能力。\n1.2.1. 推理流程\n在推理阶段，模型采用 ReAct方式，以自回归方式交替生成推理思考（Thought）与行动（Action），并在每一步动态判断：是继续调用工具获取更多信息（Tool Call），还是已具备足够依据输出最终回答（Final Response），具体流程可以参考下图：\n对于每一步，模型会经历如下阶段：\n1. 任务分解与规划：将原始拆解为若干可操作的原子子任务（如“检索某类产品的种草知识”、“查满足某些条件的商品”）；\n2. 工具选择：针对每个子任务，从预定义工具集中选择最匹配的工具（如知识检索、商品库查询或服务卡片触发）；\n3. 工具调用与结果融合：执行工具调用，获取结构化或非结构化返回结果，并将其融入当前上下文；\n4. 决策与响应：基于累积信息判断是否完成任务——若未完成，则回到步骤1继续迭代；若已完成，则生成最终回复。\n1.2.2. 训练流程\n为让模型学习上述推理逻辑，我们\n采用\nMulti-Step SFT + RL训练策略，将一条完整的“行动轨迹”数据，拆解成多个独立的训练步骤，\n目的是：\n1. 兼顾过程与结果\n：\n让模型既能学习在任务中途进行下一步行动预测 (Next-Step Prediction)，也能学习在任务终点生成最终答案 (Final Response Generation)\n2. 提升训练效率\n：\n在构建训练数据时，\n提前离线获取工具返回结果，在\n训练过程中，模型无需等待工具调用结果，\n提升训练效率。\n1.3. 数据合成的目标与难点\n1.3.1. 目标\n目前社区并没有一些很好用的tool use基础模型，\n尽管社区涌现出\n如\nsearch-r1\n，\nRe-tool\n等多轮工具调用模型，但都是从一个开源的instruct模型针对某方面工具调用（如搜索，代码）进行强化学习，\n但在混合工具调用（如知识检索 + 商品查询 + 服务触发）和复杂多轮交互场景中泛化能力有限，难以支撑真实业务中的多样化需求。\n此外，考虑到推理耗时，参数量相对小的基座模型（80b及以下）\n在长上下文或多轮对话中仍存在历史信息遗忘与内容重复生成等问题。因此，我们的核心目标是构建一个适用于租赁导购业务的高质量训练数据集。该数据集必须能够：\n1. 增强模型的多轮对话理解能力，确保其能准确把握长对话中的用户意图和关键信息。\n2. 提升模型的精准工具调用能力，使其学会在面对复杂请求时，自主规划并协同使用知识、商品、服务等多种工具。\n3. 强化模型的复杂问题推理能力，最终实现一个理想状态：我们只需为模型提供可选的工具及其定义，它便能自动编排工作流，自主地完成任务，无需任何硬编码的逻辑。\n为了达到这个目标，我们需要合成包含完整“思考-行动”轨迹的训练数据。每一条数据都应遵循\nQuery-Answer\n的结构，其中\nQuery\n包含了用户的当前问题及完整的历史对话，而\nAnswer\n则包含了模型完整的工具调用链以及最终给出的人性化回答。\n1.3.2. 难点\n在实践中，构建这样一个大规模、高质量的多轮Tool Use数据集，我们面临着四大核心挑战：\n1. 语料稀缺性\n：\n缺乏高质量、可复现的多轮工具调用训练语料，尤其是多轮tool use训练语料。\n2. 合成低效性\n：\n任务链路复杂，即便使用更强的主流大模型，自动生成的有效轨迹比例仍低，且人工标注成本高、准确率难以保障。\n3. 动态适配性\n：\n训练数据需与模型能力演进对齐——模型不同训练阶段，关注的能力点不同，对数据分布的需求不同。\n4. 场景拟真度\n：\n生成的问题必须高度拟人化，精准还原线上用户的真实表达习惯与租赁业务场景，避免机械或脱离实际的对话。\n二、相关工作\n2.1. ToolUse公开评测集构建方案\n1. ACE-Bench旨在全面评估模型在不同情境下的工具调用能力，为此它将数据精心划分为三种类型：\nNormal数据\n：\n评估模型在基础场景下的工具调用能力；\nSpecial数据\n：\n评估模型在指令不完整或参数错误等特殊情况下的表现；\nAgent数据\n：\n通过多智能体交互模拟真实世界的多轮对话，评估模型的在复杂交互环境中的性能。利用GPT-4o模拟用户角色复制真实世界的交互场景。\n其中Normal and Special data数据由LLM自动构建：\nAPI合成\n：\n采用自演进方法，通过构建分层 API 上下文树，以确保生成的 API 涵盖广泛的领域和功能\n对话构建\n：\n从API池中采样\n3-6个API（随机采样，子图采样）\n，针对简单查询使用模板生成；针对复杂查询则引入多智能体（用户、助手、工具）角色扮演，生成动态交互对话。\nAgent Data由专家构造：\n场景构建\n：\n从真实世界中抽象出多个场景（移动应用、食品配送、金融服务、旅行预订），并为每个场景出一系列的tools。\n环境构建\n：\n完成这些tools的代码实现\n问题设计\n：\n针对不同场景\n预定义多轮对话规范，领域专家进行迭代标注构建对话问题。\n2. Tau2-Bench同样利用大模型的多种角色扮演（user和agent）产生对话，不同于之前的工作中只有“\n助手”\n能使用工具，Tau2-Bench在数据合成时用户和助手均可共享工具和知识，这更符合真实场景。\n其整体的数据构造流程如下：\n定义原子任务\n：\n将复杂任务分解为最小的、不可再分的“原子任务”。\n构建任务模版\n：定义一系列“任务模板”\n来编排这些原子任务，形成解决特定问题的标准化流程\n。\n模版实例化\n：\n将抽象的流程转化为具体的、可执行的任务数据。在这一步，我们为模板中的每个环节填充具体的原子任务，并从领域知识库中抽取参数来丰富细节。同时，系统会自动生成任务的初始与目标状态，这种方法不仅为任务的正确性验证提供了明确依据，也通过参数和任务组合的变化极大地提升了生成数据的多样性。\n2.2. 其它数据合成方案\n除了专门的评测集构建，学术界还探索了多种面向特定挑战的数据合成技术。\n1.\n在query生成方面\n：\nWebSailor\n基于图方法构建了一批高难度的问答数据：\n基于 Wikidata 随机游走构建复杂知识子图。\n对子图和子表进行采样以生成初始问题和答案。\n通过模糊化实体或时间生成高难度推理问题。\n2.\n在多步tool use轨迹生成方面\n，\nGoogle DeepMind\n的工作中提到利用更强的大模型迭代生成tool use轨迹：\n迭代生成轨迹: 让一个工具增强的LLM自主解决问题，记录其包含思考、工具调用和最终答案的完整“行动轨迹”。\n轨迹分解与过滤: 将长轨迹分解为多个子任务，并利用一个评估模型对轨迹中的每一步行动进行合理性打分。\n数据过滤：只保留那些每一步都被判定为合理的“高质量轨迹”，这种过程性过滤（Process Filtering）被证明是提升数据质量最有效的方式。\n三、方案介绍\n然而，当前现有Tool Use数据合成方案应用于租赁导购场景时，仍面临挑战： 业务场景下的对话通常需要围绕特定的目标（如商品决策、售后问题咨询等）展开。完全无约束的生成（如多步轨迹生成）虽然多样，但容易偏离业务主线；而过于依赖模板则会扼杀对话的自然性和灵活性，无法有效模拟用户意图的动态变化。\n针对上述挑战，我们提出一种动态多智能体对话生成框架。我们借鉴影视创作中的“导演-演员”协作机制，通过可控的话题路径引导与角色驱动的动态交互，在保证业务合规性的同时，生成高度拟真、逻辑连贯且覆盖全链路的多轮对话数据。该方案不仅弥补了现有方法在场景深度与交互自然性上的不足，也为构建专业级租赁导购 AI 提供了高质量、可扩展的数据基础。\n3.1. 多轮数据合成\n通过“导演-演员”式协作框架，多智能体（用户、助手）的角色扮演来生成动态交互，模拟真实世界的多轮对话。\n3.1.1.\n对话话题路径采样\n输入：话题池、主推商品信息（如“大疆pocket3”）或租赁场景（如“演唱会”）。\n输出：差异化用户租赁偏好+对话话题转移路径。\n实现步骤：\n步骤1：构建话题池。根据业务场景，定义租前、租中、租后三个阶段的话题节点及示例，让对话贴合业务场景。\n步骤2：获取商品结构化知识。利用该知识让模型提出符合真实场景的问题。\n{\n\"product_name\"\n:\n\"大疆pocket3\"\n,\n\"knowledge\"\n:\n\"[检索到的种草知识文档...]\"\n,\n\"attribute\"\n:\n{\n\"简介\"\n:\n\"大疆Pocket3是大疆推出的一款便携式云台相机，支持4K视频拍摄，提供多种参数调节功能（如曝光+0.3、感光度50-6400、白平衡4700K等），支持10bit色彩深度。用户可通过自定义参数提升画质，如关闭美颜、调整锐度与去噪等。设备支持竖屏模式、自动旋转运镜及希区柯克变焦功能，操作门槛较高但画质表现优秀，适合内容创作。\"\n,\n\"特点/卖点\"\n:\n[\n\"电影级画质还原\"\n,\n\"直出参数可调性强（白平衡/曝光/色彩等）\"\n,\n\"云台稳定技术（主角跟随/自动虚化背景）\"\n,\n\"支持4K竖屏拍摄\"\n,\n\"多种创意运镜模式（自动旋转/希区柯克变焦）\"\n],\n\"同类商品/竞品\"\n:\n[{\n\"品牌\"\n:\n\"影石\"\n,\n\"型号\"\n:\n[\n\"GO3S\"\n,\n\"AcePro2\"\n]\n},\n{\n\"品牌\"\n:\n\"大疆\"\n,\n\"型号\"\n:\n[\n\"mini2\"\n]\n}],\n\"适用场景\"\n:\n\"旅行记录、vlog创作、口播视频拍摄、探店场景、户外风光及人像摄影\"\n,\n\"适用人群\"\n:\n\"自媒体创作者、视频内容制作者、旅行爱好者、追求高质量便携拍摄设备的用户\"\n}\n}\n步骤3：生成话题转移路径，实现有逻辑、有目的的话题转移，让对话可控且灵活。\n对话路径的定制化要求如：对话路径中必须出现两次“商品选择要求”节点。使得生成的对话可控，同时可以控制数据的多样性。\n【对话路径采样结果展示】\n{\n\"场景\"\n:\n\"iPhone新品尝鲜\"\n,\n\"品类\"\n:\n\"手机\"\n,\n\"product_name\"\n:\n\"iphone17 pro\"\n,\n\"product_info\"\n: {\n\"简介\"\n:\n\"xxx\"\n,\n\"特点/卖点\"\n: [\n\"xxx\"\n],\n\"同类商品/竞品\"\n: [{\n\"品牌\"\n:\n\"xx\"\n,\n\"型号\"\n: [\n\"xxx\"\n]},...}],\n\"适用场景\"\n:\n\"xxx\"\n,\n\"适用人群\"\n:\n\"xxx\"\n},\n\"sop\"\n: [{\n\"租赁场景\"\n:\n\"iPhone新品尝鲜\"\n,\n\"租赁需求\"\n: {\n\"价格\"\n:\n\"希望日租金控制在50元以内\"\n,\n\"租期\"\n:\n\"需要租用7-10天\"\n,\n\"商品成色\"\n:\n\"全新\"\n,\n\"商品属性特征\"\n:\n\"重点关注摄像头的变焦能力和防抖性能\"\n},\n\"提问路径\"\n:\n\"使用场景描述→商品选择要求→商品信息咨询→租赁规则咨询→商家售后问题\"\n,\n}, {\n\"租赁场景\"\n:\n\"iPhone新品评测\"\n,\n\"租赁需求\"\n: {\n\"价格\"\n:\n\"接受日租金80-100元\"\n,\n\"租期\"\n:\n\"短期3-5天\"\n,\n\"商品成色\"\n:\n\"二手9成新以上\"\n,\n\"商品属性特征\"\n:\n\"需要A19芯片+120Hz高刷屏\"\n},\n\"提问路径\"\n:\n\"使用场景描述→商品对比→商品对比→租赁规则咨询→审核信息搜集\"\n,\n}]\n}\n3.1.2. 多Agent动态对话生成\n1.\n用户 Agent（负责生成用户提问）\n输入\n：\n用户租赁偏好：上一步生产的用户租赁偏好。\n历史对话上下文：当前的对话上下文。\n当前指定的话题节点：由“导演”模块预设的本轮对话目标，如“商品对比”“租赁规则咨询”等。\n输出\n：\n自然语言提问：生成符合真实用户表达习惯的口语化问题，包含合理的指代、省略或上下文依赖（例如：“这个长焦效果怎么样？”而非“iPhone 17 Pro 的长焦镜头成像质量如何？”。\n结构化意图解析：包括问题类型（如“商品属性咨询”“售后规则查询”）、提及的商品实体（如品牌/型号），以及推荐调用的工具（如 `knowledge_search` 或 `search_db`）。这部分输出是指导助理Agent选择合适的工具和回复策略，从而提升回答的准确性与业务贴合度。\n2. 助理 Agent（负责生成复杂回复）\n输入\n：\n完整历史对话\n用户Agent的输出的提问\n用户Agent的输出的推荐调用的工具\n输出\n：\n根据任务需求，生成“带商品卡片”或“不带商品卡片”的自然语言回复。\n工具驱动的回复策略：\n若需调用 `knowledge_search`： 提取用户问题中的关键词构造检索查询（query），再从知识库（如内部规则、小红书种草内容、全网资讯）中获取相关信息。\n若需调用 `search_db`： 我们不直接查询真实数据库，根据用户需求参数（品类、品牌、价格区间等）直接 Mock 符合条件的商品数据；这样做有两个好处：1. 避免真实API调用开销，加快了数据合成速度。2. 允许我们可控地注入负样本（如不匹配的商品、错误信息），以增强模型鲁棒性。\n【多轮对话生成效果展示】\n{\n\"session\"\n: {\n\"metadata\"\n: {\n\"user_preference\"\n: {\n\"租赁场景\"\n:\n\"iPhone新品评测\"\n,\n\"租赁需求\"\n: {\n\"价格\"\n:\n\"接受日租金80-100元\"\n,\n\"租期\"\n:\n\"短期3-5天\"\n,\n\"商品成色\"\n:\n\"二手9成新以上\"\n,\n\"商品属性特征\"\n:\n\"需要A19芯片+120Hz高刷屏\"\n,\n\"型号\"\n:\n\"iphone17 pro\"\n},\n\"提问路径\"\n:\n\"综合商品推荐→商品对比→商品对比→租赁规则咨询→审核信息搜集\"\n,\n},\n\"product_info\"\n: {\n\"商品简介\"\n:\n\"iPhone 17 Pro是苹果公司于2025年9月10日发布的智能手机，于9月19日正式发售。它采用全新横向大矩阵摄像头设计，一体成型的航空级铝合金机身，后盖为超磁晶面板。提供银色、星宇橙色、深蓝色三种配色。配备6.3英寸超视网膜XDR显示屏，支持ProMotion自适应刷新率技术（最高120Hz）。搭载基于台积电3nm工艺的A19 Pro芯片，配备12GB运行内存，存储容量从256GB起步（另有512GB和1TB选项）。后置三颗均为4800万像素的融合式摄像头，支持8倍光学变焦和最高40倍数码变焦。前置1800万像素的Center Stage摄像头。内置锂离子充电电池，视频播放最长可达31小时，支持40W有线快充（20分钟可充至50%电量）和Qi2.2无线充电（最高25W）。运行iOS 26系统。起售价为8999元（256GB版本）。其VC均热板散热系统提升了持续性能表现，但部分用户反馈其铝合金机身相对易出现划痕或凹陷。\"\n,\n\"特点/卖点\"\n: [\n\"强大的A19 Pro芯片配合VC均热板散热系统，带来高达40%的持续性能提升，适合高强度任务和游戏\"\n,\n\"专业的影像系统：三颗4800万像素后置摄像头，支持8倍光学变焦、ProRes RAW专业视频格式，视频拍摄能力尤其是防抖和色彩还原表现突出\"\n,\n\"出色的续航能力：电池容量显著提升，iPhone 17 Pro Max视频播放最长可达37小时\"\n,\n\"坚固耐用的机身设计：前后均配备超瓷晶面板，背面抗裂能力提高4倍，正面抗刮划能力提升至3倍\"\n,\n\"流畅的显示效果：支持120Hz ProMotion自适应刷新率的超视网膜XDR显示屏\"\n,\n\"一体成型的航空级铝合金机身，优化散热和手感\"\n],\n\"同类商品/竞品\"\n: [{\n\"品牌\"\n:\n\"小米\"\n,\n\"型号\"\n: [\n\"小米17 Pro\"\n]\n}, {\n\"品牌\"\n:\n\"华为\"\n,\n\"型号\"\n: [\n\"华为Mate 70 Pro\"\n]\n}],\n\"适用场景\"\n:\n\"专业摄影与视频创作（尤其是需要高质量变焦和专业视频格式的场景）、高强度移动游戏（得益于强大的芯片和散热系统）、需要长续航和快速充电的日常使用与差旅场景、对手机耐用性和显示效果有高要求的各种应用场景。\"\n,\n\"适用人群\"\n:\n\"摄影爱好者和专业内容创作者、追求顶级性能和流畅系统体验的用户（尤其是苹果生态用户）、手游玩家、对手机续航、充电速度及整体耐用性有较高要求的用户、预算充足并希望手机能长期使用（如四五年）的用户。\"\n,\n\"商品名称\"\n:\n\"iphone17 pro\"\n}\n},\n\"dialogue\"\n: [{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\n\"今年iPhone发布了哪些款手机？\"\n,\n\"select_tool\"\n:\n\"knowledge_search,search_db\"\n,\n\"intent_category\"\n:\n\"咨询教程指南\"\n,\n\"mentioned_product\"\n: []\n}, {\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n:\n\"哇！今年苹果确实发布了重磅的新款iPhone呢！🎉\n\\n\n根据最新消息，苹果在9月10日发布了全新的iPhone 17系列，包括iPhone 17、iPhone 17 Pro和iPhone 17 Pro Max三款旗舰机型，都是搭载了最新的A19芯片和各项技术创新！\n\\n\\n\n**iPhone 17**\n\\n\n- 搭载A19芯片，性能强劲\n\\n\n- 首次配备120Hz ProMotion自适应刷新率屏幕\n\\n\n- 主打性价比，适合广大用户群体\n\\n\\n\\n\n商品名称: iPhone 17 Pro 无锁|非监管机 高通过率 全新苹果 0押金0预付 赠送壳膜 顺丰包邮\n\\n\n标品名称: 苹果/Apple iPhone 17 Pro\n\\n\n商家名称: 叮咚品租\n\\n\n商品成色: 全新\n\\n\n日租金: 15.68元/天\n\\n\n服务保障: 免赔保障,可买断,可续租,租期质保,随租随还,隐私保护,晚发必赔,300+人租过\n\\n\n**iPhone 17 Pro**\n\\n\n- A19 Pro处理器，专业级性能\n\\n\n- 12GB RAM + 三摄系统，影像能力出色\n\\n\n- VC散热技术，游戏体验更佳\n\\n\\n\\n\n商品名称: 【首月1元】 iPhone 17 Pro Max 2025新款 国行全新 原封未激活 官网正品\n\\n\n标品名称: 苹果/Apple iPhone 17 Pro Max\n\\n\n商家名称: 三宜租机\n\\n\n商品成色: 全新\n\\n\n日租金: 16.67元/天\n\\n\n服务保障: 免赔保障,可买断,可续租,租期质保,随租随还,隐私保护,晚发必赔,600+人租过\n\\n\n**iPhone 17 Pro Max**\n\\n\n- 顶配版Pro系列，专业用户首选\n\\n\n- 4800万像素三摄系统，4倍光学变焦\n\\n\n- 超大电池容量，续航表现优秀\n\\n\\n\\n\n商品名称: iPhone 17 Pro Max 首月5折 全新国行 官方正品 顺丰包邮\n\\n\n标品名称: 苹果/Apple iPhone 17 Pro Max\n\\n\n商家名称: 友好物Apple产品租赁\n\\n\n商品成色: 全新\n\\n\n日租金: 12.23元/天\n\\n\n服务保障: 免赔保障,可买断,可续租,租期质保,隐私保护,晚发必赔,1.2万+人租过\n\\n\n这几款新机都支持5G网络，拥有出色的影像系统和长续航能力，无论是日常使用还是专业创作都很棒呢！如果你想体验最新款的iPhone，现在就可以在芝麻租赁平台上找到合适的租赁方案哦~ 😊\"\n,\n}, {\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\n\"17和17 pro区别\"\n,\n\"完整问题\"\n:\n\"iPhone 17和 iPhone 17 pro区别\"\n,\n\"追问策略\"\n:\n\"依赖上一轮回答\"\n,\n\"select_tools\"\n:\n\"knowledge_search,search_db\"\n,\n\"intent_category\"\n:\n\"商品属性对比\"\n,\n\"mentioned_product\"\n: [\n\"iPhone 17\"\n,\n\"iPhone 17 Pro\"\n]\n}, {\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n:\n\"iPhone 17 和 iPhone 17 Pro 的主要区别如下（基于2025年苹果发布信息）：\n\\n\\n\n1. **核心配置**\n\\n\n- **芯片**：17 Pro 搭载 **A19 Pro**（3nm工艺，性能提升40%），17 标准版为 A19（性能略低，无Pro后缀）\n\\n\n- **运存**：Pro 配备 **12GB RAM**，标准版为 8GB\n\\n\n- **存储**：Pro 起步 **256GB**（可选512GB/1TB），标准版起步128GB\n\\n\\n\n2. **影像系统**\n\\n\n- **摄像头**：Pro 后置三颗 **4800万像素** 镜头（支持8倍光学变焦），标准版为双摄系统（无长焦镜头）\n\\n\n- **视频能力**：Pro 支持 **ProRes RAW** 专业格式，防抖和色彩优化更强\n\\n\\n\n3. **屏幕与设计**\n\\n\n- **屏幕**：Pro 为 **6.3英寸120Hz 自适应刷新率** 屏，标准版为 60Hz\n\\n\n- **材质**：Pro 采用 **航空级铝合金** 机身+超磁晶面板，标准版为普通铝合金\n\\n\\n\n4. **续航与充电**\n\\n\n- **电池**：Pro 视频播放 **31小时**，标准版约26小时\n\\n\n- **快充**：两者均支持40W有线快充，但 Pro 无线充电功率更高（25W vs 15W）\n\\n\\n\n5. **价格差异**\n\\n\n- Pro 起售价 **8999元**（256GB），标准版预计低2000-3000元\n\\n\\n\n简单总结：Pro 适合追求极致性能、摄影和屏幕体验的用户，标准版性价比更高，适合日常使用。需要帮你对比其他参数吗？ 😊\"\n},{\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\n\"审核需要身份证吗\"\n,\n\"完整问题\"\n:\n\"审核需要身份证吗\"\n,\n\"追问策略\"\n:\n\"独立问题\"\n,\n\"select_tools\"\n:\n\"knowledge_search\"\n,\n\"intent_category\"\n:\n\"芝麻租赁内部问题\"\n,\n\"mentioned_product\"\n: []\n}, {\n\"role\"\n:\n\"assistant\"\n,\n\"content\"\n:\n\"[订单履约纠纷卡片服务卡片]\"\n}, {\n\"role\"\n:\n\"user\"\n,\n\"content\"\n:\n\"为什么商家找我要了\"\n,\n\"完整问题\"\n:\n\"为什么商家找我要了身份证\"\n,\n\"追问策略\"\n:\n\"依赖历史对话\"\n,\n\"select_tools\"\n:\n\"rental_service\"\n,\n\"intent_category\"\n:\n\"审核信息搜集\"\n,\n\"mentioned_product\"\n: []\n}]\n}\n}\n3.2. 复杂问题合成\n复杂问题示例\n数据构造流程\n输入：可选工具集 + 复杂问题few-shot + 用户租赁偏好\n输出：复杂问题 + 工具调用链\n作为数据构造专家，请参考复杂问题示例依次构造各个租赁场景下高质量的复杂问题。要求该复杂问题需求是隐性的和复杂的，解决用户问题需要多个工具之间协调调用。请输出复杂问题以及对应的工具调用链。\n# 可选工具\n【这里是工具描述】\n# 复杂问题示例\n问题： 南京2177，买了125区的票，想出图，有什么推荐的吗？**\n工具调用链：\n`知识检索(解码演唱会行话)`\n->\n`知识检索(分析座位位置)`\n->\n`知识检索(演唱会场馆不同位置的拍照设备推荐)`\n->\n`商品检索(根据推理结果搜索特定品类)`\n。\n# 用户租赁偏好\n{query}\n{\n\"query\"\n:\n\"周杰伦上海站内场1排，想拍4K视频发抖音，但怕手机过热，租个能长时间录4K还不烫的相机，最好带云台。\"\n,\n\"tool_call\"\n:\n\"`知识检索(内场1排拍摄需求分析)` →`知识检索(4K长时间录制设备散热能力)` →`商品库检索(品类=相机, 特征=4K持续录制/散热好/支持云台) `→`服务承接(确认是否提供云台配件租赁)`\"\n},\n{\n\"query\"\n:\n\"新手学拍vlog，想租个带美颜、能竖屏、重量<500g的相机，还要有B站教程，租一周。\"\n,\n\"tool_call\"\n:\n\"`知识检索(vlog新手设备选型标准) ` →`商品库检索(品类=相机, 特征=美颜/竖屏/重量<500g, 租期=7天)` →`知识检索(关联B站/小红书种草教程)`\"\n}\n3.3. 数据过滤方案\n同tau2-bench方案类似，我们会预先定义 任务类型-工具调用list，用户帮助验证数据的正确性，过滤掉明显错误的样本，为了保证数据质量，最后还是会进行人工二次核验和订正。\n### 1. 商品推荐\n-\n触发条件：用户的主要意图是寻找商品，明确表达了品牌、型号、品类修饰词、使用场景、参数或价格要求。\n-\n示例：“华为Mate60”、“适合拍vlog的相机”、“长续航”、“月租3000”、“热门手机”\n-\n工具链：[强制执行]\n`knowledge_search(种草)`\n-> [强制执行]\n`search_db`\n### 2. 芝麻租赁内部问题\n-\n触发条件：除了「服务履约」覆盖的范围，只要用户关于租赁问题，涉及租/借规则、流程、平台活动（爆品、超值、秒杀等）、芝麻分、专享服务、信用、免押、资格、费用、订单、政策、app操作等\n-\n示例：“租期怎么算”、“租手机限制年龄吗”\n-\n工具链：[强制执行]\n`knowledge_search(租赁内部知识)`\n-> [条件触发]\n`knowledge_search(全网搜)`\n### 3 通用问答\n-\n触发条件：需要实时信息\n-\n示例：“今天天气怎么样”、“美国总统是谁”\n-\n工具链：[强制执行]\n`knowledge_search(全网搜)`\n### 4. 无意义问题\n-\n触发条件：无信息的问题\n-\n示例：“你好”\n-\n工具链： 禁止调用工具，直接礼貌回复，引导到商品推荐。\n...\n3.4. 线上数据积累\n模式先上线后，我们会回流的线上数据，对预测结果进行打标，统计错误类型，并针对badcase构造更多训练数据，通过这一步实现模型的自我改进。总结下来，我们数据合成整体节奏如下：\n四、数据效果\n4.1. 合成数据分析\n1. 问题类型分布\n2. 历史对话轮次分布\n3. 工具调用次数分布\n4.2. 模型效果分析\n4.2.1. 训练数据量影响\n实验配置\n：\n模型：基座模型为\nQwen3-Next-80B-A3B-Instruct\n，采用SFT+RL多阶段训练。\n数据：经过人工逐步筛选和反复的订正，最终得到了1500条高质量的训练数据。训练数据格式如下\n{\n\"conversations\"\n: [{\n\"from\"\n:\n\"human\"\n,\n\"value\"\n:\n\"想租个VR设备，有什么推荐吗？\"\n},\n{\n\"from\"\n:\n\"gpt\"\n,\n\"value\"\n:\n\"根据你的需求，我为你精选了一款适合租赁的VR设备，都支持短期3天体验和较长期90天租赁。考虑到你是为了观看TXT vr演唱会，这款设备具备高清显示和舒适佩戴的特点，而且都提供操作指南和预装软件，上手简单方便~\n\\n\\n\n<spu_card>\n\\n\n**Pico Neo3 VR一体机**\n\\n\n- 国产VR设备的优秀代表，性价比超高\n\\n\n- 适合初次体验VR的新手用户\n\\n\n- 300元左右的租赁价格非常亲民\n\\n\\n\n**价格最优选择**\n\\n\n商品名称：Pico Neo3 VR一体机,\n\\n\n商家名称：惠租,\n\\n\n品牌：Pico,\n\\n\n规格：128G存储版,\n\\n\n商品成色：全新,\n\\n\n日租金：累计300+人租过,\n\\n\n销量：80+/月,\n\\n\n可选租期：3天/7天/90天,\n\\n\n服务保障：租期质保，隐私保护，寄出包邮,\n\\n\n商品特征：免押，同城自提,\n\\n\n是否有高分专享优惠：否\n\\n\n</spu_card>\n\\n\\n\n[使用小贴士]\n\\n\n1. 使用VR设备时建议在宽敞空间，避免磕碰\n\\n\n2. 初次使用可能会有轻微眩晕感，建议先适应15分钟\n\\n\n3. 佩戴前记得清洁面部和眼镜(如果戴眼镜)\n\\n\n4. 观看演唱会时可以调节瞳距和焦距获得最佳效果\n\\n\n5. 设备电量充满可连续使用2-3小时，建议备好充电宝\"\n},\n{\n\"from\"\n:\n\"human\"\n,\n\"value\"\n:\n\"有这个的操作指南吗\"\n--\n完整问题为：有\nPico\nNeo3\nVR一体机的操作指南吗？\n},\n{\n\"from\"\n:\n\"function_call\"\n,\n\"value\"\n:\n\"{\n\\\"\nname\n\\\"\n:\n\\\"\nknowledge_search\n\\\"\n,\n\\\"\narguments\n\\\"\n:{\n\\\"\nthought\n\\\"\n:\n\\\"\n用户询问Pico Neo3 VR一体机的操作指南，需要搜索相关的使用教程和操作说明\n\\\"\n,\n\\\"\nsearch_groups\n\\\"\n:[{\n\\\"\nquery\n\\\"\n:\n\\\"\nPico Neo3 VR一体机 操作指南 使用教程\n\\\"\n,\n\\\"\nsource\n\\\"\n:[\n\\\"\n种草知识\n\\\"\n]}]}}\"\n},\n{\n\"from\"\n:\n\"observation\"\n,\n\"value\"\n:\n\"搜索词：Pico Neo3 VR一体机 操作指南 使用教程\n\\n\n搜索来源：种草知识\n\\n\n标题：Pico VR开发课程推荐\n\\n\n内容：大三下时学校课程《虚拟现实与交互》需要做一个VR游戏。当时购买了Pico虚拟一体机，以及找到了这套课程，让我短时间内完成了一个可玩性高的飞行解谜游戏。由于建模太丑陋我没放到我小红书上哈哈 这套课程包括（以下仅罗列我个人上手时最困惑最需要的知识）： 1 Pico开发环境准备 2 Pico VR项目的创建与导出 3 实时预览测试 4手柄输入绑定 5 自定义手柄模型 6 手柄射线交互 7 瞬移与持续移动 8 手柄射线外观更改 9 开枪交互/攀爬交互/推拉抽屉交互/推拉电闸交互/与门交互/旋转方向盘交互 10 交互反馈系统的使用 11 手柄震动反馈 [蹲后续H]不知道有没有别的好教程蹲推荐，因为我又要回头优化我的VR项目了\n\\n\n互动数据：154点赞 159收藏 14评论\n\\n\n------------------------------\n\\n\n搜索词：Pico Neo3 VR一体机 操作指南 使用教程\n\\n\n搜索来源：种草知识\n\\n\n类目：相机\n\\n\n知识内容：**出游相机推荐 | 这俩随身带，人像直接封神！✨** 「厦门的海边、青岛的洋房、大理的雪山... 这些地方不拍人像等于白去！🤳」 最近被问爆的出游相机—— **佳能G7X3** 必须提名！拍人像自带“妈生好皮”效果，皮肤透亮又不假白，翻转屏举高高自拍超方便，闺蜜合照再也不用担心脸大！重点是小巧到能塞进包包，边逛边拍完全不累赘～ 如果偏爱复古胶片感，可以看看 **理光GR3** ，质感超绝，扫街抓拍超快，但自拍得外接屏幕（懒人慎入哈哈）。 总结：要美颜方便选G7X3，要文艺氛围选GR3，反正人像都能原地出道！ （下次教程教你怎么调参数，先码住！📸）\n\\n\n------------------------------\n\\n\n搜索词：Pico Neo3 VR一体机 操作指南 使用教程\n\\n\n搜索来源：种草知识\n\\n\n知识类型：视频\n\\n\n知识标题：告别自动挡！Pico 4  VR眼镜一体机内置海量游戏 最佳参数设置指南，画质秒提升！\n\\n\n知识内容：<lifeTabVideoCard>\n\\n\n<code>vid_4be34d233c</code>\n\\n\n</lifeTabVideoCard>\n\\n\n播放量：103399\n\\n\n------------------------------\"\n},\n{\n\"from\"\n:\n\"function_call\"\n,\n\"value\"\n:\n\"{\n\\\"\nname\n\\\"\n:\n\\\"\nsearch_db\n\\\"\n,\n\\\"\narguments\n\\\"\n: {\n\\\"\nthought\n\\\"\n:\n\\\"\n用户询问Pico Neo3 VR操作指南，现在要查询该型号的租赁商品\n\\\"\n,\n\\\"\nqueries\n\\\"\n: [{\n\\\"\nbrand\n\\\"\n:\n\\\"\nPico\n\\\"\n,\n\\\"\nmodels\n\\\"\n: [\n\\\"\nNeo3\n\\\"\n]}]}}\"\n},\n{\n\"from\"\n:\n\"observation\"\n,\n\"value\"\n:\n\"name: Pico neo3 VR眼镜一体机内置海量游戏 当天发出\n\\n\nspu_name: Pico neo3\n\\n\nmerchant: 友租\n\\n\nbrand: Pico\n\\n\nspecs: Pico 3-256G:畅玩版+【提供游戏+电影不停更新】\n\\n\ncondition:\n\\n\ndaily_rate: 203.58元/天\n\\n\nlease_periods: 30\n\\n\nservice_guarantees: 免赔保障, 租期质保, 随租随还, 隐私保护, 晚发必赔, 寄出包邮\n\\n\nhas_high_score_exclusive: 否\n\\n\nsales: 50\n\\n\nsales_ranking: other\n\\n\nsingle_spu_tag: 销量第一\n\\n\nitem_id: 2025021322000258125475\n\\n\nITEM ID：2025021322000258125475\n\\n\n--------------------------------------------------\n\\n\nname: Pico neo3 VR眼镜一体机内置海量游戏\n\\n\nspu_name: Pico neo3\n\\n\nmerchant: 友租\n\\n\nbrand: Pico\n\\n\nspecs: Pico 3-256G:畅玩版+【提供游戏+电影不停更新】\n\\n\ncondition:\n\\n\ndaily_rate: 71.82元/天\n\\n\nlease_periods: 30\n\\n\nservice_guarantees: 免赔保障, 租期质保, 随租随还, 隐私保护, 晚发必赔, 寄出包邮\n\\n\nhas_high_score_exclusive: 是\n\\n\nsales: 15\n\\n\nsales_ranking: other\n\\n\nsingle_spu_tag: 综合第一\n\\n\nitem_id: 2025042822000973304542\n\\n\nITEM ID：2025042822000973304542\n\\n\n--------------------------------------------------\n\\n\nname: Pico4/ Pico Neo3 VR眼镜一体机出租租赁 游戏丰富 可串联电脑PCVR半条命艾利克斯\n\\n\nspu_name: Pico 4\n\\n\nmerchant: 云租机\n\\n\nbrand: Pico\n\\n\nspecs: Pico Neo3\n\\n\ncondition:\n\\n\ndaily_rate: 107.88元/天\n\\n\nlease_periods: 7, 30, 90, 180, 365\n\\n\nservice_guarantees: 免赔保障, 租期质保, 随租随还, 隐私保护, 晚发必赔, 寄出包邮\n\\n\nhas_high_score_exclusive: 否\n\\n\nsales: 276\n\\n\nsales_ranking: other\n\\n\nsingle_spu_tag: 低价优先\n\\n\nitem_id: 2024121222000145855035\n\\n\nITEM ID：2024121222000145855035\n\\n\n--------------------------------------------------\"\n},\n{\n\"from\"\n:\n\"gpt\"\n,\n\"value\"\n:\n\"我来为你详细介绍Pico Neo3 VR一体机的操作指南！这款设备上手其实很简单，新手也能快速掌握~ 🎮\n\\n\\n\n**Pico Neo3 基础操作指南：**\n\\n\\n\n**开机与设置：**\n\\n\n- 长按电源键开机，首次使用需要完成基础设置\n\\n\n- 设置安全区域：在宽敞空间划定游戏区域，设备会在你靠近边界时显示现实画面\n\\n\n- 调整头带和瞳距，确保佩戴舒适和画面清晰\n\\n\\n\n**手柄操作：**\n\\n\n- 左手柄：通常用于移动、抓取物品\n\\n\n- 右手柄：用于交互、选择、确认操作\n\\n\n- 摇杆：控制移动方向\n\\n\n- 扳机键：确认选择、抓取物品\n\\n\n- 菜单键：呼出系统菜单\n\\n\\n\n**实用功能：**\n\\n\n- 支持手机投屏，可以在VR中观看手机内容\n\\n\n- 内置Pico Store，有150+游戏和应用可选\n\\n\n- 支持串流电脑玩Steam VR游戏（需要安装游戏串流助手）\n\\n\n- 4K高清显示，360度环绕立体声\n\\n\\n\n**使用小贴士：**\n\\n\n1. 初次使用建议先适应15分钟，避免眩晕\n\\n\n2. 游戏前确保电量充足（满电约2-3小时使用）\n\\n\n3. 保持周围环境安全，避免磕碰\n\\n\n4. 定期清洁镜片和面部接触部位\n\\n\\n\n如果你想要亲身体验Pico Neo3的操作，这里有几款不错的租赁选择：\n\\n\\n\n**Pico Neo3 VR一体机**\n\\n\n- 国产VR设备中的性价比之选\n\\n\n- 适合VR新手入门体验\n\\n\n- 内置丰富游戏和应用资源\n\\n\\n\n**销量第一**\n\\n\n<itemCard>\n\\n\n<type>item</type>\n\\n\n<item>2025021322000258125475</item>\n\\n\n</itemCard>\n\\n\\n\n**综合第一**\n\\n\n<itemCard>\n\\n\n<type>item</type>\n\\n\n<item>2025042822000973304542</item>\n\\n\n</itemCard>\n\\n\\n\n**低价优先**\n\\n\n<itemCard>\n\\n\n<type>item</type>\n\\n\n<item>2024121222000145855035</item>\n\\n\n</itemCard>\n\\n\\n\n希望这些操作指南对你有帮助！如果想深入了解某个特定功能，随时可以问我哦~ 😊\n\\n\\n\n<lifeTabVideoCard>\n\\n\n<code>vid_434b31642c</code>\n\\n\n</lifeTabVideoCard>\"\n}\n],\n\"tools\"\n:\n\"这里是各个工具的参数定义\"\n\"system\"\n:\n\"\"\n}\n评测口径\n1. 工具选择是否正确\n2. 工具参数是否正确\n3. 回答格式是否正确\n评测结果\n结论\n：\n随着训练数据量的增加，模型SFT后准确率由\n64%\n提升到\n88%。\n4.2.2. 数据合成方法效果\n无话题路径采样：以租赁商品/租赁场景为种子，让user agent和simulator随机对话。\n无多Agent生成：以租赁商品/租赁场景为种子，一次性生成多轮问题和答案。\n线上数据：采样线上数据\n结论\n：\n使用我们的数据合成方法，能更有效的让模型学习到工具调用能力。\n4.2.3.\n多轮理解与工具调用互相泛化\n结论\n：\n在模型训练前期，我们仅用多轮问答数据训练模型，发现也能提升工具调用能力，证明模型的多轮理解与工具调用任务是相辅相成的，构造高质量的多轮历史对话数据也能帮助模型更好的学习工具调用。\n五、未来工作\n数据合成的工作仍处于持续迭代阶段，接下来，我们计划从以下方面继续深耕，通往更智能、更可靠的AI导购之路：\n1.\nllm-as-judge提效数据过滤\n：\n基于大模型做数据评估和筛选，提升数据合成效率。\n2.\n基于知识图谱构造复杂query\n：\n构造租赁场景知识图谱，包括人群偏好、商品属性等，实现基于图谱构造复杂问题。\n参考文献\n[1]: Synthetic Data Generation & Multi-Step RL for Reasoning & Tool Use,\nhttps://arxiv.org/abs/2504.04736\n[2]: WebSailor: Navigating Super-human Reasoning for Web Agent,\nhttps://arxiv.org/abs/2507.02592\n[3]: ACEBench: Who Wins the Match Point in Tool Usage?,\nhttps://arxiv.org/abs/2501.12851\n[4]: Tongyi DeepResearch Technical Report,\nhttps://arxiv.org/abs/2510.24701\n[5]: τ2-Bench: Evaluating Conversational Agents in a Dual-Control Environment,\nhttps://arxiv.org/abs/2506.07982\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0.01,
+        "peripheral": 0.02,
+        "irrelevant": 0.34,
+        "transfer_agent": 0.54,
+        "transfer_business": 0.09
+      }
+    },
+    "relevance": {
+      "score": 1.92,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.12,
+        "2": 0.76,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.47,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.07,
+        "2": 0.37,
+        "3": 0.39999999999999997,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.5,
+      "probabilities": {
+        "0": 0.29,
+        "1": 0.28,
+        "2": 0.1,
+        "3": 0.3,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.57,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.18,
+        "3": 0.06,
+        "4": 0.76,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.85,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.08,
+        "4": 0.82,
+        "5": 0.06
+      }
+    },
+    "anti_hype": {
+      "score": 2.73,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.34,
+        "3": 0.41,
+        "4": 0.19,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 16317,
+    "outputTokens": 172,
+    "totalTokens": 16489
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.43,
+        "relevance": 0.82,
+        "grounding": 0.49,
+        "decision_action": 0,
+        "evidence": 0.71,
+        "actionability": 0.83,
+        "anti_hype": 0.56
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179870263,
+                "endTime": 1791179870554,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000685314",
+      "marketCost": "0.000685314",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000685314",
+      "inferenceCost": "0.000685314",
+      "inputInferenceCost": "0.000685314",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7M13482KCZK9MP5SJJEG"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:50 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::zrpxd-1791179869944-92de23f88272"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0.01,
+            "peripheral": 0.02,
+            "irrelevant": 0.34,
+            "transfer_agent": 0.54,
+            "transfer_business": 0.09
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.92,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.12,
+            "2": 0.76,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.47,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.07,
+            "2": 0.37,
+            "3": 0.39999999999999997,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.5,
+          "probabilities": {
+            "0": 0.29,
+            "1": 0.28,
+            "2": 0.1,
+            "3": 0.3,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.57,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.18,
+            "3": 0.06,
+            "4": 0.76,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.85,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.08,
+            "4": 0.82,
+            "5": 0.06
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.73,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.34,
+            "3": 0.41,
+            "4": 0.19,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 16317,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.43,
+            "relevance": 0.82,
+            "grounding": 0.49,
+            "decision_action": 0,
+            "evidence": 0.71,
+            "actionability": 0.83,
+            "anti_hype": 0.56
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179870263,
+                    "endTime": 1791179870554,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000685314",
+          "marketCost": "0.000685314",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000685314",
+          "inferenceCost": "0.000685314",
+          "inputInferenceCost": "0.000685314",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7M13482KCZK9MP5SJJEG"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:49.825Z"
+  }
+}

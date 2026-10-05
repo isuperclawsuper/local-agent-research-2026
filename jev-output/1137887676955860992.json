@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1137887676955860992",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "基于钉钉机器人的 Qoder CLI / Claude Code 双引擎 AI 助手实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560568&idx=1&sn=e5bfe190f1773e5bf610b05f11767952",
+      "date": "2026-06-02T00:30:00.066Z",
+      "chars": 10657,
+      "text": "原创\n久梦\n2026-06-02 08:30\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n一、背景与问题\n在闪购搜索团队的日常工作中，我们需要频繁地进行搜索问题排查、性能分析、实验管理等操作。这些操作分散在多个平台（SLS日志、TPP实验平台、代码仓库等），效率低下。\n我们的目标是：\n在钉钉群里直接对话一个AI助手，它能代替人去查日志、看实验、分析性能、甚至部署代码\n。\n然而面临几个核心挑战：\n挑战\n具体描述\n内网部署限制\n服务部署在内网，无法暴露公网回调地址，传统Webhook方案不可行\n实时性要求\nAI推理耗时较长(30s-120s)，用户无法接受\"发消息→等2分钟→一次性返回\"\n安全性要求\n需要权限隔离，非管理员不能执行写操作(部署代码、修改配置等)\n工具集成需求\n需要访问代码仓库、日志系统、实验平台等多种外部工具\n二、方案概览\n2.1 整体架构\n我们最终采用\n\"钉钉 Stream + CLI 代理\"\n的方案：\n┌────────────────────────────────────────────────────────────────┐\n│                    钉钉群 / 单聊                               │\n├────────────────────────────────────────────────────────────────┤\n│  钉钉 Stream WebSocket 长连接（内网直通，无需公网回调）        │\n├────────────────────────────────────────────────────────────────┤\n│                  Java 服务（alsc-intervene）                    │\n│  ┌──────────────────────────────────────────────────────────┐  │\n│  │  DingTalkStreamService                                    │  │\n│  │  • 权限校验（管理员 vs 只读用户）                        │  │\n│  │  • 上下文管理（LRU + TTL + 滑动窗口）                    │  │\n│  │  • 并发控制（线程池\n10\n-\n15\n）                              │  │\n│  │  • AI卡片投放与流式更新                                  │  │\n│  └──────────────────────────────────────────────────────────┘  │\n│                           │                                    │\n│                           ▼                                    │\n│  ┌──────────────────────────────────────────────────────────┐  │\n│  │  CLI 代理层（ProcessBuilder）                             │  │\n│  │  • Qoder CLI / Claude\nCode\n（可切换）                     │  │\n│  │  • stdbuf -\noL\n行缓冲优化                                │  │\n│  │  •\n120s\n超时保护 + 异常杀进程                           │  │\n│  └──────────────────────────────────────────────────────────┘  │\n│                           │                                    │\n│                           ▼                                    │\n│              MCP Server（工具调用层）                          │\n└────────────────────────────────────────────────────────────────┘\n2.2 关键技术选型\n组件\n方案\n选择理由\n消息通道\n钉钉 Stream（WebSocket）\n内网无需公网回调地址，完全规避DNS/防火墙限制\nAI引擎\nCLI 代理模式\n轻量无框架依赖，复用成熟 CLI 生态\n流式展示\n钉钉 AI 卡片\n原生支持打字机效果，用户体验好\n进程管理\nJava ProcessBuilder\n进程级隔离，一个请求一个进程，互不影响\n工具扩展\nMCP（Model Context Protocol）\n标准化协议，可插拔配置驱动\n上下文存储\n内存 LinkedHashMap\n自动 LRU 淘汰，无需外部存储\n三、引擎选型：\n从 Qoder CLI 到 Claude Code\n3.1 最初选择 Qoder CLI\n项目最初选择 Qoder CLI 作为 AI 引擎，主要考虑：\n内部产品，接入方便，有现成的 Skills 和 MCP 生态\nCLI 模式天然适合服务端 spawn 调用\n支持\nstream-json\n流式输出\n3.2 遇到的问题\n实际使用中发现，Qoder CLI 在复杂问题排查场景下的表现不如预期：\n对于需要多步推理的复杂排查（如跨系统问题定位），回答质量有时不够准确\n与 Qoder IDE 桌面端相比，CLI 模式的能力有一定差距\n3.3 引入 Claude Code\n为了提升复杂场景下的回答质量，我们后续引入了 Claude Code 作为替代引擎。实际效果验证：\n复杂问题排查能力显著更强\n：对于涉及多系统、多步骤的排查场景，Claude Code 的推理深度和准确性明显优于之前的方案\nMCP 工具调用更稳定\n：工具调用的成功率和参数构造准确度更高\n目前两个引擎并行部署，通过不同的入口调用：\nQoder CLI：钉钉 Stream 入口（群聊场景）\nClaude Code：HTTP SSE 入口 + 独立钉钉机器人\n四、Docker 部署方案\n4.1 部署架构\n两个引擎部署在同一个 Docker 容器内，共享工作目录和 MCP 配置：\nDocker 容器\n├── /home/admin/qoder-workspace/\n# 共享工作目录\n│   ├── .mcp.json\n# MCP服务配置\n│   ├── AGENTS.md\n# Qoder CLI 知识入口\n│   └── CLAUDE.md\n# Claude Code 指令文件\n├── /home/admin/.qoder/\n# Qoder CLI 专属配置\n│   ├── settings.json\n# MCP server列表\n│   ├── mcp-oauth-tokens.json\n# OAuth认证token\n│   └── skills/\n# 安装的Skills\n├── /home/admin/.claude/\n# Claude Code 专属配置\n│   └── settings.json\n# 环境变量 + 权限\n└── /opt/mcp-auth/\n# Claude MCP认证文件\n4.2 Dockerfile 核心设计\nFROM reg.docker.alibaba-inc.com/alibase/alios7u2-min\n# 基础运行时\nRUN yum install -y ajdk11-11.0.27.26 nodejs git\n# 安装双引擎\nRUN npm install -g @qoder-ai/qodercli \\\n--registry=\nhttps://registry.npm.alibaba-inc.com\n&& \\\nnpm install -g @ali/claude-code@2.1.144 \\\n--registry=\nhttps://registry.npm.alibaba-inc.com\n# 部署工作区\nCOPY qoder-workspace/ /home/admin/qoder-workspace/\n# Qoder CLI 认证\nCOPY qoder-home/.qoder/ /home/admin/.qoder/\nRUN\nchmod\n600 /home/admin/.qoder/mcp-oauth-tokens.json && \\\nchmod\n444 /home/admin/.qoder/mcp-oauth-clients.json\n# Claude Code 认证\nCOPY claude-home/.claude/ /home/admin/.claude/\nCOPY claude-mcp-auth/ /opt/mcp-auth/\nRUN\nln\n-sf /opt/mcp-auth /home/admin/.mcp-auth\n4.3 Java 层调用方式\n两个引擎的调用方式几乎相同，都是通过 ProcessBuilder spawn 子进程：\n// Qoder CLI\nProcessBuilder\npb\n=\nnew\nProcessBuilder\n(\n\"stdbuf\"\n,\n\"-oL\"\n,\n\"qodercli\"\n,\n\"-p\"\n, prompt,\n\"--output-format\"\n,\n\"stream-json\"\n,\n\"--yolo\"\n,\n\"--max-turns\"\n,\n\"10\"\n,\n\"-w\"\n,\n\"/home/admin/qoder-workspace\"\n);\npb.environment().put(\n\"QODER_PERSONAL_ACCESS_TOKEN\"\n, qoderToken);\n// Claude Code\nProcessBuilder\npb\n=\nnew\nProcessBuilder\n(\nclaudeCliPath,\n\"-p\"\n, prompt,\n\"--output-format\"\n,\n\"stream-json\"\n,\n\"--verbose\"\n,\n\"--max-turns\"\n,\n\"5\"\n);\npb.environment().put(\n\"ANTHROPIC_AUTH_TOKEN\"\n, anthropicToken);\n两者输出格式统一为\nstream-json\n，Java 层的流式解析、AI卡片更新逻辑完全复用。\n五、MCP 工具集成与 OAuth 认证跳过方案\n5.1 MCP 是什么\nMCP（Model Context Protocol）是 AI 调用外部工具的标准化协议。通过 MCP，AI 可以像人一样去调用各种平台的 API——查代码、看日志、管实验，实现\"问一句话，帮你查完所有系统\"的效果。\n我们从本地常用的 MCP 服务中选择了一部分部署到远端，覆盖代码仓库、日志查询、实验管理等核心场景。\n5.2 MCP 认证问题\nMCP 服务默认采用 OAuth2 认证流程：\n客户端向 MCP 网关发起请求\n网关返回 401 + OAuth discovery URL\n客户端走 OAuth 授权码流程获取 access_token\n后续请求携带 Bearer token\n这个流程在本地开发时没问题（浏览器打开授权页面点击授权），但在\n无头服务器（Docker容器）\n上完全行不通——没有浏览器，无法完成交互式授权。\n5.3 跳过 OAuth 的方案：\n静态 Bearer Token\n我们的解决方案是\n预先获取 token，以静态方式注入配置文件\n，跳过运行时的 OAuth 流程：\n// .mcp.json - 直接在 headers 中携带 Bearer token\n{\n\"mcpServers\"\n:\n{\n\"code\"\n:\n{\n\"type\"\n:\n\"streamable-http\"\n,\n\"url\"\n:\n\"\nhttps://mcp.alibaba-inc.com/code/mcp\n\"\n,\n\"headers\"\n:\n{\n\"Authorization\"\n:\n\"Bearer mcpa_xxxxxxxxxxxxxxxx\"\n}\n},\n\"sls-mcp\"\n:\n{\n\"type\"\n:\n\"streamable-http\"\n,\n\"url\"\n:\n\"\nhttps://mcp.alibaba-inc.com/sls-mcp/mcp\n\"\n,\n\"headers\"\n:\n{\n\"Authorization\"\n:\n\"Bearer mcpa_yyyyyyyyyyyyyyyy\"\n}\n}\n}\n}\n工作原理：\n本地预获取\n：在本地开发环境通过正常 OAuth 流程获取\naccess_token\n（\nmcpa_\n前缀的长期token）\n静态注入\n：将 token 写入\n.mcp.json\n的\nheaders.Authorization\n字段\n直接认证\n：CLI 发起 MCP 请求时直接携带此 header，MCP 网关验证 token 有效即放行，完全跳过 OAuth 握手\nDocker 构建时打包\n：\n.mcp.json\n在 Dockerfile 中 COPY 进容器，启动即可用\nToken 管理要点：\nToken 有有效期，过期后需要重新获取并更新配置\n.mcp.json\n文件权限设为 600，防止泄露\nmcp-oauth-clients.json\n设为 444 只读，防止运行时被 DCR（Dynamic Client Registration）覆盖\n5.4 Qoder CLI 的 OAuth Token 方式\nQoder CLI 还支持另一种认证方式——通过\nmcp-oauth-tokens.json\n文件存储 OAuth token：\n[\n{\n\"serverName\"\n:\n\"code\"\n,\n\"token\"\n:\n{\n\"accessToken\"\n:\n\"mcpa_xxxxx\"\n,\n\"refreshToken\"\n:\n\"mcpr_xxxxx\"\n,\n\"expiresAt\"\n:\n1782186490063\n,\n\"tokenType\"\n:\n\"Bearer\"\n},\n\"clientId\"\n:\n\"mcp-client-xxxx\"\n,\n\"tokenUrl\"\n:\n\"\nhttps://mcp.alibaba-inc.com/oauth/token\n\"\n,\n\"mcpServerUrl\"\n:\n\"\nhttps://mcp.alibaba-inc.com/code/mcp\n\"\n}\n]\n理论上 refreshToken 可以自动续期，但实测发现远端环境中 token 刷新不够可靠，因此 Claude Code 端我们统一使用\n.mcp.json\n静态 headers 方案，更加稳定。\n六、钉钉 Stream 集成核心实现\n6.1 为什么选择 Stream 模式\n传统钉钉机器人采用 HTTP 回调，要求服务有公网可达地址。Stream 模式通过 WebSocket 长连接解决了这个问题——服务主动连接钉钉服务器，无需暴露任何端口。\n@PostConstruct\npublic\nvoid\ninit\n() {\nif\n(!streamEnabled)\nreturn\n;\nOpenDingTalkClient\nclient =\nOpenDingTalkStreamClientBuilder\n.\ncustom\n()\n.\ncredential\n(\nnew\nAuthCredential\n() {{\nsetClientId\n(appKey);\nsetClientSecret\n(appSecret);\n}})\n.\nregisterCallbackListener\n(\n\"/v1.0/im/bot/messages/get\"\n,\nthis\n)\n.\nbuild\n();\nclient.\nstart\n();\n}\n6.2 进程管理与流式输出\npublic\nvoid\nchatStream\n(\nString\nprompt,\nString\nworkspace,\nConsumer\n<\nString\n> lineConsumer,\nConsumer\n<\nProcess\n> processConsumer) {\nList\n<\nString\n> cmd =\nArrays\n.\nasList\n(\n\"stdbuf\"\n,\n\"-oL\"\n,\n// 强制行缓冲\ncliPath,\n\"-p\"\n, prompt,\n\"--output-format\"\n,\n\"stream-json\"\n,\n\"--yolo\"\n,\n\"--max-turns\"\n,\n\"10\"\n,\n\"-w\"\n, workspace\n);\nProcessBuilder\npb =\nnew\nProcessBuilder\n(cmd);\npb.\nenvironment\n().\nput\n(\n\"QODER_PERSONAL_ACCESS_TOKEN\"\n, token);\npb.\nredirectErrorStream\n(\ntrue\n);\nProcess\nprocess = pb.\nstart\n();\nprocessConsumer.\naccept\n(process);\ntry\n(\nBufferedReader\nreader =\nnew\nBufferedReader\n(\nnew\nInputStreamReader\n(process.\ngetInputStream\n()),\n256\n)) {\nString\nline;\nwhile\n((line = reader.\nreadLine\n()) !=\nnull\n) {\nlineConsumer.\naccept\n(line);\n}\n}\nif\n(!process.\nwaitFor\n(\n120\n,\nTimeUnit\n.\nSECONDS\n)) {\nprocess.\ndestroyForcibly\n();\n}\n}\n关键设计点：\nstdbuf -oL\n：强制行缓冲，避免 Node.js 4KB 全缓冲导致的延迟\n256字节 BufferedReader\n：Java 侧小缓冲确保及时输出\n异常即杀进程\n：consumer 异常立即 destroyForcibly，停止消耗推理额度\n进程引用暴露\n：支持用户发\"停止\"命令时主动中断\n6.3 AI卡片流式更新\n// 频率控制：累计超50字符才更新一次\nif\n(fullContent.\nlength\n() - lastUpdateLen >\n50\n) {\nString\ncontent = fullContent.\nlength\n() >\n3000\n? fullContent.\nsubstring\n(\n0\n,\n3000\n)\n: fullContent.\ntoString\n();\ncardService.\nstreamUpdate\n(trackId, content,\nfalse\n,\nfalse\n);\nlastUpdateLen = fullContent.\nlength\n();\n}\n6.4 用户上下文管理（三重防护）\nprivate\nfinal\nLinkedHashMap\n<\nString\n,\nUserContext\n> contextMap =\nnew\nLinkedHashMap\n<>(\n16\n,\n0.\n75f,\ntrue\n) {\n@Override\nprotected\nboolean\nremoveEldestEntry\n(\nEntry\n<\nString\n,\nUserContext\n> eldest\n) {\nreturn\nsize\n() >\n500\n;\n}\n};\n保护层\n机制\n触发条件\n效果\n第一层\nTTL过期\n48小时无活动\n清空上下文\n第二层\n滑动窗口\n单用户超200KB\nFIFO删除最早对话\n第三层\nLRU淘汰\n全局超500用户\n淘汰最久未使用\n6.5 权限隔离\n管理员\n：完全权限（读写+命令执行+部署）\n普通用户\n：只读模式（系统指令最高优先级强制约束）\n6.6 并发控制\nprivate\nfinal\nExecutorService\nqoderExecutor\n=\nnew\nThreadPoolExecutor\n(\n10\n,\n15\n,\n60L\n, TimeUnit.SECONDS,\nnew\nLinkedBlockingQueue\n<>(\n30\n),\nnew\nThreadPoolExecutor\n.AbortPolicy()\n);\n七、知识自进化机制\n五级知识沉淀模型，让 AI 越用越聪明：\nL0  git\nhistory\n（自动追踪代码变更）\n↓\nL1  .qoder/context/（每次任务的过程报告）\n↓\nL2  .qoder/memory_recent.md（最近5次会话摘要）\n↓\nL3  .qoder/rules/candidates/（候选规则，经验沉淀）\n↓\nL4  AGENTS.md + P0-constraints.md（正式规则）\n候选规则触发 ≥3 次且成功率 ≥80%，自动提议晋升为正式规则。\n八、钉钉机器人配置与申请指南\n8.1 创建机器人应用\n登录\n钉钉开放平台[1]\n创建企业内部应用 → 选择\"机器人\"类型，选群聊机器人即可（只需要主管审批）\n获取\nappKey\n和\nappSecret\n8.2 开通必要权限\n目前看下来内部申请的机器人默认都开通了下面三项重要的权限，如果有遗漏，可能得单独申请一下\n| 权限名称 | 用途 |\n|----------|------|\n| 企业内机器人发送消息 | 主动回复用户消息 |\n| 互动卡片实例写权限 | 创建和投放AI卡片 |\n| AI卡片流式更新权限 | 实现打字机效果 |\n8.3 启用 Stream 模式\n机器人配置页 → \"消息接收模式\" →\nStream 模式\n无需填写回调URL\n发布到组织内\n8.4 AI卡片模板配置\n进入\n卡片平台[2]\n新建卡片模板 → 场景选\"消息卡片 + AI卡片\"\n开启\"流式组件\"开关\n记录模板ID配置到\napplication.properties\n8.5 关键配置项\ndingtalk.stream.enabled\n=\ntrue\n# Stream开关（预发/线上设false）\ndingtalk.app.key\n=\n${DINGTALK_APP_KEY}\n# antx注入\ndingtalk.app.secret\n=\n${DINGTALK_APP_SECRET}\ndingtalk.robot.code\n=\n${DINGTALK_ROBOT_CODE}\n8.6 注意事项\n多实例部署需通过环境开关控制，只在日常环境开启 Stream，否则消息会重复处理\n凭证必须通过 antx/diamond 注入，禁止硬编码\nAI卡片需选择\"AI卡片\"场景并开启流式组件\n九、运行效果展示\n9.1 性能追踪\n9.2 问题场景\n9.3 需求跟进\n（还需要继续验证下模型能力的上限，目前用qoder cli试过不太稳，但也能处理一些基本问题，复杂问题回答可能会跟本地的qoder有偏差，claude试下来效果更好~）\n十、踩坑经验\n10.1 stdbuf 行缓冲是必须的\nNode.js 进程在非 TTY 环境下默认全缓冲（4KB），不加\nstdbuf -oL\n用户会看到\"卡住→突然一大段\"的糟糕体验。\n10.2 MCP OAuth Token 格式要求\nmcp-oauth-tokens.json\n必须是 JSON 数组格式\n[{...}]\n，对象格式会导致 crash。\n10.3 Stream 模式多实例冲突\n多容器实例同时开启 Stream 监听会导致消息重复处理，需用环境开关精确控制。\n10.4 AI 卡片权限\n流式更新需单独申请\"AI卡片流式更新权限\"，否则返回 403。\n10.5 Claude Code 权限透传\nClaude Code 的\n-p\n模式不会自动应用\nsettings.json\n中的 permissions，需通过\n--allowedTools\n参数显式传递工具权限。\n十一、总结\n本方案通过\n钉钉 Stream + CLI 代理\n的架构，实现了：\n完全内网部署\n：WebSocket 长连接规避公网回调\n实时流式回复\n：stdbuf + AI卡片打字机效果\n安全权限隔离\n：管理员/只读双模式\nMCP 工具开放\n：静态 Bearer token 跳过 OAuth，实现无头环境下的工具调用\n引擎可切换\n：从 Qoder CLI 到 Claude Code，复杂排查能力显著提升\n生产级稳定\n：线程池+超时+LRU 三层保护\n以最低的侵入度、最轻的工程成本，实现了企业级 AI 助手从零到一的落地。由于代码中涉及了很多私人的配置项，不直接公开了，感兴趣的同学可以私我拿代码。\n参考链接:\n[1]\nhttps://open.dingtalk.com/?spm=ata.21736010.0.0.67567536U8RSTo\n[2]\nhttps://card.dingtalk.com/?spm=ata.21736010.0.0.67567536U8RSTo\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.77,
+        "peripheral": 0,
+        "irrelevant": 0.23
+      }
+    },
+    "relevance": {
+      "score": 1.94,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.03,
+        "2": 0.94,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 3.28,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.02,
+        "2": 0.04,
+        "3": 0.36,
+        "4": 0.53,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.36,
+      "probabilities": {
+        "0": 0.31,
+        "1": 0.05,
+        "2": 0.02,
+        "3": 0.2,
+        "4": 0.42,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.91,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.09,
+        "3": 0.91,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.72,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.04,
+        "4": 0.87,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 3.03,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.05,
+        "3": 0.86,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8470,
+    "outputTokens": 172,
+    "totalTokens": 8642
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.7,
+        "relevance": 0.95,
+        "grounding": 0.52,
+        "decision_action": 0,
+        "evidence": 0.94,
+        "actionability": 0.79,
+        "anti_hype": 0.9
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179831804,
+                "endTime": 1791179831962,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00035574",
+      "marketCost": "0.00035574",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00035574",
+      "inferenceCost": "0.00035574",
+      "inputInferenceCost": "0.00035574",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6EFCSBE3ZMMESHQG9513"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:11 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::glh9p-1791179831536-70c07fcafd8f"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.77,
+            "peripheral": 0,
+            "irrelevant": 0.23
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.94,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.03,
+            "2": 0.94,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 3.28,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.02,
+            "2": 0.04,
+            "3": 0.36,
+            "4": 0.53,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.36,
+          "probabilities": {
+            "0": 0.31,
+            "1": 0.05,
+            "2": 0.02,
+            "3": 0.2,
+            "4": 0.42,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.91,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.09,
+            "3": 0.91,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.72,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.04,
+            "4": 0.87,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.03,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.05,
+            "3": 0.86,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8470,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.7,
+            "relevance": 0.95,
+            "grounding": 0.52,
+            "decision_action": 0,
+            "evidence": 0.94,
+            "actionability": 0.79,
+            "anti_hype": 0.9
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179831804,
+                    "endTime": 1791179831962,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00035574",
+          "marketCost": "0.00035574",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00035574",
+          "inferenceCost": "0.00035574",
+          "inputInferenceCost": "0.00035574",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6EFCSBE3ZMMESHQG9513"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:11.191Z"
+  }
+}

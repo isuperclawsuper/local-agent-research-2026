@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "257302641633130496",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深入理解OpenClaw技术架构与实现原理（上）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558933&idx=1&sn=926e244c855c44c818d83c6c7d57d4d3",
+      "date": "2026-03-19T00:32:00.643Z",
+      "chars": 6500,
+      "text": "                             │   │\n│  │                                                                          │   │\n│  │  ┌───────────────────────────────────────────────────────────────────┐  │   │\n│  │  │              applyToolPolicyPipeline()                             │  │   │\n│  │  │              tool-policy-pipeline.ts:\n65\n│  │   │\n│  │  │                                                                    │  │   │\n│  │  │   工具列表 ──▶ [Step\n1\n: Profile Policy] ──▶ 过滤                  │  │   │\n│  │  │                     │                                              │  │   │\n│  │  │                     ▼                                              │  │   │\n│  │  │            [Step\n2\n: Provider Profile Policy] ──▶ 过滤              │  │   │\n│  │  │                     │                                              │  │   │\n│  │  │                     ▼                                              │  │   │\n│  │  │            [Step\n3\n: Global Policy] ──▶ 过滤                       │  │   │\n│  │  │                     │                                              │  │   │\n│  │  │                     ▼                                              │  │   │\n│  │  │            [Step\n4\n: Agent Policy] ──▶ 过滤                        │  │   │\n│  │  │                     │                                              │  │   │\n│  │  │                     ▼                                              │  │   │\n│  │  │            [Step\n5\n: Group Policy] ──▶ 过滤                        │  │   │\n│  │  │                     │                                              │  │   │\n│  │  │                     ▼                                              │  │   │\n│  │  │            [Step\n6\n: Sandbox Policy] ──▶ 过滤                      │  │   │\n│  │  │                     │                                              │  │   │\n│  │  │                     ▼                                              │  │   │\n│  │  │            [Step\n7\n: Subagent Policy] ──▶ 最终工具列表             │  │   │\n│  │  └───────────────────────────────────────────────────────────────────┘  │   │\n│  │                                                                          │   │\n│  │  ┌───────────────────────────────────────────────────────────────────┐  │   │\n│  │  │  ToolPolicyConfig (配置结构)                                       │  │   │\n│  │  │  ┌─────────────────────────────────────────────────────────────┐  │  │   │\n│  │  │  │ {                                                           │  │  │   │\n│  │  │  │   allow?:\nstring\n[];\n// 允许的工具列表                  │  │  │   │\n│  │  │  │   alsoAllow?:\nstring\n[];\n// 额外允许 (合并到 allow)         │  │  │   │\n│  │  │  │   deny?:\nstring\n[];\n// 拒绝的工具列表                  │  │  │   │\n│  │  │  │   profile?:\n\"minimal\"\n|\n\"coding\"\n|\n\"messaging\"\n|\n\"full\"\n;    │  │  │   │\n│  │  │  │ }                                                           │  │  │   │\n│  │  │  └─────────────────────────────────────────────────────────────┘  │  │   │\n│  │  └───────────────────────────────────────────────────────────────────┘  │   │\n│  └─────────────────────────────────────────────────────────────────────────┘   │\n│                                      │                                          │\n│                                      ▼                                          │\n│  ┌─────────────────────────────────────────────────────────────────────────┐   │\n│  │                       Execution Layer                                    │   │\n│  │                                                                          │   │\n│  │  ┌───────────────────────────────────────────────────────────────────┐  │   │\n│  │  │                  AI Model Interaction                              │  │   │\n│  │  │                                                                    │  │   │\n│  │  │  ┌─────────────┐     tool_use      ┌─────────────────────────┐   │  │   │\n│  │  │  │   AI Model  │ ───────────────▶  │ Tool Execution Handler  │   │  │   │\n│  │  │  │ (Claude等)  │                   │ handleToolExecutionStart│   │  │   │\n│  │  │  └─────────────┘                   └───────────┬─────────────┘   │  │   │\n│  │  │         ▲                                       │                  │  │   │\n│  │  │         │                                       ▼                  │  │   │\n│  │  │         │                          ┌─────────────────────────┐   │  │   │\n│  │  │         │      tool_result         │  tool.execute()         │   │  │   │\n│  │  │         └──────────────────────────│  (实际执行)             │   │  │   │\n│  │  │                                    └───────────┬─────────────┘   │  │   │\n│  │  │                                                │                  │  │   │\n│  │  │                                                ▼                  │  │   │\n│  │  │                                    ┌─────────────────────────┐   │  │   │\n│  │  │                                    │handleToolExecutionEnd   │   │  │   │\n│  │  │                                    │(处理结果 + after hook)  │   │  │   │\n│  │  │                                    └─────────────────────────┘   │  │   │\n│  │  └───────────────────────────────────────────────────────────────────┘  │   │\n│  │                                                                          │   │\n│  │  ┌───────────────────────────────────────────────────────────────────┐  │   │\n│  │  │\nHook\nSystem\n(\npi-tools.before-tool-call.ts\n)                       │  │   │\n│  │  │                                                                    │  │   │\n│  │  │  ┌─────────────────────┐  ┌─────────────────────┐                │  │   │\n│  │  │  │ before_tool_call    │  │ after_tool_call     │                │  │   │\n│  │  │  │ - 修改参数          │  │ - 记录结果          │                │  │   │\n│  │  │  │ - 阻止调用          │  │ - 循环检测          │                │  │   │\n│  │  │  │ - 记录日志          │  │ - 统计耗时          │                │  │   │\n│  │  │  └─────────────────────┘  └─────────────────────┘                │  │   │\n│  │  └───────────────────────────────────────────────────────────────────┘  │   │\n│  └─────────────────────────────────────────────────────────────────────────┘   │\n│                                                                                 │\n│  ┌─────────────────────────────────────────────────────────────────────────┐   │\n│  │                       Plugin System                                      │   │\n│  │                                                                          │   │\n",
+      "fulltext_obtained": true,
+      "chunk_index": 4,
+      "chunk_count": 10
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.17,
+        "transfer_agent": 0.8,
+        "peripheral": 0.01,
+        "direct_local": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.81,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.16,
+        "2": 0.81,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.07,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.03,
+        "2": 0.01,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.39,
+      "probabilities": {
+        "0": 0.51,
+        "1": 0.12,
+        "2": 0.04,
+        "3": 0.16,
+        "4": 0.17,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.93,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.92,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.82,
+      "probabilities": {
+        "0": 0.06,
+        "1": 0.06,
+        "2": 0.13,
+        "3": 0.52,
+        "4": 0.23,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.89,
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.86,
+        "2": 0.01,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.48,
+      "threshold": 0.5,
+      "value": false
+    }
+  },
+  "usage": {
+    "inputTokens": 6298,
+    "outputTokens": 172,
+    "totalTokens": 6470
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "anti_hype": 0.9,
+        "category": 0.75,
+        "relevance": 0.86,
+        "grounding": 0.95,
+        "decision_action": 0.07,
+        "evidence": 0.94,
+        "actionability": 0.57
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180423383,
+                "endTime": 1791180423536,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000264516",
+      "marketCost": "0.000264516",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000264516",
+      "inferenceCost": "0.000264516",
+      "inputInferenceCost": "0.000264516",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARG623F10MZ6FZMMS7MNY"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:03 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::pk4m4-1791180423342-51174f568a91"
+    },
+    "body": {
+      "answers": {
+        "anti_hype": {
+          "type": "score",
+          "score": 0.89,
+          "probabilities": {
+            "0": 0.13,
+            "1": 0.86,
+            "2": 0.01,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.48
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.17,
+            "transfer_agent": 0.8,
+            "peripheral": 0.01,
+            "direct_local": 0.01
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.81,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.16,
+            "2": 0.81,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.07,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.03,
+            "2": 0.01,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.39,
+          "probabilities": {
+            "0": 0.51,
+            "1": 0.12,
+            "2": 0.04,
+            "3": 0.16,
+            "4": 0.17,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.93,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.92,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.82,
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.06,
+            "2": 0.13,
+            "3": 0.52,
+            "4": 0.23,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6298,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "anti_hype": 0.9,
+            "category": 0.75,
+            "relevance": 0.86,
+            "grounding": 0.95,
+            "decision_action": 0.07,
+            "evidence": 0.94,
+            "actionability": 0.57
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180423383,
+                    "endTime": 1791180423536,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000264516",
+          "marketCost": "0.000264516",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000264516",
+          "inferenceCost": "0.000264516",
+          "inputInferenceCost": "0.000264516",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARG623F10MZ6FZMMS7MNY"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:02.769Z"
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1283348490197377024",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Agent如何自己变强？从Skill到模型权重的进化全景图",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562373&idx=1&sn=b2afbd481dd9cbddc533641633f4bbe3",
+      "date": "2026-09-10T05:59:00.118Z",
+      "chars": 9394,
+      "text": "朱灵子\n2026-09-10 13:59\n浙江\n分享一篇文章\nAliExpress技术\n:\nAgent如何自己变强？从Skill到模型权重的进化全景图\n传统基础模型受限于一次训练、静态部署的固有范式，在真实交互中缺乏持续学习与自我优化的能力。\nAgent\n自进化（\nSelf-Evolution\n）正是为突破这一瓶颈而生，它旨在让\nAI\n系统像生物一样，通过与环境的持续交互获取反馈，积累经验并重构自身，实现动态适应与能力成长。其核心在于建立\n\"\n执行\n→\n反馈\n→\n优化改进\n→\n再执行\n\"\n的闭环机制，且进化对象不局限于模型参数，更涵盖\nPrompt\n、\nSkill\n、记忆及工作流等非参数化组件，赋予\nAgent\n更高的灵活性与自驱力。\n1. 什么是自进化\n自我进化是指通过与环境交互、获取反馈，持续优化自身的\nAI\n自主范式；旨在让\nAI\n系统像生物一样具备适应能力，通过持续的经验积累和自我重构实现进化。框架核心定义如下：\n•\n动态适应机制\n：建立\n\"\n执行\n→\n反馈\n→\n自我调整\n→\n执行\n\"\n闭环机制，使智能体能在运行过程中根据环境变化或内部信号主动改进。\n•\n多维进化对象\n：进化不仅限于模型参数更新，还涵盖上下文（\nprompt\n与记忆）、工具及系统架构等非参数化组件，有较大的灵活性。\n•\n自主性与自驱力\n：强调智能体具备主动探索、自我反思及评估能力，可基于交互反馈优化。\n2. 自进化核心机制\n自我进化两个核心问题：进化什么、如何进化。\n2.1.\n进化什么\n自进化可以针对智能体系统的不同层级：\n•\nAgent\n系统进化\n——\nSkill\n、\nHarness\n、\nMemory\n、\nAflow\n、\nEnvironment\n等进化。\n•\n模型参数进化\n（将经验内化为模型权重）\n——\n基于反馈进行微调\n/\n强化学习、自我归因、自蒸馏。\n2.2.\n如何进化\n2.2.1. Agent\n系统进化\n2.2.1.1. Skill\n进化\n2.2.1.1.1. Skill\n轨迹生成\n2.2.1.1.1.1. Trace2Skill\nTrace2Skill\n核心是通过批量分析多个\nAgent\n执行轨迹，将成功与失败经验归纳为可泛化的\nSkill\n。其关键机制如下：\n•\n轨迹批量生成\n：首先使用初始\nSkill\n（人工或\nLLM\n草稿）生成大量目标任务轨迹，并按成功与失败分类。\n•\n并行多智能体补丁提议\n：调度一组分析子智能体，并行处理每条轨迹并生成技能修改补丁，互不干扰。让\nAgent\n通过\nReAct\n的方式在一批用户任务上运行，产生大量的执行轨迹。这个过程是完全可以并行的，效率会比较高，比如，在实践中，使用一个\n122B\n参数的\nLLM\n生成\n200\n条包含\n50+\n个轮次的\nAgent\n轨迹，所需时间不到两个小时。\n•\n无冲突补丁整合\n：通过分层合并\n+\n归纳推理，把海量补丁整合成一套无冲突、通用的技能。\n该方法强调先观察、后总结的批处理式知识沉淀，避免单点更新导致的方向偏差，适用于需要从大量实践中提炼通用解决方案的场景。\n2.2.1.1.2. Skill\n群体进化\n2.2.1.1.2.1. EvoSkill\nEvoSkill\n通过\n\"\n执行\n→\n提案\n→\n构建\n→\n验证\n\"\n闭环机制，实现\nAgent\n在能正向提升的方向上自进化。\nEvoSkill\n核心原理是将传统的手工调试过程转化为由三个专用子智能体协同工作的系统，让它们相互协作、互相验证，自动完成\nSkill\n的分析和进化：\n•\n执行者（\nExecutor\n）\n：基于当前待优化的\nSkill\n，去执行具体任务，并产生完整的\nAgent\n运行轨迹和最终答案。\n•\n提案者（\nProposer\n）\n：深入分析执行者产生的轨迹，判断结果是否正确。如果失败，需要精准定位问题根源，并提出具体的优化方向和改进提案；如果成功，它也会总结有效模式。\n•\n搭建者（\nBuilder\n）\n：接收分析师提出的优化建议，真正动手编写或修改\nSkill\n文档，将其落实为可执行的代码或指令规则。\n这种设计使\nSkill\n进化具备明确的方向性，避免盲目修改导致性能退化，实现基于量化反馈的可持续优化，为构建具备长期自主进化能力的智能体系统提供了可落地的范式。\n2.2.1.1.2.2. SkillOpt\nSkillOpt\n将\nSkill\n的优化过程类比为深度学习中的模型训练，把\nSkill\n文本视为\n\"\n可训练的外部参数\n\"\n，通过构建一个闭环的文本空间训练流程实现\nSkill\n的系统性、可控化自进化。\nSkillOpt\n核心原理如下：\n•\n首先使用目标模型执行任务并收集轨迹，然后由专门的\n\"\n优化器\nAgent\"\n对成功与失败案例进行小批量反思，生成结构化的编辑操作（如添加、删除、替换），并引入类似学习率的约束控制每次更新的幅度。\n•\n同时所有修改必须经过独立验证集的严格门控测试，只有性能显著提升的候选\nSkill\n才被接受，否则作为负反馈存入缓冲区用于后续学习。\n•\n同步引入动量机制和元更新策略，在多轮迭代中保留长期趋势，并维护一个仅对优化器可见的\n\"\n元记忆\n\"\n来指导自身优化策略的演进。\nSkillOpt\n实现了类似\nSGD\n优化神经网络权重的精细化文本调优，使\nSkill\n进化具备明确方向性、稳定性与可解释性，推动提示工程从经验主义走向科学化训练范式。\n2.2.1.1.3. Skill\n评估更新\n2.2.1.1.3.1. coEvoSkill\ncoEvoSkill\n通过多智能体协同与竞争机制，实现\nSkill\n的集体演化和持续优化。它把\nSkill\n进化设计成一个生成者与验证者的双边闭环：生成器负责改\nSkill\n，验证器负责出题、诊断、升级测试，真实环境再提供黑盒\npass/fail\n，把自进化从单边自省变成了带对抗性的共同进化。其关键机制如下：\n•\n基于任务上下文动态激活相关\nSkill\n代理，各代理生成局部策略后通过投票、加权集成或\nLLM\n仲裁的方式达成协同。\n•\n引入跨代理的竞争反馈机制，评估各\nSkill\n的实际贡献并据此调整其权重与结构。\n•\n所有交互轨迹被持续记录并用于后续的离线分析，通过归纳成功模式与失败根因，驱动新一轮的技能迭代。\n•\n基于共享经验池与元控制器协调知识流动，并支持\nSkill\n能的组合、拆解与迁移。\n该系统实现\n\"\n个体优化\n-\n群体协同\n-\n整体进化\n\"\n的闭环，使\nSkill\n不仅能够自我改进，还能在协作中涌现出更高阶的能力，推动智能体系统向更灵活、鲁棒和自适应的方向发展。\n2.2.1.1.4. SkillRL\n协同进化\n2.2.1.1.4.1. SkillRL\nSkillRL\n将强化学习与\nSkills\n进化深度融合，在\nRL\n训练过程中一边用奖励信号更新\nLLM\n模型，一边从失败案例中蒸馏新知识实时扩充和优化\nSkill\n库\n——\n两者互相促进，形成\n\"\n递归共进化循环\n\"\n。\nSkillRL\n的核心原理是将强化学习与\nSkill\n库动态进化深度融合，实现策略优化与知识沉淀协同演进：\n•\n不再将\nSkill\n视为静态提示，而是通过双向蒸馏机制从\nAgent\n轨迹中自动提炼可复用的知识：成功轨迹被归纳为通用策略，失败轨迹则转化为避坑指南。\n•\n这些\nSkill\n被组织成一个分层结构的\nSkill Bank\n，包含通用\nSkill\n、任务特定\nSkill\n和常见错误三类，支持高效检索与按需注入。\n•\n创新性提出递归演化机制\n——\n在\nRL\n训练过程中，系统定期评估性能，对低效任务类别触发新一轮分析，生成新技能并加入\nSkill Bank\n，使后续策略训练能基于最新知识进行决策。这种\n\"\n策略提升\n→\n暴露深层问题\n→\n技能进化\n→\n策略再提升\n\"\n的闭环，实现了\nSkill\n与模型能力的共同成长。\nSkillRL\n方案结合基于语义相似度的检索注入机制和强化学习框架，构建了会自我教学、持续进化的智能体系统，解决静态\nSkill\n库无法跟上策略演进而导致知识滞后的根本问题。\n2.2.1.1.4.2. D2Skill\nD2Skill\n核心原理是通过双粒度技能建模\n+\n对比驱动效用评估\n+\n动态闭环管理，实现策略与\nSkill\n库协同进化：\n•\n双粒度技能\n：任务技能指导全局规划，步骤技能纠正局部操作，覆盖全决策链。\n•\n对比学习机制\n：并行采样技能组与基线组，以性能差构建事后效用信号，用于\nSkill\n估值、奖励塑形与策略优化。\n•\n反思生成技能\n：失败触发轨迹对比分析，自动提炼新\nSkill\n注入知识库。\n•\n动态管理闭环\n：语义\n+\n效用两阶段检索，定期剪枝低效\nSkill\n，确保\nSkill\n库高质可用。\n该框架让技能可生长、可评估、可复用，推动智能体从参数学习迈向经验沉淀的持续进化。\n2.2.1.1.4.3. GIGPO\n算法\nSkillRL\n和\nD2Skill\n框架都用到了\nGiGPO\n算法。\nGiGPO\n（\nGroup-in-Group Policy Optimization\n）的核心创新在于保留\nGRPO \"Critic-free\"\n特性的同时，通过数据挖掘引入\nStep-level\n优势估计。它不需要额外的\nValue Model\n，而是利用\nRollout\n数据中天然存在的状态重复现象来构建细粒度奖励信号，信号由两层\nAdvantage\n加权融合而成：\n第一层：\nEpisode-level Advantage\n（轨迹级）\n•\n做法：与标准\nGRPO\n一致。在同一个\nTask Group\n内，比较各条完整轨迹的总回报（\nReturn\n），进行\nGroup-wise\n归一化。\n•\n作用：提供全局的好坏判断，告诉模型\n\"\n哪条路径整体更优\n\"\n。\n第二层：\nStep-level Advantage\n（步级\n/\n状态级）\n•\n锚点发现（\nAnchor State\n）：在多轮\nRollout\n中，\nAgent\n经常会回到相同的环境状态（如点击同一个搜索结果、回到同一个房间）。\nGiGPO\n离线地通过\nHash\n聚合这些相同状态下的不同\n(action, reward)\n对，构成\nStep-level Group\n。\n•\n局部比较：在同一个\nAnchor State\n组内，计算折扣奖励并进行归一化。\n•\n作用：提供局部的动作优劣排序，告诉模型\n\"\n在当前这个具体状态下，哪个动作比另一个更好\n\"\n，解决了长序列中的\nCredit Assignment\n难题。\n融合优化\n：将两层优势按权重线性叠加，得到每一步的最终优势，再直接代入\nClipped PPO Objective\n进行更新。默认两层权重各占\n50%\n其中\nA\nepisode\n为轨迹级（\nGroup-wise\n归一化的整条轨迹回报），\nA\nstep\n为同一\nAnchor State\n组内折扣奖励归一化后的步级优势。\n维度\nGRPO\nGiGPO\n优势估计粒度\n粗粒度：仅\nEpisode-level\n（整条轨迹对比）\n双层粒度：\nEpisode-level + Step-level\n（同状态下动作对比）\nCredit   Assignment\n困难：稀疏奖励下，难以区分长轨迹中哪一步导致了成功\n/\n失败\n精准：利用\nAnchor State\n将长期回报分解到具体决策点\n额外开销\n无\nCritic\n，低显存\n几乎零额外开销（无\nCritic\n，无额外\nForward\n，但需离线\nHash\n分组）\n数据利用率\n仅利用轨迹间的方差\n同时利用轨迹间方差\n+\n同一状态下的动作方差\n收敛特性\n在长序列\n/\n稀疏奖励任务中易抖动、收敛慢\n提供更密集的梯度信号，收敛更稳、更快\n核心依赖\n依赖同一\nPrompt\n下的多次采样\n依赖环境状态的可重复访问性（\nRevisitable States\n）\n为什么\nGiGPO\n极度适配\nAgentic\n场景？\nGiGPO\n专门针对\nLLM Agent\n在多轮、长序列、交互式环境中的痛点而设计：\n•\n解决\nAgent\n训练中的\n\"\n信用分配\n\"\n死结\n：\nAgent\n任务通常长达\n50+\n步且奖励极度稀疏（仅结尾给分）。\nGRPO\n只能告诉模型\n\"\n这条\n50\n步的轨迹对了\n\"\n，但无法指出是第\n3\n步选对了商品还是第\n48\n步点对了提交。\nGiGPO\n通过\nAnchor State\n机制，自动在长轨迹中切分出无数个\n\"\n局部考场\n\"\n，让模型能在每一步都获得类似\nDense Reward\n的监督信号。\n•\n完美契合\nAgent\n环境的\n\"\n状态重访\n\"\n特性\n：与传统文本生成不同，\nAgent\n在与环境交互时，状态空间是有限的且高度结构化的。即使策略不成熟，\nAgent\n也会频繁回到相同状态。这种在传统\nRL\n中被视为\n\"\n探索效率低\n\"\n的现象，在\nGiGPO\n中反而变成了免费的监督信号源。\n•\n保持了\nLLM\n训练的工程友好性\n：\nAgent\n训练本就因为环境交互慢、序列长而昂贵。如果为了细粒度信号引入\nCritic Network\n（如传统\nPPO\n），显存和计算成本会翻倍。\nGiGPO\n证明了\n\"\n不需要\nCritic\n也能做细粒度\nRL\"\n，它完全复用\nRollout\n数据，不增加任何模型参数和推理开销，使得在消费级显卡或有限集群上训练高性能\nAgent\n成为可能。\n•\n动态适配学习过程\n：\nGiGPO\n的结构具有自适应性。训练早期策略差，状态重复率高，\nStep-group\n大，提供强基础信号；随着策略收敛，状态访问变精准，\nStep-group\n自然聚合得更合理。\nGiGPO\n是\nGRPO\n在\nAgentic\n领域的针对性升维。它没有抛弃\nGRPO\n简单高效的优点，而是巧妙地利用了\nAgent\n环境\n\"\n状态可重复\n\"\n的先验知识，以极低的边际成本换取了关键的步级优化信号，是目前解决\nLLM Agent\n长序列稀疏奖励训练难题的最优解之一。\n2.2.1.2. Agent\n自进化\n2.2.1.2.1. Harness\n进化\nHarness\n是围绕模型的运行时控制层，负责组织上下文、工具访问、权限、执行、反馈、记忆和恢复。它的关键价值在于时间尺度不对称性：\nHarness\n状态可以在部署期间被频繁、低成本地检查、修订和治理，而模型权重则不能。\n在单个任务内部，\nagent\n循环（行动\n→\n观察\n→\n决策\n→\n重复）只需要成功一次就够了。但学习不同：它需要在多个窗口之间积累跨会话的经验。\nLoop\n循环运行在\nharness\n之上，\nharness\n决定这个\nLoop\n循环能保留什么。\nEvoAgentX\n给一个自然语言目标，先自动生成多\nAgent\n工作流，然后用进化算法迭代优化。它同时优化三个层面，三条优化线并行进化：\n•\nPrompt\n文本\n：用\nTextGrad\n调整每个\nAgent\n的指令措辞。\n•\n工作流拓扑\n：用\nAFlow\n搜索\nAgent\n间的连接方式。\n•\n配置参数\n：用\nMIPRO\n优化工具选择和参数设定。\n三条线并行进化，每一代的最优方案保留，变异出新方案，再评估、再筛选。\n2.2.1.2.2.\n元进化智能体\n当改进过程本身成为优化对象时，就进入了元进化（\nMeta-Evolution\n）\nregime\n。\nHyperAgents\n系统由\nTask Agent\n（干活\nAgent\n）和\nMeta Agent\n（改进\nAgent\n）两部分组成，统一写在可编辑程序中。\nMeta Agent\n不仅能改\nTask Agent\n的代码，还能改自己的代码，改进策略本身也在进化。\n同时实验发现系统自己发明了持久化记忆和性能追踪机制，没人预设这些改进功能，\nAgent\n判断用这种方式改进效率更高，就写代码给自己改进了。\n同时，该方案跨领域迁移性强：把在论文审稿和机器人任务上进化出的\nHyperAgent\n，直接拿去做\nIMO\n数学评分，原版\nDGM\n的迁移效果约等于\n0\n，而\nDGM-H\n的\nimp@50\n达\n0.630\n。原因在于\nHyperAgents\n学到通用改进策略，如持久化记忆、趋势分析等，这些在新领域仍然管用。\n2.2.2.\n模型参数进化\n当\nHarness\n经验变得稳定且通用时，需要考虑参数路径\n——\n将经验内化为模型权重：\n•\nInternalize priors\n：内外经验，避免重复支付上下文编排开销。\n•\nTransfer beyond context\n：策略更新可跨任务、会话、用户迁移。\n•\nCollective evolution\n：集体进化、协同更新，让单个智能体经验成为共享先验。\n2.2.2.1.\n反馈进化\n•\n邮件生成后训练\n：基于人工修正后回复数据，进行基于\nGRPO\n的验证奖励后训练。\n•\n邮件评估后训练\n：基于业务标注反馈数据，进行基于强化学习的对抗奖励后训练。\n2.2.2.2.\n自我归因\nAgentEvolver\n通过\nLLM\n回溯评估每步贡献，精准区分关键决策与无效步骤，它把进化分三个阶段：\n•\n自我提问（\nSelf-Questioning\n）\n：\nAgent\n自主探索环境，自己生成训练任务，无需人工准备数据。\n•\n自我导航（\nSelf-Navigating\n）\n：用\nReMe\n经验池管理模块，把跨任务成功经验存储起来，后续任务直接调用。\n•\n自我归因（\nSelf-Attributing\n）\n：用\nADCA-GRPO\n算法做轨迹级别的因果信用分配，分析每一步操作的因果贡献，比如第\n3\n步帮了多少忙，第\n7\n步拖了多少后腿。\nAgentEvolver\n的自归因机制，像给智能体配备了精准复盘教练，通过\nLLM\n推理能力，为每个步骤分配差异化奖励，让学习更高效。其核心逻辑分为两步：\n•\n第一步：\nLLM\n回溯评估，给步骤\n\"\n打分\n\"\n。智能体将\n\"\n任务描述、完整轨迹、最终得分\n\"\n输入\nLLM\n，让\nLLM\n按规则评估每个步骤的贡献：若最终成功，\n\"\n促进任务的步骤\n\"\n标为\nGOOD\n，\n\"\n无关\n/\n有害步骤\n\"\n标为\nBAD\n；若最终失败，\n\"\n纠正错误的步骤\n\"\n标为\nGOOD\n，\n\"\n导致错误的步骤\n\"\n标为\nBAD\n。这种二进制标签无需复杂校准，却能清晰区分步骤价值。\n•\n第二步：融合过程与结果，构建复合奖励\n。先将\nGOOD/BAD\n标签量化为\n+1/-1\n的\n\"\n过程奖励\n\"\n，并按轨迹级标准化（避免长轨迹主导统计）；再结合\n\"\n结果奖励\n\"\n（如任务完成与否的终端奖励），通过公式融合\n——\n其中\nα\n控制过程奖励的权重，既保证智能体关注步骤正确性，又不偏离最终目标。\n这种设计让样本利用率大幅提升：在\nAppWorld\n中，智能体达到传统\nRL\n基线\n90%\n的性能，所需训练步骤减少\n55%\n；在\nBFCL-v3\n中更是减少\n67%\n（如表\n6\n）\n——\n这意味着同样的样本量，自归因能让智能体学到更多。\n2.2.2.3.\n自蒸馏\n论文\nOPSD\n《\nSelf-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models\n》提出了名为\nOn-Policy Self-Distillation\n的训练新范式，其核心是让同一个模型\n\"\n自己教自己\n\"\n——\n用它看到正确答案后的更强判断力，去指导它在没有答案时的生成过程。\n角色\n输入\n行为\n作用\n学生策略（\nStudent Policy\n）\n仅题目\n正常采样生成回答\n模拟真实推理过程（\non-policy\n轨迹）\n教师策略（\nTeacher Policy\n）\n题目\n+\n答案\n对学生的每一步输出进行评估，给出更优的\ntoken\n分布\n提供细粒度监督信号\n训练流程\n•\n采样\n：学生模型基于题目生成一条完整回复轨迹\n•\n评估\n：学生计算自己每步输出\ntoken\n的概率分布；教师在同一上下文中，结合标准答案，预测每个位置应输出的\ntoken\n分布\n•\n优化目标\n：最小化两者之间的\nJensen-Shannon Divergence (JSD)\n，实现\ntoken\n级别的知识迁移。梯度仅回传给学生模型，教师模型作为目标网络（可使用初始模型或移动平均）\n3. 有效自进化\n以上我们探讨了自进化的核心机制，然而，理论上的\n\"\n可进化\n\"\n到落地上的\n\"\n有效进化\n\"\n，还有比较长的路要走！自进化机制在落地时也存在不少问题：\n•\n方向不可控（过拟合风险）\n：单轮对话轨迹往往带有偶然性、特异性甚至极端\nCase\n。若直接基于单次轨迹更新，\nSkill\n极易为了迎合个别\nBadcase\n而变得臃肿、发散，导致\n\"\n顾此失彼\n\"\n，泛化能力大幅下降，出现\n\"\n越优化越差\n\"\n的现象。\n•\n质量不稳定（缺乏验证）\n：缺乏客观的量化评估体系，\nSkill\n的迭代如同\n\"\n盲人摸象\n\"\n。在没有严格验证闭环的情况下，我们无法区分是\nSkill\n本身的质量提升，还是环境噪声导致的指标波动，导致线上服务稳定性难以保障。\n因此，我们需要做好\nAgent\n数据流反馈与评估体系，形成科学、方向可控的进化机制！\n附：参考文献\nSelf-Improvements in Modern Agentic Systems: A Survey\nTrace2Skill: Distill Trajectory-Local Lessons into Transferable Agent Skills\nEvoSkill: Automated Skill Discovery for Multi-Agent Systems\nSkillOpt: Executive Strategy for Self-Evolving Agent Skills\nCoEvoSkills: Self-Evolving Agent Skills via Co-Evolutionary Verification\nSkillRL: Evolving Agents via Recursive Skill-Augmented Reinforcement Learning\nDynamic Dual-Granularity Skill Bank for Agentic RL\nGroup-in-Group Policy Optimization for LLM Agent Training\nAgentEvolver: Towards Efficient Self-Evolving Agent System\nSelf-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models\n欢迎大家评论区留言交流\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.11,
+        "direct_local": 0,
+        "peripheral": 0.19,
+        "transfer_business": 0.01,
+        "transfer_agent": 0.69
+      }
+    },
+    "relevance": {
+      "score": 1.81,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.22,
+        "2": 0.73,
+        "3": 0.04,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.89,
+      "probabilities": {
+        "0": 0.31,
+        "1": 0.52,
+        "2": 0.16,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.33,
+      "probabilities": {
+        "0": 0.41000000000000003,
+        "1": 0.09,
+        "2": 0.35000000000000003,
+        "3": 0.09,
+        "4": 0.06,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.35,
+      "probabilities": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.21,
+        "3": 0.08,
+        "4": 0.67,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.35,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.07,
+        "3": 0.29,
+        "4": 0.56,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.41,
+      "probabilities": {
+        "0": 0,
+        "1": 0.05,
+        "2": 0.53,
+        "3": 0.37,
+        "4": 0.05,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 9275,
+    "outputTokens": 172,
+    "totalTokens": 9447
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.62,
+        "relevance": 0.82,
+        "grounding": 0.66,
+        "decision_action": 0.11,
+        "evidence": 0.57,
+        "actionability": 0.56,
+        "anti_hype": 0.65
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179813633,
+                "endTime": 1791179813797,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00038955",
+      "marketCost": "0.00038955",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00038955",
+      "inferenceCost": "0.00038955",
+      "inputInferenceCost": "0.00038955",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A5WQHKQV3VBN80YXJ9BT5"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:56:53 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::ckx7k-1791179813467-b7fff36178ee"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.11,
+            "direct_local": 0,
+            "peripheral": 0.19,
+            "transfer_business": 0.01,
+            "transfer_agent": 0.69
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.81,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.22,
+            "2": 0.73,
+            "3": 0.04,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.89,
+          "probabilities": {
+            "0": 0.31,
+            "1": 0.52,
+            "2": 0.16,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.33,
+          "probabilities": {
+            "0": 0.41000000000000003,
+            "1": 0.09,
+            "2": 0.35000000000000003,
+            "3": 0.09,
+            "4": 0.06,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.35,
+          "probabilities": {
+            "0": 0,
+            "1": 0.04,
+            "2": 0.21,
+            "3": 0.08,
+            "4": 0.67,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.35,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.07,
+            "3": 0.29,
+            "4": 0.56,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.41,
+          "probabilities": {
+            "0": 0,
+            "1": 0.05,
+            "2": 0.53,
+            "3": 0.37,
+            "4": 0.05,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 9275,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.62,
+            "relevance": 0.82,
+            "grounding": 0.66,
+            "decision_action": 0.11,
+            "evidence": 0.57,
+            "actionability": 0.56,
+            "anti_hype": 0.65
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179813633,
+                    "endTime": 1791179813797,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00038955",
+          "marketCost": "0.00038955",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00038955",
+          "inferenceCost": "0.00038955",
+          "inputInferenceCost": "0.00038955",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A5WQHKQV3VBN80YXJ9BT5"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:56:53.033Z"
+  }
+}

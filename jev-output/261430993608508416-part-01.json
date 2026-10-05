@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "261430993608508416",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "认知重建之后，步入Agentic Engineering的工程革命",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801026&idx=1&sn=3e12f0888b3c232ed7218caf90df5f0a",
+      "date": "2026-03-30T09:37:00.859Z",
+      "chars": 6500,
+      "text": "原创\n腾讯程序员\n2026-03-30 17:37\n广东\n一份4万字实践记录\n作者：rickyshou\n从 speckit 踩坑到认知重建，从推翻精密架构到一个 AGENTS.md 文件重新出发。这篇讲的是\"我做了什么，以及它为什么有效\"。一个 AGENTS.md 文件，两个月后长成了拥有 22 个 Agent、27 个 Skill、28 个命令的工程体系。它不是设计出来的，而是被真实需求一步步逼出来的——中间经历了场景路由的建设与推翻、方法论的沉淀、多 Agent 协同代码审查的实战、运营活动配置的端到端落地，以及从一个人用到一个团队用的完整过程。如果你正在思考\"AI 辅助开发到底能走多远\"，这篇文章给出的不是理论答案，而是一份带着所有弯路和修正的实践记录。\n一、从 Vibe Coding 到 Agentic Engineering：一个概念的诞生\n1.1 Karpathy 的一条推文\n2025 年 2 月，Andrej Karpathy 随手发了一条推文，发明了一个词：\nVibe Coding\n（氛围编程）。\n\"我发明了一种新的编程方式，我称之为'氛围编程'。你完全沉浸在氛围之中，拥抱指数级增长，甚至忘记代码的存在……我总是'全部接受'，不再看差异对比。遇到错误信息时，我直接复制粘贴进去，不加任何注释，通常这样就能解决问题。\"\n这条推文火了。不是因为它严谨，恰恰因为它说出了很多人心里的真实状态——AI 写代码已经\"够用\"了，你只需要看看、说说、跑跑、粘贴粘贴，大部分时候它就是能工作。\n一年后，2026 年 2 月，Karpathy 回顾这条推文时，说了一段更值得注意的话：\n\"如今，通过 LLM 智能体进行编程正日益成为专业人士的默认工作流程，只不过监管和审查更加严格。其目标是\n在不牺牲软件质量的前提下，充分利用智能体的优势\n。许多人试图为这种方法想出一个更好的名称，以区别于 Vibe Coding，我个人目前最喜欢的是\nAgentic Engineering\n。\"\n他给出了两个理由：\nAgentic\n——因为 99% 的时间你不再直接写代码，而是\n协调智能体并进行监督\nEngineering\n——因为这是一门有深度的学科，有其\n自身的艺术、科学和专业知识\n，可以学习和精进\n看到这条推文的时候，我并不觉得这是一个新概念。\n因为在 Karpathy 发这条推文的一个月前——2026 年 1 月 2 日凌晨——我已经提交了\nAgenticMetaEngineering\n项目的第一个 commit：\nfeat: 初始化 AgenticMetaEngineering 项目结构和上下文管理规范\n。\n名字里就有 Agentic Engineering。不同的是，我多加了一个\nMeta\n。\n为什么是 Meta？因为那时候我已经想清楚了一件事：\nAgentic Engineering 本身也需要被工程化。\n让 AI Agent 真正进入业务研发，不是给它一个提示词就行的，有很多工程基础设施需要提前准备——这些基础设施的设计、构建和迭代，就是\"元工程\"（Meta Engineering）：\n长时间跨会话执行任务\n——Agent 做到一半会话断了怎么办？状态怎么恢复？\n工具调用能力的评估体系\n——Agent 调用工具的准确率、可靠性如何量化？\n上下文的系统化管理\n——Agent 在正确的时刻能拿到正确的信息吗？\n知识的持续沉淀机制\n——Agent 这次踩的坑，下次能自动避开吗？\n这些不是\"用 AI 写代码\"的问题，而是\"让 AI 可靠地写代码\"之前必须解决的\n工程问题\n。\nKarpathy 的推文真正的价值，不在于发明这个概念，而在于\n让它被广泛认识\n。当一个被大众熟知的人说出这个词，它就从少数实践者的内部术语变成了行业共识。这对所有在做同样事情的人来说是好事——你不再需要花 10 分钟解释\"你到底在做什么\"。\n1.2 什么是\"Agentic\"？一个光谱而非二元定义\nKarpathy 给了这个词一个名字，但\"Agentic\"到底意味什么？LangChain 创始人 Harrison Chase 在\nWhat is an AI Agent?\n一文中给出了一个更具技术洞察力的视角。\n他引用 Andrew Ng 的观点：\n与其争论哪些系统算\"真正的 AI Agent\"，不如承认系统的\"Agentic 程度\"是一个光谱。\n就像自动驾驶有 L1 到 L5 的分级，AI 系统的自主程度也有不同层级：\nAgentic 光谱（由低到高）：\nRouter           → LLM 决定输入走哪条路径\n（少量自主性）\nState Machine    → 多步路由 + 循环决策，直到任务完成\n（中等自主性）\nAutonomous Agent → 自主构建工具、记忆经验、持续进化\n（高度自主性）\nChase 的核心观点是：\n一个系统越\"Agentic\"，就越需要新的工具和基础设施来支撑它\n——包括编排框架、持久化执行、运行时观测、评估体系，以及全新的监控方式。\n这和我的实践体验完全吻合：当你从\"一个 AGENTS.md 文件\"演进到\"22 个 Agent 协同工作\"时，真正的挑战从\"怎么写提示词\"变成了\n怎么让这些 Agent 可靠地运行、有效地协作、持续地进化\n。\n1.3 我的理解：Agentic Engineering 是什么\n在构建工程体系的实践过程中，我自己也独立推演出了类似的认知。\n2026 年 1 月初，我写了一篇内部文档 《Agentic 工程演进：从对话到自主》，从第一性原理出发，梳理了 AI 辅助编程从\"简单对话\"到\"Agentic 工程\"的五个阶段演进。核心框架是两个相互推动的维度：\n横轴（工具能力）\n：LLM API → 聊天页面 → 简单 Agent → 编码 Agent → 团队定制化 Agent\n纵轴（任务复杂度）\n：简单对话 → 代码补全 → Vibe Coding → SDD 脚手架 → Agentic 工程\n两个维度的交汇构成了一张完整的演进地图：\n每一层解决的是上一层的核心痛点：AGENTS.md 解决重复解释问题，但它会膨胀；context/ 分层解决膨胀问题，但跨会话会失忆；结构化记忆解决失忆问题，但知识不复利；复合工程让知识复利，最终形成完整的 Agentic 工程体系。\n工具能力的提升使更复杂的任务成为可能，而任务复杂度的增加又倒逼工具能力的进化——这两个维度相互推动，最终指向一个完整的工程体系。\n这不是看了谁的文章之后的\"学习笔记\"，而是在实际构建过程中被一个个具体问题逼出来的认知：上下文膨胀了怎么办？跨会话丢失状态怎么办？同样的坑反复踩怎么办？每个问题的解法叠加起来，自然指向了一个工程化的方向。Chase 早在 2024 年 6 月就提出了\"agentic\"这个光谱概念，Karpathy 在 2026 年 2 月给了它一个更广为人知的名字——概念和命名各有先后，但对于实践者来说，这条路是被真实问题推着走出来的。\n基于这些实践，我对 Agentic Engineering 的理解是：\nAgentic Engineering 是一种工程范式：人从\"代码编写者\"转变为\"Agent 协调者\"，通过系统化的上下文管理、知识沉淀和流程设计，让 AI Agent 具备自主性、记忆力和成长性，在不牺牲质量的前提下实现工程效率的复利增长。\n它不是 Vibe Coding 的对立面，而是 Vibe Coding 的\n工程化演进\n——保留\"让 AI 做事\"的杠杆效应，补上\"质量保障\"和\"知识复利\"两块拼图。\n这篇文章要记录的，就是这个演进过程是如何在一个真实团队中，围绕活动业务的工程化改造一步步发生的。\n1.4 同路人的印证：everything-claude-code 的十个月实践\n在讲我自己的故事之前，先介绍一个外部案例——它说明 Agentic Engineering 不是某个人的发明，而是一种正在独立涌现的工程范式。\n体系基本成型后，我在 2 月关注到了\n@affaanmustafa\n（cogsec）的\neverything-claude-code\n仓库和他的长文分享。这个仓库来头不小——\n作者是 Anthropic 黑客马拉松的获胜者\n，从 2025 年 2 月 Claude Code 实验性发布起就开始深度使用，经过 10 个多月的密集日常使用，演化出了一套包含 13 个 Agent、43 个 Skill、31 个命令的生产级配置集合。\n看到他们的实践时，我的第一反应不是\"学到了新东西\"，而是\"\n原来有人在同一条路上走了十个月，而且到了类似的地方\n\"。他们的体系覆盖了几个关键维度，和我独立演化出的方向高度吻合：\n他们的原话精准地描述了共同的痛点：*\"你的皮质醇飙升，愤怒地对 Claude 大喊不要做某件事——而你已经在上一个会话中告诉过它了。\"* 这正是我在体系中用规范文档和经验沉淀机制要终结的循环——而他们用会话结束时的自动经验提取来解决同样的问题，路径不同，目标相同。\n真正让我有共鸣的是他们对\n复利效应\n的理解：*\"Early on, I spent time building reusable workflows/patterns. Tedious to build, but this had a wild compounding effect as models and agent harnesses improved.\"*（早期花时间构建可复用的工作流和模式，建设过程很枯燥，但随着模型和智能体框架的进步，这产生了疯狂的复利效应。）在第一篇文章中我详细介绍过，复利工程（Compounding Engineering）这个理念源自 Claude Code 团队与 Every 团队的实践交流，并在 Every 团队开源的 Compound Engineering Plugin 中得到了系统化实现——如今在一个完全独立的体系中看到同样的复利逻辑，进一步印证了这条路的可行性。\n今天投入的每一个 Skill、每一条规则、每一份经验文档，都在为明天的效率买单。\n1.5 不是银弹：独立演化的必要性\n但我想强调一点：everything-claude-code 不是我的体系的蓝图，我也没有参考他们的具体设计。AgenticMetaEngineering 的 22 个 Agent、27 个 Skill 是在解决活动业务问题的过程中独立\"长\"出来的，不是照着别人的配置搭建的。\n他们自己在 README 的最后也明确说了：*\"These configs work for my workflow. You should start with what resonates, modify for your stack, remove what you don't use, add your own patterns.\"*\n这段话印证了第二篇文章的核心观点——\n没有一个\"最佳配置\"适合所有人。\nAgenticMetaEngineering 中默认启用了 TAPD 的 MCP（对接内部项目管理）、企微的消息推送（Agent 完成任务后自动通知到个人）、内部的 QTA 单元测试插件——这些都是我们团队工作流中不可或缺的基础设施，但在 everything-claude-code 里你找不到任何一个，因为它们是企业内部工具，只有在你的真实业务场景中才有意义。反过来，他们体系中的一些配置（比如面向个人开发者的 GitHub MCP 替代方案），在我们的企业环境里也并不适用。\n工程体系必须从自己的土壤里长出来。\n当然，独立演化不意味着闭门造车。他们体系中好的设计思路——比如 Hook 驱动的记忆持久化、会话结束时的自动经验提取——这些都值得后续融入进来，为 AgenticMetaEngineering 补充更多能力。\n两个独立演化的体系在核心理念上高度趋同，这本身就说明了一件事：Agentic Engineering 不是某个人的发明，而是一种工程范式的自然涌现。\n当你认真地让 AI Agent 进入真实的工程实践，你最终会被同样的问题逼到同样的方向上——记忆、学习、验证、复利。（第三章 3.6 节会结合 OpenAI Codex 团队等更多独立实践展开论证。）\n接下来的章节，记录的就是我在自己项目中独立走出这条路的过程。\n二、回顾：从认知到行动的断层\n2.1 前两篇建立的认知基础\n在第一篇文章里，我记录了从 speckit 踩坑到认知重建的过程，建立了三个核心认知：\n上下文工程\n：AI 的能力上限取决于你给它的信息——完整性和信噪比决定一切\n复利工程\n：让每次实践产生复利，边际成本递减，而非每次从零开始\n极简主义\n：先跑起来，让具体问题驱动演进，而非预先设计完美架构\n在第二篇文章里，我们推翻了精密架构，从一个 AGENTS.md 文件重新出发。那篇文章的结尾，我们有了一个能跑起来的最小工程——一个文件，几条规则，一个方向。\n这三个认知是正确的。但正确的认知不等于可执行的方案。\n2.2 第一个坑：用传统软件设计思维来设计 Agent 体系\n第一篇文章发出时，我手里已经有了第一版 demo——基于第一篇的认知搭建的初始工程。接下来的迭代过程中，我本能地用了最熟悉的设计方法：\n领域驱动设计（DDD）。\n第二篇文章正是在这段迭代中写的——它记录了我们如何从三层架构、九步工作流、多 Agent 编排的\"精密设计\"中清醒过来，受 NotebookLM 和 Claude Code 的极简理念启发，推翻全部架构，回归到\"一个 AGENTS.md + 结构化知识\"的起点。\n这个思路很自然——DDD 是应对复杂业务系统的成熟方法论：划分限界上下文、定义聚合根、设计领域事件、通过接口契约解耦模块。既然 Agentic Engineering 也是一个复杂系统，为什么不能用 DDD 来设计它？\n从 v0.1 到 v0.7，我反复尝试用 DDD 的方式划分 Agent 的职责边界、定义 Skill 之间的调用契约、设计知识的分层架构。每一版都比上一版\"更完整\"，但每一版在实际使用中都不对劲——\nAgent 不按你设计的边界行动。\n最终才意识到根本性差异：\n传统代码写了就确定性运行，Agent 的行为取决于上下文。\n用 DDD 设计微服务时，你可以精确定义一个接口：输入什么类型、输出什么类型、异常怎么处理。写完代码，部署上去，它就按你定义的方式运行。但 Agent 不是这样——同一个 Skill，给它完整的项目知识，它能一次做对；给它空的 context/，它就开始幻觉。同一个 Agent 定义，上下文窗口里塞了太多规则，它反而\"走神\"；精简到关键信息，它又表现正常。\nAgent 的\"接口\"不是函数签名，而是上下文窗口里的信息组合。这个\"接口\"是动态的、概率性的，没法用 DDD 的确定性边界去约束。\nv0.7 之后我放弃了 DDD 路径，推翻之前的设计，建了当前这个全新的仓库。这个认知直接影响了后续所有的设计决策：不追求精确的模块划分和接口定义，而是\n围绕上下文的组织、流转和质量来构建体系\n——这就是第三章开始的故事。\n这个认知断层还延伸出两个工程化问题，最终都指向了同一个答案。\n问题一：体系怎么升级？\n传统工具的升级路径是\"发布新版本→用户更新插件\"。但 Agentic Engineering 的核心资产是什么？Skill 定义、Agent 配置、context/ 里的知识、门禁规则——全是文本文件。升级一个 Skill 的行为，本质上是修改一个 Markdown 文件；调整一条门禁规则，本质上是编",
+      "fulltext_obtained": true,
+      "chunk_index": 1,
+      "chunk_count": 9
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.22,
+        "peripheral": 0.02,
+        "transfer_agent": 0.75,
+        "transfer_business": 0.01
+      }
+    },
+    "relevance": {
+      "score": 1.78,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.16,
+        "2": 0.79,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.8,
+      "probabilities": {
+        "0": 0.16,
+        "1": 0.27,
+        "2": 0.27,
+        "3": 0.21,
+        "4": 0.09,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.96,
+      "probabilities": {
+        "0": 0.56,
+        "1": 0.08,
+        "2": 0.22,
+        "3": 0.11,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.5,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.08,
+        "2": 0.32,
+        "3": 0.59,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.2,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.25,
+        "2": 0.39,
+        "3": 0.21,
+        "4": 0.14,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 3.27,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.03,
+        "3": 0.63,
+        "4": 0.33,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.76,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 7124,
+    "outputTokens": 172,
+    "totalTokens": 7296
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.49,
+        "anti_hype": 0.73,
+        "category": 0.69,
+        "decision_action": 0.36,
+        "evidence": 0.66,
+        "grounding": 0.25,
+        "relevance": 0.84
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "digitalocean",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180435705,
+                "endTime": 1791180435973,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000299208",
+      "marketCost": "0.000299208",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000299208",
+      "inferenceCost": "0.000299208",
+      "inputInferenceCost": "0.000299208",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARW7685492PNSWESHBFFW"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:15 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::w8nbr-1791180435662-0b82259460e5"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 2.2,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.25,
+            "2": 0.39,
+            "3": 0.21,
+            "4": 0.14,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.27,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.03,
+            "3": 0.63,
+            "4": 0.33,
+            "5": 0
+          }
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.22,
+            "peripheral": 0.02,
+            "transfer_agent": 0.75,
+            "transfer_business": 0.01
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.96,
+          "probabilities": {
+            "0": 0.56,
+            "1": 0.08,
+            "2": 0.22,
+            "3": 0.11,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.5,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.08,
+            "2": 0.32,
+            "3": 0.59,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.76
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.8,
+          "probabilities": {
+            "0": 0.16,
+            "1": 0.27,
+            "2": 0.27,
+            "3": 0.21,
+            "4": 0.09,
+            "5": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.78,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.16,
+            "2": 0.79,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 7124,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.49,
+            "anti_hype": 0.73,
+            "category": 0.69,
+            "decision_action": 0.36,
+            "evidence": 0.66,
+            "grounding": 0.25,
+            "relevance": 0.84
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "digitalocean",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180435705,
+                    "endTime": 1791180435973,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000299208",
+          "marketCost": "0.000299208",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000299208",
+          "inferenceCost": "0.000299208",
+          "inputInferenceCost": "0.000299208",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARW7685492PNSWESHBFFW"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:15.200Z"
+  }
+}

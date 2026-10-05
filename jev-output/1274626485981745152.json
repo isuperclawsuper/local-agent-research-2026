@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1274626485981745152",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "淘宝百亿补贴数据分析助手 Agent 实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650545717&idx=1&sn=616d9c26c3c02ce24bdb2a793b18291c",
+      "date": "2026-09-04T01:55:00.343Z",
+      "chars": 17968,
+      "text": "原创\n天猫技术团队\n2026-09-04 09:55\n浙江\n自然语言秒级取数归因\nbybt-data-analysis-assistant是一个数据分析智能体，它能将自然语言提问转化为完整的数据分析流程，实现\"你问它答\"的智能化数据服务。该系统解决了传统数据分析中取数慢、口径混乱、归因依赖人工和知识不沉淀等痛点，提供NL2SQL取数、波动归因、血缘溯源、Python分析等全方位能力。其核心技术采用多Agent协同架构，通过意图识别、调度路由和ReAct推理循环实现智能决策，摒弃了简单的Text-to-SQL模式，创新性地采用NL2MDL2SQL路径，确保SQL生成的准确性和口径统一。系统构建了六层知识体系，从表结构到会话记忆分层管理，结合WrenAI语义层和Hologres加速查询，实现了从找表、写SQL、执行到深度分析的全流程自动化，大幅提升了数据分析效率和质量，使业务人员能像对话一样获取数据洞察。\n项目概述\n▐\n1.1\n它是什么\nbybt-data-analysis-assistant 是一个\n数据分析智能体\n——你用自然语言提问，它自主完成从找表、写 SQL、执行查询到深度分析的全流程：\n\"昨天 GMV 多少？\"        → 找表 → 生成\nSQL\n→ 执行 → 返回结果\n\"GMV 为什么跌了？\"          → 波动归因 → 逐层下钻 → 因果链报告\n\"这个指标怎么计算的？\"       → 血缘溯源 → 上游字段 → 计算逻辑\n\"各行业 GMV 做帕累托\"       → 取数 → Python 分析 → 图表\n它不是简单的 Text-to-SQL，而是一个\n能思考、会选工具、能自我纠错的 Agent\n。\n▐\n1.2\n解决什么痛点\n▐\n1.3\n能力速览\n快速上手\n▐\n2.1\nWeb 平台\n启动服务\n：\n./boot.sh\n访问地址\n：\n对话示例\n：\n技术架构全景\n▐\n3.1\n架构全景图\n用户自然语言提问\n│\n▼\n┌──────────────────────────────────────────────────────┐\n│                    意图识别层                          │\n│   Intent Agent: LLM 单次调用 → JSON 意图参数包        │\n│   (意图分类\n+\n时间解析\n+\n指标识别\n+\n维度推断)           │\n└──────────────────────┬───────────────────────────────┘\n│\n▼\n┌──────────────────────────────────────────────────────┐\n│                    调度路由层                          │\n│   Supervisor: 日期注入\n+\n语义计划\n+\n记忆召回           │\n│   → 分发到对应专家 Agent                               │\n└──────┬──────────┬──────────┬──────────┬───────────────┘\n│          │          │          │\n▼          ▼          ▼          ▼\n┌────────┐┌────────┐┌────────┐┌────────┐\n│ Query  ││Analysis││  Ops   ││ Other  │\n│ Agent  ││ Agent  ││ Agent  ││ Agent  │\n│取数专家 ││分析专家 ││运维专家 ││ 兜底   │\n└────┬───┘└────┬───┘└────────┘└────────┘\n│         │\n▼         ▼\n┌──────────────────────────────────────────────────────┐\n│                    保障层                              │\n│\nSQL\nValidator Gate (后置校验)                        │\n│   答案净化\n+\nSQL\n自动暂存                               │\n│   SSE 流式输出给前端                                    │\n└──────────────────────────────────────────────────────┘\n│\n▼\n┌──────────────────────────────────────────────────────┐\n│                    知识底座                            │\n│   MDL 语义层 │\nSQL\n片段库 │ 规则库 │ 血缘图谱 │ 会话记忆│\n│   (WrenAI)   │ (TisPlus3)│(TisPlus3)│(LightRAG)│(TisPlus3)│\n└──────────────────────────────────────────────────────┘\n▐\n3.2\n技术栈一览\n设计要点\n：不同环节用不同规格的模型——重活用 qwen-plus，轻活用 qwen-turbo，控制成本和延迟。\n▐\n3.3\n核心设计决策\nAgent 架构设计\n▐\n4.1\n意图识别：入口层\n意图识别是 Agent 的\n大脑前哨\n——在 Agent 执行前，先用一次 LLM 调用解析出标准化参数包：\n{\n\"intent_type\"\n:\n\"attribution\"\n,\n\"confidence\"\n:\n0.95\n,\n\"metric_field\"\n:\n\"gmv_amt\"\n,\n\"metric_name\"\n:\n\"GMV\"\n,\n\"time_label\"\n:\n\"昨天 vs 前天\"\n,\n\"curr\"\n:\n\"2026-06-14\"\n,\n\"prev\"\n:\n\"2026-06-13\"\n,\n\"scope\"\n:\n\"all\"\n}\n一次调用同时完成\n：\n降级策略\n：LLM 调用失败时，自动回退到关键词匹配 + 规则解析。\n多意图检测\n：一个问题含多个意图时，主意图放\nintent_type\n，次要意图放\nsecondary_intents\n数组，支持组合如\ntable_meta + data_query\n（查表结构 + 写查询）。\n▐\n4.2\n多 Agent 协同：调度层\nSupervisor 根据意图识别结果，将问题分发到对应的专家 Agent：\n为什么不用单 Agent\n：单 Agent 需要一个巨大的 system prompt 和几十个工具，导致工具选择困难、prompt 膨胀、调用预算浪费。多 Agent 让每个专家只看自己相关的工具和指令，选择更精准。\n▐\n4.3\nReAct 推理循环：执行层\nAgent 不是\"一条命令出结果\"，而是\n边想边做\n的 ReAct 循环。以\"昨天 GMV 和前天比怎么样？\"为例：\nThought\n1\n: 需要先找到 GMV 所在的表\nAction\n1\n:  search_metrics(query=\n\"GMV\"\n)\nResult\n1\n:  → ads_flow_sum_di, gmv_amt\nThought\n2\n: 知道表了，查 SQL 规则确认口径\nAction\n2\n:  rule_search(table=\n\"ads_flow_sum_di\"\n)\nResult\n2\n:  → 必须加 WHERE activity_type=''\nThought\n3\n: 生成 SQL 查昨天和前天\nAction\n3\n:  build_sql(table=\n\"ads_flow_sum_di\"\n,\nmetrics\n=[\n\"gmv_amt\"\n],\nbizdate_start\n=\n\"2026-06-14\"\n,\ncompare_bizdate_start\n=\n\"2026-06-13\"\n)\nResult\n3\n:  → SELECT ... (完整 SQL)\nThought\n4\n: 执行 SQL\nAction\n4\n:  odps_query(sql=\n\"...\"\n)\nResult\n4\n:  → 昨天 XX亿，前天 XX亿，环比 -\n20\n%\nThought\n5\n: 用户问了\n\"怎么样\"\n，需要分析环比\nAction\n5\n:  python_analyze(code=\n\"df['环比'] = ...\"\n)\nResult\n5\n:  → 环比下降\n20\n%，主要受家电行业影响\nFinal\nAnswer: 昨天 GMV\n1\n.\n2\n亿，环比下降\n20\n%...\n为什么用 ReAct 而不是固定流程\n：\nReAct 让 Agent\n自主决定\n调什么工具、传什么参数、什么时候收敛。\n▐\n4.4\n安全守卫：保障层\nAgent 有\"刹车系统\"（Harness），防止失控：\n此外，所有 Agent 生成的 SQL 都经过\nSQL Validator Gate\n后置校验，确保语法正确、表名存在、字段合法。\nNL2MDL2SQL：\n从自然语言到正确 SQL\n这是整个系统\n最关键的技术选型\n。\n▐\n5.1\n为什么不直接 Text-to-SQL\n直接让 LLM 写 SQL 有三个致命问题：\n直接\nText\n-\nto\n-SQL\n│\n├── ❌ 幻觉字段：LLM 编造不存在的列名\n├── ❌ 口径错误：不知道某表的 WHERE 条件该加什么\n└── ❌ 不可复用：每次从零生成，没有沉淀\nLLM 不知道\nads_bybt_flow_sum_di\n表必须有\nactivity_type = '百亿补贴'\n这个 WHERE 条件。它会编造字段，会漏掉过滤条件，每次生成结果还不一样。\n▐\n5.2\nWrenAI MDL 语义层\nWrenAI 引入了\nMDL（Model Definition Language）\n——类似 dbt 的语义建模层：\n用户问题\n│\n▼\nWrenAI MDL 语义层\n│\n├── mdl.json（模型定义文件）     ← 表名、字段、关系、描述\n├── dry_plan（NL →\nSQL\n预演）    ← 自然语言转\nSQL\n├── recall（查询历史召回）         ← 记住之前问过什么\n└── fetch_context（上下文召回）    ← 给 LLM 补充表结构信息\n│\n▼\n生成的\nSQL\n经过语义层校验\n│\n▼\n✅ 字段存在    ✅ 口径正确    ✅ 可复用\n▐\n5.3\nMDL 模型结构\nmdl.json\n定义了\n每个表的结构化语义\n：\n{\n\"models\": [\n{\n\"name\":\n\"ads_flow_sum_di\"\n,\n\"tableReference\"\n: { \"\ntable\n\":\n\"ads_flow_sum_di\"\n},\n\"\ncolumns\n\": [\n{ \"name\":\n\"gmv_amt\"\n,\n\"type\"\n:\n\"decimal\"\n,\n\"expression\"\n:\n\"pay_amt\"\n},\n{ \"name\":\n\"bizdate\"\n,\n\"type\"\n:\n\"date\"\n}\n],\n\"description\":\n\"汇总日表\"\n}\n]\n}\nAgent 在生成 SQL 前会先从 MDL 获取表结构，确保只用真实存在的字段。\n▐\n5.4\nSQL 构建的三种模式\nAgent 根据表类型自动选择 SQL 构建策略：\n▐\n5.5\n取数链路中的知识分层\n4.3 节展示了 ReAct 的 Thought→Action→Result 机制。在取数场景中，这些工具调用可以按知识层级归为四个阶段：\nAgent 在 ReAct 循环中自主决定调用顺序和是否需要每个阶段——简单取数可能跳过知识应用，复杂分析可能多轮调用。\n▐\n5.6 Hologres 外部表加速\n数据分析场景涉及多次递归下钻查询，每次走 ODPS 执行 SQL 耗时 30-120 秒。当 Agent 需要执行 5-10 次 SQL 才能完成一次诊断时，总耗时可能超过 10 分钟。引入 Hologres 外部表直读 ODPS，将单次查询加速到 3-10 秒。\n为什么选 Holo 外部表而不是全量同步\n：\n选择外部表直读：不需要 DBA 介入，onboard 新表自动挂载，第一次查询时自动创建外部表，后续 LRU 缓存命中。\n场景闸门——只在数据分析场景启用\n：\nHolo 加速仅对\nstream_analysis\n（多步分析编排器）生效，普通 NL2SQL、CLI 脚本、运维查询一律走 ODPS。通过\ncontextvars.ContextVar\n实现线程/协程安全的场景标记：\n执行链路\n：\nLLM\n生成\nODPSSQL\n│\n▼\nodps_query 工具（接口签名不变）\n│\n├─\nStep0\n: 场景闸门——\nHOLO_ROUTE_MODE\n=always 且 holo_scope=\nTrue\n？\n│         否 → 直走\nStep7ODPS\n│         是 ↓\n├─\nStep1\n: 变量替换（${bizdate} → 具体日期值）\n├─\nStep2\n: 黑名单检测（\nGET_JSON_OBJECT\n/\nEXPLODE\n等不兼容函数 → 直走\nODPS\n）\n├─\nStep3\n: 抽取\nSQL\n中所有表名（sqlglot\nAST\n解析）\n├─\nStep4\n: ensure_foreign_tables——按需创建外部表\n│         检查 information_schema.\nforeign_tables\n是否已存在\n│         不存在 →\nIMPORTFOREIGNSCHEMA\n<project>\nLIMITTO\n(<table>)\n│\nLRU\n缓存 + 持久化\nJSON\n，避免重复\nDDL\n├─\nStep5\n: sqlglot 方言转换（\nODPS\n→\nPostgreSQL\n）\n│         + 表名重写（bm_dw.\nxxx\n→\npublic\n.\nxxx\n）\n├─\nStep6\n: 通过 aistudio\nHTTP\n网关执行\n│         ├─ 成功 → 返回结果（标记\n\"via Hologres\"\n）\n│         └─ 失败 →\nStep7\n└─\nStep7\n:\nFallbackODPS\n（\nPyODPS\nexecute_sql，原路径）\n外部表自动管理\n：\n不需要 DBA 预先 IMPORT 整个 project（上千表一次性 IMPORT 很贵）。而是拿到 SQL 后用 sqlglot 抽出表名，按需创建。首次查某表多 1-3 秒建表开销，后续查 LRU 命中零开销。\n#\n进程内存缓存（\nset\n）+ 持久化文件（.holo_foreign_imported.json）\n#\n幂等去重，重启不丢失\n#\n外部表与 ODPS 表同名，默认 prefix/suffix 为空\n切库自愈\n：\n当 Hologres 实例切库（如重建实例）后，所有外部表丢失。此时查询会报\nrelation \"xxx\" does not exist\n。系统自动检测该错误，清空 IMPORT 缓存，重新 ensure 外部表后重试一次。整个过程对 Agent 透明，最多增加 3 秒。\n知识库体系\n知识库是 Agent 的\"记忆\"。一个能正确取数、能深度归因的 Agent，背后必须有一套结构化的知识体系支撑。本章从\n存储、采集、应用\n三个维度展开。\n▐\n6.1 知识体系全景\n┌─────────────────────────────────────────────────────────────┐\n│                        应用层                                 │\n│   Agent ReAct 循环主动调用知识检索工具                          │\n│   search_metrics\n/\ncap_search\n/\nsnippet_search\n/\nrule_search  │\n│   lightrag_column_logic\n/\nparse_sql_lineage                   │\n├─────────────────────────────────────────────────────────────┤\n│                        采集层                                 │\n│                                                               │\n│   ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │\n│   │ AST 血缘     │  │ 指标注册     │  │ Onboard 流水线    │   │\n│   │ 解析引擎     │  │ 体系         │  │ (表接入)          │   │\n│   │ (\n6\n-\nPhase)    │  │ (\n3\n种公式)   │  │ (\n5\n步自动接入)    │   │\n│   └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘   │\n│          │                 │                   │             │\n│          ▼                 ▼                   ▼             │\n├─────────────────────────────────────────────────────────────┤\n│                        存储层                                 │\n│                                                               │\n│  Layer\n1\n: 表能力清单\n+\nMDL 语义模型                            │\n│  Layer\n2\n:\nSQL\n片段库 (Snippet Store)                          │\n│  Layer\n3\n:\nSQL\n规则库 (Rule Store)                             │\n│  Layer\n4\n: 血缘知识图谱 (LightRAG KG)\n+\nAST 实时解析            │\n│  Layer\n5\n: 指标注册表 (Metric Registry)                        │\n│  Layer\n6\n: 会话记忆 (Session Memory)                            │\n└─────────────────────────────────────────────────────────────┘\n▐\n6.2 六层存储体系\n知识分为六层，每层有不同的粒度、变更频率和权威等级：\n权威等级\n：\n▐\n6.3 AST 血缘解析引擎\n血缘知识（Layer 4）的数据从哪来？答案是\nAST 血缘解析引擎\n——一套基于 sqlglot 的 SQL 静态分析管线，从 ETL 源代码中自动提取字段级血缘。\n为什么需要 AST 解析？\n血缘关系是数据治理的核心：某张表的 GMV 字段来自哪几张上游表？经过了什么计算？WHERE 条件是什么？这些信息分散在数百行的 ETL SQL 中，人工维护不可持续。\n六阶段解析管线\n原始 ETL\nSQL\n│\n▼\nPhase\n0\n: Schema Registry        ← 加载所有相关表的字段定义\n│                                (本地 JSON 文件\n+\nDataWorks API 降级)\n▼\nPhase\n1\n: 预处理 (Preprocess)     ← 全角标准化\n/\nDDL 剥离\n/\n变量替换\n│                                多\nINSERT\n拆分\n/\n方言兼容\n▼\nPhase\n2\n: AST 标准化 (\nNormalize\n)  ← sqlglot 解析\nSQL\n→ AST\n│                                展开\nSELECT\n*\n为显式列列表\n▼\nPhase\n3\n: 节点提取 (Extract)      ← DFS 遍历 AST，按\nscope\n提取\n│                                CTE\n/\n子查询\n/\nUNION\n分支\n/\n主查询\n│                                每个.\nscope\n: 源表、输出列、\nJOIN\n、\nWHERE\n▼\nPhase\n4\n: 作用域解析 (Resolve)    ← 符号表\n+\nalias 消歧\n│                                CTE\nscope\n隔离，拓扑序逐层解析\n│                                裸列名 → schema 消歧定位\n▼\nPhase\n5\n: 血缘映射 (Map)          ← resolved scopes → 血缘边 (Edge)\n│                                direct: 上游列直传\n│                                computed: 表达式中的所有列引用\n│                                aggregated: SUM\n/\nCOUNT 等聚合\n▼\nPhase\n6\n: 输出构建 (Output)        ← 生成标准化 JSON\ntarget_table\n/\nsource_tables\n/\ncolumns(含 depends_on)\n/\njoins\n/\nwhere_conditions\n两种使用模式\n实时解析的降级链\nAgent 需要查字段血缘\n│\n├──\n1.\nlightrag_column_logic(\ntable\n,\ncolumn\n)  ← 先查 LightRAG KG\n│      ↓ KG 未命中（表未 onboard）\n├──\n2.\ndw_get_table_source(\ntable\n)             ← 取 ETL 源代码\n│      ↓ 拿到\nSQL\n└──\n3.\nparse_sql_lineage(\nsql\n,\ncolumn\n)        ← AST 实时解析\n↓ 返回字段映射、来源表、\nWHERE\n条件\n解析能力覆盖\n引擎能处理复杂 ODPS SQL 语法，包括：\n准确性保障\n内置\n回归测试框架\n，覆盖 45 张真实表、296 个节点：\n▐\n6.4 指标注册体系\n指标注册表（Layer 5）是波动归因诊断的核心知识源——它定义了每个业务指标\n如何拆解\n。\n为什么需要指标注册？\n归因诊断的核心是\"拆解\"：GMV 跌了 20%，要拆成访客数 × 转化率 × 客单价，找出哪个因子是主因。但\"GMV 等于什么\"这个知识从哪来？\n如果靠 LLM 自己猜，它可能拆成\"流量 × 客单价\"——漏掉了转化率。如果写死在代码里，每加一个指标都要改代码。\n指标注册体系让指标定义成为\n声明式配置\n，运营同学通过 Web 向导就能接入新指标。\n三种公式类型\nMetricDef 结构\n以 GMV 为例，一个完整的指标定义：\nmetric_id: gmv\nname: GMV\nformula_type: multiplicative\ndescription: 支付GMV，流量漏斗拆解为 曝光UV × 转化率 × 客单价\ntotal_col: pay_amt\nfactors:\n- name: IPVUV\nlabel: 曝光UV\ntype: column\n# 直接取列值\ncolumn: ipv_uv\n- name: CVR\nlabel: 转化率\ntype: ratio\n# 分子/分母\nnumerator: ord_cnt\ndenominator: ipv_uv\n- name: AOV\nlabel: 客单价\ntype: ratio\nnumerator: pay_amt\ndenominator: ord_cnt\nsource:\ntable: ads_sup_index_di\ndimensions:\n- dim_col: ind1_name\nlabel: 行业\nperspective: goods\n# 供给/商品类\naxis: business\n- dim_col: act_type\nlabel: 活动类型\nperspective: place\n# 渠道/流量类\naxis: traffic\naliases: [gmv_amt, 交易额, 成交额]\n乘法型恒等式铁律\n：因子相乘后约分必须恰好等于 total_col。\nGMV = IPVUV × CVR\n×\nAOV\n=\nipv_uv × (ord_cnt / ipv_uv) × (pay_amt / ord_cnt)\n= pay_amt  ✅\n维度分类体系\n每个指标关联一组可拆解维度，维度按两个正交轴分类：\nAI 辅助接入流程\n指标接入通过 Web 平台的\"指标接入向导\"完成，AI 辅助生成 MetricDef：\n1.\n选择 MDL 表           → 系统列出表结构和字段\n2.\nAI 生成 MetricDef     → LLM 根据 schema 自动推导公式类型和因子\n3.\n预览生成的公式         → 校验恒等式、维度分类\n4.\n确认入库              → 写入 metrics.yaml + formula\n_registry\n5. 自动同步              → 刷新 metric_registry 缓存\nAI 生成时的容错机制\n：\nperspective/axis 混淆自动修正（LLM 常把 axis 值填到 perspective）\nPydantic schema 逐条校验，不合法的标红但不阻断合法项\n注入 table_profile 信息辅助 AI 理解 ROLLUP/CUBE 结构\n指标与归因诊断的关系\n指标注册表直接驱动归因诊断树（详见第七章）：\nmetrics\n.yaml\n(指标定义)\n│\n▼\nformula_registry (公式展开)\n│  GMV →\n[漏斗公式: IPVUV × CVR × AOV]\n│\n[加法公式: Σ(各行业 GMV)]\n│\n[比率公式: GMV / 总流量]\n▼\n归因诊断引擎\n│  多路筛选 → 选最显著拆解\n│  递归下钻 → 沿主因子逐层拆\n▼\n诊断树报告\n▐\n6.5 知识在 ReAct 中的使用\nAgent 在 ReAct 循环中会\n主动调用\n知识检索工具，每层知识对应不同的工具：\nAgent 思考：\"用户问 GMV，我需要先找表\"\n→ search_metrics(\"GMV\")            ← Layer\n5\n: 指标定义 (找到 gmv_amt)\n→ cap_search(\"GMV \")           ← Layer\n1\n: 能力清单 (找到表)\n→ snippet_search(\ntable\n=\n\"ads...\")  ← Layer\n2\n:\nSQL\n模板\n→ rule_search(\ntable\n=\n\"ads...\")     ← Layer\n3\n: 编写规则\n→ lightrag_table_lineage(\"ads...\")← Layer\n4\n: 血缘关系 (KG)\n→ parse_sql_lineage(\nsql\n=\n\"...\")    ← Layer\n4\n: 血缘关系 (AST 实时)\n▐\n6.6 采集与治理闭环\n知识不是静态的，而是\n采集 → 沉淀 → 审核 → 复用\n的闭环：\n┌─────────────┐\n│  采集入口     │\n└──────┬──────┘\n│\n┌────────────────┼────────────────┐\n│                │                │\n▼                ▼                ▼\nAST 血缘解析      对话产出\nSQL\n指标接入向导\n(ETL 源代码)      (自动暂存)        (AI 生成)\n│                │                │\n▼                ▼                ▼\nLightRAG KG      Staging 队列     metrics.yaml\n(血缘图谱)       (待审核片段)      (指标定义)\n│                │                │\n└────────────────┼────────────────┘\n│\n┌──────▼──────┐\n│  人工审核     │\n│  (Web 平台)  │\n└──────┬──────┘\n│\n┌──────▼──────┐\n│  入库复用     │\n│  下次 Agent  │\n│  优先命中     │\n└─────────────┘\n│\n表结构变更 → 自动 regenerate\n→ 更新规则\n/\n片段\n/\nAST 血缘\nWeb 平台提供完整的知识管理界面：\n分析能力深度解析\n▐\n7.1 波动归因诊断（Analysis Agent）\n用户视角\n：\n“昨天 GMV 为什么跌了 20%？”\nAgent 自动构建诊断树\n：\nGMV\n环比 -\n20\n%\n│\n├── 漏斗拆解：GMV = 访客数 × 转化率 × 客单价\n│   ├── 访客数 +\n5\n%   ← 不是原因\n│   ├── 转化率 -\n22\n%  ← ⭐ 主因！\n│   └── 客单价 +\n3\n%   ← 不是原因\n│\n├── 转化率 -\n22\n% 按行业拆\n│   ├── 家电 -\n45\n%    ← ⭐ Top1 贡献\n│   ├── 服装 -\n8\n%\n│   └── 食品 +\n2\n%\n│\n├── 家电转化率 -\n45\n% 指标拆解\n│   ├── 下单量 -\n40\n%  ← ⭐ 主因\n│   └── 访问量 -\n8\n%\n│\n└── 结论：家电行业下单量骤降导致 GMV 下跌\n技术实现五步法\n：\n▐\n7.2 血缘溯源\n用户视角\n：\n“GMV 这个字段是怎么计算出来的？上游依赖哪些表？”\nAgent 的血缘溯源有两条路径，形成\nKG 优先、AST 降级\n的降级链：\n# 路径\n1\n: 查 LightRAG 知识图谱（\nlocal\n模式）\nlightrag_column_logic(\ntable\n=\n\"ads_flow_sum_di\",\ncolumn\n=\n\"gmv_amt\")\n→ gmv_amt\n=\npay_amt (直接映射)\n上游: dwd_ord_ent.pay_amt\n过滤:\nWHERE\nactivity_type\n=\n''\n# 路径\n2\n: KG 未命中时，AST 实时解析 ETL 源代码\ndw_get_table_source(\ntable\n=\n\"ads_flow_sum_di\")  → 拿到\nSQL\nparse_sql_lineage(sql_text\n=\n\"INSERT OVERWRITE TABLE ...\", target_column\n=\n\"gmv_amt\")\n→ gmv_amt\n=\npay_amt\nsource_columns: [dwd_ord_ent.pay_amt]\nwhere_conditions: [activity_type\n=\n''\n]\n# 查表的完整上游依赖（hybrid 模式）\nlightrag_table_lineage(\ntable\n=\n\"ads_flow_sum_di\")\n→ 上游依赖\n3\n张表:\n1.\ndwd_ord_ent (交易明细)\n2.\ndim_activity_info (活动维表)\n3.\ndws_flow_sum_h (小时汇总)\nKG 中的血缘数据由 AST 引擎在 onboard 时离线解析并灌入，实时解析作为降级补充。详见 6.3 节。\n▐\n7.3\nPython 数据分析沙箱\n当查询结果需要\n二次加工\n时（帕累托、排名、透视、环比计算），Agent 会调用\npython_analyze\n：\n# Agent 生成的分析代码（沙箱内执行）\ndf\n[\n'环比'\n] = (\ndf\n[\n'today'\n] -\ndf\n[\n'yesterday'\n]) /\ndf\n[\n'yesterday'\n]\ndf\n= df.sort_values(\n'today'\n, ascending=False)\ndf\n[\n'累计占比'\n] =\ndf\n[\n'today'\n].cumsum() /\ndf\n[\n'today'\n].\nsum\n()\nresult =\ndf\n[[\n'industry'\n,\n'today'\n,\n'yesterday'\n,\n'环比'\n,\n'累计占比'\n]].\nhead\n(10)\nprint\n(result.to_markdown())\n安全模型\n：\n系统构建与部署\n▐\n8.1 新表接入流程（Onboard）\n新表接入是一个自动化的五步流水线：\n1.\n表结构同步    → ODPS schema → mdl.json + TisPlus3\n2.\n表类型探查    → A类(预聚合)/B类(普通) + 主键 + 维度\n3.\n规则抽取      → 下游血缘代码 → LLM 提取 WHERE 条件\n4.\nSQL 模板生成  → B类表自动生成标准模板\n5.\n入库          → 规则/片段/能力清单写入 TisPlus3\n支持 Web 界面操作和 CLI 脚本两种方式。\n▐\n8.2 项目结构\nbybt-data-analysis-assistant/\n├── agent.py\n# CLI 入口 + Agent 构建\n├── agent_analysis.py\n# 模板分析入口\n├── config.py\n# 全局配置（ODPS/LLM/TisPlus3/...）\n├── boot.sh\n# 生产部署脚本\n│\n├── agents/\n# 多 Agent 架构\n│   ├── supervisor.py\n# 路由调度器\n│   ├── intent_agent.py\n# 意图识别 Agent\n│   ├── base_expert.py\n# 专家 Agent 基类\n│   ├── query_agent.py\n# 取数+血缘+元数据+源代码+SQL开发\n│   ├── analysis_agent.py\n# 波动归因+数据分析\n│   ├── ops_agent.py\n# 调度运维\n│   ├── other_agent.py\n# 兜底寒暄\n│   ├── harness.py\n# 运行时安全守卫\n│   └── sql_validator_gate.py\n# SQL 后置校验\n│\n├── tools/\n# 工具集（Agent 的\"手\"）\n│   ├── odps/\n# ODPS 查询 + SQL 构建\n│   ├── capabilities/\n# 表能力清单检索\n│   ├── snippets/\n# SQL 片段检索\n│   ├── rules/\n# SQL 规则检索\n│   ├── lineage/\n# 血缘知识图谱\n│   ├── analysis/\n# Python 分析沙箱\n│   ├── attribution/\n# 归因诊断引擎\n│   ├── dataworks/\n# DataWorks API\n│   ├── memory/\n# 会话记忆\n│   └── intent/\n# 意图识别\n│\n├── web/\n# Web 平台\n│   ├── api/\n# FastAPI 后端\n│   └── frontend/\n# React 前端\n│\n└── wren_project/\n# WrenAI MDL 语义模型\n├── target/mdl.json\n# 模型定义文件\n└── .wren/memory/\n# 向量索引\n评测体系\nAgent 的「聪明」不能靠感觉判断，必须有可量化、可复现的评测体系。本章回答三个核心问题：\n评什么\n（6D 维度）、\n怎么构造样例\n（Golden Dataset）、\n怎么打分\n（意图感知权重 + 节点归因）。\n▐\n9.1 6D 评分维度\n评测从 6 个维度对 Agent 的每次回答打分，每个维度 0-100 分：\n▐\n9.2 意图感知权重\n不同意图关注点不同——归因分析不关心 SQL 正确性（D5=0），取数不关心因子命中（D1=0）。系统为每个意图配置了差异化权重：\n权重为 0 的维度显示为\n--\n，不参与打分。权重可通过 Web 界面自定义调整（\nscripts/eval/metrics_config.json\n）。\n▐\n9.3 Golden Dataset — 样例构造\n评测样例存放在\nscripts/eval/datasets/default.json\n，当前覆盖\n6 类意图、15 个用例\n：\n单个样例结构示例\n：\n{\n\"id\"\n:\n\"gmv_daily_attribution\"\n,\n\"question\"\n:\n\"20260610 GMV波动分析\"\n,\n\"intent\"\n:\n\"analysis\"\n,\n\"tags\"\n:\n[\n\"attribution\"\n,\n\"gmv\"\n,\n\"daily\"\n],\n\"expected\"\n:\n{\n\"main_factor\"\n:\n[\n\"3C数码\"\n,\n\"坑产\"\n,\n\"平台出资\"\n,\n\"GMV_PER_ITEM\"\n],\n\"main_factor_fuzzy\"\n:\n[\n\"3C\"\n,\n\"坑产\"\n,\n\"平台\"\n],\n\"formula_used\"\n:\n[\n\"gmv.industry\"\n,\n\"gmv.supply\"\n,\n\"gmv_per_item.is_bt\"\n],\n\"direction\"\n:\n\"up\"\n,\n\"min_tree_depth\"\n:\n2\n,\n\"must_call_tools\"\n:\n[\n\"attribution_diagnose\"\n,\n\"attribution_explain\"\n],\n\"must_not_call_tools\"\n:[]\n,\n\"conclusion_must_contain\"\n:\n[\n\"贡献\"\n,\n\"主因\"\n,\n\"3C\"\n]\n}\n}\n样例设计原则\n：\nexpected 多层校验\n：不只看最终回答，还看中间过程（工具调用序列、SQL 内容、诊断树结构）\n模糊匹配兜底\n：\nmain_factor_fuzzy\n允许部分命中得 60 分，避免因措辞差异误判\n意图覆盖\n：每类意图至少 2 个用例，边界用例覆盖错误输入场景\n可扩展\n：通过 Web 界面「评测中心」可在线增删用例，无需改代码\n▐\n9.4 评测执行流程\n用户提问\n│\n▼\nharness.\nrun_case\n(question)\n│  调用\nstream_supervised\n() 获取\nSSE\n事件流\n│  收集: tool_call / tool_result / token / routing / validation 事件\n│  解析: attribution_diagnose 返回的诊断树\nJSON\n│  检测:\nHOLO\nfallback 标记\n▼\nEvalTrace\n(结构化 trace)\n│\nevents\n: 全部\nSSE\n事件\n│\ntool_calls\n: 工具调用序列\n│\ntool_results\n: 工具返回结果\n│\ndiagnosis_tree\n: 诊断树\nJSON\n│\nfinal_answer\n: 最终回答\n│\nnodes\n:\n7\n个关键节点的状态\n▼\n6D 打分 (scorers)\n│\nD1\nfactor_scorer    → 严格匹配(\n100\n) / 模糊匹配(\n60\n) / 方向匹配(\n30\n) / 不匹配(\n0\n)\n│\nD2\ntree_scorer      → 深度 + 分支数 + 方向\n│\nD3\ntool_scorer      →\nmust_call\n(\n40\n) +\nmust_not_call\n(\n25\n) +\nordering\n(\n20\n) +\nstep\n(\n15\n)\n│\nD4\nconclusion_scorer →\nLLM\n-\nas\n-\nJudge\n按意图\nRubric\n打分\n│\nD5\nsql_scorer       → 语法 + 表名 + 字段名 +\nWHERE\n+ 白名单\n│\nD6\nfaithfulness_scorer → 规则检查 +\nLLM\n幻觉检测\n▼\n加权总分 = Σ(\nDi\n×\nWi\n)  →  意图感知权重\n▼\n报告输出\n├── 终端彩色报告 (6D 分数 + 归因诊断)\n├──\nJSON\n报告 → reports/eval_<timestamp>_<git_hash>.\njson\n├──\nBad\nCase\n归档 → badcases/ (总分<\n60\n或任一维度=\n0\n)\n└── 版本对比 → --compare old.\njson\nnew\n.\njson\n▐\n9.5 节点级归因诊断\n评测不只给分数，还自动定位\n失败根因\n。Harness 从事件流中提取 7 个关键节点的状态：\n当总分低于预期时，归因诊断会指出是哪个节点出了问题，例如：\n根因: gate - validation_exhausted (重试 3 次未通过)\n根因: tool_call - 工具返回错误: odps_query\n根因: quality - 各节点均成功，但回答质量未达预期\n团队介绍\n本文作者伯略，来自淘天集团-天猫技术团队。百亿补贴与聚划算是淘天面向价格敏感用户与品牌商家的核心营销阵地，也是我们直面市场竞争最前沿的“主战场”；我们不断“刷新”技术能力，以半托管、竞价与补贴系统的建设，支撑百亿补贴成为淘天近三年增长最快的业务。如今我们正用 AI 重构从招商审核到补贴发放的运营全流程，推动“人工配置”向“AI 自治”演进，并把研发链路重塑为需求分析、代码生成到测试上线的端到端 AI 原生范式。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_business",
+      "probabilities": {
+        "transfer_business": 0.68,
+        "peripheral": 0,
+        "direct_local": 0,
+        "transfer_agent": 0.17,
+        "irrelevant": 0.15
+      }
+    },
+    "relevance": {
+      "score": 2.61,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.37,
+        "3": 0.62,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.68,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.08,
+        "2": 0.17,
+        "3": 0.46,
+        "4": 0.22,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.71,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.23,
+        "2": 0.61,
+        "3": 0.06,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 3.13,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.14,
+        "3": 0.6,
+        "4": 0.26,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 4.23,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.02,
+        "4": 0.48,
+        "5": 0.45
+      }
+    },
+    "anti_hype": {
+      "score": 3.16,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.03,
+        "2": 0.11,
+        "3": 0.5,
+        "4": 0.35,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 14085,
+    "outputTokens": 172,
+    "totalTokens": 14257
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.59,
+        "relevance": 0.74,
+        "grounding": 0.49,
+        "decision_action": 0.67,
+        "evidence": 0.73,
+        "actionability": 0.56,
+        "anti_hype": 0.63
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179875124,
+                "endTime": 1791179875323,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00059157",
+      "marketCost": "0.00059157",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00059157",
+      "inferenceCost": "0.00059157",
+      "inputInferenceCost": "0.00059157",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7RS3SEPRTTQJDT60JH6Y"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:55 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::57vb2-1791179874575-9902d175dcce"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_business",
+          "probabilities": {
+            "transfer_business": 0.68,
+            "peripheral": 0,
+            "direct_local": 0,
+            "transfer_agent": 0.17,
+            "irrelevant": 0.15
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 2.61,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.37,
+            "3": 0.62,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.68,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.08,
+            "2": 0.17,
+            "3": 0.46,
+            "4": 0.22,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.71,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.23,
+            "2": 0.61,
+            "3": 0.06,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.13,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.14,
+            "3": 0.6,
+            "4": 0.26,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 4.23,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.02,
+            "4": 0.48,
+            "5": 0.45
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.16,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.03,
+            "2": 0.11,
+            "3": 0.5,
+            "4": 0.35,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 14085,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.59,
+            "relevance": 0.74,
+            "grounding": 0.49,
+            "decision_action": 0.67,
+            "evidence": 0.73,
+            "actionability": 0.56,
+            "anti_hype": 0.63
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179875124,
+                    "endTime": 1791179875323,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00059157",
+          "marketCost": "0.00059157",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00059157",
+          "inferenceCost": "0.00059157",
+          "inputInferenceCost": "0.00059157",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7RS3SEPRTTQJDT60JH6Y"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:54.564Z"
+  }
+}

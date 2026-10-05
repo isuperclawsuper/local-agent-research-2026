@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1271899366868684800",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工都是怎么被AI“糊弄”的？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803958&idx=1&sn=9ffde51b32770be812fd7d9743ae7f7f",
+      "date": "2026-09-02T10:20:00.873Z",
+      "chars": 4267,
+      "text": "原创\n腾讯程序员\n2026-09-02 18:20\n广东\n你有没有被 AI 一本正经地“骗”过？\n话题背景\n你有没有被 AI 一本正经地“骗”过？\n现在越来越多人开始用 AI 辅助工作和生活，但用得越多，也越容易碰到它“装懂”的时候：编一个不存在的知识点、推荐一本查无此书的书、把错误的代码解释得头头是道，甚至\n还会顺着你的判断，把原本存疑的答案越说越肯定。\n我们邀请了一些鹅厂同事来聊聊他们被 AI 带偏过的离谱事件，\n当然，我们也想听听你们的故事，欢迎大家在评论区分享你的 AI“糊弄现场”。（分享有奖）\n鹅厂员工的 AI“糊弄现场”\n@\nli-账户安全\nAI 总喜欢添油加醋，把很重要的数字和金额四舍五入\n，比如把发票报销金额中537.98元，自动识别或汇总成538元，导致对不上账！！！！！\n@\npaper-交易与支付应用\n\"小明有5个苹果，吃掉2个，送给小红1个，还剩几个？\" 它笃定地答：\"7个。\" 我追问逻辑，它当场编了条完整故事线：小红过意不去还回来、小明又从冰箱拿4个……\n一道一年级减法题，被它写成了一部家庭伦理剧\n。我从此对数学失去了信仰。\n@\ncoty-后台开发\n你问AI「HashMap和ConcurrentHashMap哪个快」，它自信回答「HashMap更快，因为ConcurrentHashMap加锁有开销」。\n听着没毛病。你再追问「多线程下用HashMap会怎样」，它回答「可能导致数据丢失或死循环」。这句对了一半——JDK 1.7是链表头插会死循环，JDK 1.8改成尾插+红黑树后不会死循环，只会丢数据。\n它把两个版本的行为混在一起说，你却以为是常识。糊弄感在于：它答得像教科书一样顺，让你以为它真懂，结果踩坑了才发现版本都没分清\n。就很乌鱼子！\n@\nqinshu-风控算法\n说一个让我现在想起来还有点脸红的～～之前做配置 Agent 的早期原型，需要让 AI 帮我查一个内部知识库里的规则字段映射关系——哪些特征字段对应哪些标签。AI 洋洋洒洒列了一张表，字段名、类型、枚举值、关联标签一应俱全，还贴心地标注了\"来源：XX 系统配置文档 3.2 节\"。我当时心里一喜，心想这效率也太高了。\n结果第二天跟后端对了半个小时的接口，怎么都对不上——那个字段根本不存在，那个枚举值也是它编的，更离谱的是它引用的\"3.2 节\"打开一看，讲的是完全不相干的东西。它不是复制错了，是自己从头到尾创造了一整套看起来很内行的术语。\n这件事让我搞明白了一个让我后背发凉的规律：AI 不是在\"出错\"，是在\"用可信度最高的方式输出幻觉\"。\n它最危险的地方不是乱说，是乱说的时候会主动给你配齐所有让你觉得\"应该靠谱\"的证据——字段名、类型、枚举值、引用来源，每个环节都让你觉得\"这么完整应该不会乱编吧\"。这种\"系统性可信\"的假象，比单纯答错可怕得多。因为你对一个明显离谱的回答会立刻警觉，但对一个\"格式完美、来源标注、还跟你的认知框架吻合\"的回答，你的第一反应是信任。它最可怕的是出错的时候，比你想象的更懂怎么让你信。\n@\ngrey-前端开发\n胡说八道的名场面太多了🤣\n最经典的还是洗车难题\n，当时难倒国内外一众AI。\n@\nlxin\n之前bug让ai查了一天\n，连续二十几次回答前面几个字分别说：关键发现！找到真正的根因了！补丁已生效！重大进展！关键转折！找到关键配置问题了！调查有了反转——需要修正方向。关键突破！成功了！发现重大线索！真实复现了！重大发现！抓到关键线索！抓到了决定性证据！\n关键结果：连 12KB 的小图（145×256）也照样崩溃！找到根因机制了。补丁生效了！崩溃序列完全清晰了！重大转折！手动起的 vllm 处理这张图完全成功！关键发现，推翻了之前的假设！关键问题！diff出来了！又一个反转！决定性结论！决定性结果！关键差异浮现！重大转折！决定性对比。重大线索！ 彻底确定问题。决定性数据。关键转折 重大发现！pty假说也推翻！ 最后他给我的结论是：\n@\nhelen-财务管理与分析\n我们为什么会栽在 AI 手里？AI 天然爱\"补全\"，人天然爱\"省事\"。\n你说半句，它补半句；你不想细想，它就替你想。两边一拍即合，错误就藏在\"默契\"里。\n我曾经尝试让AI帮我把\"会议改到明天下午三点\"，感觉是个简单的需求 ~ 结果可能是之前的聊天让AI误会了，它输出了很多额外的有趣内容：嗯，用户要改会议时间。先确认\"明天\"是几号——今天是周一，那明天是周二，没问题。等等，周二下午三点是北京时间还是用户的心理时间？考虑到用户上周推迟过两次，心理时间大概率比北京时间慢 17 分钟，我应该默认 15:17 比较稳妥。\nAI 最终回复：已为您将会议改至\"猫京时间明日下午三点（人类梦境时段）\"，并向参会猫致歉附鱼三条。\n另：您今日已错过眨眼提醒 3 次，请保持睁眼。\n@\njlin-前端开发\nAI最危险的不是一无所知时装懂，而是\"部分正确\"时的模糊地带。它可能前八句都是准确的\n，第九句开始悄悄跑偏，第十句给你一个合理但错误的结论。没有知识背景的人很难察觉，因为它前面建立的可信度会自动覆盖那个拐点。\n所以我觉得用AI最\n好的姿势是：拿它当初稿generator，而不是最终答案\n。方向可以参考，细节必须自查。工具越强大，使用者的判断力越要跟上。\n@\nmcfish-管线系统开发\n有次让它推荐几本某个冷门领域的入门书，它列了五本，书名、作者、出版年份都齐，还配了推荐语。我按图索骥去找，一本都买不到。\n后来才发现：作者是真的、领域是对的，但那个人根本没写过这本书\n——它把真实作者和一个听起来很像那个领域的书名拼在了一起。从那次以后，我看它给的任何\"具体信息\"，都要多问一句：这真的存在吗，一定要真实的。\n@\nalbert-行业应用\n我来晒一段实习期间的离谱经历 ：\n之前在某公司实习的时候，有一次 Code Review，导师的一段代码引起了我的注意：import { validateEmail } from \"email-validator-pro\"我愣了一下——这个包我没见过。于是我问导师：\"这个包是哪来的？\"他一脸理所当然：\"Cursor 自动补全的啊，看着挺专业的就用了。\"我又问：\"您 npm install 过吗？\"他愣住了：\"好像……没有？但代码能跑啊……\"我去 package.json 里一看，果然没有这个依赖。\n那代码为什么能跑呢？因为项目里另一个包恰好导出了同名函数，阴差阳错地\"替\"它干了活。我们这次运气好。但如果这个\"不存在的包\"，真的被人注册了呢？如果里面藏着恶意代码呢？如果我们真的 npm install 了呢？这已经不是假设了——这种攻击正在发生。\n有个专门的黑客组织叫 \"Slopsquatter\"，他们的套路就是：观察 AI 经常\"幻觉\"出哪些假包名，抢先在 npm / PyPI 上注册这些名字往里面植入恶意代码等着你无脑 npm install据统计，AI 生成的代码里有 48% 存在这种幻觉——引用了根本不存在的包、API 或方法。（当然，这个数据和信息也是 AI 给我的，我也不知道它是不是真的哈哈哈 😂）从那以后只要 AI 推荐了一个我没见过的包，一定去搜一下。\n@\nekkohw-专项技术测试\n之前被AI\"装懂\"糊弄过最狠的一次，是让它帮我对一款新游做兼容性测试的机型覆盖清单。\n我随口说了句\"按主流安卓机型覆盖就行\"，它立马甩出一张表：机型、系统版本、市占率、推荐测试优先级一应俱全，还标注\"数据来源：某数据平台2025年度报告\"。\n我正准备直接排进测试计划，顺手搜了一下那几款\"高市占率机型\"——好家伙，其中三款要么是根本没在国内发布的海外型号，要么是它把两个真实机型的名字拼在一起造出来的\"缝合怪\"，\n那个\"2025年度报告\"的链接点开是404。\n它最吓人的地方不是编，是编得特别自洽：机型命名符合行业规律、市占率精确到小数点后一位、优先级还能跟\"用户画像\"对上。你越看越觉得\"这应该靠谱吧\"，恰恰是最该警惕的时候。从那以后我给自己定了条跟AI共事的规矩，跟今天好多同学的体会一致：让AI帮我列清单、理思路完全没问题，但凡涉及\"事实\"（机型、数据、API、政策），必须让它给出能点开核验的来源，否则一律按幻觉处理。 重复劳动交给它，事实和拍板留给我自己——边界划清楚，它才是帮手，不是坑友。\n@\njessie-银龄服务\n有次跟朋友争论香菜好不好吃，我为了让 AI 站我这边，问它：「香菜是不是就是有股肥皂味，爱吃的人基因不行？」AI 郑重其事回了我：「没错，OR6A2 基因变异导致部分人尝到醛类化合物时产生肥皂味，这确实是基因决定的。」\n我拿这个截图去群里当科学论据，洋洋得意。结果朋友去问了另一句：「爱吃香菜的人基因有问题吗？」AI 回她：「没有，这只是味觉偏好差异，没有优劣之分。」\n同一件事，两个答案。那一刻我才明白：AI 不是给你真相，是给你镜子。你问什么，它就照出什么。\n@\nshlong-前端开发\n确实深有体会。\n之前让 AI 帮忙查一个 API 用法，它一本正经给我编了一套参数说明\n，我还照着调了半天，结果发现那个方法压根不存在……最离谱的是解释逻辑完全自洽，根本看不出是编的。\n@a\nsherc-运营\n之前调 VLM 质检提示词踩过大坑，算被 AI 狠狠带偏。\n当时我问它区分纸袋褶皱和人手的方案，它说得特别笃定，还给我一套完整判定规则，甚至拆分正负样本描述，逻辑看着滴水不漏。我直接复制上线测试，结果垃圾桶纸袋褶皱照样误判人手。\n回头核对才发现，它凭空编造了一套项目现场不存在的拍摄标准，我顺着它的方案反复优化，白白浪费一下午调试标注，完全被它看似严谨的话术糊弄住，事后才反应过来它只是强行贴合我的需求，根本没贴合真实业务场景。\n@\njery-应用开发\n有一次让 AI 帮我定位线上 Bug，它分析得头头是道，不仅指出了\"根因\"，还给出了完整调用链、异常传播路径，甚至引用了项目里的几个类名。\n我越看越觉得专业，照着改了半天，Bug 一点没变。最后自己打断点排查才发现，它说的几个类根本没有调用关系，其中一个方法甚至项目里压根不存在。后来我才发现，\nAI 最厉害的不是编答案，而是编\"证据\"。\n它知道加哪些细节，最容易让人相信。\n欢迎大家在评论区分\n享【你是怎么被AI“糊弄”的？】\n随机抽三名同学送出30QB🎁\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "transfer_agent": 0.04,
+        "transfer_business": 0,
+        "peripheral": 0.47,
+        "irrelevant": 0.49,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.46,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.53,
+        "2": 0.39,
+        "3": 0.05,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.26,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.12,
+        "2": 0.29,
+        "3": 0.12,
+        "4": 0.21,
+        "5": 0.07
+      }
+    },
+    "decision_action": {
+      "score": 0.63,
+      "probabilities": {
+        "0": 0.59,
+        "1": 0.27,
+        "2": 0.08,
+        "3": 0.05,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.18,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.37,
+        "2": 0.26,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 1.82,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.29,
+        "2": 0.33,
+        "3": 0.28,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 3.8,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.11,
+        "4": 0.82,
+        "5": 0.03
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5846,
+    "outputTokens": 173,
+    "totalTokens": 6019
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.35,
+        "relevance": 0.66,
+        "grounding": 0.16,
+        "decision_action": 0.58,
+        "evidence": 0.51,
+        "actionability": 0.48,
+        "anti_hype": 0.83
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179944574,
+                "endTime": 1791179944727,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000245532",
+      "marketCost": "0.000245532",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000245532",
+      "inferenceCost": "0.000245532",
+      "inputInferenceCost": "0.000245532",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9WK7JH47Z4JZ73S62RZV"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:04 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::s9hbq-1791179944542-3a5d6bbb023a"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "transfer_agent": 0.04,
+            "transfer_business": 0,
+            "peripheral": 0.47,
+            "irrelevant": 0.49,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.46,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.53,
+            "2": 0.39,
+            "3": 0.05,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.26,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.12,
+            "2": 0.29,
+            "3": 0.12,
+            "4": 0.21,
+            "5": 0.07
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.63,
+          "probabilities": {
+            "0": 0.59,
+            "1": 0.27,
+            "2": 0.08,
+            "3": 0.05,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.18,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.37,
+            "2": 0.26,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 1.82,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.29,
+            "2": 0.33,
+            "3": 0.28,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.8,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.11,
+            "4": 0.82,
+            "5": 0.03
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5846,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.35,
+            "relevance": 0.66,
+            "grounding": 0.16,
+            "decision_action": 0.58,
+            "evidence": 0.51,
+            "actionability": 0.48,
+            "anti_hype": 0.83
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179944574,
+                    "endTime": 1791179944727,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000245532",
+          "marketCost": "0.000245532",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000245532",
+          "inferenceCost": "0.000245532",
+          "inputInferenceCost": "0.000245532",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9WK7JH47Z4JZ73S62RZV"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:03.963Z"
+  }
+}

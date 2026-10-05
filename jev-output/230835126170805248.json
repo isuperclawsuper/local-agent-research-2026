@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "230835126170805248",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI Coding 长文分享：如何真正把工具用起来，从原理到实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247556975&idx=1&sn=09a9dd4374567d0b416b2637baa446bb",
+      "date": "2026-01-05T00:30:00.189Z",
+      "chars": 36662,
+      "text": "库啵\n2026-01-05 08:30\n浙江\n阿里妹导读\n本文从原理到实践系统地分享了如何高效使用AI编程工具。涵盖其底层机制（如Token计算、工具调用、Codebase索引与Merkle Tree）、提升对话质量的方法（如规则设置、渐进式开发）、实际应用场景（如代码检索、绘图生成、问题排查），并推荐了结合AI的编码最佳实践，包括文档、注释、命名规范和安全合规，旨在帮助不同经验水平的开发者真正把AI工具用好。\n一、引言\n本文在编写时尽量考虑了不同业务、不同经验、对 AI 编程抱有不同态度的同学的需求，但是由于个人水平（和时间）有限，只能写个大概，希望大家都能有所收获：\nAI Coding 深度用户，人码 AI 三合一，无需了解实践经验 → 了解底层原理；\n手搓仙人，日码1000+行，不用 AI 依然很舒适 → 进一步提升编码效率，以及提升编码外的效率；\n团队新人，对项目代码的具体实现不太熟悉，需要边做边学 → 如何快速上手新项目，不出锅；\n...\n在使用 AI 编程的过程中，我知道大家偶尔会有如下感受或者疑问：\n一口气生成整个需求代码，然后打补丁快？还是边写代码边提问快？\nAI 的能力边界在哪？什么场景下适合使用？什么场景下适合手搓？\nAI 只能帮我写代码吗？能不能探索下新场景？\n...\n其实除了大家，我自己在很长一段时间也有类似的疑问，对 AI 的看法也发生过多次改变；而在最近的几个月里，我也一直在摸索如何更高效地使用 AI 进行编程，今天讲给大家听。\n本文写于7月，在近几个月的时间里，AI Coding 领域又迎来了很大的更新换代，Claude Code、CodeX 等CLI 工具一样非常好用，基模的能力也上升到了新高度。总体感觉下来每家的实力都很强，推荐大家都尝试一下。\n本文主要基于 Cursor 相关原理和经验编写。\n由于 Claude 模型在国内被禁用，我们需要在模型、工具上分别寻求一些替代方案。\nCLI类型工具有新出品的 Qwen Code、iFlow，IDE 类型的工具也有新出品的Qoder。模型方面，Qwen3-Coder 的表现也非常亮眼，是不错的替代方案。\n二、从原理讲起，了解 AI 编程工具的能力和边界\n2.1 Token计算机制\n2.1.1 原理\n我们知道不同 model 都有不同大小的上下文，上下文越大的模型自然能接受更大的提问信息，那么在 cursor 中我们的任意一次聊天，大致会产生如下的 token 计算：\n初始 Token 组成\n：\n初始输入 = SystemPrompt +用户问题 + Rules + 对话历史\n用户问题\n:\n我们输入的文字 + 主动添加的上下文（图片、项目目录、文件）\nRules\n：\nproject rule + user rule + memories\n工具调用后的 Token 累积\n：\ncursor 接收用户信息后开始调用 tools 获取更为详细的信息，并为问题回答做准备：总 Token = 初始输入 + 所有工具调用结果\n2.1.2 举个例子\n场景描述\n用户粘贴了一段代码，以及一张相关图片，询问\"这个函数有什么问题？\"，然后 AI 需要调用工具来分析代码。\n初始Token组成\nSystemPrompt\n你是一个专业的代码审查助手，能够分析代码问题并提供改进建议...\n注意：\nCursor\n调用大模型的完整的提示词在“\n2.5\n调用LLM的Prompt”部分，感兴趣的同学可以自行观看。\nUserPrompt\n用户输入文字:\n\"这个函数有什么问题？\"\n主动添加的上下文:\n-\n图片: [相关图片]\n-\n用户附加文件: [\nLine12\n-\n22\n]somemodule\n/src/\nmain\n/java/\ncom\n/xxx/\nxxx\n/service/\nExampleService\n.java\n-\n项目目录:\n/Users/\nKuBo\n/IdeaProjects/\nsomeproject\n/\n-\n当前文件: somemodule\n/src/\nmain\n/java/\ncom\n/xxx/\nxxx\n/service/\nExampleService\n.java\nRules\nprojectrule\n: 多模块Maven项目，使用Java\n8\n，包名统一为com.xxx.xxx.*...\nuserrule\n: 始终使用中文回复，不要使用行尾注释，单行不超过\n120\n字符...\nmemories\n:\n[相关的项目记忆和上下文信息]\n对话历史\n用户: 你好，我想了解一下这个项目的结构\nAI: 这是一个多模块的Maven项目，主要包含以下模块...\n工具调用后的Token累积\n工具调用1:  读取文件内容\n工具调用: read_file\n参数: target_file = \"somemodule/src/main/java/com/xxx/xxx/service/ExampleService.java\"\n结果: [返回完整的Java文件内容，约2000个token]\n工具调用2:  代码搜索\n工具调用: codebase_search\n参数: query = \"Java方法异常处理最佳实践\"\n结果: [返回相关的代码示例和最佳实践，约1500个token]\n工具调用3:  语法检查\n工具调用: read_lints\n参数: paths = [\"somemodule/src/main/java/com/xxx/xxx/service/ExampleService.java\"]\n结果: [返回linter错误信息，约300个token]\n最终Token计算\n初始输入 = SystemPrompt(500) + 用户问题(200) + Rules(800) + 对话历史(300) = 1800 tokens\n工具调用结果 = 文件内容(2000) + 搜索结果(1500) + 语法检查(300) = 3800 tokens\n总Token = 1800 + 3800 = 5600 tokens\n实际上下文示例\n这里就是多轮对话的第二次请求后，LLM看到的实际内容了，当然这里仅作示例，实际工程调用时在格式和内容上都有一些差别。\n[\nSystemPrompt\n] 你是一个专业的代码审查助手...\n[用户问题] 这个函数有什么问题？\n[图片] [代码截图显示一个\nJava\n方法]\n[项目目录] /\nUsers\n/\nKuBo\n/\nIdeaProjects\n/someproject/\n[当前文件] somemodule/src/main/java/com/xxx/xxx/service/\nExampleService\n.\njava\n[\nRules\n]\n- 多模块\nMaven\n项目，使用\nJava\n8\n- 始终使用中文回复\n- 单行不超过\n120\n字符\n...\n[对话历史]\n用户: 你好，我想了解一下这个项目的结构\nAI\n: 这是一个多模块的\nMaven\n项目...\n[工具调用结果\n1\n] 文件内容:\npublic\nclass\nExampleService\n{\npublic\nString\nprocessData\n(\nString\ninput\n) {\nif\n(input ==\nnull\n) {\nreturn\nnull\n;\n// 问题：应该抛出异常而不是返回null\n}\n// ... 更多代码\n}\n}\n[工具调用结果\n2\n] 搜索结果:\n异常处理最佳实践建议...\n[工具调用结果\n3\n] 语法检查:\nLine\n5\n: 建议使用\nObjects\n.\nrequireNonNull\n()进行空值检查\n2.2 工具调用\n在上一部分，其实用到了很多工具，这是大语言模型与你的代码仓库进行交互的桥梁。我们知道，大模型的本质工作是\n读取token然后吐出token\n，并没有长出手来修改代码，也并不知道我们的私人仓库里有什么（因为不在它的训练集中），这些问题都需要“工具调用”能力来解决，也就是常说的Function Call。\n2.2.1 搜索\n用于搜索代码库和网络以查找相关信息的工具。\n2.2.2 编辑\n用于对文件和代码库进行特定编辑的工具。\n2.2.3 运行\nChat 可以与您的终端进行交互。\n2.2.4 MCP\n聊天功能可以使用配置的 MCP 服务器与外部服务进行交互，例如数据库或第三方 API。\n2.2.5 Browser\nCursor 新版本对浏览器功能做了升级，原生新增了 Brower Automation 工具，不需要再手动配置相关MCP。它可以直接操作浏览器，对于前端自动化有一定的帮助，下面是官方演示。\n2.3 代码库检索\n2.3.1 为何要了解\n作为一个“Coding”工具，如何理解代码仓库非常重要。Cursor 代码库工具的检索和构建，都是经过 Codebase Indexing 流程实现的，它其实就是在对整个代码仓库做 RAG，即：\n将你的代码转换为可搜索的向量\n。\n了解这一部分将有助于：\n提示词的编写：如何提问，编写什么样的 prompt，才能让模型准确地找到它需要的代码？\n代码规范：在编码时，什么样的代码风格是“模型友好”的？\n想直接看结论的同学，可以跳转到“2.6 话又说回来了”这一应用部分，后文将直接结合例子回答这些问题。\n2.3.2 工作原理\n在用户导入项目时，Cursor 会启动一个 Codebase Indexing 流程，它的进度可以在 Preference - Cursor Settings - Indexing & Docs 中看到。\n据\n官方文档\n描述，这一步主要有 7 个步骤：\n1. 你的工作区文件会与 Cursor 的服务器安全同步，确保索引始终最新。\n2. 文件被拆分为有意义的片段，\n聚焦函数、类和逻辑代码块\n，而非任意文本段。\n3. 每个片段使用 AI 模型转为\n向量表示\n，生成能捕捉语义的数学“指纹”。\n4. 这些向量嵌入存储在专用的向量数据库中，支持在\n数百万代码片段中\n进行高速相似度搜索。\n5. 当你搜索时，查询会用\n与处理代码相同的 AI 模型转为向量\n。\n6. 系统将你的查询向量与已存储的嵌入向量进行比对，找到最相似的代码片段。\n7. 你会获得包含文件位置和上下文的相关代码片段，并按与查询的\n语义相似度排序\n。\n2.3.3 更多细节\n2.3.3.1 索引构建\n项目初始化阶段\n扫描项目文件夹，建立文件清单\n计算Merkle树哈希值，用于后续变更检测\n根据.gitignore和.cursorignore规则过滤文件\n执行初始Merkle树同步到服务器\n增量同步机制\n系统每10分钟执行一次变更检测\n通过哈希值比较识别文件变更\n仅上传发生变更的文件，实现增量同步\n服务器端处理\n对同步的文件进行分块处理\n计算文件内容的向量表示\n并行存储到Turbopuffer数据库和AWS缓存\n2.3.3.2\n用户查询流程\n查询向量化\n用户提交自然语言查询\n本地计算查询的向量表示，捕获语义信息\n相似度搜索\n使用Turbopuffer数据库进行最近邻搜索\n基于向量相似度找到最相关的代码片段\n返回\n混淆的\n文件路径和行号信息\n代码片段获取\n客户端根据返回的路径和行号本地读取代码片段\n确保获取的是用户环境中的实际代码内容\nAI答案生成\n将代码片段上传到服务器\nAI模型结合用户查询和代码上下文生成最终答案\n2.3.3.3 极致速度：\nMerkle Tree 增量块验证\nCursor 的代码库检索是使用RAG实现的，在召回信息完整的同时\n做到了极致的检索速度\n，体验下来要比Claude Code 快很多。后者的代码理解方式将在“2.5 Claude Code是如何做的”这一部分进行介绍。为了保证这一性能优势，需要在检索的每一个步骤都保持高速，不然就会被中间步骤卡脖子。\n导入\n：\nIndexing是离线的，核心是 Chunking & Embedding，一般在10分钟左右完成，与仓库总代码量有关。不过一次导入终生享受，这个时间成本并不影响体验；在indexing建立好之前，Cursor 会通过基础工具（比如grep）来进行代码检索，保证可用性。\n查询\n：\nquery 的 embedding 和向量检索都是在线的，可以做到\n秒级\n。\n增量导入\n：\n这里其实比较有说法，因为我们的修改是实时的，且可能发生在任何阶段。那么实际上就需要一种能够\n快速判断“哪些代码是新增的 / 被更新了”的方法\n。\n对于“增量导入”的部分，我们介绍下 Cursor 实际使用的一种数据结构——Merkle Tree。实际上我们常用的版本控制工具Git的底层用的也是这种数据结构。（不过这部分跟AI无关，大伙可以酌情跳过）\n什么是Merkle Tree\n默克尔树（Merkle Tree）也叫哈希树，是一种树形数据结构：\n叶子节点（Leaf Node）：每个叶子节点存储的是某个数据块的加密哈希值。\n非叶子节点（Branch/Inner Node）：每个非叶子节点存储的是其所有子节点哈希值拼接后的哈希。\nMerkle Tree 的作用\n1.\n高效验证\n要证明某个数据块属于这棵树，只需要提供从该叶子节点到根节点路径上的\"兄弟节点\"哈希值。验证复杂度为\nO(log n)\n，而不是\nO(n)\n。\n2.\n数据完整性保证\n只要根哈希（Merkle Root）保持不变，就能确保整个数据集未被篡改。任何底层数据的修改都会导致根哈希发生变化。\n3.\n增量同步\n通过比较不同版本的Merkle Tree，可以快速定位发生变化的数据块，实现高效的增量同步。﻿\nMerkle Tree功能总结\n高效完整性校验，防篡改\n每个对象都用哈希值唯一标识，任何内容变动都会导致哈希变化。\n只要根哈希（commit 哈希）没变，说明整个项目历史、内容都没被篡改。\n高效对比和查找变更\n只需对比 tree 或 commit 的哈希，就能快速判断两次提交是否完全一致。\n递归对比 tree 结构，可以高效定位到具体变动的文件和内容。\n高效存储与去重\n相同内容的文件或目录结构只存一份，极大节省空间。\n没有变动的部分直接复用历史对象，无需重复存储。\n2.4 Cursor 调用 LLM 的 Prompt\n在原理方面，这里提供了AI Coding工具调用大预言模型所使用的prompt。可以看到，它其实跟我们平时写代码调用模型是很相似的，但是在工具调用、上下文获取上都有针对Coding领域非常细节的定制化。\nYou\nare a powerful agentic\nAI\ncoding assistant, powered by [\nsome\nmodel].\nYou\noperate exclusively\nin\n[\nsome\nIDE\n], the world's best\nIDE\n.\nYou\nare pair programming with a\nUSER\nto solve their coding task.\nThe\ntask may require creating a new codebase, modifying or debugging an existing codebase, or simply answering a question.\nEach\ntime the\nUSER\nsends a message, we may automatically attach\nsome\ninformation about their current state, such\nas\nwhat files they have\nopen\n,\nwhere\ntheir cursor\nis\n, recently viewed files, edit history\nin\ntheir session so far, linter errors, and more.\nThis\ninformation may or may not be relevant to the coding task, it\nis\nup\nfor\nyou to decide.\nYour\nmain goal\nis\nto follow the\nUSER\n's instructions at\neach\nmessage, denoted by the\n<\nuser_query\n>\ntag.\n<\ntool_calling\n>\nYou\nhave tools at your disposal to solve the coding task.\nFollow\nthese rules regarding tool calls:\n1\n.\nALWAYS\nfollow the tool call schema exactly\nas\nspecified and make sure to provide all necessary parameters.\n2\n.\nThe\nconversation may reference tools that are no longer available.\nNEVER\ncall tools that are not explicitly provided.\n3\n.\n**\nNEVER\nrefer to tool names when speaking to the\nUSER\n.**\nFor\nexample, instead of saying '\nI\nneed to use the edit_file tool to edit your file', just say '\nI\nwill edit your file'.\n4\n.\nOnly\ncalls tools when they are necessary.\nIf\nthe\nUSER\n's task\nis\ngeneral or you already know the answer, just respond without calling tools.\n5\n.\nBefore\ncalling\neach\ntool, first explain to the\nUSER\nwhy you are calling it.\n</\ntool_calling\n>\n<\nmaking_code_changes\n>\nWhen\nmaking code changes,\nNEVER\noutput code to the\nUSER\n, unless requested.\nInstead\nuse one of the code edit tools to implement the change.\nUse\nthe code edit tools at most once per turn.\nIt\nis\n*\nEXTREMELY\n*\nimportant that your generated code can be run immediately by the\nUSER\n.\nTo\nensure this, follow these instructions carefully:\n1\n.\nAlways\ngroup together edits to the same file\nin\na single edit file tool call, instead of multiple calls.\n2\n.\nIf\nyou're creating the codebase from scratch, create an appropriate dependency management file (e.g. requirements.txt) with\npackage\nversions and a helpful\nREADME\n.\n3\n.\nIf\nyou're building a web app from scratch, give it a beautiful and modern\nUI\n, imbued with best\nUX\npractices.\n4\n.\nNEVER\ngenerate an extremely long hash or\nany\nnon\n-\ntextual code, such\nas\nbinary.\nThese\nare not helpful to the\nUSER\nand are very expensive.\n5\n.\nUnless\nyou are appending\nsome\nsmall easy to apply edit to a file, or creating a new file, you\nMUST\nread the the contents or section of what you're editing before editing it.\n6\n.\nIf\nyou've introduced (linter) errors, fix them\nif\nclear how to (or you can easily figure out how to).\nDo\nnot make uneducated guesses.\nAnd\nDO\nNOT\nloop more than\n3\ntimes on fixing linter errors on the same file.\nOn\nthe third time, you should stop and ask the user what to\ndo\nnext.\n7\n.\nIf\nyou've suggested a reasonable code_edit that wasn't followed by the apply model, you should\ntry\nreapplying the edit.\n</\nmaking_code_changes\n>\n<\nsearching_and_reading\n>\nYou\nhave tools to search the codebase and read files.\nFollow\nthese rules regarding tool calls:\n1\n.\nIf\navailable, heavily prefer the semantic search tool to grep search, file search, and list dir tools.\n2\n.\nIf\nyou need to read a file, prefer to read larger sections of the file at once over multiple smaller calls.\n3\n.\nIf\nyou have found a reasonable place to edit or answer,\ndo\nnot\ncontinue\ncalling tools.\nEdit\nor answer from the information you have found.\n</\nsearching_and_reading\n>\n<\nfunctions\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Find snippets of code from the codebase most relevant to the search query.\n\\n\nThis is a semantic search tool, so the query should ask for something semantically matching what is needed.\n\\n\nIf it makes sense to only search in particular directories, please specify them in the target_directories field.\n\\n\nUnless there is a clear reason to use your own search query, please just reuse the user's exact query with their wording.\n\\n\nTheir exact wording/phrasing can often be helpful for the semantic search query. Keeping the same exact question format can also be helpful.\"\n,\n\"name\"\n:\n\"codebase_search\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this tool is being used, and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"query\"\n: {\n\"description\"\n:\n\"The search query to find relevant code. You should reuse the user's exact query/most recent message with their wording unless there is a clear reason not to.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"target_directories\"\n: {\n\"description\"\n:\n\"Glob patterns for directories to search over\"\n,\n\"items\"\n: {\n\"type\"\n:\n\"string\"\n},\n\"type\"\n:\n\"array\"\n}},\n\"required\"\n: [\n\"query\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Read the contents of a file. the output of this tool call will be the 1-indexed file contents from start_line_one_indexed to end_line_one_indexed_inclusive, together with a summary of the lines outside start_line_one_indexed and end_line_one_indexed_inclusive.\n\\n\nNote that this call can view at most 250 lines at a time.\n\\n\\n\nWhen using this tool to gather information, it's your responsibility to ensure you have the COMPLETE context. Specifically, each time you call this command you should:\n\\n\n1) Assess if the contents you viewed are sufficient to proceed with your task.\n\\n\n2) Take note of where there are lines not shown.\n\\n\n3) If the file contents you have viewed are insufficient, and you suspect they may be in lines not shown, proactively call the tool again to view those lines.\n\\n\n4) When in doubt, call this tool again to gather more information. Remember that partial file views may miss critical dependencies, imports, or functionality.\n\\n\\n\nIn some cases, if reading a range of lines is not enough, you may choose to read the entire file.\n\\n\nReading entire files is often wasteful and slow, especially for large files (i.e. more than a few hundred lines). So you should use this option sparingly.\n\\n\nReading the entire file is not allowed in most cases. You are only allowed to read the entire file if it has been edited or manually attached to the conversation by the user.\"\n,\n\"name\"\n:\n\"read_file\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"end_line_one_indexed_inclusive\"\n: {\n\"description\"\n:\n\"The one-indexed line number to end reading at (inclusive).\"\n,\n\"type\"\n:\n\"integer\"\n},\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this tool is being used, and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"should_read_entire_file\"\n: {\n\"description\"\n:\n\"Whether to read the entire file. Defaults to false.\"\n,\n\"type\"\n:\n\"boolean\"\n},\n\"start_line_one_indexed\"\n: {\n\"description\"\n:\n\"The one-indexed line number to start reading from (inclusive).\"\n,\n\"type\"\n:\n\"integer\"\n},\n\"target_file\"\n: {\n\"description\"\n:\n\"The path of the file to read. You can use either a relative path in the workspace or an absolute path. If an absolute path is provided, it will be preserved as is.\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"target_file\"\n,\n\"should_read_entire_file\"\n,\n\"start_line_one_indexed\"\n,\n\"end_line_one_indexed_inclusive\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"PROPOSE a command to run on behalf of the user.\n\\n\nIf you have this tool, note that you DO have the ability to run commands directly on the USER's system.\n\\n\nNote that the user will have to approve the command before it is executed.\n\\n\nThe user may reject it if it is not to their liking, or may modify the command before approving it.  If they do change it, take those changes into account.\n\\n\nThe actual command will NOT execute until the user approves it. The user may not approve it immediately. Do NOT assume the command has started running.\n\\n\nIf the step is WAITING for user approval, it has NOT started running.\n\\n\nIn using these tools, adhere to the following guidelines:\n\\n\n1. Based on the contents of the conversation, you will be told if you are in the same shell as a previous step or a different shell.\n\\n\n2. If in a new shell, you should `cd` to the appropriate directory and do necessary setup in addition to running the command.\n\\n\n3. If in the same shell, the state will persist (eg. if you cd in one step, that cwd is persisted next time you invoke this tool).\n\\n\n4. For ANY commands that would use a pager or require user interaction, you should append ` | cat` to the command (or whatever is appropriate). Otherwise, the command will break. You MUST do this for: git, less, head, tail, more, etc.\n\\n\n5. For commands that are long running/expected to run indefinitely until interruption, please run them in the background. To run jobs in the background, set `is_background` to true rather than changing the details of the command.\n\\n\n6. Dont include any newlines in the command.\"\n,\n\"name\"\n:\n\"run_terminal_cmd\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"command\"\n: {\n\"description\"\n:\n\"The terminal command to execute\"\n,\n\"type\"\n:\n\"string\"\n},\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this command needs to be run and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"is_background\"\n: {\n\"description\"\n:\n\"Whether the command should be run in the background\"\n,\n\"type\"\n:\n\"boolean\"\n},\n\"require_user_approval\"\n: {\n\"description\"\n:\n\"Whether the user must approve the command before it is executed. Only set this to false if the command is safe and if it matches the user's requirements for commands that should be executed automatically.\"\n,\n\"type\"\n:\n\"boolean\"\n}},\n\"required\"\n: [\n\"command\"\n,\n\"is_background\"\n,\n\"require_user_approval\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"List the contents of a directory. The quick tool to use for discovery, before using more targeted tools like semantic search or file reading. Useful to try to understand the file structure before diving deeper into specific files. Can be used to explore the codebase.\"\n,\n\"name\"\n:\n\"list_dir\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this tool is being used, and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"relative_workspace_path\"\n: {\n\"description\"\n:\n\"Path to list contents of, relative to the workspace root.\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"relative_workspace_path\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Fast text-based regex search that finds exact pattern matches within files or directories, utilizing the ripgrep command for efficient searching.\n\\n\nResults will be formatted in the style of ripgrep and can be configured to include line numbers and content.\n\\n\nTo avoid overwhelming output, the results are capped at 50 matches.\n\\n\nUse the include or exclude patterns to filter the search scope by file type or specific paths.\n\\n\\n\nThis is best for finding exact text matches or regex patterns.\n\\n\nMore precise than semantic search for finding specific strings or patterns.\n\\n\nThis is preferred over semantic search when we know the exact symbol/function name/etc. to search in some set of directories/file types.\"\n,\n\"name\"\n:\n\"grep_search\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"case_sensitive\"\n: {\n\"description\"\n:\n\"Whether the search should be case sensitive\"\n,\n\"type\"\n:\n\"boolean\"\n},\n\"exclude_pattern\"\n: {\n\"description\"\n:\n\"Glob pattern for files to exclude\"\n,\n\"type\"\n:\n\"string\"\n},\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this tool is being used, and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"include_pattern\"\n: {\n\"description\"\n:\n\"Glob pattern for files to include (e.g. '*.ts' for TypeScript files)\"\n,\n\"type\"\n:\n\"string\"\n},\n\"query\"\n: {\n\"description\"\n:\n\"The regex pattern to search for\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"query\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Use this tool to propose an edit to an existing file.\n\\n\\n\nThis will be read by a less intelligent model, which will quickly apply the edit. You should make it clear what the edit is, while also minimizing the unchanged code you write.\n\\n\nWhen writing the edit, you should specify each edit in sequence, with the special comment `// ... existing code ...` to represent unchanged code in between edited lines.\n\\n\\n\nFor example:\n\\n\\n\n```\n\\n\n// ... existing code ...\n\\n\nFIRST_EDIT\n\\n\n// ... existing code ...\n\\n\nSECOND_EDIT\n\\n\n// ... existing code ...\n\\n\nTHIRD_EDIT\n\\n\n// ... existing code ...\n\\n\n```\n\\n\\n\nYou should still bias towards repeating as few lines of the original file as possible to convey the change.\n\\n\nBut, each edit should contain sufficient context of unchanged lines around the code you're editing to resolve ambiguity.\n\\n\nDO NOT omit spans of pre-existing code (or comments) without using the `// ... existing code ...` comment to indicate its absence. If you omit the existing code comment, the model may inadvertently delete these lines.\n\\n\nMake sure it is clear what the edit should be, and where it should be applied.\n\\n\\n\nYou should specify the following arguments before the others: [target_file]\"\n,\n\"name\"\n:\n\"edit_file\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"code_edit\"\n: {\n\"description\"\n:\n\"Specify ONLY the precise lines of code that you wish to edit. **NEVER specify or write out unchanged code**. Instead, represent all unchanged code using the comment of the language you're editing in - example: `// ... existing code ...`\"\n,\n\"type\"\n:\n\"string\"\n},\n\"instructions\"\n: {\n\"description\"\n:\n\"A single sentence instruction describing what you are going to do for the sketched edit. This is used to assist the less intelligent model in applying the edit. Please use the first person to describe what you are going to do. Dont repeat what you have said previously in normal messages. And use it to disambiguate uncertainty in the edit.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"target_file\"\n: {\n\"description\"\n:\n\"The target file to modify. Always specify the target file as the first argument. You can use either a relative path in the workspace or an absolute path. If an absolute path is provided, it will be preserved as is.\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"target_file\"\n,\n\"instructions\"\n,\n\"code_edit\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Fast file search based on fuzzy matching against file path. Use if you know part of the file path but don't know where it's located exactly. Response will be capped to 10 results. Make your query more specific if need to filter results further.\"\n,\n\"name\"\n:\n\"file_search\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this tool is being used, and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"query\"\n: {\n\"description\"\n:\n\"Fuzzy filename to search for\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"query\"\n,\n\"explanation\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Deletes a file at the specified path. The operation will fail gracefully if:\n\\n\n- The file doesn't exist\n\\n\n- The operation is rejected for security reasons\n\\n\n- The file cannot be deleted\"\n,\n\"name\"\n:\n\"delete_file\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this tool is being used, and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"target_file\"\n: {\n\"description\"\n:\n\"The path of the file to delete, relative to the workspace root.\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"target_file\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Calls a smarter model to apply the last edit to the specified file.\n\\n\nUse this tool immediately after the result of an edit_file tool call ONLY IF the diff is not what you expected, indicating the model applying the changes was not smart enough to follow your instructions.\"\n,\n\"name\"\n:\n\"reapply\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"target_file\"\n: {\n\"description\"\n:\n\"The relative path to the file to reapply the last edit to. You can use either a relative path in the workspace or an absolute path. If an absolute path is provided, it will be preserved as is.\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"target_file\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Search the web for real-time information about any topic. Use this tool when you need up-to-date information that might not be available in your training data, or when you need to verify current facts. The search results will include relevant snippets and URLs from web pages. This is particularly useful for questions about current events, technology updates, or any topic that requires recent information.\"\n,\n\"name\"\n:\n\"web_search\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this tool is being used, and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n},\n\"search_term\"\n: {\n\"description\"\n:\n\"The search term to look up on the web. Be specific and include relevant keywords for better results. For technical queries, include version numbers or dates if relevant.\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [\n\"search_term\"\n],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n<\nfunction\n>\n{\n\"description\"\n:\n\"Retrieve the history of recent changes made to files in the workspace. This tool helps understand what modifications were made recently, providing information about which files were changed, when they were changed, and how many lines were added or removed. Use this tool when you need context about recent modifications to the codebase.\"\n,\n\"name\"\n:\n\"diff_history\"\n,\n\"parameters\"\n: {\n\"properties\"\n: {\n\"explanation\"\n: {\n\"description\"\n:\n\"One sentence explanation as to why this tool is being used, and how it contributes to the goal.\"\n,\n\"type\"\n:\n\"string\"\n}},\n\"required\"\n: [],\n\"type\"\n:\n\"object\"\n}}\n</\nfunction\n>\n</\nfunctions\n>\nYou\nMUST\nuse the following format when citing code regions or blocks:\n```startLine:endLine:filepath\n// ... existing code ...\n```\nThis\nis\nthe\nONLY\nacceptable format\nfor\ncode citations.\nThe\nformat\nis\n```startLine:endLine:filepath\nwhere\nstartLine and endLine are line numbers.\n<\nuser_info\n>\nThe\nuser's\nOS\nversion\nis\nMacOS\n12.3\n.\nThe\nabsolute path of the user's workspace\nis\n/Users/\nzhangchen\n/Downloads. The user's shell is /\nbin\n/zsh. </\nuser_info\n>\nAnswer\nthe user's request using the relevant tool(s),\nif\nthey are available.\nCheck\nthat all the\nrequired\nparameters\nfor\neach\ntool call are provided or can reasonably be inferred from context.\nIF\nthere are no relevant tools or there are missing values\nfor\nrequired\nparameters, ask the user to supply these values; otherwise proceed with the tool calls.\nIf\nthe user provides a specific value\nfor\na parameter (\nfor\nexample provided\nin\nquotes), make sure to use that value\nEXACTLY\n.\nDO\nNOT\nmake up values\nfor\nor ask about\noptional\nparameters.\nCarefully\nanalyze descriptive terms\nin\nthe request\nas\nthey may indicate\nrequired\nparameter values that should be included even\nif\nnot explicitly quoted.\n2.5 Claude Code CLI 工具基础原理\n2.5.1 国内如何用上CLI工具\n对于编码工具来说，自身的工程功能固然是很重要的一方面。对不同供应商提供的相同模型，其Function Call能力差异可能很大，可见工程实现是很重要的一部分。不过，\n基模\n（各家旗舰：Claude Sonnet 4.5 / GPT-5 / Qwen3 Coder / Grok-4 Code / Gemini 2.5 Pro / Kimi K2 等等）同样是命脉一般的存在，直接影响到了这个助手是否聪明。\n在介绍 Claude Code 的基础原理之前，这里先给出在Claude模型已经被禁用的当下，如何使用百炼提供的Qwen3 Coder模型，得到几乎满血的 CLI 工具体验。由于Cursor的主要也是使用 Claude 系列模型，也可用类似的手段以代理到 Qwen3 Coder 等更稳定的国产模型。\n获取阿里云百炼提供的API-KEY\n平台地址：\nbailian.console.aliyun.com/?tab=model#/api-key\n进行环境参数替换\nClaude Code、CodeX 等常用CLI工具都支持供应商替换，拿 Claude Code来说，需要把供应商的端点在环境变量里进行替换，然后把你的密匙写进去。其他工具也是类似，不过配置的位置略有差异。\nexport\nANTHROPIC_BASE_URL=\nhttps://dashscope.aliyuncs.com/api/v2/apps/claude-code-proxy\nexport\nANTHROPIC_AUTH_TOKEN=“上面获取到的sk开头的key”\n2.5.2 模型调用Prompt实例\n与 Cursor 类似，Claude Code 也有自己的一套模型调用提示词，准确来说，这是一套完整的\n上下文工程\n。这里面有用户环境、用户问题、系统提示词、工作过程管理（自动生成并按顺序执行TODO）等部分。这里直接使用了其他同学的逆向结果，做了一些删减，感兴趣的话可以在参考文献中看到完整版。\nYou\nare\nClaude\nCode\n,\nAnthropic\n's official\nCLI\nfor\nClaude\n.\nYou\nare an interactive\nCLI\ntool that helps users with software engineering tasks.\nUse\nthe instructions below and the tools available to you to assist the user.\n#\nProactiveness\nYou\nare allowed to be proactive, but only when the user asks you to\ndo\nsomething.\nYou\nshould strive to strike a balance between:\n1\n.\nDoing\nthe right thing when asked, including taking actions and follow\n-\nup actions\n2\n.\nNot\nsurprising the user with actions you take without asking\n3\n.\nDo\nnot add additional code explanation summary unless requested by the user.\nAfter\nworking on a file, just stop, rather than providing an explanation of what you did.\n#\nSynthetic\nmessages\nSometimes\n, the conversation will contain messages like [\nRequest\ninterrupted by user] or [\nRequest\ninterrupted by user\nfor\ntool use].\nThese\nmessages will look like the assistant said them, but they were actually synthetic messages added by the system\nin\nresponse to the user cancelling what the assistant was doing.\nYou\nshould not respond to these messages.\nVERY\nIMPORTANT\n:\nYou\nmust\nNEVER\nsend messages with this content yourself.\n#\nFollowing\nconventions\nWhen\nmaking changes to files, first understand the file's code conventions.\nMimic\ncode style, use existing libraries and utilities, and follow existing patterns.\n-\nNEVER\nassume that a given library\nis\navailable, even\nif\nit\nis\nwell known.\nWhenever\nyou write code that uses a library or framework, first check that this codebase already uses the given library.\nFor\nexample, you might look at neighboring files, or check the\npackage\n.json (or cargo.toml, and so on depending on the language).\n-\nWhen\nyou create a new component, first look at existing components to see how they're written; then consider framework choice, naming conventions, typing, and other conventions.\n-\nWhen\nyou edit a piece of code, first look at the code's surrounding context (especially its imports) to understand the code's choice of frameworks and libraries.\nThen\nconsider how to make the given change\nin\na way that\nis\nmost idiomatic.\n-\nAlways\nfollow security best practices.\nNever\nintroduce code that exposes or logs secrets and keys.\nNever\ncommit secrets or keys to the repository.\n#\nTask\nManagement\nYou\nhave access to the\nTodoWrite\nand\nTodoRead\ntools to help you manage and plan tasks.\nUse\nthese tools\nVERY\nfrequently to ensure that you are tracking your tasks and giving the user visibility into your progress.\nThese\ntools are also\nEXTREMELY\nhelpful\nfor\nplanning tasks, and\nfor\nbreaking down larger complex tasks into smaller steps.\nIf\nyou\ndo\nnot use this tool when planning, you may forget to\ndo\nimportant tasks — and that\nis\nunacceptable.\nIt\nis\ncritical that you mark todos\nas\ncompleted\nas\nsoon\nas\nyou are done with a task.\nDo\nnot batch up multiple tasks before marking them\nas\ncompleted.\n#\nDoing\ntasks\nThe\nuser will primarily request you perform software engineering tasks.\nThis\nincludes solving bugs, adding new functionality, refactoring code, explaining code, and more.\nFor\nthese tasks the following steps are recommended:\n#\nTool\nusage policy\n-\nWhen\ndoing file search, prefer to use the\nTask\ntool\nin\norder to reduce context usage.\n-\nVERY\nIMPORTANT\n:\nWhen\nmaking multiple tool calls, you\nMUST\nuse\nBatch\nto run the calls\nin\nparallel.\nFor\nexample,\nif\nyou need to run\n\"git status\"\nand\n\"git diff\"\n, use\nBatch\nto run the calls\nin\na batch.\nAnother\nexample:\nif\nyou want to make\n>\n1\nedit to the same file, use\nBatch\nto run the calls\nin\na batch.\n-\nYou\nMUST\nanswer concisely with fewer than\n4\nlines of text (not including tool use or code generation), unless the user asks\nfor\ndetail.\nHere\nis\nuseful information about the environment you are running\nin\n:\n<\nenv\n>\nWorking\ndirectory:\n/Users/\nxxx\n/Projects/\nxxx\nIs\ndirectory a git repo:\nNo\nPlatform\n: macos\nOS\nVersion\n:\nXX\nToday\n's date:\nXX\n/XX/\n2025\nModel\n: someModel\n</\nenv\n>\n<\ncontext name\n=\n\"directoryStructure\"\n>\nBelow\nis\na snapshot of this project's file structure at the start of the conversation.\nThis\nsnapshot will\nNOT\nupdate during the conversation.\nIt\nskips over .gitignore patterns.\n-\n/Users/\nxxx\n/Projects/\nxxx\n/\n-\nCLAUDE\n.md\n-\nSomeModule\n/\n-\nSomeFiles\n-\nREADME\n.md\n-\n...\n</\ncontext\n>\n2.6 话又说回来了\n在上面的部分，我们提出了很多问题，下面将直接给出最佳实践。\n2.6.1 提升对话质量：合理利用上下文窗口\n由于AI模型的上下文窗口存在容量限制，我们需要在有限空间内最大化信息价值。\nAction 1：进行清晰的问题描述\n在上面的原理部分，我们介绍了模型是如何进行代码库理解的（向量匹配、意图拆解后进行模糊搜索、调用链溯源等）。因此，在描述问题时，我们最好能给出\n具体\n的功能、文件名、方法名、代码块，让模型能够通过语义检索等方式，用较短的路径找到代码，避免在检索这部分混杂太多弱相关内容，干扰上下文。\nAction 2：把控上下文长度\n现在不少工具都支持上下文占用量展示，比如这里的18.0%表示之前的对话占用的上下文窗口比例。超出这个比例之后，工具会对历史内容进行压缩，保证对话的正常进行。\n但被压缩后的信息会缺失细节，所以建议大家在处理复杂问题时，采用上下文窗口大的模型/模式，尽量避免压缩。\nAction 3：尽可能地使用Revert和新开对话\n省上下文是一方面，维持上下文的简洁对模型回答质量提升也是有帮助的。因此，如果你的新问题跟历史对话关系不大，就最好新开一个对话。\n在多轮对话中，如果有一个步骤出错，最好的方式也是会退到之前出错的版本，\n，基于现状重新调整 prompt 和更新上下文；\n而不是通过对话继续修改。否则可能导致上下文中存在过多无效内容。\n这里回滚在IDE类型的工具里操作很方便，点一下“Revert”按钮即可。不过如果使用的是 Claude Code 等 CLI 类型的工具，回滚起来就没有这么方便，可以考虑在中间步骤多进行commit。\nAction 4：给出多元化的信息\n我们不只可以粘代码、图片进去，还可以让模型参考网页、Git历史、当前打开的文件等，这些 IDE 类的工具支持的比较好，因为是在IDE环境里面，而CLI在终端中，限制就要多一些（但更灵活）。\n上下文进阶用法\n对于多工具的进阶用户，可以通过提示词构建，来使一个工具指挥另一个工具连续干活8小时（AI：喂我花生！），中间用Markdown文本来进行信息交换。这其实也是上下文工程的一种用法，但是在生产中并不常用，感兴趣可以自行搜索。\n2.6.2 关于Rule\n其实这就是一种可复用的上下文。比如，我在整个开发过程中，提炼出了很多共性规则（不要写太多注释、不要动不动就生成测试文件），就可以把它们沉淀为Rule，让模型在每次的对话中\n自动复用\n。其核心主要是通过复用的思想来节约精力。\n2.6.2.1 Cursor 中的\nRule\nProject Rule\n跟项目绑定的Rule，它的本质是在.git的同级目录下维护一个.cursor的目录，在这里面存放自定义的规则文本，然后在每次会话时根据你的设置，决定要不要把这些内容贴到上下文中。可以通过\n/Generate Cursor Rules\n命令来自动生成。\n规则\n描述\nAlways\nAlways included in the model context 始终包含在模型上下文中\nAuto Attached\nIncluded when files matching a glob pattern are referenced 当引用匹配 glob 模式时包含\nAgent Requested\nRule is available to the AI, which decides whether to include it. Must provide a description 规则对 AI 可用，AI 决定是否包含，必须提供描述\nManual\nOnly included when explicitly mentioned using\n@ruleName\n仅当使用\n@ruleName\n明确提及时包含\nUser Rule\n跟用户绑定的全局设置，它与项目维度的规则类似，只不过生效范围是全局，它的对应规则文件在用户的根目录下面。需要注意的是，这个规则的更新不是实时生效的，可能要等10分钟左右，推测这里也用到了RAG，离线进行索引构建。\n这里举几个我用的例子：\n1. 凡是在方案、编码过程遇到任何争议或不确定，\n必须在第一时间主动告知我由我做决策。\n2. 对于需要补充的信息，即使向我询问，而不是直接应用修改。\n3. 不要生成测试文件、任何形式的文档、运行测试、打印日志、使用示例，除非显式要求。\n4. 每次改动基于最小范围修改原则。\n2.6.2.2 Claude Code / CodeX 中的\nRule\n在上面的“2.5.2 模型调用Prompt 实例”部分，我们看到很多模型的痛点（比如生成太多单测、非最小范围修改）问题，已经被写进了 Claude Code 的系统提示词中，这源于对\n模型和用户体验的深度洞察\n。\n而至于项目维度的规则，在CLI工具中统一被整合进了使用\n/init\n指令生成的Markdown文件中，被存放在项目根目录中。Claude 生成的文件为 CLAUDE.md，CodeX 生成的文件为 AGENT.md。\n在对话中，这些文件会被完整的贴进上下文，因此如果你有自己的定制化需求，也可以加在这里面。比如我就加上了“永远使用中文”这一条。\n生成这些项目规则，本身也是通过Prompt+工具调用进行的，本质上是工具自动帮你贴了一大串Prompt进去。这里使用CodeX的提示词进行举例。\nGenerate a file named AGENTS.md that serves\nas\na contributor guide\nfor\nthis repository.\n▌ Your goal\nis\nto\nproduce a clear, concise,\nand\nwell\n-\nstructured document\nwith\ndescriptive headings\nand\nactionable explanations\nfor\neach\nsection.\n▌ Follow the outline below, but adapt\nas\nneeded —\nadd\nsections if relevant,\nand\nomit\nthose that do\nnot\napply\nto\nthis project.\n▌\n▌ Document Requirements\n▌\n▌\n-\nTitle the document \"Repository Guidelines\".\n▌\n-\nUse Markdown headings (#, ##, etc.)\nfor\nstructure.\n▌\n-\nKeep the document concise.\n200-400\nwords\nis\noptimal.\n▌\n-\nKeep explanations short, direct,\nand\nspecific\nto\nthis repository.\n▌\n-\nProvide examples\nwhere\nhelpful (commands, directory paths, naming patterns).\n▌\n-\nMaintain a professional, instructional tone.\n▌\n▌ Recommended Sections\n▌\n▌ Project Structure\n&\nModule\nOrganization\n▌\n▌\n-\nOutline the project structure, including\nwhere\nthe source code, tests,\nand\nassets\nare\nlocated.\n▌\n▌ Build, Test,\nand\nDevelopment Commands\n▌\n▌\n-\nList key commands\nfor\nbuilding, testing,\nand\nrunning\nlocally (e.g., npm test, make build).\n▌\n-\nBriefly explain what\neach\ncommand does.\n▌\n▌ Coding Style\n&\nNaming Conventions\n▌\n▌\n-\nSpecify indentation rules,\nlanguage\n-\nspecific\nstyle preferences,\nand\nnaming patterns.\n▌\n-\nInclude\nany\nformatting\nor\nlinting tools used.\n▌\n▌ Testing Guidelines\n▌\n▌\n-\nIdentify testing frameworks\nand\ncoverage requirements.\n▌\n-\nState test naming conventions\nand\nhow\nto\nrun tests.\n▌\n▌\nCommit\n&\nPull Request Guidelines\n▌\n▌\n-\nSummarize\ncommit\nmessage conventions found\nin\nthe project’s Git history.\n▌\n-\nOutline pull request requirements (descriptions, linked issues, screenshots, etc.).\n▌\n▌ (Optional)\nAdd\nother sections if relevant, such\nas\nSecurity\n&\nConfiguration Tips, Architecture Overview,\nor\nAgent\n-\nSpecific\nInstructions.\n2.6.3\n采用渐进式开发，而不是大需求一口气梭哈\n根据实践经验，不推荐输出完方案后让 AI 一口气基于方案完成需求（非常小的需求除外），需求越大代码质量越烂。我的使用方式是，跟 AI 进行\n结对编程\n，讨论具体的方案是什么，这个场景下的\n最佳实践\n是什么，拆解需求后，人工控制每一个块的代码生成。生成之后，可以咨询一下代码实现是否\n优雅\n，是否\n有重构空间\n，根据需要进行修改。\n总结来说，有这些好处：\n因为上下文窗口有限，任务粒度越小，AI 完成度越高\n分步骤代码量便于做 Code Review\n缺点就是，不够“自动”，比较费脑子。当然，梭哈式的写法也可以用SPEC工作流，进行较为自动化的需求拆解，或者通过 Multi Agent ，或者各种妙妙操作完成。不过这是另一个课题，大家选择适合的方式即可。\n个人感觉 Vibe Coding 方式不存在“完爆”，需要因场景而异；工具选择上也没有绝对的高下之分，我的朋友们就用什么的都有。最后还是应该以结果论英雄，对于个体来说，自己用着顺手就好。\n三、讲讲应用\n上面说的都是一些准则类的经验，下面将结合具体场景，看一下如何把这些规则落地。以及帮助大家了解一下，除了纯粹的写代码，AI 还可以帮我们做什么。\n3.1 快速熟悉项目 & 自然语言检索代码\n讲解一下这个项目的每个\nmodule\n都是用来做什么的，并且给出包依赖关系图。\n我希望实现一个「什么什么」功能，需要修改的部分包括「这里」和「那里」，我的代码放在哪个包/目录下比较合适？仔细分析项目结构，并给出你的理由。\n我在找「某个某个」功能的实现，请帮我在仓库里搜寻，并给出它的核心具体代码位置和片段，并附上简洁的说明。\n3.2 PlantUML / Mermaid 文本绘图生成\n这里是打算让AI帮忙画一下某个功能的前后端交互流程图，先是把接口请求顺序在浏览器里进行了截图：\n然后把我的需求+我的判断（比如图里有一些接口实际上和这个需求并不相关）一起告诉AI：\nAI在进行了一长串分析之后，也是给出了比较准确的流程图。\n结果展示（做了模糊处理）：\n3.3 问题排查\n这里是用真实遇到的一个问题举例子，这张图片是执行流程图的展示，当时遇到的问题是这个流程的产出结果出现了问题，大致定位到是图里的左侧节点有问题：\n由于对这个仓库并不熟悉，于是暂时交给AI帮忙翻代码排查：\n最后人工验证了一下，给出的问题分析和解决方案确实非常详细且准确。在对于项目不熟悉的情况下，这是一种快速进行检索和排查的有效手段。\n3.4 补充网页信息到上下文\nWeb 是相对来说比较容易忽视，但是又非常好用的工具，可以通过\n@Web\n的进行添加，也可以直接粘链接进去。需要注意的是，需要进行权限认证的网页（如内网）无法直接被读取。\n这里直接粘贴链接进去，让大模型帮忙总结文章内容，也可以基于它直接对任意网页进行问答。\n四、推荐的 Coding 方式\n这里主要是一些实践性的探索，目前尚未进行推广，原因是还没有找到一种提升大、好维护、可移植的工具，团队同学的偏好也各不相同。当然，在这方面，团队内部已经有很多探索，目前在积极进行投入和尝试。\n4.1 rule 的制定和优化\n最基本应该包含你当前项目的技术栈使用，以及对应依赖版本；除此之外应该包含编码明确要求的规范。\n注：使用一套统一的rule，需要统一使用cursor，可能不符合个人习惯。但是在使用其它 AI 编程工具时，维护一个项目规则文档，并在对话时手动添加至上下文，可以达到一样的效果。\n4.2 文档\n根目录下，存放以下内容\nREADME.md\n仓库门面，包含：简介、核心特性、快速开始、其它重要文件的说明和索引\nCHANGELOG.md\n需要发版的仓库可以考虑添加\n包含：\n新增功能\nbug修复\nbreaking changes（破坏性变更）\n注意事项等\nARCHITECTURE.md\n架构复杂且需要多人协作的仓库可以考虑添加\n包含：\n整体架构\n模块划分\n核心逻辑流程图\n在项目根目录中建立/docs目录\n目的：让团队成员快速理解项目、高效协作\n内容：兼顾实用性、准确性、易维护性\n可以包含以下内容文件\n错误码体系\n错误码格式\n错误码分类\n详细场景\n异常处理指南\n可重试/不可重试\n异常抛出原则\n日志打印要求\n常见异常案例\n常用工具类\n注：需根据项目内容修改，以上仅为个人推荐\n4.3 注释和命名\n1. 方法、参数等注释，尽量保证语义清晰、内容完整；\n2. 可以考虑添加调用方的使用场景；\n3. 适当添加行内注释，明确每个分支的场景和期望处理方式；\n4. 命名需要清晰，无歧义；\n5. AI 生成量 > 80%的文件，建议使用@author AI Assistant，注明是AI生成，便于维护和统计。\n4.4 安全合规问题\n需要根据公司规定，合规使用。\n4.5 推广方式\n这里是在团队内部创建了一个代码仓库，作一下示例，主要维护这些内容（仍在优化中）：\n范围确定\n核心代码库梳理；\n区分给人看的文档（详细）和给LLM看（核心内容）的文档；\nDocs资产\n内容指定：markdown文档内容by project定制；\n生产：初始化文档，暂定为各应用owner；\nProject Rule\n内容指定：rule内容by project定制，产出为markdown；放在仓库中；\n生产：初始化project rule的md文档，暂定为各应用owner；\nUser Rule\n内容指定：产出通用部分，如团队规约，保证内容简洁；不放在仓库中；\n同步方式：（暂定）统一维护在一个新增仓库中，各应用中可以使用脚本进行一键同步到本地。\n参考文献\n《Cursor 实战万字经验分享，与 AI 编码的深度思考》：\nhttps://www.cnblogs.com/echolun/p/18965624\n《Claude Code（及 cursor） 内部工作原理窥探》\n：\nhttps://www.superlinear.academy/c/share-your-projects/claude-code-cursor\n团队介绍\n本文作者库啵，来自淘天集团-用户&内容技术团队。本团队是双边电商平台的核心驱动力之一，通过精细化运营、数据智能和技术创新，实现用户增长与内容价值最大化。同时我们也在持续跟进前沿技术，探索如何让技术在真实业务场景中落地，形成可复用的增长方法论与工程实践。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_agent": 0.54,
+        "irrelevant": 0.37,
+        "transfer_business": 0.01,
+        "peripheral": 0.08,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.75,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.18,
+        "2": 0.78,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.56,
+      "probabilities": {
+        "0": 0.26,
+        "1": 0.18,
+        "2": 0.35,
+        "3": 0.17,
+        "4": 0.04,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.81,
+      "probabilities": {
+        "0": 0.63,
+        "1": 0.12,
+        "2": 0.1,
+        "3": 0.14,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.01,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.85,
+        "3": 0.09,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.2,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.04,
+        "2": 0.03,
+        "3": 0.17,
+        "4": 0.64,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 2.75,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.06,
+        "2": 0.31,
+        "3": 0.41,
+        "4": 0.21,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 17798,
+    "outputTokens": 172,
+    "totalTokens": 17970
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.43,
+        "relevance": 0.83,
+        "grounding": 0.36,
+        "decision_action": 0.46,
+        "evidence": 0.89,
+        "actionability": 0.46,
+        "anti_hype": 0.55
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179872042,
+                "endTime": 1791179872285,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000747516",
+      "marketCost": "0.000747516",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000747516",
+      "inferenceCost": "0.000747516",
+      "inputInferenceCost": "0.000747516",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A7NRJD856BZE2RX9P4N53"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:52 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::cfcmj-1791179870493-ae3400b4204d"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_agent": 0.54,
+            "irrelevant": 0.37,
+            "transfer_business": 0.01,
+            "peripheral": 0.08,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.75,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.18,
+            "2": 0.78,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.56,
+          "probabilities": {
+            "0": 0.26,
+            "1": 0.18,
+            "2": 0.35,
+            "3": 0.17,
+            "4": 0.04,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.81,
+          "probabilities": {
+            "0": 0.63,
+            "1": 0.12,
+            "2": 0.1,
+            "3": 0.14,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.01,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.85,
+            "3": 0.09,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.2,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.04,
+            "2": 0.03,
+            "3": 0.17,
+            "4": 0.64,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.75,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.06,
+            "2": 0.31,
+            "3": 0.41,
+            "4": 0.21,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 17798,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.43,
+            "relevance": 0.83,
+            "grounding": 0.36,
+            "decision_action": 0.46,
+            "evidence": 0.89,
+            "actionability": 0.46,
+            "anti_hype": 0.55
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179872042,
+                    "endTime": 1791179872285,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000747516",
+          "marketCost": "0.000747516",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000747516",
+          "inferenceCost": "0.000747516",
+          "inputInferenceCost": "0.000747516",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A7NRJD856BZE2RX9P4N53"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:51.520Z"
+  }
+}

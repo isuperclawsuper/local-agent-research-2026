@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "244745838997625856",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "马斯克说到做到：开源X平台核心推荐算法",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800086&idx=1&sn=ecf2702e487f771cf5470dc74d94032e",
+      "date": "2026-02-12T09:39:00.632Z",
+      "chars": 5513,
+      "text": "原创\n腾讯程序员\n2026-02-12 17:39\n广东\nx-algorithm\n作者：\n腾讯广告推荐技术团队，周超博士\n1，X开源内容推荐Feed on X召回、精排推理、策略代码。参数配置小应是简化版本。\n2，召回是双塔模型，用户塔输入是【用户特征，S长度的行为序列】，内容塔是帖子标识与帖子作者。用户塔是双层的Causal Attention的Decoder-Only的Transformer，Output取所有位置的平均池化，进行L2归一化；内容塔是两层MLP；采用dot product检索。\n3，精排采用双层Causal Attention的Decoder-Only的Transformer。精排输入是【用户特征，S长度行为序列，候选1~候选N】，对候选采用Candidate Isolation。\n1. 结论\n● X开源的是内容推荐(Feed on X)的召回、精排的在线请求视角的推理、策略/过滤代码，未开源训练(含Loss设计、样本组织的代码）。\n● 模型参数配置较小（例如用户行为序列是32），应是实际部署代码的简化Demo版本。推测开源核心目的是为了体现X的透明性，解除广告主与X的用户对X的Feed推荐策略受到非内容因素干扰的担忧。\n● 召回\n○\n双塔模型，用户塔是双层的Decoder-Only的Transformer，采用Causal Attention，Output是取所有位置的平均池化(mean pooling)，再进行L2的归一化；内容塔是两层的MLP；采用dot product进行检索(因用户、内容都做了L2归一化，等价于cosine)。\n○\n输入：用户塔【用户特征，用户行为序列S长度】，内容塔是帖子标识+帖子作者\n● 精排\n○\n双层的Decoder-Only的Transformer，对于用户特征、用户行为序列是Causal Attention，对于候选是Candidate Isolation。\n○\n输入：【用户特征，用户行为序列S长度，候选1，...，候选N】\n● 召回、精排的用户ID、作者ID、帖子ID都用multi-hash查询embedding table。\n2.\n背景\n● X(原twitter)的开源项目：\nGitHub - xai-org/x-algorithm: Algorithm powering the For You feed on X\n● \"For You\" feed on X（内容推荐）:\n● 只开源了推理视角的模型（召回、精排）、策略/过滤代码，没有开源训练的代码（Loss、样本等）。\n● 来自Elon Musk本人的点评：We know the algorithm is dumb and needs massive improvements, but at least you can see us struggle to make it better in real-time and\nwith transparency\n. No other social media companies do this.\n3.\n架构\n● Home Mixer：整体系统的名字。\n● Query Hydration，获取用户的近期的历史行为与Metadata（例如关注列表）:\n○\nUser Action Sequence，用户行为序列\n○\nUser Features，关注列表等\n● Candidate Sourcing，从2个候选池拉取帖子\n○\nThunder, In-Network Posts，关注的账号的帖子\n○\nPhoenix Retrieval，Out-of-Network Posts，全局贴子里基于相似度找到的\n● Candidate Hydration，为每个候选补充数据【文档里描述，代码里没有使用这些信息】\n○\n帖子数据：文本、多媒体\n○\n作者信息：用户名称，认证状态\n○\n视频时长\n○\n订阅状态，区分是否是订阅才可看的帖子\n● 前过滤：\n○\n去除重复的、老帖子、自己的帖子、屏蔽的作者的帖子、屏蔽的关键词的帖子、过去看过的帖子、不是订阅状态不可见的帖子。\n● Scoring\n○\nPhoenix Scorer\n：\n■\nGrok-based transformer model，包括两阶段，召回与排序。\n■\n19个目标打分，P(like)、P(reply)、P(repost)、P(click)等\n○\nweighted scorer，多目标分数融合，得到一个最终分数【权重参数未开源】\n○\nAuthor diversity Scorer，作者多样性评分。\n○\nOON Score：对于不在订阅列表的帖子调整分值。\n● Selection\n○\n基于Final Score，选取Top-K的候选\n● 后过滤\n○\n重复的PostID\n○\nMeta信息获取不全的帖子\n○\n超过时效性的老帖子\n○\n用户自己的帖子\n○\n内容一致的帖子\n○\n用户没有订阅的帖子\n○\n用户已经阅读过的帖子【已经阅读的过滤】\n○\n用户在同Session已经曝光过的帖子【重复曝光过滤】\n○\n用户屏蔽关键词的帖子\n○\n用户屏蔽作者的帖子\n○\n已经被删除、识别为spam、识别为暴力等帖子。\n○\n对来自同一个twitter下多次交互的conversation进行去重\nThunder：\n● 存储于内存里的，记录所有用户的近期的帖子的存储\n● 从Kafka里，记录帖子的创建、删除事件。\n● 维持每个用户的原创帖子、回复、转发、视频帖子。\n● 在“in-network\"检索中，提供用户关注的账号列表的获取。\n● 自动删除过期的帖子。\n其他关键设计：\n● Hash-Based Embeddings：使用了多个hash函数来做embedding lookup。应该是为了解决hash冲突。\n● No Hand Engineered Features：没有内容相关性的人工设计的特征。\n● Candidate Isolation in Ranking：候选之间不能互相attention。\n● Multi-Action Prediction：多目标预估，而不是单一的相关性分数。\n4. Phoenix-模型整体\n● 代码：\nx-algorithm/phoenix at main · xai-org/x-algorithm · GitHub\n○\nrecsys_retrieval_mdel.py ：Retrieval召回模型\n○\nrun_retrieval.py：召回模型运行示例\n○\ntest_recsys_retrieval_model.py：召回模型测试\n○\nrecsys_model.py ：Ranking排序模型\n○\nrun_ranker.py： 排序模型运行示例\n○\ntest_recsys_model.py：排序模型测试\n○\ngrok.py: Transformer基础架构(基于Grok-1在内容推荐场景改造)\n○\nrunners.py： 模型推理逻辑\n● 两阶段：召回，排序。\n● 应用于Feeds的内容推荐。\n5.\nPhoenix-模型-召回\n● 双塔模型，应用于从非用户关注的账户里检索潜在感兴趣的帖子，百万级别候选，返回千级别候选\n● User Tower：\n○\n【用户特征，用户历史行为1，用户历史行为2...，用户历史行为S】。\n○\nDecoder-Only Tranformer, 异构序列的输入，Causal Self-Attention，每个位置可以看到自己及之前的信息。\n○\nOutput是取所有位置的平均池化(mean pooling)，再进行L2的归一化。【非Next Item Prediction】\n● Candidate Tower：\n○\n特征是候选帖子唯一标识+候选帖子作者标识\n○\n2层MLP：Linear (x2 拉宽) -> SiLU激活 -> Linear (projection)。\n○\nL2归一化\n● Similarity Search：\n○\n通过dot product，检索Top K的结果。因为用户Emb已经经过L2归一化，等价于cosine similarity。\n● 用户特征：\n○\nuser_hashed：用户唯一标识，通过多个哈希函数映射,num_user_hashes\n○\n多个哈希查询的embedding进行拼接，再用可学习的权重矩阵Projection投影到D维\n○\n无效的用户padding为0\n● 用户历史交互行为，长度为S，每个对象的Sideinfo如下：\n○\n历史帖子的TwitterID，每个帖子有多个哈希函数, num_item_hashes\n○\n历史作者的AuthorID，每个作者有多个哈希函数, num_author_hashes\n○\n历史行为类型，一共19种。是经过投影矩阵得到。\n○\n产品界面ID，表达来自哪个界面。通过one-hot单热编码方式查表得到。\n○\n先concatenate，序列上每个位置，再用可学习的权重矩阵Projection投影到D维\n○\n序列长度不足S的，Padding到S个\n● 候选帖子特征：\n○\n候选帖子唯一标识，通过多个哈希函数映射，num_item_hashes\n○\n候选帖子作者标识，通过多个哈希函数映射, num_author_hashes\n○\n先concatenate，再用可学习的权重矩阵Projection投影到D维\n○\n候选不足C的，Padding到C个\n● 训练精度：BF16+FP32\n● 模型参数配置：\n○\nemb_size = 128\n○\nhistory_seq_len = 32\n○\ncandidate_seq_len = 8\n○\nnum_user_hashes = 2\n○\nnum_item_hashes = 2\n○\nnum_author_hashes = 2\n○\n产品界面词表大小：16\n○\nFFN扩展因子：2\n○\n注意力键维度：64\n○\nQuery头数量：2\n○\nKey/Value头数量：2\n○\nTransformer层数：2\n○\n注意力输出缩放系数：0.125\n6.\nPhoenix-模型-排序\n● 用户特征：与Retrieval一致。\n● 帖子特征：\n○\n在Retrieval基础上，\n多了一个上下文特征，候选帖子将在哪个产品界面展示给用户\n。\n●\nTransformer with Candidate Isolation\n（候选隔离的注意力机制），用special attention masking来对候选进行屏蔽，使得候选帖子之间不会互相影响[Candidate Isolation]。\n○\n基于代码来看，上述官网的示意图表述不准确，用户与用户行为序列是Causal Attention，非Full Birectional Attention。\n○\n正确版本示意图如下：\n○\n模型输入：用户特征、用户历史行为序列、多个候选帖子\n○\n模型架构：Decoder Only Transformer\n■\n用户特增、用户历史行为：Causal Attention。\n■\n候选->用户、用户历史行为、候选：\n● 候选可以关注所有用户特征、用户历史行为\n● 对候选是只能看到自己，不能看到其他候选\n■\n采用Pre Norm + Post Norm\n■\nFFN采用 SwiGLU FFN： FFN 大小 2.67 × D（因为 SwiGLU 有两条路径）\n■\n抽取用户的history之后的候选位置的输出，该位置表达每个候选的Output。\n■\n乘以[Hidden_Dim, num_actions]形状的权重矩阵，得到每个候选帖子在每种action的原始logit\n■\nLogits 处理：Soft Capping ，用 tanh 将 logits 平滑压缩到 [-M, M]\n■\nsigmoid函数将原始logit转为[0,1]\n■\nRMSNorm\n■\nRoPE位置编码\n，RotaryEmbedding\n■\nGrouped Query Attention\n：实现了能力，实际配置KV头数=Q头数。GQA的例子如下：\n○\n输出：\n■\n[batch_size, num_candidates, 19]\n■\n使用其中1个action作为主排序。\n● 模型参数\n○\nemb_size = 128\n○\nhistory_seq_len = 32\n○\ncandidate_seq_len = 8，一次排序的最大候选\n○\nnum_user_hashes=2\n○\nnum_item_hashes=2\n○\nnum_author_hashes=2\n○\nwidening_factor=2, # FFN 扩展因子\n○\nkey_size=64,# 注意力键维度\n○\nnum_q_heads=2,\n○\nnum_kv_heads=2,\n○\nnum_layers=2, # Transformer 层数\n○\nattn_output_multiplier=0.125, # 注意力输出缩放\n● Weighted Scorer，加权线性求和【权重未开源】\n○\n正向行为：like, repost, share\n○\n负向行为：block, mute, report\n如对腾讯广告技术感兴趣\n可以关注“腾讯广告技术”微信公众号\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0,
+        "transfer_agent": 0.07,
+        "peripheral": 0.2,
+        "irrelevant": 0.73
+      }
+    },
+    "relevance": {
+      "score": 1.25,
+      "probabilities": {
+        "0": 0.24,
+        "1": 0.28,
+        "2": 0.47,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.07,
+      "probabilities": {
+        "0": 0.96,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.13,
+      "probabilities": {
+        "0": 0.92,
+        "1": 0.04,
+        "2": 0.04,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.15,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.02,
+        "2": 0.8,
+        "3": 0.17,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.88,
+      "probabilities": {
+        "0": 0.2,
+        "1": 0.04,
+        "2": 0.04,
+        "3": 0.11,
+        "4": 0.61,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 1.75,
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.15,
+        "2": 0.6,
+        "3": 0.12,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.89,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5468,
+    "outputTokens": 173,
+    "totalTokens": 5641
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.66,
+        "relevance": 0.49,
+        "grounding": 0.96,
+        "decision_action": 0.91,
+        "evidence": 0.86,
+        "actionability": 0.25,
+        "anti_hype": 0.63
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179981866,
+                "endTime": 1791179982039,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000229656",
+      "marketCost": "0.000229656",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000229656",
+      "inferenceCost": "0.000229656",
+      "inputInferenceCost": "0.000229656",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45AB0ZR397HQN29FRCV90VT"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:59:42 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::6mfbh-1791179981795-fff992b45d13"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0,
+            "transfer_agent": 0.07,
+            "peripheral": 0.2,
+            "irrelevant": 0.73
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.25,
+          "probabilities": {
+            "0": 0.24,
+            "1": 0.28,
+            "2": 0.47,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.07,
+          "probabilities": {
+            "0": 0.96,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.13,
+          "probabilities": {
+            "0": 0.92,
+            "1": 0.04,
+            "2": 0.04,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.15,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.02,
+            "2": 0.8,
+            "3": 0.17,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.88,
+          "probabilities": {
+            "0": 0.2,
+            "1": 0.04,
+            "2": 0.04,
+            "3": 0.11,
+            "4": 0.61,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.75,
+          "probabilities": {
+            "0": 0.12,
+            "1": 0.15,
+            "2": 0.6,
+            "3": 0.12,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.89
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5468,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.66,
+            "relevance": 0.49,
+            "grounding": 0.96,
+            "decision_action": 0.91,
+            "evidence": 0.86,
+            "actionability": 0.25,
+            "anti_hype": 0.63
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179981866,
+                    "endTime": 1791179982039,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000229656",
+          "marketCost": "0.000229656",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000229656",
+          "inferenceCost": "0.000229656",
+          "inputInferenceCost": "0.000229656",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45AB0ZR397HQN29FRCV90VT"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:59:41.264Z"
+  }
+}

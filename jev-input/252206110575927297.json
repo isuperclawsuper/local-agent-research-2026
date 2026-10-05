@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "252206110575927297",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "FlagOS 镜像登陆腾讯云 HAI社区，快速部署OpenClaw 实现“养虾”自由",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694687&idx=2&sn=c8885f24b1f1a95e018da38b34cc24b0",
+      "date": "2026-03-05T00:45:00.977Z",
+      "chars": 3762,
+      "text": "2026-03-05 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n以往大家习惯将 AI 能力依赖于公有云服务，而随着 OpenClaw 等智能体工具的快速普及，不管是个人开发者还是企业更需要一个 7×24 小时运行在本地、可直接响应指令的 “数字员工”。但云端方案存在的数据隐私风险与持续高昂的 API、Token 成本，让工业级智能体在规模化落地时面临瓶颈，本地化、私有化独立部署大模型服务已成为企业构建自主可控 AI 能力的必然选择。\n众智FlagOS 是一款完全开源的 AI 系统软件栈，支持多款异构 AI 芯片，可让 AI 模型与智能体轻松实现快速部署。本次 FlagOS 联合腾讯云 HAI（面向AI和科学计算的容器镜像中心），将 Qwen3-4B-hygon-flagos 模型镜像正式上线腾讯云 HAI 社区，开发者可直接拉取使用。基于该镜像，可快速在加速卡上运行FlagOS + OpenClaw，实现小模型驱动智能体执行，为企业和开发者从公有云 API 转向自建本地 AI 服务提供了可落地的实践方案。\n01\n安装及测试过程\n基于 FlagOS 系统软件栈的跨芯能力，众智 FlagOS 社区把 Qwen3-4B 适配至多款GPU硬件。以下内容重点介绍如何部署与配置 FlagOS 版 Qwen3-4B的过程，仅用于复现实验结果，不影响对 Agent 能力的判断。\n1.1\n安装Qwen3-4B-hygon-flagos\na.首先，从 HAI 社区平台找到 Qwen3-4B-hygon-FlagOS，根据README.md拉取模型并启动服务。\n以 ModelScope为例，下载模型权重\npip\ninstall modelscope\nmodelscope\ndownload --model Qwen/Qwen3-\n4\nB --local_dir /share/Qwen3-\n4\nB\nb.点击【部署当前镜像】获取镜像拉取命令，从 HAI 社区拉取镜像\ndocker\npull haihub.cn/baai/flagrelease_hygon_qwen3:v1.\n0\n.\n0\nc.通过下面的代码，启动容器。\n这段代码可直接复制使用，也可以根据需要修改容器名，即在第4行--name=flagos对 name 进行修改。\n#Container Startup\ndocker\nrun -it\n\\\n--name=flagos\n\\\n--network=host\n\\\n--privileged\n\\\n--ipc=host\n\\\n--shm-size=\n16\nG\n\\\n--memory=\n\"512g\"\n\\\n--ulimit stack=-\n1\n:-\n1\n\\\n--ulimit memlock=-\n1\n:-\n1\n\\\n--cap-add=SYS_PTRACE\n\\\n--security-opt seccomp=unconfined\n\\\n--device=/dev/kfd\n\\\n--device=/dev/dri\n\\\n--group-add video\n\\\n-u root\n\\\n-v /opt/hyhal:/opt/hyhal\n\\\n-v /share:/share\n\\\nhaihub.cn/baai/flagrelease_hygon_qwen3:v1.\n0\n.\n0\n\\\n/bin/bash\nd.入容器（如果上一步修改了容器名，这里要将flagos对 name 进行修改。\ndocker\nexec\n-it flagos bash\ne.启动服务\nflagscale\nserve qwen3\n1.2 安装配置OpenClaw\n安装过程: 参见:\nhttps://github.com/openclaw/openclaw?spm=5176.28103460.0.0.696675514ZMILC\n, 通过源码方式，安装 OpenClaw。\ngit\nclone\nhttps://github.com/openclaw/openclaw.git\ncd\nopenclaw\npnpm install\npnpm ui:build\n# auto-installs UI deps on first run\npnpm build\npnpm openclaw onboard --install-daemon\n# Dev loop (auto-reload on TS changes)\npnpm gateway:watch\n配置过程:\na.访问链接以下链接：\nhttps://cloud.tencent.com/developer/article/2625144，文中有给出通用的\n\"模型配置\"文件格式，可以直接套用，套用后命令如下。\n需要注意的是\n，配置本地模型时，厂商一定是加速推理工具如vllm。\npnpm openclaw config set 'models.providers.vllm_local' --json '{\n\"baseUrl\"\n:\n\"\nhttp://1.15.51.106:9033/v1\n\"\n,\n\"apiKey\"\n:\n\"anykey\"\n,\n#key不可为空，如果原来模型没有配置key，任意填写即可\n\"api\"\n:\n\"openai-completions\"\n,\n\"models\"\n: [\n{\n\"id\"\n:\n\"Qwen3-4B-hygon-flagos\"\n,\n\"name\"\n:\n\"远程模型\"\n}\n]\n}'\n执行之后出现如下信息提示：\n合并配置模型\npnpm openclaw config\nset\nmodels.mode\nmerge\n切换为当前模式\npnpm openclaw models\nset\nvllm_local/Qwen3-4B-hygon-flagos\n可以看到当前默认模型已经切换为 Qwen3-4B-hygon-flagos。\nb.执行下面代码，可以看到模型已经切换完成。\npnpm\nopenclaw configure\n1.3\n配置 channel 为QQ\n参考文档：\nhttps://cloud.tencent.com/developer/article/2626045，这部分需要替换为自己的ID和secret。配置完成后，进行以下操作：\na.启动openclaw网关，命令如下：\npnpm\nopenclaw gateway\nb.启动成功后，您可以在QQ软件中尝试和已经打通OpenClaw的QQ机器人进行单独聊天，或者在群里与QQ机器人进行对话。如果QQ机器人能够以AI的方式对话，则说明您已经成功完成OpenClaw应用接入QQ机器人。\n接下来您就可以开始进一步探索OpenClaw接入QQ机器人之后的更多使用场景。\n02\n趋势展望\n这次在 OpenClaw 连接QQ的场景中对 Qwen3-4B-hygon-flagos 进行了测试，\n发现Agent 的能力边界正在发生转移\n关键信号：\n‣\n小模型开始进入 Agent 执行层\nQwen3-4B-hygon-flagos 已经可以在 OpenClaw 中稳定承担指令理解、工具调用、本地文件操作和协作入口控制等任务。这意味着，小模型第一次从“对话组件”走进了\nAgent 的执行中枢\n。\n‣\n真正的瓶颈不在模型，而在系统\n无论 4B 还是更大的模型，在文档写入等能力上同样受限，说明 Agent 的上限越来越多地由平台权限、接口设计和工程抽象决定，而不是模型本身。\n如果你要的是一个能在本地跑、能调工具、能接企业系统的 Agent 内核，\n4B 级模型，已经开始成为一个现实且合理的默认选项。\nLess is More, FlagOS is the Key！\n关于众智 FlagOS 社区\n众智FlagOS是一款专为异构AI芯片打造的开源、统一系统软件栈，支持 AI 模型一次开发即可无缝移植至各类硬件平台，大幅降低迁移与适配成本。它包括大型算子库、统一AI编译器、并行训推框架、统一通信库等核心开源项目，致力于构建「模型-系统-芯片」三层贯通的开放技术生态，通过“一次开发跨芯迁移”释放硬件计算潜力，打破不同芯片软件栈之间生态隔离。\n社区官网：\nhttps://flagos.io\nGitHub地址：\nhttps://github.com/flagos-ai\nGitCode地址：\nhttps://gitcode.com/flagos-ai\n关于HAI\n高性能应用服务（Hyper Application Inventor，HAI）是一款面向 AI 、科学计算的 GPU 应用服务产品，提供即插即用的澎湃算力与常见环境，助力中小企业及开发者快速部署 LLM。\n而HAI社区是一款面向AI和科学计算等GPU环境的容器镜像中心，提供丰富的官方与社区维护的开发资源。助力企业和开发者快速部署AIGC大模型、计算机视觉、自然语言处理、数据科学等容器，原生集成开发工具与组件。\n社区官网：\nhttps://haihub.cloud.tencent.com/index\n-End-\n感谢你读到这里，不如关注一下？\n👇\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1238648356155138048",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "火山引擎 SenseFlow 重磅发布：突破存储边界，洞见数据价值",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247521212&idx=1&sn=819993bfc75955779785e4aaad7dcd89",
+      "date": "2026-08-10T10:30:00.702Z",
+      "chars": 4821,
+      "text": "火山引擎存储\n2026-08-10 18:30\n北京\n能力速览：\n火山引擎对象存储 TOS 推出 SenseFlow（内容感知与处理），作为内建于 TOS 中的多模态智能处理工作台，仅配置一条规则即可启用。以往，多模态大模型、向量检索、媒体处理能力均需独立搭建，如今这些能力统一集成至存储侧。桶内图片、视频、音频无需导出，即可就地完成理解、检索与加工。\n对象存储是 AI 时代的数据底座。近年来 Data+AI、多模态 AIGC 与 Agent 应用集中爆发，客户存入 TOS 的图片、视频、音频数量快速增长，新的业务难题也随之而来：数据虽然已经存下，却看不懂、找不到，更难以直接使用。例如，回溯一段“穿红衣人员闯入”的监控录像，从千万素材中检索“海边日落”的图片，或是批量完成视频字幕擦除、抽帧、转码等任务。面对这些诉求，传统对象存储都解决不了。\n一、自建链路，成本像一座冰山：水面上是“接入”，水面下才是大头\n梳理上述业务诉求不难发现，无论是安防录像回溯、媒资素材检索，还是批量视频处理，本质上均要求存储系统“看懂”非结构化数据内容，并按语义完成检索与加工。传统对象存储只保障数据的可靠存取，无法理解对象内部信息。因此，客户不得不在存储之外自行搭建一整套数据处理链路，才能支撑此类业务。\n客户常说的只是一句“接入一个 AI 能力”，这不过是露出水面的尖角。真正沉在水面之下的，是一条逐环衔接、持续产生隐性投入的自建链路，每一环成本都不小：\n环节\n客户需要自己做的事\n隐含成本\n数据搬迁\n把桶内的存量与增量对象导出到独立的处理集群\n带宽、时延，以及数据的二次存储\n算力与模型\n采购、部署 GPU 与多模态模型服务，并持续调优\n资源常年占用，运维门槛高\n内容理解\n对接 OCR、视频分析、VLM 等模型，从对象中提取语义\n模型选型复杂，效果难保证\n检索体系\n自建向量库、维护索引，以此支撑语义检索\n额外系统建设，数据再存一份\n编排与消费\n用消息队列、函数把各环节串起来，并将结果回写存储\n链路长、易出错、难排查\n权限与计量\n在多套系统之间对齐权限、按用户拆分用量\n策略难维护，成本算不清\n上面六个环节大多沉在水面之下，决策时只看到“接入一个能力”的轻巧，上线后才发现，本应聚焦业务的团队，大量精力被耗在基础设施的拼装和维护上。链路每增加一跳，带宽、时延、成本就随之攀升，权限和计量也常年对不齐。最终，一个 AI 能力的上线动辄耗时数周乃至一两个月——水面下的时间与成本，才是真正拖住业务节奏的隐性负担。\n成本冰山 · 水面下的隐性投入\n成本冰山：水面上只看到接个 AI 能力,水面下压着六个要自己扛的隐性成本环节\nSenseFlow 的设计出发点正在于此——与其让每位客户在存储之外重复造轮子，不如把“理解、检索、加工”直接内建到 TOS 中：数据不出桶，配置一条规则，即可就地变得可查、可用。\n接下来我们先了解产品形态，再逐一拆解支撑这套能力落地的两项机制（一键开箱、存算一体），最后结合智能安防、媒资管理、自定义工作流三个真实业务场景，呈现其实际价值。\n二、产品定位：TOS 内建的多模态智能处理工作台\nSenseFlow 并非外挂在 TOS 旁的 AI 插件，而是内建于存储、与桶（Bucket）协同工作的一层智能能力。产品核心抽象单元只有规则（Rule），即“数据范围 + 模板 + 工作流”。用户选定一段数据、挑选一套场景模板后，存量与增量对象即可自动接入；无需数据搬迁，也无需自建流水线，理解、检索、加工等能力开箱即用。\n一句话概括定位：\n让 TOS 从“存储对象”升级为“理解对象”，在桶内完成数据与知识的连接。\n三、存储原生优势：让“数据原地变智能”\n3.1 一键开箱 —— 选定模板，一键启用\n传统方案中，要打通“理解 + 检索 + 加工”链路，需在向量库、OCR、视频分析、通知服务之间反复对接，仅搭建一条可用链路的时间就按周计。SenseFlow 将这些能力收敛为一个配置单元，使用方式与 TOS 的生命周期规则类似：选定数据范围、选择场景模板、确认预置工作流、点击启用，四步即可建成一条规则。此后，存量与增量对象自动接入，无需搬迁数据、无需自建流水线，亦无需外部密钥。\n同一个桶上可同时挂载多条规则，各自绑定不同的数据范围与模板。例如，将\ncameras/*\n交给智能安防、\nphotos/*\n用于手机相册，两条规则互不干扰、各自运行。至此，同一桶内不同用途的数据得以分开管理。\n规则启用后，配套的处理能力同步上线。这些能力并非彼此独立的零散工具，而是相互打通的整体，数据入桶后即可顺序流转。下表为能力概览：\n能力环节\n做什么\n技术概要\n内容感知\n调用多模态 AI 模型（VLM 等）理解图片、视频内容，提取画面元素与关键事件\n视频截帧 + VLM 结构化理解\n文件标注\n为每个文件自动生成约百字详细描述与约二十字精简摘要，沉淀为可检索的标准元数据\n结构化字段回写对象自定义元数据（Meta）\n多模态检索\n将语义特征和描述向量化建立索引，支持自然语言“以文搜图 / 搜视频”，毫秒级召回\n关键词 + 语义 + 混合检索、重排\n内容生成\n编排转码、字幕擦除、抽帧、动图生成、语音识别等算子，串 / 并行组合，结果回写 TOS\n预置工作流 + 算子编排\n业务消费\n处理结果对接下游系统，通过事件通知自动触发后续流程，形成完整数据消费链路\nWebhook / 事件订阅 / 站内消息\n3.2 存算一体 —— 数据不出桶，处理在原地完成\n这一点正是 SenseFlow 与“外部 AI 平台”的本质区别。外部方案的路径是“拉出 → 处理 → 回写”，数据在存储与算力之间往返搬运，带宽、时延与成本随之层层累加。SenseFlow 则将感知与加工全部置于 TOS 内部就地完成，处理产物也直接留存于用户自己的桶中。\n传统方案：拉出—处理—回写\n数据需搬迁至独立的检索 / 知识库 / 处理系统，链路长、配置繁琐，带宽与时延均承压，权限难以统一，结果回流也较弱。\nSenseFlow：原地闭环\n数据无需搬迁，天然形成闭环，开箱即用；带宽开销与时延同步降低，AI 应用的上线周期也从以周计缩短为以天计。\n四、业务场景实践：通用模板 + 自定义工作流\n4.1 智能安防 —— 从海量录像到“一句话回溯事件”\n摄像头在端侧将视频流切分为片段，持续不断地上传至 TOS，数据量大、TTL 短，连续录像与告警抓拍图还混杂在一起。过去想要在海量录像中定位某一事件，基本只能依靠人工逐段排查。\nSenseFlow 的\n智能安防模板\n预置了五个工作流：云录像智能检索、智能告警巡检、视频描述摘要、每日智能总结、视频智能问答。新片段一入桶，自动执行“视频截帧 → VLM 视频理解 → 向量化 → 写入索引”；告警抓拍图会实时比对“陌生人、火焰烟雾”等关注点，并定时生成当日录像总结。原本要紧盯屏幕的安防运营，如今只需要用自然语言一句提问即可获得结果。\n实践案例：视频监控场景自动构建视频搜索服务\n某安防客户有大量摄像头录像、告警抓拍图和设备维度元数据，数据通常按时间分片写入对象存储，并按 7-30 天周期滚动保留。在此之前，如果要在海量录像中定位“某个时间段是否有人进入”、“是否出现车辆、烟火、摔倒、未戴安全帽”等事件，必须自建视频抽帧、模型调用、标签库、向量库、检索接口和通知链路，工程投入大，且每新增一项业务规则都要重新调整处理链路。\nSenseFlow 把这条链路沉到 TOS 桶内：对象入桶后，自动触发感知、索引、事件判断和结果回写，让录像从“只能按时间查找的文件”转变为“可被语义检索和规则消费的事件资产”。\n方案链路：\n端侧摄像头将连续录像切片、事件抓拍图上传到 TOS 桶；\n桶上配置 SenseFlow 智能安防模板，按前缀或事件目录等条件限定处理范围；\nSenseFlow 对新增对象自动执行视频截帧、图片 / 视频理解、文本向量化和标签索引；\n客户平台可在不改变原有录像回放能力的前提下，增加自然语言检索、事件筛选、每日摘要和智能问答入口。\n4.2 媒资管理 —— 素材入库即完成打标、派生与检索\n短剧、媒资、UGC 等平台的素材库规模动辄百万乃至千万级，字幕擦除、抽帧、转码、以文搜视频均是日常刚需。SenseFlow 的\n媒资管理模板\n让素材在入库的同时即完成加工：\n① 内容感知\n文档、图片、视频一经写入即触发多模态理解，沉淀语义与倒排索引。\n② 派生加工\n字幕擦除、转码、抽帧、语音识别等算子自动执行，产物落至指定路径。\n③ 语义检索\n一句话即可检索视频，亦可按字幕、OCR、标签、时间快速定位到可用片段。\n实践案例：短漫剧 Seedance 生成视频自动处理\n短漫剧客户普遍使用火山方舟 Seedance 批量生成视频，随着生成的视频素材增多，制作团队也面临三个高频问题：\n控制素材生成成本：部分素材先以低画质产出，后续制作环节需要更高画质版本。\n部分素材自带字幕：如果仅为消除字幕而重新生成，会额外增加重新生成素材成本。\n素材快速检索复用：仅靠文件名和目录难以快速找到符合剧情、角色、场景或动作要求的素材。\nSenseFlow 将视频处理能力部署在 TOS 数据链路上，视频素材进入用户配置的桶后，按工作流自动调用相应算子并将处理结果回写，使素材从“生成后待人工整理的文件”转变为“可直接进入制作、可被语义检索的内容资产”。\n方案链路：\n客户业务系统调用火山方舟 Seedance 生成视频，通过 TOS 数据订阅将生成视频自动投递到客户 TOS 桶；\n客户按 TOS 桶、指定前缀或指定 ObjectSet 配置 SenseFlow 规则，使新增对象进入指定处理范围；\nSenseFlow 根据客户配置规则自动执行视频超分、字幕擦除、多模态理解与索引构建；\n处理后的视频自动回写至用户配置的路径，供后期制作平台进行选片、检索、剪辑和素材复用。\n4.3 自定义工作流 —— 算子像积木自由拼成处理链路\n当预置模板无法满足需求时，SenseFlow 还提供\n可视化的自定义编排\n：在画布上拖出算子节点并连线，自行搭建一条“输入源 → 算子编排 → 输出”的处理链路。\n算子库沉淀了大量常用算子，涵盖图片处理、视频处理、AI 理解、文档处理、向量化、生成、通知等多个类别，视频截帧、VLM 理解、OCR、字幕擦除、动图生成等均在其中。每个算子均可单独查阅 API 说明和调试，保存后即可被模板引用，用于建立规则。\n实践案例：具身智能训练的多模态数据处理及管理\n某具身智能客户是一家初创公司，大量精力花费在价值更高的模型训练调优中，而非数据处理和管理。通过使用 SenseFlow 自定义工作流，并结合火山引擎丰富的 AI 产品，实现数据的自动处理、灵活管理和使用。\n方案链路：\n客户在端侧集成 TOS 的 SDK，直接通过公网 / 专线将数据上传到 Media Bucket；\n部分 corner case 使用 Seedance 2.0 生成视频后，通过配置的数据订阅规则，将数据自动保存到 Media Bucket；\n在 Media Bucket 配置 SenseFlow 自定义工作流，由 VLM 进行打标，生成后续参与训练的截帧图片，并进行向量化数据索引与检索；\n员工通过火山引擎的 ArkClaw 对接 TOS 的 ContextBucket 和 VectorBucket，满足各开发者在特定业务场景下的数据检索诉求；\n企业自身的数据集平台通过对接 ContextBucket、 VectorBucket 、Media / Clip Bucket，实现训练数据集的高效管理和应用。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "irrelevant": 0.45,
+        "peripheral": 0.44,
+        "transfer_agent": 0.11,
+        "direct_local": 0,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.7,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.17,
+        "2": 0.74,
+        "3": 0.02,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.84,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.02,
+        "2": 0.09,
+        "3": 0.71,
+        "4": 0.13,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1,
+      "probabilities": {
+        "0": 0.59,
+        "1": 0.11,
+        "2": 0.1,
+        "3": 0.12,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.91,
+      "probabilities": {
+        "0": 0,
+        "1": 0.1,
+        "2": 0.89,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.94,
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.05,
+        "2": 0.09,
+        "3": 0.3,
+        "4": 0.46,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.55,
+      "probabilities": {
+        "0": 0.64,
+        "1": 0.21,
+        "2": 0.14,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6345,
+    "outputTokens": 173,
+    "totalTokens": 6518
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.31,
+        "relevance": 0.78,
+        "grounding": 0.72,
+        "decision_action": 0.33,
+        "evidence": 0.93,
+        "actionability": 0.29,
+        "anti_hype": 0.64
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179913597,
+                "endTime": 1791179913854,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.00026649",
+      "marketCost": "0.00026649",
+      "surchargeCost": "0",
+      "gatewayCost": "0.00026649",
+      "inferenceCost": "0.00026649",
+      "inputInferenceCost": "0.00026649",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8YBBTPVDEWVPK9E8124Z"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:33 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::68gt8-1791179913567-d456e1c52aaf"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "irrelevant": 0.45,
+            "peripheral": 0.44,
+            "transfer_agent": 0.11,
+            "direct_local": 0,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.7,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.17,
+            "2": 0.74,
+            "3": 0.02,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.84,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.02,
+            "2": 0.09,
+            "3": 0.71,
+            "4": 0.13,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1,
+          "probabilities": {
+            "0": 0.59,
+            "1": 0.11,
+            "2": 0.1,
+            "3": 0.12,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.91,
+          "probabilities": {
+            "0": 0,
+            "1": 0.1,
+            "2": 0.89,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.94,
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.05,
+            "2": 0.09,
+            "3": 0.3,
+            "4": 0.46,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.55,
+          "probabilities": {
+            "0": 0.64,
+            "1": 0.21,
+            "2": 0.14,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6345,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.31,
+            "relevance": 0.78,
+            "grounding": 0.72,
+            "decision_action": 0.33,
+            "evidence": 0.93,
+            "actionability": 0.29,
+            "anti_hype": 0.64
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179913597,
+                    "endTime": 1791179913854,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.00026649",
+          "marketCost": "0.00026649",
+          "surchargeCost": "0",
+          "gatewayCost": "0.00026649",
+          "inferenceCost": "0.00026649",
+          "inputInferenceCost": "0.00026649",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8YBBTPVDEWVPK9E8124Z"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:33.122Z"
+  }
+}

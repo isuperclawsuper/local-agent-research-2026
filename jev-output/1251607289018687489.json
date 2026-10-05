@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1251607289018687489",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "ADrive 智能网盘：让 ArkClaw 的每一份产物，从「临时文件」变成「长期资产」",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247521375&idx=2&sn=0f9e1f1fc0b9613c809dd6014c82e3ca",
+      "date": "2026-08-19T10:04:00.284Z",
+      "chars": 2578,
+      "text": "火山引擎存储\n2026-08-19 18:04\n北京\nAgent 真正开始工作后，\n文件成为新的断点\n让 ArkClaw 完成一次调研类任务，交付结果往往不只是一段文字。报告、图表、原始数据，乃至后续可继续运行的脚本，都可能同步产出。\n对 Agent 来说，任务已经完成；但落地到真实业务，围绕这些文件的工作才刚刚开始。报告需要二次修改，图表要放进汇报材料，原始数据可能是下一次分析的输入，团队成员还要接手、分享和归档。单次任务产出的文件，串联着后续一系列工作。\n我们逐渐意识到：当 Agent 从“回答问题”走向“完成工作”，最先暴露的基础设施问题之一，可能不是模型能力，而是文件缺少长期归属。\nAgent 要连续工作，需要的不是一次性文件输出，而是一套完整的文件基础设施。\n模型解决思考，工具解决行动；当 Agent 真正开始工作时，需要有自己的文件系统。\n这里提到的“文件系统”不只是提供存储容量，还至少要解决四个问题：\n持久工作空间\nAgent 可以直接读取和写入\n清晰界定身份与权限边界\n文件可检索、可读取、可继续加工\nAgent 只有在新一轮任务中找回并继续使用上一轮的结果，才算真正具备连续工作的能力。\n基于 ArkClaw 的实践，我们打造了 ADrive\nADrive 是一款面向 Agent 设计的智能网盘。它为 Agent 提供可长期使用的文件空间，同时让人（Human）在熟悉的文件管理界面中查看、整理和继续使用同一份数据。\n第一，产物生成后可直接沉淀\n。报告、图片、代码和数据不再只是某次任务的附属文件，而是被写入到明确的空间。任务结束后，Agent 仍然可以在后续工作中读取和继续加工，Human 也可以随时接手。\n第二，每份文件都有清晰的归属\n。ADrive 提供个人、团队和企业三类空间，分别存放私人文件、团队协作资料和企业公共资产。文件存放位置，决定了谁能访问、谁可以管理，不会出现所有产物混在一起的情况。\n更重要的是，Agent 与 Human 使用的是同一份文件\n。Agent 负责生成和处理，Human 负责确认、编辑和交付，省去下载、转发、重新上传这类反复搬运操作。ADrive 由此成为双方共同工作的空间，而非存放任务结果的“仓库”。\nADrive 文件管理界面：\n个人 / 团队 / 企业三类空间，产物归属一目了然\n将 ADrive 嵌入 ArkClaw 的工作流，\n而非置于流程之外\nADrive 在 ArkClaw 中承担的角色，可以用四步来理解：\n生成时直接沉淀、下一次继续使用、需要时重新找回、共享给 Human 继续协作。\n第一步：生成时直接沉淀\n用户说：“帮我生成一张小狗的图片，存入我的个人网盘，图片名称为 dog.png。”ArkClaw 完成图片生成、命名和写入，结果直接进入 ADrive 的个人空间，不需要下载再上传一遍。\n这一步说明：产物可以在生成时直接进入长期空间。\n第二步：下一次任务继续使用\n用户再次下达指令：“帮我读取个人网盘中工作报告通用模板.md 的内容。”ArkClaw 读取完整内容，并以它为基础继续生成新的工作结果。上一轮留下的文件，由此成为下一轮可以直接使用的素材。\n这一步说明：文件保存之后，仍可重新进入 Agent 的工作流。\n第三步：需要时重新找回\n文件数量变多之后，用户常常记不住准确的文件名。ADrive 支持按内容含义进行语义检索，就能找到文件；比如，当用户输入“小狗相关的图片”，系统可以定位此前由 ArkClaw 生成的那张“dog.png”图片。\n这一步说明：历史产物不仅被保存，还能被找回和复用。\n第四步：共享给 Human，继续协作\n文件的价值，不止于被 Agent 找回，也在于被个人和团队继续使用。Agent 生成或更新文件后，Human 可以直接查看、编辑和交付；Human 补充的信息，Agent 也能继续处理。\n文件协作只是基础，要让协作持续运转，还需要权限清晰、边界明确。ADrive 提供个人、团队、企业三类空间，覆盖了从个人到团队再到企业的不同协作边界。\n空间类型\n可访问范围\n典型用途\n个人网盘\n仅本人可访问\n存放个人工作文件与草稿\n团队网盘\n团队 / 部门成员可访问\n团队内部协作与资料沉淀\n企业网盘\n全体企业成员可访问\n企业公共文件与协作文档\n三类空间遵循同一个原则：不是把文件从 Agent“转交”给 Human，而是双方始终共用同一份文件：\nAgent 负责执行，Human 负责判断与接管。\n这一步说明：文件可以从 Agent 的任务产物，进入 Human 与 Agent 持续协作的共同空间。\nAgent 将文件写入 ADrive，\nHuman 直接接管、查看并继续使用同一份数据\n从 ArkClaw 出发，走向更多 Agent 场景\n通过 ArkClaw 的实践验证：ADrive 把 Agent 产物从一次性文件变成有归属、可持续使用、Human 可接管的长期资产。\n这并非 ArkClaw 的独有需求。AI 创作平台需要隔离不同创作者的素材与产物，科技服务公司要管好不同用户和 Agent 的权限与存储容量，全球制造企业则要为员工的办公 Agent 配置独立空间，同时支持安全共享和团队协作。\n行业和业务虽不同，但需求高度一致：Agent 一旦进入生产环境，文件就不能只停留在一次会话里，必须能长期保存、随时找回、继续加工，并在清晰的权限边界内，由 Human 与 Agent 共同使用。ADrive 正是通过解决这些问题，让存储从一次任务的终点，变成下一次工作的起点。\n💡 从「生成即丢」到「生成即沉淀」，ADrive 让 ArkClaw 的每一份产物都拥有了归属、边界和协作方式——可保存、可访问、可共享、可治理。\n如果你的 Agent 产品正在处理大量文件，或已经遇到了产物保存、跨任务复用、语义检索和权限管理这类问题，欢迎申请体验 ADrive，与我们一起探索 Agent 文件基础设施的更多可能性。\n下一篇文章，我们会走进 AI 创作平台、科技服务公司和全球制造企业的 Agent 场景，聊聊不同行业各自面临的文件管理难题，以及 ADrive 如何提供对应解决方案。下期见。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.04,
+        "transfer_business": 0,
+        "transfer_agent": 0.76,
+        "irrelevant": 0.2
+      }
+    },
+    "relevance": {
+      "score": 1.83,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.13,
+        "2": 0.85,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.32,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.09,
+        "2": 0.45,
+        "3": 0.43,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.52,
+      "probabilities": {
+        "0": 0.47,
+        "1": 0.1,
+        "2": 0.01,
+        "3": 0.3,
+        "4": 0.12,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 1.69,
+      "probabilities": {
+        "0": 0,
+        "1": 0.31,
+        "2": 0.69,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 2.51,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.1,
+        "2": 0.3,
+        "3": 0.5,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "anti_hype": {
+      "score": 0.63,
+      "probabilities": {
+        "0": 0.51,
+        "1": 0.37,
+        "2": 0.11,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 4128,
+    "outputTokens": 172,
+    "totalTokens": 4300
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.7,
+        "relevance": 0.88,
+        "grounding": 0.61,
+        "decision_action": 0,
+        "evidence": 0.79,
+        "actionability": 0.57,
+        "anti_hype": 0.58
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179912316,
+                "endTime": 1791179912471,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000173376",
+      "marketCost": "0.000173376",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000173376",
+      "inferenceCost": "0.000173376",
+      "inputInferenceCost": "0.000173376",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8X3EJ0CC8YF1GRNEBGW8"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:32 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::8zd2g-1791179912294-5f4d62a12154"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.04,
+            "transfer_business": 0,
+            "transfer_agent": 0.76,
+            "irrelevant": 0.2
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.83,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.13,
+            "2": 0.85,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.32,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.09,
+            "2": 0.45,
+            "3": 0.43,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.52,
+          "probabilities": {
+            "0": 0.47,
+            "1": 0.1,
+            "2": 0.01,
+            "3": 0.3,
+            "4": 0.12,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 1.69,
+          "probabilities": {
+            "0": 0,
+            "1": 0.31,
+            "2": 0.69,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 2.51,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.1,
+            "2": 0.3,
+            "3": 0.5,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 0.63,
+          "probabilities": {
+            "0": 0.51,
+            "1": 0.37,
+            "2": 0.11,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 4128,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.7,
+            "relevance": 0.88,
+            "grounding": 0.61,
+            "decision_action": 0,
+            "evidence": 0.79,
+            "actionability": 0.57,
+            "anti_hype": 0.58
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179912316,
+                    "endTime": 1791179912471,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000173376",
+          "marketCost": "0.000173376",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000173376",
+          "inferenceCost": "0.000173376",
+          "inputInferenceCost": "0.000173376",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8X3EJ0CC8YF1GRNEBGW8"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:31.697Z"
+  }
+}

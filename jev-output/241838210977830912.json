@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "241838210977830912",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "TOS Vectors + TLS Trace：打造更高效、更智能的存储 SDK 工厂",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518408&idx=1&sn=e1e2a3a714eeec1e3072acb35fae2b64",
+      "date": "2026-02-04T09:07:00.608Z",
+      "chars": 6003,
+      "text": "原创\n火山引擎存储\n2026-02-04 17:07\n北京\n业务痛点\n随着 OpenAPI 生态的日益繁荣，为了提供极致的开发体验，火山引擎对象存储 TOS 面向 Java、Python、Go、C++、Rust 等十余种主流编程语言提供了全栈 SDK 支持。\n然而，多语言架构与多角色协作的内生复杂性，使得 SDK 的维护工作变得异常繁杂。\n尤其在 OpenAPI 持续迭代的背景下，任何细微的接口变更都会在下游引发连锁反应。若无法保障功能实现、技术文档与多技术栈的一致性，将直接折损用户体验。\n我们意识到，当看似简单的维护工作叠加了跨语言、跨版本的规模效应后，其复杂度已呈指数级上升。加之 TOS 涉及复杂的文件操作逻辑，传统的人工维护模式已难以维系日益增长的交付成本。\n随着大语言模型（LLM）推理能力的质变，其在自主决策与执行上的突破，为我们提供了新的解题思路。\n我们尝试通过 AI Agent，\n结合火山引擎对象存储 TOS 和日志服务 TLS 的产品能力，\n将碎片化的人力研发工作重塑为 AI 驱动的自动化生成流水线。以下将分享我们在这一转型过程中的实践与思考。\n技术选型\n在构建 SDK Agent 之初，我们深入调研了业界成熟的解决方案：从经典的 OpenAPI Generator、Swagger Codegen，到更现代的 AWS Smithy 和阿里云 TeaDSL，以及字节内部基于 IDL 的模板化工具。\n但在深入调研之后，我们发现：\n传统生成器擅长构建 API 的骨架，能够精准生成数据结构与基础 HTTP 请求定义。\n由于严格遵循预定义模板，传统生成器生成的代码往往带有浓重的机器味，缺乏目标语言应有的地道感，比如生成的 Python 代码还保有 Java 的过度封装。\n传统生成器的逻辑是静态固化的，面对特殊场景往往需要修改全局模板或 DSL，影响不可控。\n以 TOS Vector 的\ntagResource\n接口为例，该接口并不像常规接口那样直接透传参数，而是要求将\nregion\n、\naccountId\n和\nvectorBucketName\n组合成特定格式的\nresourceTrn\n路径参数。\n模板实现\nexportasyncfunctiontagResource\n(\nthis\n: TosVectorsClient,\ninput: TagResourceInput\n) {\nconst\n{ vectorBucketName, tags, accountID } = input;\nconst\nres = awaitthis.\nfetchVectors\n<\nTagResourceOutput\n>(\n'POST'\n,\n`/TagResource`\n,\n{},\n{},\n// ❌ 直接传递 vectorBucketName\n{\ntags,\nvectorBucketName,\n},\n{\nbucket\n: input.\nvectorBucketName\n,\naccountId\n: input.\naccountID\n}\n);\nres.\ndata\n= {};\nreturn\nres;\n}\nAI Agent 实现\nexportasyncfunctiontagResource\n(\nthis\n: TosVectorsClient,\ninput: TagResourceInput\n) {\nconst\n{ vectorBucketName, tags, accountID } = input;\n// ✅ 理解业务语义，拼接 resourceTrn\nconst\nresourceTrn =\n`trn:tosvectors:\n${\nthis\n.opts.region}\n:\n${accountID}\n:bucket/\n${vectorBucketName}\n`\n;\nconst\nres = awaitthis.\nfetchVectors\n<\nTagResourceOutput\n>(\n'POST'\n,\n`/tags/\n${resourceTrn}\n`\n,\n{},\n{},\n{ tags },\n{\nbucket\n: input.\nvectorBucketName\n,\naccountId\n: input.\naccountID\n}\n);\nres.\ndata\n= {};\nreturn\nres;\n}\n传统生成器只能进行机械的参数映射，无法理解这种隐性的业务规则。\n引入 AI Agent 后，模型能够精准理解业务语义，自动补全复杂的参数组装逻辑。这不仅确保了逻辑正确，更让生成的代码符合人类工程师的编码习惯。\nAI Agent 架构演进\n起初，我们尝试将全量文档注入 Prompt，但受限于上下文窗口大小，模型频发幻觉，证实了单纯依赖 Prompt Engineering 难以应对大批量、高精度的代码生成任务。\n这促使我们引入 ReAct 范式，通过工具调用能力连接外部知识库。然而，我们发现 ReAct 虽然增强了单点执行力，却在处理复杂需求时缺乏全局观。\n为了解决这一痛点，我们实施了规划与执行解耦的策略：由 Planner Agent 先进行正交化的任务拆解，再交由执行层落地。但新的挑战随之而来——代码的可用性无法保障。于是，我们进一步引入了代码沙箱与反思机制，构建了自动化的审计修复闭环。\n最终，依托 LangGraph 的图编排能力，我们成功打造了一个集规划、执行、质检、修复于一体的全自动虚拟工程团队。\n核心组件\n协作机制\n规划与调度层：定策略\nPlanner Agent 负责整个流程的规划和调度者，它不负责具体代码的编写，而是负责识别并理解用户的意图，并指向预设的流程（如新接口生成 、已有接口迭代等）。\n在流程执行过程中，持续关注 SDK Agent 整体的任务状态和上下文，接收任务反馈，有条不紊地推进下一个环节。\n执行与生成层：做执行\n常见的策略有两种：动态生成任务和预定义工作流。\n动态生成任务的优势是灵活性高、通用性强，但可能会由于大模型的幻觉遗漏关键节点，影响最终效果。\n预定义工作流的优势是确定性强，尽可能避免大模型的非预期行为带来的影响。\n在 SDK Agent 的场景下，工作流程相对固定，我们对于工程的确定性要求更高，因此选择预定义工作流的方式。\n评估与反思层：控质量\n这部分是提升结果质量的关键，也是工作流得以闭环的关键。\n这一环节负责把控静态维度的内容质量，生成质量报告。\n对生成的 SDK 代码和文档中的示例代码进行语法、规范等方面的检查\n对生成的文档， 结合火山引擎规范进行文档内容的评估\n基础设施与记忆层：供基石\nSDK Agent 知识库是 Agent 实现自主学习与持续优化的知识中枢，它为上层各类 Agent 的决策与行动提供统一、可靠的上下文信息与高质量范例。\nCode Sandbox 则提供了一个隔离的、确定性的编译和运行环境，负责检查 Code Agent 产出的代码是否可运行以及是否能够通过单元测试验证。\n核心模块详解\nSDK Agent 知识库\nSDK Agent 知识库的核心是将分散在不同载体（如设计文档、历史代码、纠错记录）中的非结构化或半结构化知识，转化为 Agent 可理解、可检索的结构化记忆。\n能力的构建与维护主要依赖于一个周期性运行的数据处理流水线：\n知识获取：\n通过定时脚本扫描指定知识源，自动更新内容，确保知识的时效性。\n知识清洗：\n利用大模型对获取的原始文档进行分析、提取和转换。\n知识存储：\n将清洗后的知识存入\nTOS Vector Bucket\n，能够低成本大规模管理向量数据。\n知识检索：\n为上层 Agent 提供 RAG 增强能力，提升生成内容的准确性和一致性。\n在构建 SDK Agent 的存储模块时，我们需要处理大量且分散的非结构化数据，如设计文档、历史代码、经验记录。\n面对这种高吞吐写入、长周期存储、按需检索的场景，传统的存算一体向量数据库往往存在资源闲置和成本过高的问题。\n我们最终选用了\nTOS Vector\nBucket\n作为知识库的底层设施，主要基于以下考量：\n架构层面的天然契合：\n流水线产出的是清洗后的各种形式的知识，TOS + TOS Vector\nBucket\n的原生融合架构，让我们无需将传统文件和向量数据割裂存储。它将传统的数据保存直接升级为数据理解，极大地简化了数据一致性管理的复杂度。\n极致的成本效用与弹性：\n对于 SDK Agent 知识库这类“冷热不均”的数据（历史归档 + 增量更新），TOS Vector\nBucket\n基于 Serverless 的架构优势明显。它实现了存储与计算的彻底解耦，我们不再需要为偶发的检索请求预留昂贵的计算实例，而是按实际的数据存储量和检索量计费。相比传统方案，这种模式预计能将长期存储成本降低 90% 以上，非常适合构建 Agent 的长期记忆。\n对 RAG 的精准支持：\n在实际的检索链路中，我们利用 TOS Vector\nBucket\n的元数据过滤能力，将知识清洗阶段提取的信息直接作为过滤条件。这使得 Agent 在进行上下文召回时，不仅能基于语义相似度，还能结合业务属性进行精确筛选，从而显著提升了 RAG 输出的准确性。\n借助 TOS Vector\nBucket\n，我们最终构建了一套低成本、高弹性的分层记忆基础设施，确保我们的 SDK Agent 能够以极低的成本，持续吞吐和记忆不断增长的知识。\n评估与反思\n评估与反思能力是 Agent 系统实现最终产物质量保障与自主进化的关键。\n这一机制包含两个相互协作的维度：\n评估：\n负责静态维度的质量把控。它通过一系列预定义的规则、规范和静态分析工具，对 Agent 生成的最终产物进行全面检查。其核心是在不实际运行产物的情况下，发现其中潜在的、规范层面的问题。\n反思：\n负责动态维度的故障修复与策略优化。当静态评估发现问题，或在动态验证（如单元测试）中产物执行失败时，反思机制会被激活。它深入分析失败的日志、错误信息或评估报告，探究问题的根源，并生成具体的修复计划或改进策略，指导 Agent 在下一轮迭代中进行修正。\n在 SDK Agent 中，评估与反思机制是确保代码质量的最后一道、也是最重要的一道防线。\n执行者 - 评估者架构\n执行者 - 评估者是一种多 Agent 协作时的自我校准与质量保证机制。\n通过引入一个独立的评估者角色，与执行者形成一个紧密的反馈循环，从而在任务执行阶段，确保产出物的高质量。\n该机制由两个协同工作的角色构成：\n执行者：\n负责执行具体任务的 Agent，它的职责是完成给定的指令。\n评估者：\n负责质量控制的 Agent，它的职责是像一位严谨的评审员，依据一套预定义的、多维度的评估标准，对 执行者的产出进行打分和审查。\n这个执行、评估、反馈、修正的循环会持续进行，直到评估者的评分达到预设的质量阈值（如 95/100），或达到最大循环次数。\n评估者不仅给出分数，更重要的是会生成具体的、可操作的优化建议，指导执行者在下一轮迭代中进行精确修正。\n过程中的失败经验将沉淀至 SDK Agent 知识库，让 Agent 越来越聪明，完成自主进化。\n动态观测\nSDK Agent 业务具有长链路、多交互的特征。传统监控模式下的日志往往是碎片化、离散的，难以直观还原复杂的任务执行全貌与上下文。因此，我们需要具备全链路动态观测的能力，将零散的数据串联成清晰的执行轨迹，从而有效支撑系统的稳定性监控、性能瓶颈定位、问题排查及功能迭代。\n依托存储团队在日志服务 TLS 上的深厚技术积累，我们构建了一套低开销、非侵入式的观测能力，实现了对 SDK Agent 全生命周期的日志采集。\n针对 Agent 场景，TLS 优势如下：\n大容量吞吐能力：\n单条日志支持超大体积上报，有效覆盖 LLM 场景下长上下文与复杂中间态的完整记录需求。\n标准生态兼容：\n全面兼容 OpenTelemetry 协议，能够无缝接入现有的观测体系，实现各类 Trace 数据的统一上传与消费。\n即时可视化：\n提供开箱即用的仪表盘模板，将抽象的链路数据瞬间转化为直观的业务洞察，极大地降低了业务看板搭建成本。\n以一次真实的 SDK Agent 任务为例，借助 Trace 视图，我们成功捕获了三个关键洞察：\n精准故障归因：\nTrace 清晰回溯了第一次代码生成失败的根因为未通过单元测试，报错堆栈一览无余。\n性能瓶颈锁定：\n时间轴数据显示，Code Sandbox（代码沙箱）占据了主要耗时，这为后续的性能优化指明了确切方向。\n自愈能力实证：\n我们完整观测到了 Agent 在评估失败后，触发反思机制并自主完成代码修复的全过程。\n这一案例证明，日志服务 TLS 不仅记录了数据，更让 Agent 的各个环节都具备\n可查询、可解释、可优化\n的能力。\n效果评估\n任何系统的演进都离不开高质量的反馈闭环。为了验证 SDK Agent 在真实场景下的表现，我们搭建了一套\n标准化\n的静态自动化评估流水线。\n该体系通过构建覆盖多种场景的测评数据集，在代码生成、文档编写等核心环节设立了严格的质量门禁。这使得我们在快速迭代的同时，能够客观验收每一次 Prompt 调优或架构升级的实际收益，避免盲目改进。\n落地效果\nAPI 代码和文档的生成效果上来看，质量评估报告显示生成结果分数在 90 - 95 分的高位区间，代码无人工修改采纳率平均值为\n93.84%\n。这意味着绝大多数生成的代码达到了直接可用的生产级标准。\nSDK Agent 建设至今，SDK Agent 帮助对象存储 TOS 累计完成 100+ 个 API 及 180+ 个配套文档的交付，帮助日志服务 TLS 累计完成 170+ 个 API 补齐和 80+ 存量 API 的问题修复。整个过程人工介入率不足 10%，累计节省人力成本超 300 人天。\n凭借这一能力，我们成功助力某头部车企项目，在保障高质量交付的同时，将原本“月级”的迭代周期大幅压缩至“周级”。\n未来展望\n回溯 SDK Agent 的演进之路，我们不仅收获了一款解决研发痛点的工具，更成功验证了一种全新的研发范式：\n将 LLM 的“概率性创造力”与工程体系的“确定性约束”深度融合，构建出真正可信赖的自治系统。\n展望未来，我们会进一步探索 SDK Agent 的能力边界，在持续降低人工介入成本的同时，拓展对更多编程语言与云产品的覆盖边界。通过这一范式的普及，以极致的研发效能重塑产品交付体验，为客户创造更长远的价值。\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "transfer_business": 0,
+        "irrelevant": 0.2,
+        "peripheral": 0,
+        "transfer_agent": 0.8,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.87,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.06,
+        "2": 0.9,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 2.55,
+      "probabilities": {
+        "0": 0.19,
+        "1": 0.06,
+        "2": 0.09,
+        "3": 0.35,
+        "4": 0.31,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 1.41,
+      "probabilities": {
+        "0": 0.57,
+        "1": 0.06,
+        "2": 0.01,
+        "3": 0.18,
+        "4": 0.13,
+        "5": 0.05
+      }
+    },
+    "evidence": {
+      "score": 3.71,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.05,
+        "3": 0.19,
+        "4": 0.76,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.41,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.03,
+        "2": 0.03,
+        "3": 0.23,
+        "4": 0.56,
+        "5": 0.08
+      }
+    },
+    "anti_hype": {
+      "score": 2.91,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.04,
+        "2": 0.11,
+        "3": 0.65,
+        "4": 0.18,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.92,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6751,
+    "outputTokens": 172,
+    "totalTokens": 6923
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.75,
+        "relevance": 0.91,
+        "grounding": 0.28,
+        "decision_action": 0.06,
+        "evidence": 0.81,
+        "actionability": 0.51,
+        "anti_hype": 0.71
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179937532,
+                "endTime": 1791179937676,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000283542",
+      "marketCost": "0.000283542",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000283542",
+      "inferenceCost": "0.000283542",
+      "inputInferenceCost": "0.000283542",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9NQCB4XJBKR1X97036C4"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:57 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::txhxd-1791179937478-f5165f9d3a0f"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "transfer_business": 0,
+            "irrelevant": 0.2,
+            "peripheral": 0,
+            "transfer_agent": 0.8,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.87,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.06,
+            "2": 0.9,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 2.55,
+          "probabilities": {
+            "0": 0.19,
+            "1": 0.06,
+            "2": 0.09,
+            "3": 0.35,
+            "4": 0.31,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 1.41,
+          "probabilities": {
+            "0": 0.57,
+            "1": 0.06,
+            "2": 0.01,
+            "3": 0.18,
+            "4": 0.13,
+            "5": 0.05
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 3.71,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.05,
+            "3": 0.19,
+            "4": 0.76,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.41,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.03,
+            "2": 0.03,
+            "3": 0.23,
+            "4": 0.56,
+            "5": 0.08
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.91,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.04,
+            "2": 0.11,
+            "3": 0.65,
+            "4": 0.18,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.92
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6751,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.75,
+            "relevance": 0.91,
+            "grounding": 0.28,
+            "decision_action": 0.06,
+            "evidence": 0.81,
+            "actionability": 0.51,
+            "anti_hype": 0.71
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179937532,
+                    "endTime": 1791179937676,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000283542",
+          "marketCost": "0.000283542",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000283542",
+          "inferenceCost": "0.000283542",
+          "inputInferenceCost": "0.000283542",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9NQCB4XJBKR1X97036C4"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:56.910Z"
+  }
+}

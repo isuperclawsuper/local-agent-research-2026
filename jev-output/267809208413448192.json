@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "267809208413448192",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "赛博鸡生蛋，7小时用Claude Vibe Coding一个Mini-Claude",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559624&idx=1&sn=fc5df385231f0b0418ecfd127158faf2",
+      "date": "2026-04-17T00:30:00.725Z",
+      "chars": 8383,
+      "text": "原创\n诚昊\n2026-04-17 08:30\n浙江\n阿里妹导读\n文章内容基于作者个人技术实践与独立思考，旨在分享经验，仅代表个人观点。\n本文章是小白向文章, 面向想要了解或者自己动手验证 Coding Agent 行为逻辑的技术/非技术同学, 使用Vibe Coding的方式, 参考Claude实现一个精简的Mini-Claude。\n一、背景\n最近，Vibe Coding 的风头正盛，无数技术与非技术背景的开发者纷纷投身其中。然而，对于 Coding Agent 背后真实的交互机制——例如 Agent Loop、ReAct 等核心理论，纸上得来终觉浅。于是我决定亲手实践，直接调用原始的 LLM API，亲身感受一次 Coding Agent 的完整行为链路。\n之前看到一篇文章受到启发, 决定用Vibing Coding, 模拟\nClaude\n, 实现一个小粒度功能的\nMini-Claude\n。\n二、工程简介\nMini-Claude\n是模拟Claude CLI给Coding LLM发送API请求, 然后自己实现CLI交互, Chat交互, Tool调用循环, 请求上下文组装等基本的Coding Agent的能力, 实现构建一个轻量版的Copilot能力; 整个开发过程，我特意安排在下班后的三个夜晚进行。利用碎片化的时间一点点打磨，累计投入的开发时间甚至不足 7 小时。\n2.1 代码下载\nhttps://github.com/q43607238/mini-claude\n工程内部的docs文件包含关键交互代码的详细解读, 并且都配有保姆级别的细致注释, 阅读起来轻松易懂。\n2.2 准备工作\n安装node环境: 已经安装过\nClaude\n的可以跳过这个步骤,我们就不过多赘述了;\n配置ApiKey & 选择模型:\ncd\n<yourProjectPath>/src/\n# 首次启动, 会提示在用户目录创建好了工作目录~/.mini-claude 和配置文件 ~/.mini-claude/mini-claude-config.json\nnode app.js\n# 这时候将你的baseUrl和ApiKey填入Config的对应位置\nvim ~/.mini-claude/mini-claude-config.json\n# 重新启动, 展示出了mini-claude字样则启动成功, 可以开始正常的CLI使用了\nnode app.js\n配置参考:\nmodel:\nkimi-k2.5\n,\nGLM-5\n等等\nbaseUrl: kimi官方\nhttps://api.kimi.com/coding\n{\n\"apiKey\"\n:\n\"你的API KEY\"\n,\n\"model\"\n:\n\"\"\n,\n\"thinking\"\n:\n{\n\"enabled\"\n:\ntrue\n,\n\"type\"\n:\n\"adaptive\"\n},\n\"baseURL\"\n:\n\"\"\n,\n\"systemPrompt\"\n:\n\"你是一个AI编程助手\"\n// 可以自定义你的system prompt\n}\ndashboard安装node_module:\ncd\n<yourProjectPath>/src/dashboard\n# 下载依赖\ntnpm install\n# 下载完毕后, 就可以启动dashboard页面拉\nnpm run dev\n2.3 实际演示\n1.“基础”任务：修改指定代码\n2.“进阶”任务：修改批量代码\n3.“高阶”任务：使用dashboard查看session日志\n三、开发前置准备\n第一步：强烈安利安装\ncc-viewer\n, 现在可以直接抓包看到 Claude 请求的明文数据。\n第二步：准备好自己的\nClaude\ncoding模型, 这里我采用的是KIMI官方的\nKIMI 2.5\n, 作为开发主力。\n四、开发流程\n接下来,我们从最底层的工程结构开始, 构建起\nMini-Claude\n的整体框架; 整体思路遵循prompt的大方向, 按照这个顺序, 不仅能够更好地保持各项原子能力的稳定, 也能有效降低整体出错的风险。\n4.1 打通LLM API调用\n第一步, 我们通过JS自行实现一个针对KIMI的调用, 旨在打通最基础的请求逻辑：\n使用\ncc-viewr\n可以抓取到\nClaude\n的请求, 同样可以喂给Coding Agent;\n具体代码可访问文末\n代码学习\n链接查看。\nPrompt:\n现在我要求你使用JS生成一个对KIMI的大模型接口调用, 消息格式参考\nAnthropic_Messages\n格式, BaseUrl是\nhttps://api.kimi.com/coding/v1/messages?beta=true\n, 请求明文如下\n生成完毕后, 可以让\nClaude\n生成一个针对各种返回逻辑的测试。\nPrompt:\n现在我要求你针对kimi-api.js写一个全面的测试, 测试各种请求逻辑: simple chat, stream chat, tool use response, 重点关注流式是否可以正常消费, tool use是否能合理识别到tool use, 然后mock下tool调用\n测试已基本完成，与后端接口的调用链路畅通无阻, 但有一个细节需要注意：header中要模拟\nClaude\n请求的header, 具体可以使用\ncc-viewer\n获取, 因为Coding Plan的KIMI后端会校验你的请求是否自范围内的Coding CLI/ IDE。\n当前工程结构：\nproject/\n└──\nsrc\n/\n└── kimi-api\n.js\n4.2 完成tool use的调用\nTool use 基本构成了 Coding Agent 实现编程能力的核心逻辑，因此在这一阶段，我们需要让 Agent 具备对工具的实现与调用能力。\nPrompt:\n现在我要你实现一个tool的实现, 实现Write(创建, 全量写入文件), Read(读取文件), Exec(执行bash指令) 3个工具; 实现了tool后, 修改之前的api测试demo, 让之前mock的tool调用, 实际执行tool的执行, 返回tool执行结果给我;\n至此基础测试已圆满收官, 验证tool的实现没有问题,值得一提的是在构建工具描述时, 直接询问\nClaude\n自身具备哪些工具能力，随后，再指令Coding Agent用JS精准复刻并实现相应功能;\n当前工程结构：\nproject/\n└──\nsrc\n/\n├── kimi-api\n.js\n└── tool\n.js\n4.3 完成对话的组装和tool call循环\n实际上对于LLM来说, 每一次的api请求都是无状态的, 它不存储历史会话, 所以对话的组装需要我们自己进行处理, 这里要做一个manager来维护session对话和组装system prompt和message;\n同时, 要让Coding Agent顺利完成编程任务, 本质上就是一个不断 \"读 -> 改 -> 写 -> 读 -> 改 -> 完成目标\" 的循环过程;\n接下来我们将聚焦两大核心功能:\n核心1：\n消息的组装, 存储历史message, 每次将工具调用, 上一轮的LLM response, 拼接到message数组的最后面, 保持前缀不变, 这样才可以用命中KV Cache;\n核心2：tool loop的处理;\nPrompt:\n现在我要你实现一个manager的实现, 它接收用户的文本, 拼接到请求的message信息, 如果是文本回复, 就直接回复, 如果是工具调用, 就先把调用结果返回给LLM, 完成工具Loop, 直到LLM不返回工具调用, 再把文本结果返回给用户;\n在tool loop的处理上, 我投入了相当多的精力进行打磨, 不过整体思路并不复杂：可以通过观察 KIMI 返回的 API 报错信息，来判断是否存在参数缺失或传递不完整的情况。例如我就碰到过一个典型错误\"当带thinking的tool调用时, 下一次Request必须带上thinking的部分信息\", 其实这类问题交给\nClaude\n持续试错和调整, 就可以顺利完成修改完成;\n当前工程结构：\nproject/\n└──\nsrc\n/\n├── kimi-api\n.js\n├── tool\n.js\n└── session-manager\n.js\n4.4 实现可视化CLI界面\n该界面模块可采用独立开发策略, 暂时无需考虑和session-manager的联动, 类似于我们的前后端独立开发~\n这种界面的prompt就见仁见智了, 完全可以根据个人偏好灵活定制。只要能够实现基本的进入和退出功能，这一阶段的目标就算达成了;\nPrompt:\n现在我要你实现一个CLI的实现, 先简单实现用户执行CLI进入CLI界面, 双击Ctrl + C退出, /quit, /clear等命令...\n当前工程结构:\nproject/\n└──\nsrc\n/\n├── cli\n.js\n├── kimi-api\n.js\n├── tool\n.js\n└── session-manager\n.js\n4.5 绑定CLI和Session-Manger\n这一步让我们的\nMini-Claude\n终于已经初具雏形啦~ 它已经可以丝滑得进行终端交互了, 接下来就是持续优化过程, 过程中记得让session-manager把每一次的请求和LLM response信息都储存到一个session文件里, 以便后续我们可以实现快速排查问题哦。\nPrompt:\n修改CLI的实现, 当用户回车发送消息的时候, 调用session-manager拼接请求给LLM, 接收到返回或者工具调用结果的时候, 在CLI上展示出来; session-manager把每一次的请求和LLM response信息都存到一个session文件里。\n当前工程结构:\nproject/\n└──\nsrc\n/\n├── cli\n.js\n├── kimi-api\n.js\n├── tool\n.js\n└── session-manager\n.js\n4.6 优化CLI展示\n这一步的核心优化在于 CLI 的展示效果，鉴于LLM返回的结果大多为是markdown形式，所以我们需要额外增加一层 Markdown 渲染处理。该渲染逻辑同样可交由\nClaude\n实现。\nPrompt：\n新增CLI的对LLM文本回复的渲染, 其中优先渲染除了表格之外的行内代码样式, 待渲染结果长度定下后, 再渲染表格的样式\n这一步也是一边走一边调试，不断踩坑进步的过程, 表格部分尤其让人头疼, 因为有些LLM的回复在表格里也有行内代码样式, 如果先渲染表格再渲染行内代码, 长度就会发生变化, 这样展示出来的表格就彻底乱套了XD\n当前工程结构：\nproject/\n└──\nsrc\n/\n├── cli\n.js\n├── kimi-api\n.js\n├── tool\n.js\n└── session-manager\n.js\n4.7 重构项目结构(重要)\n此刻虽然核心能力已初步完备, 但是代码已经“长的不忍直视了”—— 动辄几千行, 一个 JS 文件里还混杂着多种能力，重复定义随处可见。这个时候，适当的停下来重构一个AI Native项目就显得十分重要! 你可以选择完全交由 LLM 决定如何分层与重组，但我更倾向于结合自己的开发经验，采用 MVC 结构来重新梳理这个小而杂的项目。这样不仅结构更清晰，也能让后续的优化和扩展更顺畅。\nPrompt：\n现在我想重构这个工程, 我觉得可以采用MVC架构, 你先给我一个拆分方案, 先不要改代码。\n在直接执行改造前, 最好先让LLM给出一份方案, 经过充分的确认后再按照方案执行, 这样能够有效减少LLM“乱搞事”的情况; 这套思路与“\nSSD\n驱动编程”等理念有异曲同工之妙, 所以在讨论过程中随时输出自己的观点就显得尤为重要，这样可以确保设计方向与我们预期一致。\nPrompt：\n嗯, 把tool层里面的工具实现也拆成每个小JS文件... 好, 现在开始改代码\n优化后, 我有了一个相对明朗清晰的工程结构;\n当前工程结构：\nproject/\n└── src/\n├── app.js\n# 应用程序入口，初始化并协调View层和Controller层\n├── controllers/\n│ └── conversation/\n│ └── manager.js\n# 对话管理控制器，维护对话状态、流程控制、Tool use循环编排\n├── models/\n│ ├── api/\n│ │ └── llm-client.js\n# LLM API原生调用封装，支持system prompt、tools、stream模式\n│ ├── storage/\n│ │ ├── index.js\n# 存储模块入口，导出SessionStorage\n│ │ └── session-storage.js\n# 会话存储模块，负责会话文件的创建和管理、增量追加写入\n│ └── tools/\n│ ├── index.js\n# 工具模块入口，导出所有工具定义和处理器，执行工具调用分发\n│ ├── definitions.js\n# 工具定义集合，导出所有可用于LLM调用的工具定义\n│ ├── handlers/\n│ │ ├──\nexec\n.js\n# Bash命令执行工具，用于执行shell命令并返回结果（带安全检查）\n│ │ └── file.js\n# 文件操作工具，用于读取、写入、编辑文件\n│ └── security/\n│ └── validator.js\n# 命令安全验证模块，验证bash命令是否包含危险操作\n└── views/\n├── cli/\n│ ├── index.js\n# CLI视图层主类，负责用户界面、输入输出、事件展示\n│ ├── display.js\n# 显示模块，负责Logo、帮助信息、提示符等界面元素\n│ ├──\ninput\n.js\n# 输入处理模块，负责命令补全、Tab补全、输入捕获\n│ └── loading.js\n# Loading动画和进度显示模块\n└── renderers/\n└── markdown.js\n# Markdown渲染器，将Markdown转换为ANSI转义码格\n4.8 优化冗余逻辑(重要)\n在项目结构基本搭建完毕后, 最终还需对代码进行清理消除冗余内容，并在格式与写法层面加以优化，毕竟AI生成的代码, 最终还是要给人看的。在长期的AI Native项目的开发中, 由于上下文的不断累计, AI常常会忽略一些小细节, 导致出现方法命名不规范、逻辑相似代码重复定义等问题; 为了体验纯Vibe Coding, 我选择让一个完整的上下文贯穿始终，只由\nClaude\n做自动执行compact处理。但是在实际工作项目中, 我任然建议还是根据专家经验进行模块化处理, 约束AI的范围进行开发;\nPrompt:\n现在我需要你给我提供一个方案, 你需要仔细察看所有的逻辑, 优化冗余代码, 有一些命名和逻辑不匹配的, 或者有重复逻辑定义的代码, 都给我一个优化方案, 如果有我没提到的, 你认为可以优化的, 也一并列出来, 先不要改代码;\n在正式大刀阔斧改造前先输出完整方案, 经过多轮探讨和打磨后再动手执行;\nPrompt:\n好, 按照方案开干吧!\n4.9 构建一个dashboard可以分析session请求\n这个参考\ncc-viewer\n的形式, 简单实现一个读取本地文件, 并在前端渲染展示出来即可。\nPrompt:\n帮我实现一个前端, 使用react和antdesign, 实现用户点击解析session, 左侧tab显示具体请求摘要, 右侧显示选中的当前请求的详情, request, response, header和body, body要支持json折叠, body和header支持一键复制;\n和之前的工作相比, dashboard的实现简直就是小菜一碟, 访问\nhttp://localhost:5173/\n点击想要分析的文件时间戳\n五、总结\n5.1 完成工作\nMini-Claude\n实现了最基础的 Coding CLI 交互能力，包括 CLI 交互、LLM 交互及工具调用，形成了初步的闭环操作流程，并能够支持简单的 Tool Loop 机制以进行代码修改。\n5.2 一些TODO\nMCP / Skills\n:\n在理解tool的调用机制基础上, MCP 和 Skills 的实现方式与之类似, 通过抓包\nClaude\n可知，Skills的description是放在message数组的首位, 并以<system_reminder>标签包裹, 这和预先内置tools的描述本质上一致;\nClaude\n的具体提现方式是提供一个\nSkill\n的tool, 该工具以用户所选 Skill 名称为参数，其功能大致为读取\nSKILL.md\n的内容，以\"渐进式披露\"的方式, 将Skill预先放置好的脚本或prompt加载至上下文中;\n并发调用：\n我们时常可以观察到\nClaude\n能迅速完成多个文件的更新或查找操作, 通过\nMini-Claude\n的监控面板发现, 部分LLM的返回中,有时会包含多个tool_use的内容, 例如执行不同正则内容的bash find, 在当前\nMini-Claude\n我采用“循环进行tool_use调用”方式, 实际未来可优化为并行执行方式以提升效率;\n上下文处理\n: 目前\nMini-Claude\n尚未处理上下文窗口的问题, 如何有效地压缩上下文, 减少前文信息丢失, 是比tool loop更为关键且需深入研究的课题。\n5.3 一些思考\n到底如何转型AI开发, 把握住一个AI Native项目?\n回顾近半个月的深度实践里, “半自动开发+手动约束Coding Agent的职责范围+随时把控方向,”是我目前认为最高效稳妥的开发方式; 正如\nMini-Claude\n的开发流程一样, 每推进到一个关键节点, 就需要重整架构、梳理冗余代码、合并通用逻辑, 或许本质上LLM还是在进行“文字接龙”, 在当前阶段依然离不开程序员的审阅与干预;\n我一直听闻Opus 4.6表现卓越, 虽然因为预算有限还没有亲自体验, 但我推测这类模型在纯 AI Native 项目中的发挥空间应更为显著，反之对于一些遗留项目，如果试图引入 AI 进行改造，为使其理解复杂的历史包袱，半自动开发反而可能比全 AI 驱动更加高效。\n我主要从事 Java 业务开发,诚如业界大牛所言, Java的项目设计, 设计模式, 高内聚低耦合的业务共识, 可能反而会给LLM带来很多无用的上下文知识, 实际实践过程中我也深有体会;\nJava 依然是不可或缺的存在， Spring 全家桶在 Web 服务时代为开发者和服务稳定性都做出了巨大贡献。然而，站在 AI 原生开发的新时代路口，JS, Python与AI开发确实有天然的优势，写起来都更加流畅顺手。\n到底啥是Agent?\n纵观各家的Coding Agent和近期备受瞩目的OpenClaw, 将其抽丝剥茧来看, 其核心机制均可归纳为以下流程:\nWHILE\n(!LLM_STOP_TOOL_CALL()) {\nTOOL [] = GET_LLM_TOOL_CALL();\nRES[] = RUN_TOOL(TOOL);\nRETURN_TO_LLM(RES);\n}\n1.如何组装上下文；2.如何检索上下文；3.如何最大程度地保留上下文语义。\n包括OpenClaw这类系统, 也在探索如何更好地管理用户的长期上下文，实现持续的自我进化——这或许正是下一阶段 Agent 发展的关键课题。 既然\nMini-Claude\n已经诞生, 下一步我们或许可以尝试开发一个\nMini-Claw\n以进一步深入体验其上下文管理机制。 XD\n本文抛砖引玉, 作者也一直在学习中, 希望可以帮助到对Coding Agent底层逻辑想有些了解的同学。\n代码学习可参考：\nhttps://github.com/q43607238/mini-claude\n工具ccviewer安装：\nhttps://github.com/weiesky/cc-viewer\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.23,
+        "transfer_agent": 0.76,
+        "transfer_business": 0,
+        "peripheral": 0.01,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.75,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.17,
+        "2": 0.79,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.53,
+      "probabilities": {
+        "0": 0.73,
+        "1": 0.11,
+        "2": 0.11,
+        "3": 0.04,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.43,
+      "probabilities": {
+        "0": 0.79,
+        "1": 0.1,
+        "2": 0.02,
+        "3": 0.08,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.54,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.45,
+        "3": 0.55,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.82,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.01,
+        "4": 0.93,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 3.06,
+      "probabilities": {
+        "0": 0,
+        "1": 0.01,
+        "2": 0.13,
+        "3": 0.63,
+        "4": 0.23,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.93,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 8094,
+    "outputTokens": 172,
+    "totalTokens": 8266
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.69,
+        "relevance": 0.83,
+        "grounding": 0.65,
+        "decision_action": 0.72,
+        "evidence": 0.69,
+        "actionability": 0.87,
+        "anti_hype": 0.74
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179843398,
+                "endTime": 1791179843587,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000339948",
+      "marketCost": "0.000339948",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000339948",
+      "inferenceCost": "0.000339948",
+      "inputInferenceCost": "0.000339948",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A6SRH6QTPF4T77PD4A7VV"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:57:23 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::lm8lf-1791179843115-808c8faf802c"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.23,
+            "transfer_agent": 0.76,
+            "transfer_business": 0,
+            "peripheral": 0.01,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.75,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.17,
+            "2": 0.79,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.53,
+          "probabilities": {
+            "0": 0.73,
+            "1": 0.11,
+            "2": 0.11,
+            "3": 0.04,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.43,
+          "probabilities": {
+            "0": 0.79,
+            "1": 0.1,
+            "2": 0.02,
+            "3": 0.08,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.54,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.45,
+            "3": 0.55,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.82,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.01,
+            "4": 0.93,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.06,
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.13,
+            "3": 0.63,
+            "4": 0.23,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.93
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 8094,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.69,
+            "relevance": 0.83,
+            "grounding": 0.65,
+            "decision_action": 0.72,
+            "evidence": 0.69,
+            "actionability": 0.87,
+            "anti_hype": 0.74
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179843398,
+                    "endTime": 1791179843587,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000339948",
+          "marketCost": "0.000339948",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000339948",
+          "inferenceCost": "0.000339948",
+          "inputInferenceCost": "0.000339948",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A6SRH6QTPF4T77PD4A7VV"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:57:22.938Z"
+  }
+}

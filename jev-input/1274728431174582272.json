@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1274728431174582272",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "5 人 7 天干完 20 人数周的活：Spec-Driven Development 如何重新定义 AI 编程",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511376&idx=1&sn=24f1d3ed57ccb6b4faad4a1aaac091bd",
+      "date": "2026-09-04T10:08:00.534Z",
+      "chars": 13211,
+      "text": "王砚舒（彦纾）\n2026-09-04 18:08\n浙江\n关于 SDD，本文或许能提供一些经验和思考\n这是2026年的第\n58\n篇文章\n（ 本文阅读时间：约 20 分钟 ）\n前言：「5 人 7 天」 实验\n本文分享一个案例。\n5人、7天，用 Qoder 开发 QoderWork\n，完成了传统情况下需要 20 人数周的工作量。它的时间线值得逐日复盘：\nDAY 0：不写一行代码，只写 Spec。\n团队花了一整天做四件事：定义 MVP 边界、拆解模块、为每个模块撰写 Spec、将所有 Spec 汇入 Repo Wiki。这一天的产出是零行代码，但它决定了后面六天的一切。\nDAY 1-2：用 Qoder 完成架构开发。\n框架与容器同步开发。每个人都是 “Spec 工程师”，即定义代码应该长什么样的人；通过 Skill 驱动并行推进，Quest 模式同时执行多个开发任务。两天时间，系统骨架成型。\nDAY 3-4：Spec 迭代增量需求。\n发现新需求或 BUG？不用排期，立即写一个增量 Spec，委派 Quest 执行。AI 自动写代码并提交 PR，人负责 Review 与合并。单人日均处理多个 PR，效率抬升。\nDAY 5-6：打磨、Dogfooding。\n用 QoderWork 的早期版本测试 QoderWork 自身。发现问题就写 Spec，Quest 修复。这是一个自举式的正反馈循环。\nDAY 7：正式发布上线。\n七天，从零到一个可用的产品。\n这个案例之所以震撼，不是因为“AI 写代码很快”，快只是表象。真正值得追问的是：\n为什么 5 个人能驾驭 AI 同时推进这么多并行任务而不失控？\n答案藏在 DAY 0，那个看似 「什么都没做」的日子里，那一天写下的 Spec，就是整个项目的锚点。这套方法论有一个正式的名字：\nSpec-Driven Development（SDD）\n。\n01\nSDD 是什么：代码只是 Spec 的副产品\n1.1 一句话定义\nSpec-Driven Development：将规格说明（Specification）作为唯一真实来源（Single Source of Truth），代码作为其派生产物。\n用更直白的话说，就是\n先定义 WHAT，再让 AI 做 HOW。\n如果我们做过 API-First Development、Design by Contract、或者严格的 TDD，就会觉得 SDD 似曾相识。但 SDD 的核心差异在于，它是为\nAI 编程时代\n量身设计的工程方法。\n在传统开发中，Spec 写得好不好主要影响沟通效率；在 AI 编程时代，Spec 写得好不好\n直接决定代码质量\n。因为 AI 不会追问”这个边界情况怎么处理“，它只会按照用户给的上下文尽力推断。推断对了是运气，推断错了是 Bug。\n1.2 不是一个人的发明，而是一个时代的汇聚\nSDD 没有单一发明者。2025 年，多个方向同时收敛到了这个理念：\nKarpathy 的 Vibe Coding\n（2025.2.2）作为反面参照，暴露了 \"不管代码、只管 vibes\" 的致命问题，倒逼社区思考 \"AI 编程到底需要什么样的约束\"；\nGitHub 推出 Spec Kit\n，提供了 agent-agnostic 的 SDD 工具链；\nAWS 发布 Kiro\n，成为第一个内置 SDD 工作流的 IDE；\nFission-AI 的 OpenSpec\n，走轻量迭代路线；\n阿里的 QoderWork\n，通过 Qoder Quest 模式实践了 SDD 的规模化执行。\n这种多方同时推动的局面，说明 SDD 是 AI 编程发展到当前阶段的\n结构性需求\n。\n1.3 Microsoft 的那句点评\nMicrosoft 对 SDD 有一个精辟的评价，如下。\n\"SDD is version control for your thinking.\"\n传统的版本控制管理的是代码的演变历史，SDD 管理的是\n思考的演变历史\n：\n为什么做这个功能、边界在哪里、成功标准是什么。当代码可以被 AI 秒级重写时，真正有价值的是代码背后的决策。\n02\nSDD 完整流程拆解\n2.1四阶段模型\nSDD 的标准流程分为四个阶段：\nSpecify（规格定义）-> Plan（方案规划）-> Implement（代码实现）-> Validate（验证确认）\n阶段\n主导者\n核心产出\n关键动作\nSpecify\n人\nspec.md\n定义问题、边界、成功标准\nPlan\n人 + AI\nplan.md\n架构选型、模块划分、接口定义\nImplement\nAI\n代码 + 测试\n按 plan 逐任务实现\nValidate\n人 + AI\n测试报告\n自动化测试 + 人工 Review\n人机分工的核心原则：人定义 WHAT，AI 实现 HOW。\n在实践中，Specify 和 Plan 之间会有多轮迭代，Implement 和 Validate 之间也是持续循环的。\n2.2 三文件体系：Spec Kit 的核心设计\nGitHub 的 Spec Kit 提出了一个简洁的三文件体系：\nspec.md —— 需求规格\n这是「唯一真实来源」。它回答“做什么”和“为什么做”，不涉及“怎么做”。\n# Feature: 用户权限管理模块\n## Problem Statement\n当前系统缺乏细粒度的权限控制。所有用户要么是管理员（全部权限），\n要么是普通用户（只读权限）。产品团队需要支持至少 5 种角色，\n以满足不同部门的差异化需求。\n## Success Metrics\n-\n支持自定义角色，每个角色可配置不少于 20 种独立权限\n-\n权限校验 API 响应 P95 < 50ms\n-\n权限变更实时生效，无需用户重新登录\n-\n向后兼容：现有管理员/普通用户的权限行为不变\n## User Stories\n1.\n作为系统管理员，我可以创建自定义角色并分配权限组合\n2.\n作为部门主管，我可以将部门成员批量分配到指定角色\n3.\n作为普通用户，我的权限变更后无需重新登录即可生效\n## Acceptance Criteria\n-\n[ ] RBAC 模型支持角色继承（最多 3 层）\n-\n[ ] 单用户可拥有多个角色，权限取并集\n-\n[ ] 提供权限变更审计日志，保留 90 天\n-\n[ ] 权限校验支持通配符匹配（如\n`resource:*:read`\n）\n## Non-Goals\n-\n本期不实现跨组织的权限委托\n-\n不支持基于时间段的临时权限\n-\n不涉及 UI 层的权限管理界面（由前端团队单独出 Spec）\n## Constraints\n-\n必须兼容现有的 OAuth2.0 认证流程\n-\n权限数据存储使用现有 PostgreSQL 实例，不引入新的存储组件\n-\n权限模型设计需参考 AWS IAM Policy 语法规范\n我们需要注意这个 Spec 的几个特征，如下。\n成功标准是\n可测试的\n：\"\nP95 < 50ms\n\" 而非 \"系统应该很快\"；\nNon-Goals 明确划定了边界：告诉 AI \"这些不要做\"；\nConstraints 约束了技术选型：防止 AI 自作主张引入新组件。\nplan.md —— 架构方案\n基于 spec.md 生成的技术方案。这一步通常由 AI 起草，人负责审核修改。\n# Plan: 用户权限管理模块\n## Architecture Decision\n采用 RBAC (Role-Based Access Control) 模型，使用 Casbin 作为权限引擎。\n## Module Breakdown\n1.\n`permission-model`\n- 权限模型定义与 Casbin 适配层\n2.\n`permission-api`\n- RESTful API 层\n3.\n`permission-cache`\n- Redis 缓存层（解决 P95 < 50ms 要求）\n4.\n`permission-audit`\n- 审计日志模块\n## Interface Contracts\n### POST /api/v1/roles\n### GET /api/v1/users/{userId}/permissions\n### PUT /api/v1/roles/{roleId}/permissions\n（接口详细定义省略）\n## Risk Assessment\n-\n风险：角色继承层级过深可能导致权限计算性能下降\n-\n缓解：限制最大继承深度为 3 层，权限结果做预计算缓存\ntasks.md —— 任务清单\n将 plan 拆解为可执行的原子任务，每个任务对应一个可独立验证的交付物。\n# Tasks\n## Task 1: 数据库 Schema 设计\n-\n创建 roles、permissions、role\n_permissions、user_\nroles 四张表\n-\n支持角色继承的 parent\n_role_\nid 字段\n-\n验证：migration 脚本可在空库上成功执行\n## Task 2: Casbin 适配层\n-\n实现 RBAC 模型的 Casbin 配置\n-\n支持通配符匹配\n-\n验证：单元测试覆盖率 > 90%\n## Task 3: 权限校验 API\n-\n实现 GET /api/v1/users/{userId}/permissions\n-\n集成 Redis 缓存\n-\n验证：压测 P95 < 50ms\n（后续任务省略）\n2.3 constitution.md：不可变的项目原则\n除了三文件体系，Spec Kit 还引入了一个重要概念\nconstitution.md\n。这是项目级别的“宪法”，定义了不可违背的约束条件，所有 Spec 都必须遵守。\n# Project Constitution\n## Immutable Principles\n### 1. API Design\n-\n所有 API 遵循 RESTful 规范，版本化路径（/api/v1/...）\n-\n错误响应统一使用 RFC 7807 Problem Details 格式\n-\n所有 API 必须有 OpenAPI 3.0 文档\n### 2. Security\n-\n所有用户输入必须经过校验和清洗\n-\n敏感数据（密码、Token）禁止出现在日志中\n-\n数据库查询必须使用参数化查询，禁止字符串拼接\n### 3. Code Quality\n-\n单元测试覆盖率不低于 80%\n-\n所有公共方法必须有文档注释\n-\n禁止引入未经安全审计的第三方依赖\n### 4. Infrastructure\n-\n所有服务必须支持优雅关闭（Graceful Shutdown）\n-\n配置项通过环境变量注入，禁止硬编码\n-\n日志格式统一使用结构化 JSON\nconstitution.md 的价值在于，它把团队的技术决策固化为 AI 的「潜意识」。没有它，每个 Spec 都需要重复声明“要用参数化查”“要写单元测试”这些基本约束。\n03\nSpec 怎么写：好 Spec 与坏 Spec 的生死线\nSpec 写作是 SDD 中最关键、也最容易被低估的环节。经验印证了这一点——DAY 0 花整整一天写 Spec，正是因为\nSpec 的质量直接决定了 DAY 1-6 的效率\n。\n3.1 好 Spec 的六要素\n要素\n作用\n示例\nProblem Statement\n定义 \"为什么做\"\n\"当前系统不支持细粒度权限控制\"\nSuccess Metrics\n定义 \"做到什么程度算完\"\n\"P95 < 50ms，覆盖 20+ 权限类型\"\nUser Stories\n定义 \"谁在什么场景下用\"\n\"作为管理员，我可以创建自定义角色\"\nAcceptance Criteria\n定义 \"怎么验证\"\n\"单用户多角色，权限取并集\"\nNon-Goals\n定义 \"什么不做\"\n\"本期不做跨组织权限委托\"\nConstraints\n定义 \"技术约束\"\n\"必须兼容现有 OAuth2.0 流程\"\n3.2 好 Spec vs 坏 Spec：一组对比\n坏 Spec：\n系统需要一个快速的搜索功能。搜索结果应该相关且准确。\n界面要美观易用。\n这个 Spec 有四个致命问题：\n1.\n模糊\n——“快速”是多快？100ms？1s？10s？\n2.\n遗漏边界\n——搜索什么？全文？标题？支持模糊匹配吗？\n3.\n缺乏理由\n——为什么需要搜索功能？解决什么问题？\n4.\n混入了 HOW\n——“界面要美观”是 UI Spec 的范畴，不应出现在后端功能 Spec 里\n。\n好 Spec：\n## Problem Statement\n用户反馈在 10,000+ 文档的知识库中找到目标文档平均需要 3 分钟。\n目标是将查找时间缩短到 10 秒以内。\n## Success Metrics\n-\n搜索 API 响应时间 P95 < 200ms\n-\n搜索结果 Top-5 相关性准确率 > 85%（基于人工标注测试集）\n-\n支持中英文混合查询\n## Non-Goals\n-\n不实现语义搜索（本期仅关键词匹配 + 分词）\n-\n不支持搜索附件内容（仅搜索文档标题和正文）\n差异的本质：好 Spec 是可测试的，坏 Spec 是可解释的。\n「系统应该很快」给了 AI 无限的解释空间，它可能选择一个“对它来说够快”的实现。「P95 < 200ms」则是一个硬约束，AI 必须确保实现满足这个指标，否则就是 fail。\n3.3 粒度控制：一个实用的检验标准\nSpec 的粒度很难拿捏。太粗，AI 会自作主张填补大量细节；太细，本质上就是在写伪代码，失去了 SDD 的意义。\nSpec Kit 提出了一个优雅的检验标准：\n\"用不同技术栈实现这个 Spec，Spec 是否仍然有效？\"\n如果 Spec 写了“使用 Redis 的 ZSET 结构存储排行榜”，那它只对 Redis 方案有效，换成 PostgreSQL 实现就失效了。这说明把 HOW 混进了 WHAT。\n如果 Spec 写了“排行榜需支持实时更新，延迟不超过 1 秒，支持 Top-100 查询”，那无论底层用 Redis、PostgreSQL 还是自研存储，这个 Spec 都成立。这才是正确的粒度。\n当然，Constraints 部分可以出现技术约束，但那是“外部限制”（比如“必须使用现有 PostgreSQL 实例”），不是「实现方案」。\n3.4 淘特团队的实战经验\n淘特团队在实践 SDD 时发现一个重要规律：\nSpec 编写需要 3-5 次迭代才合格\n。\n第一版 Spec 通常问题百出，比如遗漏边界条件、成功标准模糊、Non-Goals 不够明确等。让 AI 基于第一版 Spec 生成 plan 之后再回头审视 Spec，往往能暴露出大量盲点。这个「Spec -> Plan -> Review Spec -> 修改 Spec -> 重新 Plan」的循环通常要跑 3-5 轮。\n这是把传统开发中 “开发到一半发现需求有问题”的代价前移到了成本最低的阶段，改一行 Spec 的成本远低于改一百行代码。\n04\n工具生态全景\nSDD 已经形成了一个快速发展的工具生态，以下是主要工具的对比。\n维度\nSpec Kit (GitHub)\nOpenSpec (Fission-AI)\nKiro (AWS)\nQoderWork (阿里)\n定位\nAgent-agnostic 框架\n轻量迭代工具\nSDD-native IDE\nQoder Quest 执行引擎\nAgent 支持\n8+ Agent\n25+ 工具\n内置 Agent\nQoder 生态\n核心特点\n三文件体系 + constitution\n轻量、快速迭代\n完整 IDE 集成\nSpec + Quest 并行执行\n适用场景\n通用项目\n小型快速迭代\nAWS 生态项目\n阿里生态项目\n学习曲线\n中\n低\n中\n中（需理解 Quest）\n核心理念\nSpec 即文档\nSpec 即对话\nSpec 即工作流\nSpec 即任务单\n4.1 各工具的差异化选择建议\n追求通用性\n：\n选 Spec Kit。它不绑定任何特定 Agent，支持 Claude、GPT、Gemini 等主流模型，三文件体系清晰易懂。43.7k Star 说明社区认可度高。\n追求轻量和速度\n：\n选 OpenSpec。它的核心理念是 \"Spec 不需要一步到位，可以在对话中迭代完善\"，对小型项目非常友好。\n在 AWS 生态内\n：\nKiro 是最省心的选择。SDD 工作流直接内嵌在 IDE 中，不需要自己搭建工具链。\nQoderWork 的 Quest 模式是最贴合 SDD 的执行引擎，「5 人 7 天」案例就是明证。Spec 写好后直接委派 Quest 执行，AI 自动写代码、提 PR、跑测试。\n05\n实战数据：成功与失败都摆上台面\n5.1 成功案例的硬数据\nAPI 变更效率提升\n一篇 arXiv 论文记录了金融领域的 SDD 实践：API 变更周期缩短\n75%\n。原因在于当 API 的 Spec 已经完整定义了接口契约、错误码、数据格式时，AI 可以直接生成符合 Spec 的代码，省去了大量的沟通和返工。\n代码错误率下降\n研究数据显示，人工精炼 Spec 可以将 LLM 代码错误减少\n50%\n。这说明好的 Spec 消除了 AI 的“猜测空间”，错误往往来自 AI 对模糊需求的错误推断。\nStripe 的规模化实践\nStripe 通过 Harness Engineering 方法（SDD 是其重要组成部分）交付了\n1300 个 AI PR\n。这个数字的意义在于「可控」，1300 个 PR 没有引发系统性问题，说明 Spec 约束下的 AI 编程是可以规模化的。\n5.2 失败案例的警示数据\n无 Spec 约束的安全灾难\nVeracode 2025 年的报告揭示：\n45% 的 AI 生成代码包含安全漏洞\n。\n注意前提，这是\n无 Spec 约束时\n的数据。当 Spec 中明确定义了安全约束（如“必须使用参数化查询” “敏感数据禁止出现在日志中”），漏洞率会大幅下降。\n这 45% 和前面的「错误减少 50%」形成了鲜明对比。\n场景\n关键指标\n无 Spec 约束的 AI 编程\n45% 代码含安全漏洞\n有 Spec 约束的 AI 编程\n代码错误减少 50%\n代码重复率的隐性成本\nGitClear 对 2.11 亿行代码的研究发现，AI 编程时代的代码重复率\n4 年增长 4 倍\n。这不难理解，AI 倾向于「复制粘贴式」的解决方案，因为它的训练数据中充满了类似的模式。SDD 通过 constitution.md 中的代码规范约束和 plan.md 中的模块化设计，可以在一定程度上缓解这个问题，但无法完全消除。\n06\nSDD vs Vibe Coding：一场必须正面交锋的辩论\n6.1 什么是 Vibe Coding\n2025 年 2 月 2 日，Andrej Karpathy 在社交媒体上创造了\nVibe Coding\n这个概念。\n\"Forget that the code even exists.\"（忘掉代码的存在。）\nVibe Coding 的核心主张是，不要去读代码、不要去理解代码，用自然语言描述你要什么，让 AI 全权处理。如果报错了，就把错误信息扔给 AI，让它自己修。\n这听起来很诱人。\n在某些场景下，它确实有效\n，\n比如快速原型验证、个人工具脚本、一次性的数据处理任务。\n但问题在于，\n它不可持续。\n6.2 \"三个月墙\"：Vibe Coding 的生死劫\n社区观察到一个反复出现的模式，被称为\n「三个月墙」\n，如下。\n阶段\n时间\n状态\n典型表现\n兴奋期\n1-3 个月\n高产出\n\"AI 太神了！一天搞定一个功能！\"\n平台期\n4-9 个月\n停滞\n\"为什么新功能总是破坏旧功能？\"\n衰退期\n10-15 个月\n崩溃\n\"这坨代码没人能维护了，不如重写\"\n为什么会撞墙？因为 Vibe Coding 本质上是\n零上下文的编程\n。\n当项目只有几百行代码时，AI 可以“看到”全貌，它的推断和猜测大概率是对的。但当项目膨胀到几万行、几十个模块、几百个接口时，AI 的上下文窗口装不下全部代码，它开始基于局部信息做决策，而这些决策往往和其他模块冲突。\nSDD 的 Spec 恰好解决了这个问题：\nSpec 是代码的压缩表示\n。\n10 万行代码的项目，它的 Spec 体系可能只有几千行文本。AI 可以轻松读完所有 Spec，理解全局约束后再动手改代码。\n6.3 核心差异对比\n维度\nVibe Coding\nSDD\n核心假设\nAI 能理解你的意图\nAI 需要明确的规格才能正确执行\n启动速度\n极快\n较慢（需要先写 Spec）\n可维护性\n差（无文档、无约束）\n好（Spec 即文档）\n可协作性\n差（只有作者知道 \"vibes\"）\n好（Spec 是共享语言）\n安全性\n差（45% 安全漏洞）\n较好（Spec 约束安全边界）\n适用规模\n小项目（< 1000 行）\n中大型项目\n天花板\n三个月墙\n取决于 Spec 体系质量\n6.4 我的判断：不是非此即彼\nVibe Coding 和 SDD 是一个\n光谱的两端\n。对于一个验证想法的周末项目，写 Spec 是过度工程化；对于一个要长期维护的生产系统，Vibe Coding 是慢性自杀。\n更务实的选择是\n混合策略\n：\n1.\n探索阶段\n用 Vibe Coding——快速试错，验证可行性；\n2.\n一旦决定要做\n，立刻补 Spec——把探索阶段的发现固化为规格；\n3.\n进入正式开发\n后严格 SDD——所有变更先改 Spec 再改代码。\n实践就是这个策略的一个变体。DAY 0 写 Spec 之前，团队必然已经对 QoderWork 的产品形态有了充分的探索和讨论（那属于更早的 Vibe 阶段），但一旦决定动手做，立刻切换到 Spec-Driven 模式。\n07\nSDD 与 Harness Engineering 的关系\nAI 编程方法论的演进，存在一条清晰的三层递进链：\nPrompt\nEngineering -> Context Engineering -> Harness Engineering\nPrompt Engineering：\n关注「怎么写好一条指令」；\nContext Engineering：\n关注「怎么给 AI 提供足够且精准的上下文」；\nHarness Engineering：\n关注「怎么构建一个系统性的框架来约束和驱动 AI」。\nSDD 位于\nContext Engineering 和 Harness Engineering 的交叉地带\n。\n从 Context Engineering 的角度看，Spec 就是一种高度结构化的上下文提供方式，它不把所有代码丢给 AI（那太嘈杂），也不只说一句话（那太模糊），转而提供了一个恰到好处的信息密度。\n从 Harness Engineering 的角度看，SDD 是 HE 的一个重要应用模式：constitution.md 是约束层，spec.md 是需求层，plan.md 是执行层，tasks.md 是调度层。这四层组合在一起，构成了一个完整的「AI 驾驭框架」（Harness）。\nStripe 交付 1300 个 AI PR 的实践就是 HE 方法论的典型案例，其中，SDD 是 “确保每个 PR 都有明确规格和验收标准”的关键组件。\n08\n五大陷阱与局限性：诚实面对 SDD 的阴暗面\n在拥抱\nSDD\n之前，我们需要正视以下五大陷阱。\n陷阱一：过度规格化（Over-Specification）\n症状\n：\nSpec 写得比代码还长，每个实现细节都规定得死死的。\n后果\n：\n本质上退化为“用自然语言写伪代码”，完全失去了 SDD 「人定义 WHAT、AI 实现 HOW」的核心优势。\n缓解\n：\n用前文提到的粒度检验标准，“换一个技术栈实现，这个 Spec 是否仍然有效？”如果答案是否，说明在 Spec 里混入了 HOW。\n陷阱二：规格腐烂（Spec Rot）\n症状\n：\n代码已经迭代了十几个版本，但 Spec 还停留在 V1。\n后果\n：\nSpec 和代码脱节，新人看 Spec 理解的和看代码理解的是两个系统。当需要 AI 做增量开发时，它基于过时的 Spec 生成的代码必然和现有代码冲突。\n缓解\n：\n团队的做法值得借鉴。DAY 3-4 中，“发现需求或 BUG 立即写增量 Spec”。Spec 的更新是和代码变更同步的日常操作。\n陷阱三：规格官僚化（Spec Bureaucracy）\n症状\n：\n改一个按钮的颜色也要走「写 Spec -> Review Spec -> 更新 Plan -> 生成 Tasks」的全流程。\n后果\n：\n团队开始绕过 Spec 流程直接改代码，SDD 名存实亡。\n缓解\n：\n区分\n重大变更\n和\n微小变更\n，\n不是所有变更都需要完整的 Spec 流程。一个实用的判断标准是，如果这个变更可能影响其他模块的行为，就需要 Spec；如果它是纯粹的局部修改（改文案、调样式），直接改就行。\n陷阱四：虚假信心（False Confidence）\n症状\n：\n因为有了详尽的 Spec，团队放松了对 AI 生成代码的审查。\n后果\n：\nSpec 只定义了「做什么」，它不能保证 AI 的实现是正确的、安全的、高效的。45% 的安全漏洞数据提醒我们，即使有 Spec，AI 代码仍需要严格的 Review。\n缓解\n：\nSpec 替代的是需求文档，不是 Code Review。\nSDD 的 Validate 阶段是整个流程中最后也最重要的安全网。\n陷阱五：工具复杂性（Tool Overhead）\n症状\n：\n为了「做好 SDD」，团队引入了 Spec Kit + Kiro + CI/CD 集成 + 自定义校验脚本 + Spec Linter...\n后果\n：\n工具链本身成为了负担，团队花在配置工具上的时间超过了写 Spec 的时间。\n缓解\n：\n从最简单的方案开始。\n一个 spec.md 文件 + 一个你已经在用的 AI Agent，这就够了；不要为了 SDD 而 SDD。\n正面回应：「SDD 是 Markdown 版的瀑布模型」批评\n这是 SDD 面临的最尖锐的批评，值得认真对待。\n批评者的逻辑是，SDD 要求先写完 Spec 再写代码，这本质上就是瀑布模型。先完整定义需求，再线性地实现。而瀑布模型早已被敏捷运动证伪，SDD 不过是换了个马甲。\n我的判断：这个批评有一半道理，但结论是错的。\n「有一半道理」是因为，如果我们把 SDD 实践成“花两周写一个巨大的 Spec，然后完全不改地执行”，那确实是瀑布模型的翻版，必然失败。\n「结论是错的」是因为，\nSDD 的 Spec 是活的，不是死的。\n团队的 DAY 3-4 就是最好的反驳，Spec 是随时可以增量更新的活文档。发现新需求？加一个增量 Spec；发现 BUG？补一个约束条件。这更接近“持续需求细化”。\n更本质的区别在于迭代粒度：\n瀑布模型的迭代粒度是\n整个项目\n（需求全部定义完 -> 全部开发完 -> 全部测试完）\nSDD 的迭代粒度是\n单个功能模块\n（一个模块的 Spec -> 该模块的 Plan -> 该模块的实现 -> 该模块的验证，然后进入下一个模块）\nSDD 实际上更接近\n「Spec 级别的迭代」\n，每个 Spec 就是一个最小可交付单元，写完就执行、执行完就验证、验证完就下一个。这和敏捷的 Sprint 理念是兼容的，只是把 User Story 升级成了更结构化的 Spec。\n另外一个反对「瀑布论」的事实是：\nSDD 中 Spec 的平均生命周期远短于瀑布模型中需求文档的生命周期。\n一个 Spec 从编写到被 AI 实现可能只需要几小时甚至几分钟，而瀑布模型的需求文档生命周期以月计。\n当然，SDD 确实\n有瀑布化的风险\n。但这是实践问题，不是方法论问题。一把菜刀可以切菜也可以伤人，问题不在刀上。\n09\nSDD 的未来：三级光谱模型\nSDD 并不是一个固定不变的方法论，它正在沿着一个三级光谱演进：\n级别\n名称\n当前状态\n特征\n代表实践\nL1\nSpec-First\n当前主流\n编码前写 Spec，但 Spec 和代码可能漂移\nSpec Kit, 大多数团队\nL2\nSpec-Anchored\n先进实践\nSpec 和代码持续同步，测试强制执行一致性\nKiro 的内置工作流\nL3\nSpec-as-Source\n未来愿景\n人只编辑 Spec，代码完全由 AI 生成和维护\n尚无成熟实践\nL1 Spec-First：编码前写 Spec，但 Spec 可能漂移\n这是目前大多数团队的实践状态。Spec 在项目初期发挥了巨大价值，但随着项目推进，Spec 和代码之间的漂移几乎不可避免，因为没有自动化机制来强制保持一致。\nL2 Spec-Anchored：持续同步，测试强制执行\n这是当前先进团队正在探索的状态。核心思路是，\n用自动化测试来锚定 Spec 和代码的一致性\n。\n具体做法：从 Spec 的 Acceptance Criteria 自动生成测试用例，任何代码变更都必须通过这些测试。如果代码变了但测试（即 Spec 的自动化映射）没变，CI 会拒绝合并。这就像“类型系统”防止类型错误一样，“Spec 测试”防止 Spec 漂移。\nAWS Kiro 正在朝这个方向做，它的 SDD 工作流中内置了 Spec -> Test 的自动生成链路。\nL3 Spec-as-Source：人只编辑 Spec，代码完全生成\n这是 SDD 的终极愿景，\n代码是被「编译」的——从 Spec 编译而来。\n在这个范式下，人类工程师的工作完全聚焦在 Spec 层面。需要改功能？改 Spec；需要修 Bug？改 Spec；需要重构？改 Spec。AI 负责将 Spec 的变更自动反映到代码中。\n这听起来像科幻，但想想看，团队的 DAY 3-4 已经有了 L3 的雏形：发现 BUG -> 写增量 Spec -> Quest 自动修复代码并提 PR。如果这个循环足够顺滑、覆盖足够全面，L3 就不再是幻想。\nThoughtworks 技术雷达也在关注这个趋势。在 Vol.33（2025.11）中，SDD 被放在\nAssess\n环，这意味着“值得研究，但尚未准备好全面采用”。到了 Vol.34，越来越多团队开始采用 SDD，它正在向 Trial 环迁移。\n10\n结语：DAY 0 是最贵的一天，也是最值的一天\n回到前文所说的「5 人 7 天」案例。\n如果只看表面，我们会觉得奇迹发生在 DAY 1-6：AI 飞速写代码、自动提 PR、并行推进多个任务。\n但真正的关键手在 DAY 0。\nDAY 0 的一天「什么都没做」，实际上做了最重要的一件事：把人类的思考，即需求边界、成功标准、技术约束、非目标清单结构化地固化到了 Spec 中。\n这些 Spec 成为了后面六天的导航系统。5 个人之所以能驾驭 AI 并行推进大量任务而不失控，正是因为每个 Quest 都有一个清晰的 Spec 锚定，AI 知道要做什么、不做什么、做到什么程度算完。\n这就是 SDD 的本质价值。\n它不让 AI 变聪明，它让 AI 变可控。\n在 AI 编程能力以月为单位飞速进化的今天，「让 AI 变聪明」不是我们需要操心的事，模型厂商会“卷”。人们真正需要操心的是：\n当 AI 越来越强大时，能不能驾驭它？\nSDD 给出的答案是，与其试图理解和控制 AI 的每一行代码，不如把精力放在定义那个「WHAT」——WHAT 永远是人类的领地。\n从今天开始，试着在下一个功能需求前先写一个 spec.md。\n不需要完美，3-5 次迭代后它会变好；不需要工具链，一个 Markdown 文件就够了；不需要全员推广，从一个人、一个模块开始就行。\nDAY 0 是最「贵」的一天，也是最「值」的一天。\n欢迎留言一起参与讨论~\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

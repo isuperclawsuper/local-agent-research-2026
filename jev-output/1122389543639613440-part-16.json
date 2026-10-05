@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z",
+      "chars": 6500,
+      "text": "description\"\n:\n\"leaf 不能再委托，orchestrator 可继续委托\"\n,\n\"default\"\n:\n\"leaf\"\n,\n},\n},\n\"required\"\n: [\n\"goal\"\n,\n\"context\"\n],\n},\n},\n}\n如下是子 agent 的\n创建和执行流程\n，从代码可以看到，子 agent 有独立的提示词，并可以可以继承主 agent 的工具完成任务。\n# agent/delegate.py — 子 Agent 创建逻辑\ndef\n_run_child_agent\n(\nself, goal, context, parent_llm, role,\nenabled_toolsets, disabled_toolsets,\nmax_iterations, current_depth) -> DelegateResult:\n# 延迟导入避免循环依赖（delegate.py ↔ agent.py 互相引用）\nfrom\nagent.agent\nimport\nIdleAgent\n# ── 构建子 agent 的工具集黑名单 ──\n# 合并固有限制 + 父 agent 传递的黑名单\nchild_disabled_toolsets =\nlist\n(DELEGATE_BLOCKED_TOOLSETS)\nif\ndisabled_toolsets:\nfor\nts\nin\ndisabled_toolsets:\nif\nts\nnot\nin\nchild_disabled_toolsets:\nchild_disabled_toolsets.append(ts)\n# ── 构建被禁用的工具名称列表 ──\nblocked_tools =\nlist\n(DELEGATE_BLOCKED_TOOLS)\n# [\"memory\", \"clarify\"]\nif\nrole ==\n\"leaf\"\n:\nblocked_tools.append(\n\"delegate_task\"\n)\n# leaf 不能再委托\n# ── 构建子 agent 身份提示词 ──\n# 作为 custom_identity 传入，让 build_system_prompt 正常流程运行\n# 这样 skill 索引会由 prompt_builder 自动注入\nchild_identity = (\nf\"你是一个子代理，负责完成以下特定任务。\\n\\n\"\nf\"\n{DELEGATE_EXECUTION_DISCIPLINE}\n\\n\\n\"\n# 执行纪律\nf\"## 任务目标\\n\n{goal}\n\\n\\n\"\nf\"## 上下文\\n\n{context}\n\\n\\n\"\nf\"\n{DELEGATE_WORK_BOUNDARIES}\n\\n\\n\"\n# 工作边界\nf\"\n{DELEGATE_RESULT_FORMAT}\n\\n\\n\"\n# 结果格式要求\nf\"## 技术约束\\n\"\nf\"- 角色:\n{role}\n\\n\"\nf\"- 最大迭代次数:\n{max_iterations}\n\\n\"\nf\"- 禁止使用的工具:\n{\n', '\n.join(blocked_tools)}\n\\n\"\nf\"- 完成任务后立即给出最终回答\\n\"\n)\n# ── 创建子 Agent 实例 ──\nchild_agent = IdleAgent(\nllm=parent_llm,\n# 继承父 agent 的 LLM\nmax_iterations=max_iterations,\n# 独立迭代预算\ncustom_identity=child_identity,\n# 子 agent 专属身份\nenabled_toolsets=enabled_toolsets,\n# 继承工具集白名单\ndisabled_toolsets=child_disabled_toolsets,\n# 受限的黑名单\nenable_delegate=(\n# 是否允许继续委托\nrole ==\n\"orchestrator\"\nand\ncurrent_depth <\nself\n._max_depth -\n1\n),\n)\n# 同步运行子 agent\nresult_data = child_agent.run_sync(goal)\n# 提取指标\nmetrics = result_data.get(\n\"metrics\"\n, {})\nreturn\nDelegateResult(\ngoal=goal,\nsuccess=result_data.get(\n\"success\"\n,\nFalse\n),\nfinal_answer=result_data.get(\n\"final_answer\"\n,\n\"\"\n),\nerror=result_data.get(\n\"error\"\n),\ntool_calls_count=metrics.get(\n\"tool_call_count\"\n,\n0\n),\niterations_used=metrics.get(\n\"total_iterations\"\n,\n0\n),\ntokens_used=metrics.get(\n\"total_tokens\"\n,\n0\n),\n)\n子 agent 的执行结果不是一个简单字符串，而是包含完整指标的结构化数据。\n# agent/delegate.py — 委托结果\n@dataclass\nclass\nDelegateResult\n:\n\"\"\"子代理委托执行结果。\"\"\"\ngoal:\nstr\n# 子任务目标\nsuccess:\nbool\n# 是否成功完成\nfinal_answer:\nstr\n=\n\"\"\n# 子 agent 的最终回答\nerror:\nOptional\n[\nstr\n] =\nNone\n# 失败时的错误信息\ntool_calls_count:\nint\n=\n0\n# 使用了多少次工具\niterations_used:\nint\n=\n0\n# 消耗了多少次迭代\ntokens_used:\nint\n=\n0\n# 消耗了多少 token\nduration_seconds:\nfloat\n=\n0.0\n# 耗时（秒）\n为什么要记录这些指标？\n这是因为\n主 Agent 需要这些信息来判断子任务的质量。如果一个子 agent 用了 50 次迭代（预算耗尽）但声称成功，主 agent 应该怀疑结果的完整性。这些指标也会展示在结果摘要中，帮助用户了解执行效率。\n资源控制方面，为了防止子agent无限扩展占用太多资源，主要从如下四个维度控制。\n控制维度\n默认值\n目的\n实现方式\n并发控制\n最多 3 个子 agent\n防止 API 并发耗尽\nThreadPoolExecutor(max_workers=3)\n+\n_active_count\n计数器\n迭代预算\n子 agent 独立 50 次\n不消耗主 agent 配额\n独立的\nIterationBudget\n实例\n超时保护\n600 秒后强制取消\n防止子任务挂死\nfuture.result(timeout=600)\n+\nFuturesTimeoutError\n深度限制\n最多 1 层委托\n防止无限嵌套\ncurrent_depth >= max_depth\n时强制\nrole=\"leaf\"\n权限隔离上，\n子 agent 仅仅只有主 agent 运行的工具进行执行，防止并发修改或者篡改主 agent 的助力。\n┌───────────────────────────────────────────────────────────────┐\n│ 主 Agent（全部权限）                                           │\n│                                                               │\n│  可用: delegate_task, memory, clarify, load_skill, MCP 工具,  │\n│        todo, 所有内置工具...                                   │\n│                                                               │\n│  ┌─────────────────────────────────────────────────────────┐  │\n│  │ 子 Agent - leaf（受限权限）                               │  │\n│  │                                                         │  │\n│  │  ✗ delegate_task  — 防止递归委托                         │  │\n│  │  ✗ memory         — 防止修改全局持久状态                  │  │\n│  │  ✗ clarify        — 不能向用户提问（保证并行不阻塞）      │  │\n│  │                                                         │  │\n│  │  ✓ load_skill     — 通过全局 registry 继承               │  │\n│  │  ✓ MCP 工具       — 通过 enabled_toolsets 继承           │  │\n│  │  ✓ todo           — 独立的 TodoStore 实例                │  │\n│  │  ✓ 内置工具       — 搜索、读文件等能力类工具              │  │\n│  └─────────────────────────────────────────────────────────┘  │\n└───────────────────────────────────────────────────────────────┘\n为什么禁止\nmemory\n：子 Agent 并行执行，如果允许修改全局记忆，多个子 Agent 可能产生冲突写入。记忆的修改应该由主 Agent 统一决策。\n为什么禁止\nclarify\n：子 Agent 在线程池中运行，无法直接与用户交互。如果允许 clarify，子 Agent 会阻塞等待用户回复，而用户看不到这个请求。\n05 ReAct 模式下的 Plan 能力\n设计目标：\n简单任务不增加额外开销，复杂任务自动获得全局规划能力。\n核心方案\n：Plan 不是模式切换，而是 ReAct 循环中的一个普通工具（\ntodo\n）。\n传统做法需要在 ReAct 和 Plan 之间切换模式（两套循环逻辑），本项目的设计思路是\nPlan 即工具\n，\n意味着\nPlan 就是一个工具调用\n，\n和\nquery_weather\n没有本质区别。\n┌──────────────────────────────────────────────────────────┐\n│               同一个 ReAct 循环                            │\n│                                                          │\n│  简单任务:  Think →\nAct\n(query_weather) → Answer          │\n│                                                          │\n│  复杂任务:  Think →\nAct\n(todo: 创建计划)                   │\n│            →\nAct\n(step1 工具) →\nAct\n(todo: 更新状态)        │\n│            →\nAct\n(step2 工具) →\nAct\n(todo: 更新状态)        │\n│            → Answer                                      │\n│                                                          │\n│  计划调整:\nThink\n(发现新情况) →\nAct\n(todo: 替换整个计划)    │\n│            → 继续执行新计划...                             │\n└──────────────────────────────────────────────────────────┘\nTodo 的行为规范完全写在工具 description 中，不污染 system prompt，又可以按需进行规划。\n# tools/todo_tool.py — 工具 schema + handler\nTODO_SCHEMA = {\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"todo\"\n,\n\"description\"\n: (\n\"Manage your task list for the current session. \"\n\"Use for complex tasks with 3+ steps or when the user \"\n\"provides multiple tasks. \"\n\"Call with no parameters to read the current list.\\n\\n\"\n\"Writing:\\n\"\n\"- Provide 'todos' array to create/update items\\n\"\n\"- merge=false (default): replace the entire list\\n\"\n\"- merge=true: update existing items by id, add new ones\\n\\n\"\n\"Each item: {id, content, status: pending|in_progress|completed|cancelled}\\n\"\n\"List order is priority. Only ONE item in_progress at a time.\\n\"\n\"Mark items completed immediately when done.\"\n),\n\"parameters\"\n: {\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"todos\"\n: {\n\"type\"\n:\n\"array\"\n,\n\"description\"\n:\n\"Task items to write. Omit to read current list.\"\n,\n\"items\"\n: {\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"id\"\n: {\n\"type\"\n:\n\"string\"\n},\n\"content\"\n: {\n\"type\"\n:\n\"string\"\n},\n\"status\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"enum\"\n: [\n\"pending\"\n,\n\"in_progress\"\n,\n\"completed\"\n,\n\"cancelled\"\n]},\n},\n\"required\"\n: [\n\"id\"\n,\n\"content\"\n,\n\"status\"\n],",
+      "fulltext_obtained": true,
+      "chunk_index": 16,
+      "chunk_count": 19
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "peripheral": 0,
+        "irrelevant": 0.06,
+        "direct_local": 0.01,
+        "transfer_agent": 0.93,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.89,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.1,
+        "2": 0.88,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.42,
+      "probabilities": {
+        "0": 0.79,
+        "1": 0.09,
+        "2": 0.05,
+        "3": 0.05,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 2.84,
+      "probabilities": {
+        "0": 0.24,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.12,
+        "4": 0.61,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.53,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.47,
+        "3": 0.53,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.86,
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.01,
+        "2": 0.01,
+        "3": 0.09,
+        "4": 0.74,
+        "5": 0.12
+      }
+    },
+    "anti_hype": {
+      "score": 2.33,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.14,
+        "2": 0.3,
+        "3": 0.5,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.72,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5407,
+    "outputTokens": 172,
+    "totalTokens": 5579
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.91,
+        "relevance": 0.92,
+        "grounding": 0.72,
+        "decision_action": 0.23,
+        "evidence": 0.68,
+        "actionability": 0.75,
+        "anti_hype": 0.53
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180421162,
+                "endTime": 1791180421362,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000227094",
+      "marketCost": "0.000227094",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000227094",
+      "inferenceCost": "0.000227094",
+      "inputInferenceCost": "0.000227094",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARE09XSXJN9KZB2JXBC8B"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:01 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::5j45k-1791180421122-32e8918c9770"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "peripheral": 0,
+            "irrelevant": 0.06,
+            "direct_local": 0.01,
+            "transfer_agent": 0.93,
+            "transfer_business": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.89,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.1,
+            "2": 0.88,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.42,
+          "probabilities": {
+            "0": 0.79,
+            "1": 0.09,
+            "2": 0.05,
+            "3": 0.05,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 2.84,
+          "probabilities": {
+            "0": 0.24,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.12,
+            "4": 0.61,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.53,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.47,
+            "3": 0.53,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.86,
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.01,
+            "2": 0.01,
+            "3": 0.09,
+            "4": 0.74,
+            "5": 0.12
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.33,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.14,
+            "2": 0.3,
+            "3": 0.5,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.72
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5407,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.91,
+            "relevance": 0.92,
+            "grounding": 0.72,
+            "decision_action": 0.23,
+            "evidence": 0.68,
+            "actionability": 0.75,
+            "anti_hype": 0.53
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180421162,
+                    "endTime": 1791180421362,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000227094",
+          "marketCost": "0.000227094",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000227094",
+          "inferenceCost": "0.000227094",
+          "inputInferenceCost": "0.000227094",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARE09XSXJN9KZB2JXBC8B"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:00.596Z"
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。 当前是完整长文的连续分段，只判断当前段落证据。",
+    "article": {
+      "id": "1132646940832468992",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "OpenClaw与Hermes：源码里的 AI Agent 架构知识大复盘",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801805&idx=1&sn=9c7e3936218bba9c8d0ee6c04afb1615",
+      "date": "2026-05-29T09:36:00.904Z",
+      "chars": 6500,
+      "text": "ns\n/\ncodex_responses\n/\nanthropic_messages\n/\nbedrock_converse\n主循环 - 注入上下文\n仅 API 副本，不持久化\n11. 后处理\n持久化 + 记忆 nudge + 技能检查\n15.3 四种 API 模式\nHermes 支持四种 LLM API 协议，通过\napi_mode\n自动选择（第 690–750 行）：\nAPI 模式\n触发条件\n特点\nchat_completions\n默认模式\nOpenAI Chat Completions 兼容，覆盖 200+ 模型\ncodex_responses\nOpenAI Codex / xAI / GPT-5.x\nOpenAI Responses API，支持更丰富的工具调用\nanthropic_messages\nAnthropic API / OpenRouter Claude\n原生 Anthropic Messages API，支持 prompt caching\nbedrock_converse\nAWS Bedrock URL\nAWS Bedrock Converse API\n自动检测优先级\n：\n显式 api_mode 参数 > provider 名匹配 > base_url 模式匹配 > 默认 chat_completions\n对于 OpenAI 直连且模型为 GPT-5.x 时，会从\nchat_completions\n自动升级到\ncodex_responses\n。\n15.4 IterationBudget — 线程安全迭代控制\nIterationBudget\n是一个线程安全的迭代预算计数器：\nclass\nIterationBudget\n:\n\"\"\"Thread-safe iteration counter for an agent.\nParent agent: max_iterations = 90 (default)\nSub-agent:    max_iterations = 50 (delegation.max_iterations)\nexecute_code iterations are refunded via refund().\n\"\"\"\ndef\n__init__\n(self, max_total: int)\n:\n# 父 90，子 50\nself.max_total = max_total\nself._used =\n0\nself._lock = threading.Lock()\ndef\nconsume\n(self)\n-> bool:\n# 消耗 1 次，返回是否有余额\ndef\nrefund\n(self)\n->\nNone\n:\n# 退还 1 次（execute_code 专用）\n@property remaining -> int   # 剩余次数\n15.5 Credential Pool 与 Model Fallback\nHermes 实现了两级容错机制：\nCredential Pool\n：多个 API Key 轮换，应对速率限制和计费问题。根据错误类型采用不同的恢复策略。\nModel Fallback Chain\n：支持链式降级（如\nclaude-sonnet → gpt-4o → deepseek-chat\n），在主模型持续失败时自动切换。触发条件包括空响应、速率限制等。\n关键设计\n：Credential Pool 优先于 Model Fallback 尝试——只有当所有凭证都无法恢复时，才触发模型降级。\n15.6 上下文压缩 — 四步算法\nContextCompressor\n（\nagent/context_compressor.py\n）实现了上下文窗口管理，当会话历史超过上下文窗口的 50% 时触发：\n工具输出的智能摘要\n（\n_summarize_tool_result()\n，第 63–182 行）：不是简单地截断，而是为 16+ 种工具类型生成专用的信息性摘要：\n[terminal] ran `npm\ntest\n` ->\nexit\n0, 47 lines output\n[read_file]\nread\nconfig.py from line 1 (1,200 chars)\n[search_files] content search\nfor\n'compress'\nin\nagent/ -> 12 matches\n[browser] navigated to\nhttps://example.com\n(200 OK)\n反抖动保护\n：连续 2 次压缩效果低于 10% 时自动跳过，避免无效压缩浪费 LLM 调用。\n15.7 Prompt 缓存 — 冻结快照策略\napply_anthropic_cache_control()\n（\nagent/prompt_caching.py\n）实现了 Anthropic 的 prompt caching 优化：\n策略名\n:\nsystem_and_3\n— 使用 Anthropic 最大允许的 4 个\ncache_control\n断点：\n断点\n目标\n稳定性\n1\nSystem prompt\n跨所有轮次稳定（缓存命中率最高）\n2–4\n最后 3 条非 system 消息\n滚动窗口（最近的对话最可能被复用）\n启用条件\n：\n# 仅在 OpenRouter + Claude 或原生 Anthropic API 时启用\nself._use_prompt_caching = (is_openrouter\nand\nis_claude)\nor\nis_native_anthropic\n冻结快照的核心思想\n：系统提示在首轮构建后被缓存到 session DB。即使 Agent 在对话中写入了新的记忆，当前轮次的系统提示也\n不会被修改\n——新记忆只在下一个会话开始时才注入系统提示。这保证了 Anthropic 的 prefix cache 在整个会话期间持续命中。\n15.8 同步-异步桥接\nHermes Agent 的核心循环是同步的（\nrun_conversation()\n是同步方法），但许多工具操作需要异步执行。\n_run_async()\n（\nmodel_tools.py\n）是统一的同步→异步桥接：\n执行上下文\n策略\n原因\nGateway 内（已有 event loop）\n一次性\nThreadPoolExecutor\n+\nasyncio.run()\n避免与 Gateway 的 event loop 冲突\n工作线程（并行工具执行）\nper-thread 持久 event loop\n避免主线程竞争\n主线程 / CLI\n共享持久 event loop\n保持 httpx/AsyncOpenAI 客户端连接存活\n16. 工具系统 — Registry 自注册与内置工具\n16.1 ToolRegistry 全局单例\nHermes 的工具系统核心是\nToolRegistry\n（\ntools/registry.py\n），一个\n模块级全局单例\n：\n# tools/registry.py\nregistry = ToolRegistry()\n# 全局单例\nclass\nToolRegistry\n:\ndef\n__init__\n(self)\n:\nself._tools: Dict[str, ToolEntry] = {}\n# name → ToolEntry\nself._toolset_checks: Dict[str, Callable] = {}\n# toolset → check_fn\nself._toolset_aliases: Dict[str, str] = {}\n# alias → canonical toolset\nself._lock = threading.RLock()\n# 线程安全可重入锁\n注册模式\n：不是装饰器模式，而是\n导入时自注册\n——每个工具文件在模块顶层调用\nregistry.register()\n，当\nmodel_tools.py\n导入这些模块时触发注册。\ndiscover_builtin_tools()\n通过 AST 静态分析自动发现含\nregistry.register()\n调用的模块。\nToolEntry\n使用\n__slots__\n优化内存：\nclass\nToolEntry\n:\n__slots__ = (\n\"name\"\n,\n\"toolset\"\n,\n\"schema\"\n,\n\"handler\"\n,\n\"check_fn\"\n,\n\"requires_env\"\n,\n\"is_async\"\n,\n\"description\"\n,\n\"emoji\"\n,\n\"max_result_size_chars\"\n)\n16.2 工具分类与核心工具\nHermes\ntools/\n目录包含\n76 个文件\n，按用途分为 6 组：\n核心工具\n（terminal 73KB / file_operations 47KB / browser 91KB / mcp 88KB / web 85KB）、\nAgent 协作\n（delegate_tool / code_execution / mixture_of_agents）、\n技能 & 记忆\n（skills_hub 109KB / skill_manager / skills_tool / memory / session_search）、\n媒体 & 通信\n（tts / vision / image_generation / send_message）、\n安全 & 运维\n（approval / tirith_security / skills_guard / cronjob）、\n执行环境\n（Local / Docker / SSH / Modal / Daytona / Singularity / Vercel / Managed Modal 共 8 种后端）。\n16.3 Toolsets — 工具集编排\ntoolsets.py\n定义了\n工具集\n（Toolset）机制，将工具按平台和场景组合：\n核心共享工具列表\n：\n_HERMES_CORE_TOOLS = [\n\"web_search\"\n,\n\"web_extract\"\n,\n\"terminal\"\n,\n\"process\"\n,\n\"read_file\"\n,\n\"write_file\"\n,\n\"patch\"\n,\n\"search_files\"\n,\n\"vision_analyze\"\n,\n\"image_generate\"\n,\n\"skills_list\"\n,\n\"skill_view\"\n,\n\"skill_manage\"\n,\n\"browser_navigate\"\n,\n\"browser_snapshot\"\n,\n\"browser_click\"\n, ...\n\"todo\"\n,\n\"memory\"\n,\n\"session_search\"\n,\n\"clarify\"\n,\n\"execute_code\"\n,\n\"delegate_task\"\n,\n\"cronjob\"\n,\n\"send_message\"\n,\n\"ha_list_entities\"\n,\n\"ha_get_state\"\n, ...\n]\n平台 Toolsets\n：每个平台都基于\n_HERMES_CORE_TOOLS\n定义自己的工具集：\nToolset 名\n平台\n特殊配置\nhermes-cli\nCLI 终端\n完整工具集\nhermes-telegram\nTelegram\n完整工具集\nhermes-discord\nDiscord\n完整工具集\nhermes-qqbot\nQQ Bot\n完整工具集\nhermes-acp\n编辑器集成\n无 messaging/audio/clarify\nhermes-api-server\nHTTP API\n无 clarify/send_message\nhermes-gateway\nGateway 统一\n所有平台 toolset 的联合\nToolsets 支持\n递归组合\n——通过\nincludes\n字段引用其他 toolset，\nresolve_toolset()\n递归展开并检测循环依赖。\n16.4 delegate_tool — 子 Agent 并行架构\ndelegate_tool.py\n实现了子 Agent 委派机制：\n关键限制\n：\n参数\n值\n说明\nMAX_DEPTH\n1\n默认只允许一层：parent(0) → child(1)，grandchild 被拒（可通过\nmax_spawn_depth\n配置覆盖）\n_DEFAULT_MAX_CONCURRENT_CHILDREN\n3\n默认最大并行子 Agent 数\nDEFAULT_MAX_ITERATIONS\n50\n每个子 Agent 最大迭代次数\n被阻止的工具\n（第 32–38 行）：\nDELEGATE_BLOCKED_TOOLS = frozenset([\n\"delegate_task\"\n,\n# 禁止递归委托\n\"clarify\"\n,\n# 禁止用户交互\n\"memory\"\n,\n# 禁止写入共享 MEMORY.md\n\"send_message\"\n,\n# 禁止跨平台副作用\n\"execute_code\"\n,\n# 子 Agent 应逐步推理\n])\n子 Agent 隔离\n：每个子 Agent 获得全新的\nAIAgent\n实例，跳过上下文文件和记忆加载，但共享父 Agent 的凭证池和会话数据库。中断信号从父 Agent 传播到所有子 Agent。\n17. 记忆系统 — 内置记忆 + 8 个插件提供者\n17.1 MemoryManager 架构\nHermes 的记忆系统采用\n\"内置 + 最多一个外部提供者\"\n的架构（\nagent/memory_manager.py\n第 83 行）：\nMemoryProvider 基类\n（\nagent/memory_provider.py\n）定义了记忆提供者的标准接口：\nclass\nMemoryProvider\n(ABC)\n:\n# 必须实现\n@abstractmethod\ndef\nname\n(self)\n-> str:\n...\n@abstractmethod\ndef\nis_available\n(self)\n-> bool:\n...\n@abstractmethod\ndef\ninitialize\n(self, session_id, **kwargs)\n:\n...\n@abstractmethod\ndef\nget_tool_schemas\n(self)\n-> List[Dict]:\n...\n# 可选方法\ndef\nprefetch\n(self, query, session_id=\n\"\"\n)\n:\n...\ndef\nsync_turn\n(self, user, assistant, session_id=\n\"\"\n)\n:\n...\ndef\nhandle_tool_call\n(self, tool_name, args)\n:\n...\n# 生命周期钩子\ndef\non_turn_start\n(self, turn_number, message, **kwargs)\n:\n...\ndef\non_session_end\n(self, messages)\n:\n...\ndef\non_pre_compress\n(self, messages)\n-> str:\n...\ndef\non_delegation\n(self, task, result, **kwargs)\n:\n...\ndef\non_memory_write\n(self, action, target, content)\n:\n...\n17.2 内置记忆 — MEMORY.md + US",
+      "fulltext_obtained": true,
+      "chunk_index": 11,
+      "chunk_count": 18
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "irrelevant": 0.08,
+        "transfer_agent": 0.92,
+        "transfer_business": 0,
+        "peripheral": 0,
+        "direct_local": 0
+      }
+    },
+    "relevance": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.11,
+        "2": 0.87,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.1,
+      "probabilities": {
+        "0": 0.95,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.91,
+      "probabilities": {
+        "0": 0.67,
+        "1": 0.09,
+        "2": 0.03,
+        "3": 0.1,
+        "4": 0.11,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.53,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.45,
+        "3": 0.55,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.4,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.02,
+        "2": 0.02,
+        "3": 0.16,
+        "4": 0.7,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 1.65,
+      "probabilities": {
+        "0": 0.09,
+        "1": 0.43,
+        "2": 0.22,
+        "3": 0.25,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.71,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 5099,
+    "outputTokens": 172,
+    "totalTokens": 5271
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.89,
+        "relevance": 0.9,
+        "grounding": 0.94,
+        "decision_action": 0.39,
+        "evidence": 0.69,
+        "actionability": 0.58,
+        "anti_hype": 0.44
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791180434033,
+                "endTime": 1791180434194,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000214158",
+      "marketCost": "0.000214158",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000214158",
+      "inferenceCost": "0.000214158",
+      "inputInferenceCost": "0.000214158",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45ARTJZSM8CPN6ZGV085ST2"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 06:07:14 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::m99fw-1791180433994-8c0d5b535720"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "irrelevant": 0.08,
+            "transfer_agent": 0.92,
+            "transfer_business": 0,
+            "peripheral": 0,
+            "direct_local": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0.02,
+            "1": 0.11,
+            "2": 0.87,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.1,
+          "probabilities": {
+            "0": 0.95,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.91,
+          "probabilities": {
+            "0": 0.67,
+            "1": 0.09,
+            "2": 0.03,
+            "3": 0.1,
+            "4": 0.11,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.53,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.45,
+            "3": 0.55,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.4,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.02,
+            "2": 0.02,
+            "3": 0.16,
+            "4": 0.7,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.65,
+          "probabilities": {
+            "0": 0.09,
+            "1": 0.43,
+            "2": 0.22,
+            "3": 0.25,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.71
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 5099,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.89,
+            "relevance": 0.9,
+            "grounding": 0.94,
+            "decision_action": 0.39,
+            "evidence": 0.69,
+            "actionability": 0.58,
+            "anti_hype": 0.44
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791180434033,
+                    "endTime": 1791180434194,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000214158",
+          "marketCost": "0.000214158",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000214158",
+          "inferenceCost": "0.000214158",
+          "inputInferenceCost": "0.000214158",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45ARTJZSM8CPN6ZGV085ST2"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T06:07:13.416Z"
+  }
+}

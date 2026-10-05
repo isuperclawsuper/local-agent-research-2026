@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1109329783633678336",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "AI-Generated UI 技术深度解析：模型流式输出与 UI 渲染实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543420&idx=1&sn=76ea38246b7ca484a7b6aab94076fdbd",
+      "date": "2026-05-13T08:22:00.413Z",
+      "chars": 29884,
+      "text": "原创\n私域技术团队\n2026-05-13 16:22\n浙江\n本\n文系统性地解析了 AI-Generated UI 的核心技术，聚焦于大语言模型流式输出与前端 UI 渲染的工程实践。内容涵盖：流式传输基础；\n主流开源架构；\n流式渲染核心挑战；\nAI 编辑器实践；\n底层运行时支撑。\n引言：AI-Generated UI 的崛起\n2023-2024 年，随着 GPT-4、Claude 3.5 Sonnet、Gemini Pro 等前沿大语言模型的发布，AI-Generated UI 从实验室概念迅速演变为生产级技术。从 Vercel 的 v0.dev 到 StackBlitz 的 Bolt.new，从 Cursor 到 Windsurf，一系列革命性产品正在重新定义开发者与 UI 的交互方式。\n这些应用有一个共同的技术核心：\n如何在大模型流式输出的场景下构建流畅、稳定、高性能的前端 UI\n。这不是\n一个简单的\"接收文本并显示\"的问题，而是涉及到增量解析、错误恢复、实时预览、性能优化等多\n个维度的复杂工程挑战。\n本文将从底层协议到上层应用，系统性地剖析这一技术领域的核心原理与实践模式。\n流式输出的技术基础\n▐\nServer-Sent Events (SSE) 协议详解\nSSE 是 AI 流式输出的事实标准传输协议。与 WebSocket 的双向通信不同，SSE 专为服务器向客户端的单向推送设计——这恰好契合 LLM 生成文本的场\n景。\n协议格式\nSSE 基于 HTTP 协议，响应头设置为：\nContent-Type\n:\ntext/event-stream\nCache-Control\n:\nno-cache\nConnection\n:\nkeep-alive\n数据以文本行形式传输，每个事件由以下字段组成：\nevent:\n<\nevent-type\n>\ndata:\n<\npayload\n>\nid:\n<\nevent-id\n>\nretry:\n<\nreconnection-time\n>\n注意每个事件以空行结尾。实际的 LLM 响应通常只使用\ndata\n字段：\ndata: {\"choices\":[{\"delta\":{\"\ncontent\n\":\n\"Hello\"\n}}]}\ndata: {\"choices\":[{\"delta\":{\"\ncontent\n\":\n\" World\"\n}}]}\ndata: [DONE]\n浏览器端消费\n浏览器原生支持\nEventSource\nAPI：\nconst\neventSource =\nnew\nEventSource\n(\n'/api/stream'\n);\neventSource.\nonmessage\n=\n(\nevent\n) =>\n{\nif\n(event.\ndata\n===\n'[DONE]'\n) {\neventSource.\nclose\n();\nreturn\n;\n}\nconst\n{ choices } =\nJSON\n.\nparse\n(event.\ndata\n);\nconst\ncontent = choices[\n0\n]?.\ndelta\n?.\ncontent\n;\nif\n(content)\nappendToUI\n(content);\n};\neventSource.\nonerror\n=\n(\nerror\n) =>\n{\nconsole\n.\nerror\n(\n'Stream error:'\n, error);\neventSource.\nclose\n();\n};\n然而，\nEventSource\n有一个显著限制：\n只支持 GET 请求\n。对于需要发送复杂 payload 的 LLM API 调用，我们通常使用\nfetch\n+\nReadableStream\n：\nasync\nfunction\nstreamCompletion\n(\nmessages\n) {\nconst\nresponse =\nawait\nfetch\n(\n'/api/chat'\n, {\nmethod\n:\n'POST'\n,\nheaders\n: {\n'Content-Type'\n:\n'application/json'\n},\nbody\n:\nJSON\n.\nstringify\n({ messages,\nstream\n:\ntrue\n}),\n});\nconst\nreader = response.\nbody\n.\ngetReader\n();\nconst\ndecoder =\nnew\nTextDecoder\n();\nlet\nbuffer =\n''\n;\nwhile\n(\ntrue\n) {\nconst\n{ done, value } =\nawait\nreader.\nread\n();\nif\n(done)\nbreak\n;\nbuffer += decoder.\ndecode\n(value, {\nstream\n:\ntrue\n});\n// 按行解析 SSE 事件\nconst\nlines = buffer.\nsplit\n(\n'\\n'\n);\nbuffer = lines.\npop\n();\n// 保留不完整的行\nfor\n(\nconst\nline\nof\nlines) {\nif\n(line.\nstartsWith\n(\n'data: '\n)) {\nconst\ndata = line.\nslice\n(\n6\n);\nif\n(data ===\n'[DONE]'\n)\nreturn\n;\ntry\n{\nconst\nparsed =\nJSON\n.\nparse\n(data);\nyield\nparsed.\nchoices\n[\n0\n]?.\ndelta\n?.\ncontent\n||\n''\n;\n}\ncatch\n(e) {\n// 忽略解析错误\n}\n}\n}\n}\n}\n这里有几个关键细节值得注意：\n{stream: true}\n参数\n：告诉\nTextDecoder\n这是流式解码，避免在多字节字符边界处截断\nBuffer 处理\n：网络包可能在任意位置切分，需要缓存不完整的行\nGenerator 模式\n：使用\nyield\n允许调用方以异步迭代器方式消费\n▐\n主流 LLM 提供商的流式 API 对比\nOpenAI Chat Completions API\nimport OpenAI\nfrom\n'openai'\n;\nconst\nclient\n=\nnew\nOpenAI\n();\nconst\nstream\n= await client.chat.completions.\ncreate\n({\nmodel\n:\n'gpt-4o'\n,\nmessages\n: [{\nrole\n:\n'user'\n,\ncontent\n:\n'Hello'\n}],\nstream\n:\ntrue\n,\nstream_options\n: {\ninclude_usage\n:\ntrue\n}, // 获取 token 统计\n});\nfor\nawait\n(\nconst\nchunk of stream) {\nconst\ncontent\n= chunk.choices[\n0\n]?.delta?.content;\nif\n(content) process.stdout.\nwrite\n(content);\n}\n事件结构\n：\n{\n\"id\"\n:\n\"chatcmpl-xxx\"\n,\n\"object\"\n:\n\"chat.completion.chunk\"\n,\n\"created\"\n:\n1234567890\n,\n\"model\"\n:\n\"gpt-4o\"\n,\n\"choices\"\n:\n[{\n\"index\"\n:\n0\n,\n\"delta\"\n:\n{\n\"content\"\n:\n\"Hello\"\n},\n\"finish_reason\"\n:\nnull\n}]\n}\nAnthropic Claude Messages API\nClaude 的流式 API 采用了更结构化的事件类型系统：\nimport Anthropic\nfrom\n'@anthropic-ai/sdk'\n;\nconst\nclient\n=\nnew\nAnthropic\n();\nconst\nstream\n= await client.messages.\ncreate\n({\nmodel\n:\n'claude-3-5-sonnet-20241022'\n,\nmax_tokens\n:\n1024\n,\nmessages\n: [{\nrole\n:\n'user'\n,\ncontent\n:\n'Hello'\n}],\nstream\n:\ntrue\n,\n});\nfor\nawait\n(\nconst\nevent of stream) {\nif\n(event.type ===\n'content_block_delta'\n) {\nprocess.stdout.\nwrite\n(event.delta.text);\n}\n}\n事件类型序列\n：\nmessage_start\n→ content_block_start → content_block_delta (多次)\n→ content_block_stop → message_delta → message_stop\n这种设计的优势在于：\n语义清晰：每种事件类型有明确的含义\n多模态支持：可以区分文本块、工具调用块、图像块\n思考链支持：Extended Thinking 可以作为独立的 content block\n关键差异对比\n▐\nWebSocket vs SSE：技术选型\n在 AI 流式输出场景下，SSE 几乎是压倒性的选择。原因如下：\nSSE 的优势\n：\nHTTP 原生：无需协议升级，兼容性极佳\n自动重连：浏览器原生支持断线重连\n简单可靠：单向通信模型降低复杂度\nCDN 友好：可以通过标准 HTTP 基础设施代理\n调试方便：标准 HTTP 响应，易于抓包分析\nWebSocket 的适用场景\n：\n双向实时通信：如 OpenAI 的 Realtime API（语音对话）\n高频小数据包：如实时协作编辑\n二进制数据：如音视频流\nOpenAI 的 Realtime API 是一个典型的 WebSocket 用例：\nimport\n{\nOpenAIRealtimeWebSocket\n}\nfrom\n'openai/realtime/websocket'\n;\nconst\nrt =\nnew\nOpenAIRealtimeWebSocket\n({\nmodel\n:\n'gpt-4o-realtime-preview'\n});\nrt.\nsocket\n.\naddEventListener\n(\n'open'\n,\n() =>\n{\nrt.\nsend\n({\ntype\n:\n'response.create'\n,\nresponse\n: {\nmodalities\n: [\n'text'\n,\n'audio'\n] }\n});\n});\nrt.\non\n(\n'response.audio.delta'\n,\n(\nevent\n) =>\n{\nplayAudioChunk\n(event.\ndelta\n);\n// 播放音频片段\n});\n核心开源项目架构剖析\n▐\nVercel AI SDK：流式 UI 的统一抽象层\nVercel AI SDK 是目前最成熟的 AI UI 开发框架，它解决了一个核心问题：\n如何以统一的 API 对接不同的 LLM 提供商，并在 React/Vue/Svelte 等框架中优雅地处理流式 UI\n。\n架构层次\n┌─────────────────────────────────────────────────────────────┐\n│                     应用层 (Your App)                        │\n├─────────────────────────────────────────────────────────────┤\n│  UI 集成层:\n@ai\n-\nsdk\n/\nreact\n|\n@ai\n-\nsdk\n/\nvue\n|\n@ai\n-\nsdk\n/\nsvelte     │\n│  (useChat, useCompletion, useAgent hooks)                   │\n├─────────────────────────────────────────────────────────────┤\n│  核心层: ai                                                  │\n│  (generateText, streamText, generateObject, streamObject)   │\n├─────────────────────────────────────────────────────────────┤\n│  Provider 层:\n@ai\n-\nsdk\n/\nopenai\n|\n@ai\n-\nsdk\n/\nanthropic\n|\n...      │\n│  (provider\n-\nspecific\nadapters)                               │\n├─────────────────────────────────────────────────────────────┤\n│  传输层: SSE\n/\nWebSocket                                     │\n└─────────────────────────────────────────────────────────────┘\n核心 API：streamText\nstreamText\n是流式文本生成的核心函数：\nimport { streamText }\nfrom\n'ai'\n;\nimport { openai }\nfrom\n'@ai-sdk/openai'\n;\nconst\nresult\n= await\nstreamText\n({\nmodel\n:\nopenai\n(\n'gpt-4o'\n),\nmessages\n: [\n{\nrole\n:\n'system'\n,\ncontent\n:\n'You are a helpful assistant.'\n},\n{\nrole\n:\n'user'\n,\ncontent\n:\n'Write a poem about coding.'\n},\n],\n});\n// 方式一：异步迭代器\nfor\nawait\n(\nconst\nchunk of result.textStream) {\nprocess.stdout.\nwrite\n(chunk);\n}\n// 方式二：转换为 Response（用于 API 路由）\nreturn\nresult.\ntoTextStreamResponse\n();\n// 方式三：转换为数据流响应（包含元信息）\nreturn\nresult.\ntoDataStreamResponse\n();\nReact Hook：useChat\nuseChat\n是客户端消费流式响应的核心 Hook：\n'use client'\n;\nimport\n{ useChat }\nfrom\n'@ai-sdk/react'\n;\nexport\ndefault\nfunction\nChatPage\n() {\nconst\n{\nmessages,\n// 消息历史\ninput,\n// 输入框值\nhandleInputChange,\nhandleSubmit,\nisLoading,\n// 是否正在生成\nerror,\n// 错误信息\nstop,\n// 停止生成\nreload,\n// 重新生成最后一条\n} =\nuseChat\n({\napi\n:\n'/api/chat'\n,\nonFinish\n:\n(\nmessage\n) =>\n{\nconsole\n.\nlog\n(\n'Generation complete:'\n, message);\n},\nonError\n:\n(\nerror\n) =>\n{\nconsole\n.\nerror\n(\n'Stream error:'\n, error);\n},\n});\nreturn\n(\n<\ndiv\nclassName\n=\n\"flex flex-col h-screen\"\n>\n<\ndiv\nclassName\n=\n\"flex-1 overflow-y-auto p-4\"\n>\n{messages.map((m) => (\n<\ndiv\nkey\n=\n{m.id}\nclassName\n=\n{m.role\n===\n'user'\n? '\ntext-right\n'\n:\n''}>\n<\nspan\nclassName\n=\n\"font-bold\"\n>\n{m.role}:\n</\nspan\n>\n{m.content}\n</\ndiv\n>\n))}\n</\ndiv\n>\n<\nform\nonSubmit\n=\n{handleSubmit}\nclassName\n=\n\"p-4 border-t\"\n>\n<\ninput\nvalue\n=\n{input}\nonChange\n=\n{handleInputChange}\nplaceholder\n=\n\"Say something...\"\ndisabled\n=\n{isLoading}\nclassName\n=\n\"w-full p-2 border rounded\"\n/>\n{isLoading && (\n<\nbutton\ntype\n=\n\"button\"\nonClick\n=\n{stop}\n>\nStop\n</\nbutton\n>\n)}\n</\nform\n>\n</\ndiv\n>\n);\n}\n服务端 API 路由\n// app/api/chat/route.ts (Next.js App Router)\nimport\n{ streamText }\nfrom\n'ai'\n;\nimport\n{ openai }\nfrom\n'@ai-sdk/openai'\n;\nexport\nasync\nfunction\nPOST\n(\nreq: Request\n) {\nconst\n{ messages } =\nawait\nreq.\njson\n();\nconst\nresult =\nawait\nstreamText\n({\nmodel\n:\nopenai\n(\n'gpt-4o'\n),\nmessages,\n});\nreturn\nresult.\ntoDataStreamResponse\n();\n}\n结构化输出流式生成\nAI SDK 支持基于 Zod Schema 的结构化输出：\nimport { streamObject }\nfrom\n'ai'\n;\nimport { openai }\nfrom\n'@ai-sdk/openai'\n;\nimport { z }\nfrom\n'zod'\n;\nconst\nresult\n= await\nstreamObject\n({\nmodel\n:\nopenai\n(\n'gpt-4o'\n),\nschema\n: z.\nobject\n({\nrecipe\n: z.\nobject\n({\nname\n: z.\nstring\n(),\ningredients: z.\narray\n(z.\nobject\n({\nname: z.\nstring\n(),\namount: z.\nstring\n(),\n})),\nsteps: z.\narray\n(z.\nstring\n()),\n}),\n}),\nprompt:\n'Generate a lasagna recipe.'\n,\n});\n// 流式获取部分对象\nfor\nawait\n(\nconst\npartialObject of result.partialObjectStream) {\nconsole.\nlog\n(\n'Partial:'\n, partialObject);\n// { recipe: { name: \"Lasagna\" } }\n// { recipe: { name: \"Lasagna\", ingredients: [...] } }\n// ...\n}\n▐\nv0.dev：实时 UI 生成的工业级实践\nVercel 的 v0.dev 是 AI-Generated UI 的标杆产品。虽然其核心实现未开源，但通过分析其行为和公开信息，我们可以还原其技术架构。\n核心工作流\n┌──────────────┐    ┌──────────────┐    ┌──────────────┐\n│ 用户\nPrompt\n│───►│\nLLM\n生成    │───►│  代码解析      │\n│\n\"创建登录页\"\n│    │\nReact\n代码  │    │  & 验证       │\n└──────────────┘    └──────┬───────┘    └──────┬───────┘\n│                    │\n▼                    ▼\n┌──────────────┐    ┌──────────────┐\n│\nToken\n流式    │    │ 增量渲染      │\n│ 输出 (\nSSE\n)    │    │ 预览面板      │\n└──────────────┘    └──────────────┘\n关键技术决策\n1. shadcn/ui 组件体系\nv0 生成的代码基于 shadcn/ui 组件库。这是一个关键的设计选择：\n非黑盒：组件源码直接复制到项目，完全可定制\nRadix UI 基础：无障碍访问开箱即用\nTailwind CSS：原子化样式，易于 AI 理解和生成\nTypeScript：类型安全，减少 AI 生成错误\n2. 流式代码预览\nv0 的预览面板在代码生成过程中实时更新。这需要解决：\n不完整代码的错误容忍\n语法高亮的增量更新\n预览沙箱的热重载\n3. Artifact 检测\nAI 输出中混合了解释性文本和代码。v0 使用 XML 风格的标记来区分：\nI\n'll create a login page with a modern design.\n<\nv0_artifact type\n=\n\"react\"\ntitle\n=\n\"Login Page\"\n>\nimport\n{ Button } from \"@/components/ui/button\"\nimport\n{ Input } from \"@/components/ui/input\"\nexport\ndefault\nfunction\nLoginPage\n() {\nreturn\n(\n<\ndiv className\n=\n\"flex min-h-screen items-center justify-center\"\n>\n{\n/* ... */\n}\n</\ndiv\n>\n)\n}\n</\nv0_artifact\n>\nThis\ncomponent uses shadcn\n/\nui\nfor\nstyling\n...\n▐\nBolt.new/Bolt.diy：浏览器内全栈开发\nBolt.new 是 StackBlitz 推出的革命性产品，它将 AI 代码生成与浏览器内 Node.js 运行时结合，实现了真正的\"无需本地环境\"的全栈开发体验。\n架构概览\n┌─────────────────────────────────────────────────────────────┐\n│                      Browser Tab                            │\n│  ┌─────────────────────────────────────────────────────────┐│\n│  │                    Bolt\n.new\nUI                          ││\n│  │  ┌───────────┐  ┌──────────────┐  ┌──────────────┐      ││\n│  │  │  Chat     │  │\nCode\nEditor │  │  Preview     │      ││\n│  │  │  Panel    │  │  (Monaco)    │  │  (\niframe\n)    │      ││\n│  │  └─────┬─────┘  └──────┬───────┘  └──────┬───────┘      ││\n│  └────────┼───────────────┼──────────────────┼─────────────┘│\n│           │               │                  │              │\n│  ┌────────┴───────────────┴──────────────────┴─────────────┐│\n│  │                 WebContainer Runtime                    ││\n│  │  ┌─────────────────────────────────────────────────────┐││\n│  │  │                Node\n.js\n(WASM)                       │││\n│  │  │  • npm/pnpm 包管理                                   │││\n│  │  │  • Vite 开发服务器                                    │││\n│  │  │  • 虚拟文件系统                                       │││\n│  │  └─────────────────────────────────────────────────────┘││\n│  └─────────────────────────────────────────────────────────┘│\n└─────────────────────────────────────────────────────────────┘\n技术栈\n前端框架：Remix (React Router)\n代码编辑器：Monaco Editor\n运行时：WebContainers\nAI SDK：Vercel AI SDK (支持 19+ 提供商)\n样式：UnoCSS\n构建工具：Vite\n流式代码同步机制\nBolt 的核心挑战是：如何在 AI 流式生成代码的同时，保持文件系统和预览的同步。\n1. 文件操作解析\nAI 输出被解析为结构化的文件操作：\ninterface\nFileOperation {\ntype\n:\n'create'\n|\n'update'\n|\n'delete'\n;\npath:\nstring\n;\ncontent?:\nstring\n;\n}\n// AI 输出格式示例\n// <bolt_file path=\"src/App.tsx\">\n// import React from 'react';\n// export default function App() { ... }\n// </bolt_file>\n2. 增量文件写入\nclass\nStreamingFileWriter\n{\nprivate\nbuffer\n:\nMap\n<\nstring\n,\nstring\n> =\nnew\nMap\n();\nprivate\nwriteQueue\n:\nPromise\n<\nvoid\n> =\nPromise\n.\nresolve\n();\nappendToFile\n(\npath\n:\nstring\n,\nchunk\n:\nstring\n) {\nconst\ncurrent =\nthis\n.\nbuffer\n.\nget\n(path) ||\n''\n;\nthis\n.\nbuffer\n.\nset\n(path, current + chunk);\n// 防抖写入，避免频繁 I/O\nthis\n.\nscheduleFlush\n(path);\n}\nprivate\nscheduleFlush\n(\npath\n:\nstring\n) {\nthis\n.\nwriteQueue\n=\nthis\n.\nwriteQueue\n.\nthen\n(\nasync\n() => {\nawait\nthis\n.\ndebounce\n(\n50\n);\n// 50ms 防抖\nconst\ncontent =\nthis\n.\nbuffer\n.\nget\n(path);\nif\n(content) {\nawait\nwebcontainer.\nfs\n.\nwriteFile\n(path, content);\n// Vite HMR 自动触发\n}\n});\n}\n}\n3. 预览同步\nWebContainers 运行的 Vite 开发服务器提供原生 HMR 支持：\n// 监听服务器就绪\nwebcontainer.\non\n(\n'server-ready'\n,\n(\nport, url\n) =>\n{\n// 将预览 iframe 指向本地服务器\npreviewIframe.\nsrc\n= url;\n});\n// 文件变更自动触发 HMR，无需手动刷新\nBolt.diy：开源社区版\nBolt.diy 是社区驱动的开源版本，增加了以下功能：\n多提供商支持：OpenAI, Anthropic, Google, Groq, DeepSeek, Ollama 等\n本地模型：通过 Ollama 支持本地运行的 LLM\nGit 集成：直接从 GitHub 导入/推送\n部署集成：一键部署到 Netlify/Vercel\nMCP 支持：Model Context Protocol 集成\n流式渲染的核心挑战与解决方案\n▐\n不完整代码的增量解析\n当 AI 流式输出代码时，我们面临一个根本性问题：\n不完整的代码无法解析\n。\n// 收到的 token 序列\n\"function hello\"\n// 无法解析\n\"function hello(\"\n// 无法解析\n\"function hello() {\"\n// 无法解析\n\"function hello() { return 'world'; }\"\n// 可以解析！\n解决方案一：错误容忍解析\n使用具有错误恢复能力的解析器，如 Tree-sitter：\n// Tree-sitter 的增量解析\nlet\nmut\nparser\n=\nParser::\nnew\n();\nparser.set_language(tree_sitter_javascript::language())?;\n// 初始解析\nlet\ntree\n=\nparser.parse(\n\"function hello() {\"\n, None)?;\n// 即使语法不完整，Tree-sitter 也能生成部分 AST\n// 增量更新\nlet\nedit\n=\nInputEdit {\nstart_byte:\n18\n,\nold_end_byte:\n18\n,\nnew_end_byte:\n32\n,\n// ...\n};\ntree.edit(&edit);\nlet\nnew_tree\n=\nparser.parse(\n\"function hello() { return 'hi'; }\"\n, Some(&tree))?;\n// 只重新解析变化的部分\nTree-sitter 的关键特性：\n增量解析：O(log n) 时间复杂度更新\n错误恢复：在语法错误处插入 ERROR 节点，继续解析\n语言无关：通过 DSL 定义语法，支持所有主流语言\n解决方案二：延迟渲染边界\n不试图解析每个 token，而是等待\"安全边界\"：\nfunction findSafeBoundary(code: string): number {\n// 策略1：完整的语句（以分号或闭括号结尾）\nconst\nstatementEnd = code.lastIndexOf(\n';'\n);\n// 策略2：完整的代码块\nconst\nbraceBalance = countBraces(code);\nif\n(braceBalance ===\n0\n) {\nreturn\ncode.lastIndexOf(\n'}'\n) +\n1\n;\n}\n// 策略3：完整的行\nreturn\ncode.lastIndexOf(\n'\\n'\n);\n}\nclass\nStreamingCodeRenderer\n{\nprivate\nbuffer =\n''\n;\nprivate\nrendered =\n''\n;\nonChunk(chunk: string) {\nthis\n.buffer += chunk;\nconst\nboundary = findSafeBoundary(\nthis\n.buffer);\nif\n(boundary >\n0\n) {\nconst\ntoRender =\nthis\n.buffer.slice(\n0\n, boundary);\nthis\n.rendered += toRender;\nthis\n.buffer =\nthis\n.buffer.slice(boundary);\nthis\n.render(\nthis\n.rendered);\n}\n}\n}\n解决方案三：语法高亮延迟\n在流式过程中使用简化的高亮策略：\nfunction\nstreamingSyntaxHighlight\n(\ncode:\nstring\n, isComplete:\nboolean\n)\n{\nif\n(isComplete) {\n// 完整代码使用 Shiki/Prism 精确高亮\nreturn\nhighlightWithShiki\n(code);\n}\nelse\n{\n// 流式过程中使用简单的正则高亮\nreturn\ncode\n.\nreplace\n(/\\\nb\n(function|\nconst\n|let|\nvar\n|\nreturn\n|\nif\n|\nelse\n)\\b/g,\n'<span class=\"keyword\">$1</span>'\n)\n.\nreplace\n(/\n'[^'\n]*\n'/g, '\n<span\nclass\n=\n\"string\"\n>$&</span>\n')\n.replace(/\\/\\/.*/g, '<span\nclass\n=\n\"comment\"\n>$&</span>\n');\n}\n}\n▐\nMarkdown 流式渲染策略\nAI 对话场景中，Markdown 是主要的输出格式。流式 Markdown 渲染面临独特挑战：\n# 这是一个标题\n这是正文，包含 **加粗但还没闭\n上面的 Markdown 中，\n**加粗但还没闭\n是不完整的语法。\n策略一：乐观渲染 + 回退\nimport { marked }\nfrom\n'marked'\n;\nfunction\nrenderStreamingMarkdown\n(\npartial\n:\nstring\n):\nstring\n{\ntry\n{\n// 尝试直接渲染\nreturn\nmarked.parse(\npartial\n);\n}\ncatch\n(e) {\n// 失败则回退到纯文本\nreturn\nescapeHtml(\npartial\n);\n}\n}\n策略二：块级延迟渲染\n只渲染完整的块级元素：\nfunction\nparseMarkdownBlocks\n(\ntext\n:\nstring\n) {\nconst\nblocks\n: {\ncontent\n:\nstring\n;\ncomplete\n:\nboolean\n}[] = [];\n// 代码块检测\nconst\ncodeBlockRegex =\n/```[\\s\\S]*?```/g\n;\n// 检测是否有未闭合的代码块\nconst\nopenFences = (text.\nmatch\n(\n/```/g\n) || []).\nlength\n;\nconst\nhasUnclosedCodeBlock = openFences %\n2\n!==\n0\n;\nif\n(hasUnclosedCodeBlock) {\n// 找到最后一个 ``` 的位置\nconst\nlastFence = text.\nlastIndexOf\n(\n'```'\n);\nreturn\n{\ncomplete\n: text.\nslice\n(\n0\n, lastFence),\npending\n: text.\nslice\n(lastFence),\n};\n}\nreturn\n{\ncomplete\n: text,\npending\n:\n''\n};\n}\n策略三：使用增量 Markdown 解析器\nmicromark（GitHub 的 Markdown 解析器）支持流式处理：\nimport\n{ micromark } from\n'micromark'\n;\nimport\n{ gfm, gfmHtml } from\n'micromark-extension-gfm'\n;\nconst\noptions = {\nextensions: [gfm()],\nhtmlExtensions: [gfmHtml()],\nallowDangerousHtml:\ntrue\n,\n};\nclass\nStreamingMarkdownParser\n{\nprivate\ncompletedHtml =\n''\n;\nprivate\nbuffer =\n''\n;\nprocessChunk(chunk: string): string {\nthis\n.buffer += chunk;\n// 找到可以安全渲染的部分\nconst\n{ complete, pending } =\nthis\n.splitAtSafeBoundary(\nthis\n.buffer);\nif\n(complete) {\nconst\nhtml = micromark(complete, options);\nthis\n.completedHtml += html;\nthis\n.buffer = pending;\n}\nreturn\nthis\n.completedHtml;\n}\nprivate\nsplitAtSafeBoundary(text: string) {\n// 在双换行处分割（段落边界）\nconst\nlastParagraphBreak = text.lastIndexOf(\n'\\n\\n'\n);\nif\n(lastParagraphBreak > -\n1\n) {\nreturn\n{\ncomplete: text.slice(\n0\n, lastParagraphBreak),\npending: text.slice(lastParagraphBreak),\n};\n}\nreturn\n{ complete:\n''\n, pending: text };\n}\n}\n▐\n流式 JSON 解析技术\n当 AI 输出结构化数据（如 JSON Schema 定义的对象）时，标准\nJSON.parse()\n无法处理不完整的 JSON：\n{\n\"name\"\n:\n\"John\"\n,\n\"age\"\n:\n30\n,\n\"addre\n方案一：启发式补全\nfunction\nparsePartialJson<T>(\npartial\n:\nstring\n):\nPartial\n<T> |\nnull\n{\n// 首先尝试直接解析\ntry\n{\nreturn\nJSON\n.\nparse\n(partial);\n}\ncatch\n(e) {\n// 尝试补全\n}\nlet\nattempt = partial.\ntrim\n();\n// 补全未闭合的字符串\nconst\nquoteCount = (attempt.\nmatch\n(\n/\"/g\n) || []).\nlength\n;\nif\n(quoteCount %\n2\n!==\n0\n) {\nattempt +=\n'\"'\n;\n}\n// 补全未闭合的数组\nconst\nopenBrackets = (attempt.\nmatch\n(\n/\\[/g\n) || []).\nlength\n;\nconst\ncloseBrackets = (attempt.\nmatch\n(\n/\\]/g\n) || []).\nlength\n;\nattempt +=\n']'\n.\nrepeat\n(openBrackets - closeBrackets);\n// 补全未闭合的对象\nconst\nopenBraces = (attempt.\nmatch\n(\n/{/g\n) || []).\nlength\n;\nconst\ncloseBraces = (attempt.\nmatch\n(\n/}/g\n) || []).\nlength\n;\nattempt +=\n'}'\n.\nrepeat\n(openBraces - closeBraces);\ntry\n{\nreturn\nJSON\n.\nparse\n(attempt);\n}\ncatch\n(e) {\nreturn\nnull\n;\n}\n}\n方案二：SAX 风格流式解析\nimport\n{ parser\nas\njsonParser }\nfrom\n'stream-json'\n;\nimport\n{ streamValues }\nfrom\n'stream-json/streamers/StreamValues'\n;\n// Node.js 流式处理\nconst\npipeline =\nchain\n([\njsonParser\n(),\nstreamValues\n(),\n]);\npipeline.\non\n(\n'data'\n,\n(\n{ key, value }\n) =>\n{\nconsole\n.\nlog\n(\n`Found\n${key}\n:\n${value}\n`\n);\n});\n// 逐块写入\npipeline.\nwrite\n(\n'{\"name\": '\n);\npipeline.\nwrite\n(\n'\"John\",'\n);\npipeline.\nwrite\n(\n' \"age\": 30}'\n);\npipeline.\nend\n();\n方案三：Vercel AI SDK 的 streamObject\nAI SDK 提供了开箱即用的流式结构化输出：\nimport { streamObject }\nfrom\n'ai'\n;\nimport { openai }\nfrom\n'@ai-sdk/openai'\n;\nimport { z }\nfrom\n'zod'\n;\nconst\nschema = z.\nobject\n({\nname: z.\nstring\n(),\nage: z.number(),\naddress: z.\nobject\n({\ncity: z.\nstring\n(),\ncountry: z.\nstring\n(),\n}),\n});\nconst\nresult =\nawait\nstreamObject({\nmodel: openai(\n'gpt-4o'\n),\nschema,\nprompt:\n'Generate a person profile'\n,\n});\n// 流式获取部分解析结果\nfor\nawait\n(\nconst\npartial\nof result.partialObjectStream\n)\n{\nconsole.log(\npartial\n);\n// 第一次: { name: \"John\" }\n// 第二次: { name: \"John\", age: 30 }\n// 第三次: { name: \"John\", age: 30, address: { city: \"NYC\" } }\n// ...\n}\n// 获取最终完整对象\nconst\nfinalObject =\nawait\nresult.\nobject\n;\nAI 代码编辑器的流式实现\n▐\nCursor 的架构设计\nCursor 是目前最流行的 AI 代码编辑器，基于 VS Code 构建。其核心创新在于将 LLM 深度集成到编辑体验中。\n核心组件\n┌────────────────────────────────────────────────────────────┐\n│\nCursor\nEditor                          │\n│  ┌────────────────────────────────────────────────────────┐│\n│  │  VS\nCode\nCore (Monaco + Electron)                      ││\n│  ├────────────────────────────────────────────────────────┤│\n│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ││\n│  │  │ Tab Complete │  │  Composer    │  │  Chat Panel  │  ││\n│  │  │ (Ghost\nText\n) │  │  (Agent)     │  │              │  ││\n│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  ││\n│  │         │                 │                 │          ││\n│  │  ┌──────┴─────────────────┴─────────────────┴───────┐  ││\n│  │  │              AI Integration Layer                │  ││\n│  │  │  • Context Collection (files,\ncursor\n, imports)   │  ││\n│  │  │  • Model Router (Claude, GPT-\n4\n,\nCursor\n-\n1.5\n)      │  ││\n│  │  │  • Streaming Handler                             │  ││\n│  │  └──────────────────────────────────────────────────┘  ││\n│  └────────────────────────────────────────────────────────┘│\n└────────────────────────────────────────────────────────────┘\nTab Completion 流程\n// 简化的 Tab Completion 实现\ninterface\nCompletionContext\n{\nprefix\n:\nstring\n;\n// 光标前的代码\nsuffix\n:\nstring\n;\n// 光标后的代码\nlanguage\n:\nstring\n;\n// 文件语言\nfilePath\n:\nstring\n;\n// 文件路径\nimports\n:\nstring\n[];\n// 相关导入\n}\nasync\nfunction\n*\nstreamCompletion\n(\ncontext\n:\nCompletionContext\n) {\nconst\nresponse =\nawait\nfetch\n(\n'/api/complete'\n, {\nmethod\n:\n'POST'\n,\nbody\n:\nJSON\n.\nstringify\n({\nmodel\n:\n'cursor-small'\n,\n// 快速模型用于补全\ncontext,\nmax_tokens\n:\n200\n,\nstream\n:\ntrue\n,\n}),\n});\nconst\nreader = response.\nbody\n.\ngetReader\n();\nconst\ndecoder =\nnew\nTextDecoder\n();\nwhile\n(\ntrue\n) {\nconst\n{ done, value } =\nawait\nreader.\nread\n();\nif\n(done)\nbreak\n;\nconst\nchunk = decoder.\ndecode\n(value);\nyield\nparseSSEChunk\n(chunk);\n}\n}\n▐\nGhost Text 与 Diff View\nGhost Text 渲染\n\"Ghost Text\" 是 AI 建议以半透明形式显示在光标位置的技术：\n// Monaco Editor decoration API\nclass\nGhostTextProvider\n{\nprivate\ndecorations:\nstring\n[] = [];\nshowSuggestion\n(\neditor\n: monaco.editor.IStandaloneCodeEditor,\nposition\n: monaco.Position,\nsuggestion\n:\nstring\n) {\n// 移除旧的装饰\nthis.decorations = editor.\ndeltaDecorations\n(this.decorations, []);\n// 添加 Ghost Text\nthis.decorations = editor.\ndeltaDecorations\n([], [{\nrange\n:\nnew\nmonaco.\nRange\n(\nposition.lineNumber,\nposition.column,\nposition.lineNumber,\nposition.column\n),\noptions\n: {\nafter\n: {\ncontent\n: suggestion,\ninlineClassName\n:\n'ghost-text'\n, // 半透明样式\ncursorStops\n: InjectedTextCursorStops.None,\n},\n},\n}]);\n}\naccept\n(\neditor\n: monaco.editor.IStandaloneCodeEditor) {\n// 将 Ghost Text 转为实际文本\nconst\nposition\n= editor.\ngetPosition\n();\nconst\nsuggestion\n= this.\ngetCurrentSuggestion\n();\neditor.\nexecuteEdits\n(\n'ghost-text'\n, [{\nrange\n:\nnew\nmonaco.\nRange\n(\nposition.lineNumber, position.column,\nposition.lineNumber, position.column\n),\ntext\n: suggestion,\n}]);\nthis.\nclearDecorations\n(editor);\n}\n}\nDiff View 流式更新\nComposer 模式下，AI 生成的代码变更以 Diff 形式展示：\n// 流式 Diff 计算\nclass\nStreamingDiffView\n{\nprivate\noriginalContent\n:\nstring\n;\nprivate\nnewContent\n:\nstring\n=\n''\n;\nconstructor\n(\noriginal\n:\nstring\n) {\nthis\n.\noriginalContent\n= original;\n}\nappendChunk\n(\nchunk\n:\nstring\n) {\nthis\n.\nnewContent\n+= chunk;\nthis\n.\nupdateDiff\n();\n}\nprivate\nupdateDiff\n() {\n// 使用 diff-match-patch 或 jsdiff 计算差异\nconst\ndiffs =\ndiffLines\n(\nthis\n.\noriginalContent\n,\nthis\n.\nnewContent\n);\n// 渲染为并排或内联 diff 视图\nthis\n.\nrenderDiff\n(diffs);\n}\nprivate\nrenderDiff\n(\ndiffs\n:\nDiffResult\n[]\n) {\n// 对于流式更新，只更新变化的部分\n// 避免整体重渲染导致的闪烁\ndiffs.\nforEach\n(\n(\ndiff, index\n) =>\n{\nconst\nelement =\nthis\n.\ngetDiffElement\n(index);\nif\n(diff.\nadded\n) {\nelement.\nclassName\n=\n'diff-added'\n;\nelement.\ntextContent\n= diff.\nvalue\n;\n}\nelse\nif\n(diff.\nremoved\n) {\nelement.\nclassName\n=\n'diff-removed'\n;\nelement.\ntextContent\n= diff.\nvalue\n;\n}\n});\n}\n}\nWebContainers：浏览器内的 Node.js 运行时\nWebContainers 是 Bolt.new 等应用的核心技术，它使在浏览器中运行完整的 Node.js 环境成为可能。\n技术原理\n┌─────────────────────────────────────────────────────────────┐\n│\nWebContainer\n│\n│  ┌─────────────────────────────────────────────────────────┐│\n│  │\nNode\n.\njs\nRuntime\n(编译为\nWebAssembly\n)                    ││\n│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      ││\n│  │  │\nV8\nJS\n│  │   libuv     │  │\nNode\nAPI\n│      ││\n│  │  │\nEngine\n│  │\nEvent\nLoop\n│  │\nPolyfills\n│      ││\n│  │  └─────────────┘  └─────────────┘  └─────────────┘      ││\n│  └─────────────────────────────────────────────────────────┘│\n│  ┌─────────────────────────────────────────────────────────┐│\n│  │\nVirtual\nFile\nSystem\n││\n│  │  • 内存存储 (主要)                                        ││\n│  │  •\nIndexedDB\n持久化 (可选)                               ││\n│  │  • 文件监听\nAPI\n││\n│  └─────────────────────────────────────────────────────────┘│\n│  ┌─────────────────────────────────────────────────────────┐│\n│  │\nVirtual\nNetwork\nStack\n││\n│  │  •\nService\nWorker\n拦截请求                               ││\n│  │  • localhost 模拟                                        ││\n│  │  •\nHTTP\n/\nHTTPS\n支持                                       ││\n│  └─────────────────────────────────────────────────────────┘│\n└─────────────────────────────────────────────────────────────┘\nAPI 使用示例\nimport\n{\nWebContainer\n}\nfrom\n'@webcontainer/api'\n;\nasync\nfunction\nbootDevEnvironment\n() {\n// 启动 WebContainer\nconst\nwebcontainer =\nawait\nWebContainer\n.\nboot\n();\n// 挂载项目文件\nawait\nwebcontainer.\nmount\n({\n'package.json'\n: {\nfile\n: {\ncontents\n:\nJSON\n.\nstringify\n({\nname\n:\n'my-app'\n,\nscripts\n: {\ndev\n:\n'vite'\n},\ndependencies\n: {\n'vite'\n:\n'^5.0.0'\n},\n}),\n},\n},\n'index.html'\n: {\nfile\n: {\ncontents\n:\n'<html><body><div id=\"app\"></div></body></html>'\n,\n},\n},\n'src'\n: {\ndirectory\n: {\n'main.js'\n: {\nfile\n: {\ncontents\n:\n'console.log(\"Hello!\")'\n},\n},\n},\n},\n});\n// 安装依赖\nconst\ninstallProcess =\nawait\nwebcontainer.\nspawn\n(\n'npm'\n, [\n'install'\n]);\ninstallProcess.\noutput\n.\npipeTo\n(\nnew\nWritableStream\n({\nwrite\n(\ndata\n) {\nconsole\n.\nlog\n(data);\n}\n}));\nawait\ninstallProcess.\nexit\n;\n// 启动开发服务器\nconst\ndevProcess =\nawait\nwebcontainer.\nspawn\n(\n'npm'\n, [\n'run'\n,\n'dev'\n]);\n// 监听服务器就绪\nwebcontainer.\non\n(\n'server-ready'\n,\n(\nport, url\n) =>\n{\nconsole\n.\nlog\n(\n`Dev server ready at\n${url}\n`\n);\ndocument\n.\nquerySelector\n(\n'iframe'\n).\nsrc\n= url;\n});\n// 文件监听（用于实现自定义 HMR 逻辑）\nwebcontainer.\nfs\n.\nwatch\n(\n'/src'\n, {\nrecursive\n:\ntrue\n},\n(\nevent, filename\n) =>\n{\nconsole\n.\nlog\n(\n`File\n${filename}\nchanged`\n);\n});\n}\n关\n键限制\n浏览器兼容性：需要 SharedArrayBuffer 和 Cross-Origin Isolation\n原生模块：无法运行包含原生代码的 npm 包\n网络访问：只能访问有 CORS 头的外部 API\n性能：WASM 比原生 Node.js 慢，但对于开发场景足够\n为 AI 生成代码提供的优势\n即时预览：文件写入后毫秒级预览更新\n零配置：无需本地安装任何开发工具\n安全沙箱：AI 生成的代码在隔离环境运行\n一致性：所有用户相同的运行环境\n生产级最佳实践\n▐\n性能优化\n防抖与节流\nclass\nStreamingUIManager\n{\nprivate\nbuffer =\n''\n;\nprivate\nrenderScheduled =\nfalse\n;\nprivate\nlastRenderTime =\n0\n;\nprivate\nreadonly MIN_RENDER_INTERVAL =\n16\n;\n// ~60fps\nonToken(token: string) {\nthis\n.buffer += token;\nif\n(!\nthis\n.renderScheduled) {\nthis\n.renderScheduled =\ntrue\n;\nconst\ntimeSinceLastRender = Date.now() -\nthis\n.lastRenderTime;\nconst\ndelay = Math.max(\n0\n,\nthis\n.MIN_RENDER_INTERVAL - timeSinceLastRender);\nsetTimeout(() => {\nthis\n.render(\nthis\n.buffer);\nthis\n.renderScheduled =\nfalse\n;\nthis\n.lastRenderTime = Date.now();\n}, delay);\n}\n}\n}\n虚拟滚动\n对于长对话，使用虚拟滚动避免 DOM 节点过多：\nimport\n{ useVirtualizer }\nfrom\n'@tanstack/react-virtual'\n;\nfunction\nChatHistory\n(\n{ messages }\n) {\nconst\nparentRef = useRef<\nHTMLDivElement\n>(\nnull\n);\nconst\nvirtualizer =\nuseVirtualizer\n({\ncount\n: messages.\nlength\n,\ngetScrollElement\n:\n() =>\nparentRef.\ncurrent\n,\nestimateSize\n:\n() =>\n100\n,\noverscan\n:\n5\n,\n});\nreturn\n(\n<\ndiv\nref\n=\n{parentRef}\nstyle\n=\n{{\nheight:\n'\n100\n%',\noverflow:\n'\nauto\n' }}>\n<\ndiv\nstyle\n=\n{{\nheight:\n`${\nvirtualizer.getTotalSize\n()}\npx\n`,\nposition:\n'\nrelative\n' }}>\n{virtualizer.getVirtualItems().map((virtualRow) => (\n<\ndiv\nkey\n=\n{virtualRow.key}\nstyle\n=\n{{\nposition:\n'\nabsolute\n',\ntop:\n0\n,\ntransform:\n`\ntranslateY\n(${\nvirtualRow.start\n}\npx\n)`,\n}}\n>\n<\nMessage\nmessage\n=\n{messages[virtualRow.index]}\n/>\n</\ndiv\n>\n))}\n</\ndiv\n>\n</\ndiv\n>\n);\n}\n▐\n错误处理与恢复\nasync\nfunction\n*\nrobustStream\n(\nmessages\n:\nMessage\n[]):\nAsyncGenerator\n<\nstring\n> {\nlet\nretries =\n0\n;\nconst\nMAX_RETRIES\n=\n3\n;\nlet\nlastSuccessfulChunk =\n''\n;\nwhile\n(retries <\nMAX_RETRIES\n) {\ntry\n{\nconst\nresponse =\nawait\nfetch\n(\n'/api/chat'\n, {\nmethod\n:\n'POST'\n,\nbody\n:\nJSON\n.\nstringify\n({ messages }),\n});\nif\n(!response.\nok\n) {\nthrow\nnew\nAPIError\n(response.\nstatus\n,\nawait\nresponse.\ntext\n());\n}\nconst\nreader = response.\nbody\n.\ngetReader\n();\nwhile\n(\ntrue\n) {\nconst\n{ done, value } =\nawait\nreader.\nread\n();\nif\n(done)\nreturn\n;\nconst\nchunk =\nnew\nTextDecoder\n().\ndecode\n(value);\nlastSuccessfulChunk += chunk;\nyield\nchunk;\n}\n}\ncatch\n(error) {\nif\n(error\ninstanceof\nRateLimitError\n) {\nconst\nbackoff =\nMath\n.\npow\n(\n2\n, retries) *\n1000\n;\nawait\nsleep\n(backoff);\nretries++;\n}\nelse\nif\n(error\ninstanceof\nNetworkError\n) {\n// 网络错误可以立即重试\nretries++;\n// 从上次成功的位置继续\nyield\n`\\n[Connection restored, continuing...]\\n`\n;\n}\nelse\n{\nthrow\nerror;\n// 不可恢复的错误\n}\n}\n}\nthrow\nnew\nError\n(\n'Max retries exceeded'\n);\n}\n▐\n用户体验模式\n打字机效果\nfunction\nuseTypingEffect\n(\ntext: string, speed =\n30\n) {\nconst\n[displayText, setDisplayText] =\nuseState\n(\n''\n);\nuseEffect\n(\n() =>\n{\nlet\nindex =\n0\n;\nconst\ntimer =\nsetInterval\n(\n() =>\n{\nif\n(index < text.\nlength\n) {\nsetDisplayText\n(text.\nslice\n(\n0\n, index +\n1\n));\nindex++;\n}\nelse\n{\nclearInterval\n(timer);\n}\n}, speed);\nreturn\n() =>\nclearInterval\n(timer);\n}, [text, speed]);\nreturn\ndisplayText;\n}\n流式中断\nfunction\nuseAbortableStream\n() {\nconst\nabortControllerRef = useRef<\nAbortController\n|\nnull\n>(\nnull\n);\nconst\nstartStream\n=\nasync\n(\nprompt: string\n) => {\n// 取消之前的请求\nabortControllerRef.\ncurrent\n?.\nabort\n();\nabortControllerRef.\ncurrent\n=\nnew\nAbortController\n();\ntry\n{\nconst\nresponse =\nawait\nfetch\n(\n'/api/chat'\n, {\nmethod\n:\n'POST'\n,\nbody\n:\nJSON\n.\nstringify\n({ prompt }),\nsignal\n: abortControllerRef.\ncurrent\n.\nsignal\n,\n});\n// ... 处理流\n}\ncatch\n(error) {\nif\n(error.\nname\n===\n'AbortError'\n) {\nconsole\n.\nlog\n(\n'Stream aborted by user'\n);\nreturn\n;\n}\nthrow\nerror;\n}\n};\nconst\nstopStream\n= () => {\nabortControllerRef.\ncurrent\n?.\nabort\n();\n};\nreturn\n{ startStream, stopStream };\n}\n▐\n可访问性考虑\nfunction\nStreamingMessage\n(\n{ content, isStreaming }\n) {\nreturn\n(\n<\ndiv\nrole\n=\n\"article\"\naria-live\n=\n{isStreaming\n? \"\npolite\n\"\n:\n\"\noff\n\"}\naria-busy\n=\n{isStreaming}\naria-label\n=\n{isStreaming\n? \"\nAI\nis\ntyping...\n\"\n:\n\"\nAI\nresponse\n\"}\n>\n{content}\n{isStreaming && (\n<\nspan\nclassName\n=\n\"sr-only\"\n>\nAI is currently generating a response\n</\nspan\n>\n)}\n</\ndiv\n>\n);\n}\n未来展望\n多模态流式输出\n随着 GPT-4o 和 Gemini 等多模态模型的发展，流式输出不再局限于文本：\n// 未来的多模态流式 API（概念示例）\nfor\nawait\n(\nconst\nchunk of multimodalStream\n)\n{\nswitch\n(chunk.type) {\ncase\n'text'\n:\nappendText(chunk.content);\nbreak\n;\ncase\n'image'\n:\n// 图像可能分块传输\nupdateImageProgress(chunk.data, chunk.progress);\nbreak\n;\ncase\n'audio'\n:\nplayAudioChunk(chunk.data);\nbreak\n;\ncase\n'ui_component'\n:\n// 直接生成可渲染的组件\nrenderComponent(chunk.component);\nbreak\n;\n}\n}\nAgent 驱动的 UI 生成\nAI Agent 将不仅生成 UI 代码，还能：\n自主测试生成的组件\n根据用户反馈迭代优化\n与设计系统集成确保一致性\n边缘计算与本地模型\n随着 Ollama、llama.cpp 等技术的成熟，本地模型的流式 UI 生成将变得普遍：\n更低延迟（无网络往返）\n更强隐私保护\n离线工作能力\n标准化与互操作性\nModel Context Protocol (MCP) 等协议的出现预示着 AI 工具生态的标准化：\n统一的工具调用接口\n跨平台的上下文共享\n可组合的 AI 能力\n结语\nAI-Generated UI 代表了人机交互的一次范式转变。从本文的分析可以看出，这一领域的技术挑战是多维度的：\n协议层：\nSSE 成为事实标准，但多模态场景可能催生新协议\n解析层：\n增量解析、错误恢复、流式 JSON 是核心难点\n渲染层：\n防抖、虚拟滚动、Diff View 等技术确保流畅体验\n运行时层：\nWebContainers 等技术突破浏览器限制\nVercel AI SDK、Bolt.new、Cursor 等项目已经证明了这些技术的可行性和价\n值。随着模型能力的持续提升和工具链的不断完善，AI-Generated UI 将从\"辅助工具\"进化为\"创作伙伴\"，深刻改变软件开发的方式。\n参考资料\nVercel AI SDK Documentation\nOpenAI Streaming Guide\nAnthropic Claude API Reference\nWebContainers API\nTree-sitter Documentation\nBolt.diy GitHub Repository\nReact Server Components RFC\n团队介绍\n本文作者祥子，来自淘天集团-私域技术团队。我们直接支撑淘宝天猫核心商业系统的技术底座，覆盖商品详情、店铺商户、私域关系运营等核心业务场景，服务亿级消费者与千万商家。团队聚焦AI原生及衍生技术的探索与落地，覆盖从问题定义、方案设计、模型选型与训练微调，到工程交付与效果迭代的全链路闭环，致力于通过系统架构、平台能力、上下文工程及评测体系，沉淀可复用的技术资产与能力底座，高效支撑业务的探索与持续发展。从高并发C端交互到AI驱动的B端解决方案，从架构性能优化到算法模型落地，持续挑战系统边界，以技术重构商家经营效率，定义下一代智慧零售新标准。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "irrelevant",
+      "probabilities": {
+        "direct_local": 0,
+        "transfer_business": 0.01,
+        "transfer_agent": 0.26,
+        "peripheral": 0.07,
+        "irrelevant": 0.66
+      }
+    },
+    "relevance": {
+      "score": 1.83,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.1,
+        "2": 0.86,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 0.34,
+      "probabilities": {
+        "0": 0.78,
+        "1": 0.14,
+        "2": 0.05,
+        "3": 0.02,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.2,
+      "probabilities": {
+        "0": 0.84,
+        "1": 0.12,
+        "2": 0.03,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.43,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.56,
+        "3": 0.44,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.76,
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.01,
+        "2": 0,
+        "3": 0.04,
+        "4": 0.9,
+        "5": 0.01
+      }
+    },
+    "anti_hype": {
+      "score": 2.02,
+      "probabilities": {
+        "0": 0.08,
+        "1": 0.15,
+        "2": 0.44,
+        "3": 0.32,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.94,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 17363,
+    "outputTokens": 173,
+    "totalTokens": 17536
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.83,
+        "anti_hype": 0.56,
+        "category": 0.57,
+        "relevance": 0.88,
+        "grounding": 0.77,
+        "decision_action": 0.87,
+        "evidence": 0.7
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179892051,
+                "endTime": 1791179892263,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000729246",
+      "marketCost": "0.000729246",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000729246",
+      "inferenceCost": "0.000729246",
+      "inputInferenceCost": "0.000729246",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A899ZSYQCM5EV73GJ1ZT1"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:12 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::mm6fr-1791179891329-16670d9951a4"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.76,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.01,
+            "2": 0,
+            "3": 0.04,
+            "4": 0.9,
+            "5": 0.01
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 2.02,
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.15,
+            "2": 0.44,
+            "3": 0.32,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.94
+        },
+        "category": {
+          "type": "choice",
+          "choice": "irrelevant",
+          "probabilities": {
+            "direct_local": 0,
+            "transfer_business": 0.01,
+            "transfer_agent": 0.26,
+            "peripheral": 0.07,
+            "irrelevant": 0.66
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.83,
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.1,
+            "2": 0.86,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 0.34,
+          "probabilities": {
+            "0": 0.78,
+            "1": 0.14,
+            "2": 0.05,
+            "3": 0.02,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.2,
+          "probabilities": {
+            "0": 0.84,
+            "1": 0.12,
+            "2": 0.03,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.43,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.56,
+            "3": 0.44,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 17363,
+        "outputTokens": 173
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.83,
+            "anti_hype": 0.56,
+            "category": 0.57,
+            "relevance": 0.88,
+            "grounding": 0.77,
+            "decision_action": 0.87,
+            "evidence": 0.7
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179892051,
+                    "endTime": 1791179892263,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000729246",
+          "marketCost": "0.000729246",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000729246",
+          "inferenceCost": "0.000729246",
+          "inputInferenceCost": "0.000729246",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A899ZSYQCM5EV73GJ1ZT1"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:11.488Z"
+  }
+}

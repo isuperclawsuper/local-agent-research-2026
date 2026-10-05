@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "252245492406134784",
+      "source": "字节跳动技术团队",
+      "feed_id": "187347118949140480",
+      "title": "别再硬扛原生记忆了！OpenClaw内置Mem0，让Agent更省token、更智能",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247518639&idx=1&sn=cc07914206490982b95e12dda319da28",
+      "date": "2026-03-04T09:02:00.471Z",
+      "chars": 6702,
+      "text": "原创\n火山引擎数据库\n2026-03-04 17:02\n北京\n一、引言\n众所周知，OpenClaw的强大在于其灵活的Skills生态和高效的大模型决策能力，作为个人智能助手，它可以在轻松在个人电脑上部署，并且接入飞书等常用聊天工具，实现方便的智能体验。\n不过，OpenClaw内置的默认记忆插件仅基于文件记录操作，虽然能快速接入记忆能力，但会无差别的、事无巨细地保存所有的操作记录，不仅造成token消耗过多，增加开发成本，还存记忆不筛选、没有重点等多个问题，实则“反向拖后腿”，因此原生记忆系统也成了OpenClaw的一大“硬伤”。\n与其在原生记忆插件的坑里反复调试、不如直接重构OpenClaw的记忆体系，openclaw-mem0-plugin插件应运而生，该插件将记忆接入mem0，实现记忆的精确检索，减少token的消耗；同时，在会话中自动捕捉关键的记忆信息；基于mem0云服务平台实现记忆跨会话，跨agent的管理。插件安装过程简单快捷，只需获取API Key和接入地址，并安装配置插件即可使用。\n本文将介绍OpenClaw原生记忆系统的实现原理，手把手带你安装、体验openclaw-mem0-plugin插件，从而为OpenClaw用户的记忆能力提供一个企业级的选择。\n二、OpenClaw 记忆系统实现原理\n1.1 为什么需要“记忆层”\n传统基于 LLM 的 Agent，每个请求都是“无状态”的：上下文只存在于当前 prompt 中，一旦会话结束或上下文被压缩，就再也找不回之前的细节。OpenClaw 的目标是让个人或团队可以长期运行“自己的智能体”，因此必须提供一个跨会话、可编辑、可回溯的记忆层，而不是把一切都塞进对话窗口里。\nOpenClaw 的设计选择是：\n把记忆当成工作区里的普通文件\n，所有持久记忆都写进 Markdown，再通过本地索引和检索把“该记住的”片段重新喂回 LLM，而不是强依赖外部云服务或复杂的向量数据库集群。\n1.2 文件优先与本地优先的记忆架构\nOpenClaw 把记忆分成“文件层”和“索引层”两部分：文件层用 Markdown 组织知识与经验，索引层用 SQLite + FTS5 + 向量扩展做检索，是一个典型的\nfile‑first、本地优先\n架构。\n文件是真实来源（source of truth）\n：只要你能在编辑器里看到的 Markdown，就一定是模型有机会“记住”的内容；反过来，模型不会悄悄把东西塞进某个看不到的数据库里。\n本地优先\n：默认只依赖本地文件系统和 SQLite；向量检索通过 sqlite-vec 这种库嵌入到 SQLite 中完成。一方面降低部署门槛，另一方面也便于把工作区整体纳入 Git 做版本管理和备份。\n1.3 记忆文件的层次：长期、短期与会话\n在文件层，OpenClaw 主要有三类与记忆相关的内容：\n长期精选记忆\nMEMORY.md\n用来存放相对稳定的事实，比如：你的名字、技术偏好、常驻项目、重要决策、常用服务地址等。通常由 Agent 或你自己手动维护，内容量不会太大，但质量要求高。\n每日日志\nmemory/YYYY-MM-DD.md\n每天自动或半自动追加的工作日志，记录当天的操作、临时决策、踩坑过程、TODO 等，更像“工作记忆”。新的会话启动时，会优先读取最近一两天的日志，为当日工作提供上下文。\n会话日志\nsessions/*.jsonl\n以 JSONL\n形式记录完\n整的对话树（用户消息、工具调用、压缩摘要等），供索引层选择性纳入检索。相当于“原始事件流”，可以被二次加工为更结构化的记忆。\n通过配置可以选择是否把 sessions 也加入 memory 索引，从而在“稳定长期记忆”和“带噪声的完整对话历史”之间做权衡。\n1.4 索引与混合检索：SQLite + 向量搜索\n在索引层，OpenClaw 内置了一个 Memory Search 子系统，默认使用 SQLite 作为底层存储：\nMarkdown 分块与嵌入\n按行把 Markdown 切成大小约 400 tokens、重叠约 80 tokens 的块，尽量保证语义完整不被截断。\n为每个块计算哈希并缓存嵌入，避免重复计算。\n嵌入可以来自本地 GGUF 模型（通过 node-llama-cpp）、OpenAI\ntext-embedding-3-small\n或 Gemini 等，支持 batch 与失败重试策略。\n文本检索（BM25）\n借助 SQLite 的 FTS5 虚拟表，对 chunk 文本做全文索引，适合搜索错误码、变量名、路径等“不能被 embedding 吃掉”的硬 token。\n向量检索\n若环境安装了 sqlite-vec，会在 SQLite 内建一个向量虚拟表，按向量相似度找出与查询最接近的若干块，用于语义级别的“相似记忆”。\n混合排序\n默认启用混合检索：向量分数和 BM25 分数按可配置权重混合，既能找出语义上类似的片段，又不丢失对精确关键词的敏感度。\n整体来看，它是一个“单机版 RAG 引擎”，但专门针对 Markdown 工作区做了工程优化，非常适合个人或单机 Agent 的长期记忆场景。\n1.5 与 Agent / 工具链的集成\n在 Agent 侧，OpenClaw 把记忆暴露为工具，最典型的是：\nmemory_search\n：\n给定自然语言查询，在\nMEMORY.md\n、\nmemory/*.md\n（以及可选的 sessions）里检索相关片段，并把结果作为一个结构化对象返回。系统提示会明确告诉模型：\n凡是涉及历史决策、长期偏好或之前提到过的信息，回答前应先调用这个工具。\nmemory_get\n：\n按路径和行号精确读取某段 Markdown 内容，帮模型做“按需展开”，避免一次性把整篇长文塞进上下文。\n此外，OpenClaw 还引入了类似“预压缩记忆冲刷”的机制：当会话上下文接近模型的 context 上限时，会静默触发一个内部 turn，请模型把当下对话中真正重要、值得长期保留的事实写入当天的\nmemory/YYYY-MM-DD.md\n，以降低后续上下文被裁剪时的信息损失。\n1.6 记忆后端插件化与 LanceDB 插件\n虽然内置的文件 + SQLite 方案已经足够好用，但 OpenClaw 仍然为记忆后端预留了插件 Slot。默认情况下，\nmemory_search\n工具由核心插件\nmemory-core\n提供，也可以通过配置切换到其他后端。\n近期官方示例中，重点介绍了一个 LanceDB 驱动的第三方插件\nmemory-lancedb\n：它把记忆存储在 LanceDB 中，提供更丰富的多模态和向量检索能力，并在工具层暴露\nmemory_recall\n、\nmemory_store\n、\nmemory_forget\n等接口，用以演示“把记忆完全外置”的可能性。\nopenclaw-mem0-plugin 正是沿着同一条思路，把底层记忆后端替换为 Mem0，而不改变上层 Agent 的工作方式。\n三、openclaw-mem0-plugin 插件：为 OpenClaw 引入 Mem0 长期记忆\n2.1 Mem0 简介与集成思路\nMem0 是一个聚焦“LLM 长期记忆”的开源/云端服务，它在 LLM 之上增加了一个专门的记忆层：负责从对话中抽取结构化事实、做去重与合并、存入向量库，并在每轮对话前根据当前 query 做自动召回。\nopenclaw-mem0-plugin 插件的目标，就是把 Mem0 变成 OpenClaw 的一个记忆后端：\n对上：\n以 OpenClaw 插件的形式，接入 Agent 生命周期，在每轮对话前后做自动召回（auto-recall）和自动记录（auto-capture）。\n对下：\n把所有持久记忆存储在 Mem0 后端（云端或自托管），不再依赖本地 SQLite；对于 OpenClaw 来说，记忆就像一个独立的服务，可以跨会话、跨进程、甚至跨多台机器共享。\n2.2 安装方式\nopenclaw-mem0-plugin 以 OpenClaw 插件的形式发布，安装流程与其他插件类似。核心步骤如下：\n确保OpenClaw 已安装\n本地至少需要能正常运行 Gateway 和一个 Agent，例如通过\nopenclaw status\n确认环境正常。\n安装插件包\nopenclaw\nplugins install\n@xray2016\n/openclaw-mem0-plugin\n该命令会从 npm registry 安装插件，并在本地插件目录（通常位于\n~/.openclaw/plugins\n）下注册。\n当前插件仓库为临时仓库，后续请参考火山引擎官网文档安装插件。\n准备 Mem0 侧配置\n如果使用 Mem0 Cloud，需要在 Mem0 控制台创建项目，获取 API Key，并记录云端地址。详细步骤参考（\nhttps://www.volcengine.com/docs/86722/1884417?lang=zh），其中创建project时推荐填入如下的prompt，引导mem0提取个人的姓名/职业等基本信息，也可以根据用户的场景自定义。\n你是一个用户基础信息的提取专家，要求从一段对话中提取用户的基本信息(包括姓名、年龄、性别、地域等)，并按照指定格式返回\n比如：\n```\nAI: 你好呀～最近过得怎么样？\n用户: 还行吧，我叫王小明，最近工作有点忙。\nAI: 你好，小明！😊 你是做什么工作的呀？\n用户: 我在互联网公司做后端开发，今年 28 岁了。\nAI: 哇，程序员呀～那肯定经常加班吧？\n用户: 哈哈，是的，尤其在北京，竞争挺激烈的\n`\n``\n输出：\n{\n\"facts\"\n:[\n\"年龄:28岁\"\n,\n\"姓名:王小明\"\n,\n\"职业:程序员\"\n,\n\"地域:北京\"\n]}\n修改 OpenClaw 配置启用插件\n在\n~/.openclaw/openclaw.json\n或对应 Agent 的配置文件中，为插件增加一个 entry，配置好模式和参数（见下文）。\n2.3 插件配置示例\n平台模式是最简单的接入方式——把所有记忆存储和检索的工作交给 Mem0 云端：\n// ~/.openclaw/openclaw.json 片段\n{\n\"plugins\"\n:\n{\n\"entries\"\n:\n{\n\"openclaw-mem0-plugin\"\n:\n{\n\"enabled\"\n:\ntrue\n,\n\"config\"\n:\n{\n\"mode\"\n:\n\"platform\"\n,\n// 使用 Mem0 Cloud\n\"apiKey\"\n:\n\"your_api_key\"\n,\n// 从 Mem0 控制台获取\n\"userId\"\n:\n\"openclaw-user\"\n,\n// 用于区分不同终端用户\n\"host\"\n:\n\"mem0_platform_addr\"\n// mem0服务地址\n}\n}\n}\n}\n}\n常见的配置建议：\nuserId\n由用户自定义，保证不同使用者之间的记忆隔离。\nhost/api_key\n可从mem0控制台获取。\n配置完成后，重启 Gateway 即可让 Agent 拥有跨会话的 Mem0 长期记忆能力。\nopenclaw\ngateway restart\n2.5 记忆插件验证\n新开一个session，模拟输入带有很强用户信息的对话，验证OpenClaw是否触发记忆存储。\n我叫林晓，28岁，是个性格开朗的女生，热爱生活，喜欢探索新鲜事物。平时工作认真，闲暇时爱旅行、摄影、阅读，也享受和朋友分享美食、聊天。新的一年，希望能继续努力，收获更多成长和快乐！\n等一会如果看\"memory store completed\"则表示OpenClaw触发添加记忆成功。\n打开火山mem0的控制台，通过长期记忆检索即可看到记忆已经生成。提取别的记忆，修改记忆项目中策略的prompt即可。\n2.6 Agent 内的 API 与命令行体验\nopenclaw-mem0-plugin 向 Agent 暴露了一组用于“显式管理记忆”的工具，同时也扩展了 CLI 以便开发者调试。\n1.\n工具层接口（面向 Agent）\n典型的工具包括：\nmemory_search\n：按自然语言查询相关记忆，支持指定 scope（如\n\"session\"\n、\n\"long-term\"\n或 \"all\"）。\nmemory_list\n：列出当前用户的所有记忆，常用于调试或审查。\nmemory_store\n：显式写入一条记忆，通常在用户说“牢记这件事”时由模型调用，可选择写入长期或仅当前会话。\nmemory_get\n：按 id 精确读取某条记忆，用于进一步展开上下文。\nmemory_forget\n：删除某条记忆，用于满足用户“不要再记住某件事”的需求。\n这些工具会出现在 Agent 的工具列表中，模型可以像使用\nmemory_search\n那样，在需要时主动调用它们。\n命令行体验（面向开发者）\n为了方便验证 Mem0 是否正常工作，插件还提供了一些 CLI 命令，例如：\n# 搜索所有\nscope\n下的记忆\nopenclaw mem0\nsearch\n\"what languages does the user know\"\n# 只查长期记忆\nopenclaw mem0\nsearch\n\"what languages does the user know\"\n--scope long-term\n# 只查当前会话记忆\nopenclaw mem0\nsearch\n\"what languages does the user know\"\n--scope session\n# 查看当前用户记忆统计\nopenclaw mem0 stats\n这些命令非常适合在本地调试阶段验证“记忆是否真正被写入和召回”，避免把问题归咎于模型。\n2.7 与 OpenClaw 原生记忆的优势对比\n从工程实践角度看，openclaw-mem0-plugin 相比 OpenClaw 原生记忆主要有以下几个方面的优势：\n更强的跨会话、跨 Agent 记忆能力\nOpenClaw 原生记忆以工作区为中心，每个 Agent 拥有独立的\nMEMORY.md\n与 SQLite 索引，不同 Agent 之间不会共享记忆。这在隔离上很安全，但也限制了“同一个人用多个 Agent 协作”的场景。\nmem0 以\nuserId\n和\nrunId\n组织记忆：同一个用户在不同 Agent、不同任务中的记忆可以统一存放在同一个 Mem0 store 中，再通过前缀或额外字段做逻辑隔离。\n更“工程化”的记忆管理方式\nOpenClaw 原生记忆的最大特点是“所有东西都是文件”，这非常适合工程师用 Git 来管理和编辑记忆，但也意味着：\n你需要手动或通过 prompt 让模型把重要信息写进特定文件；\n删除或修改记忆往往要手工编辑 Markdown。\nmem0 则提供了更面向产品化的接口：\n抽取层自动从对话中形成结构化事实，避免记忆中充满大量冗长的原话；\n通过\nmemory_list\n/\nmemory_forget\n等接口可以做精细的审计与删除。\n这对于需要长期运营、需要合规审计的生产级 Agent 来说，是一个很重要的加分项。\n更好的可扩展性与运维空间\n在单机使用场景下，OpenClaw 原生 memory 已经足够可靠、简单；但一旦进入多用户、多 Agent、长时间运行的生产场景，你往往需要：\n更细粒度的监控（延迟、召回命中率、错误率等）；\n更复杂的访问控制和多租户隔离。\n这些能力用 SQLite 单机难以优雅实现，而 mem0 通过云端托管，让你可以用成熟的数据库和监控体系来管理“记忆”这一关键基础设施。\n四、火山引擎 Mem0：企业级长期记忆基础设施\n如果你希望在生产环境中使用托管版 Mem0，将长期记忆作为一项稳定可靠的云端基础设施来运营，可以直接选用\n火山引擎 Mem0\n：它在官方 Mem0 能力之上，提供企业级的资源隔离、监控告警和权限管理，更适合多团队、多业务线的大规模 AI 应用落地。\n产品链接：\nhttps://www.volcengine.com/product/mem0\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "irrelevant": 0.28,
+        "peripheral": 0.03,
+        "transfer_agent": 0.68,
+        "transfer_business": 0
+      }
+    },
+    "relevance": {
+      "score": 1.71,
+      "probabilities": {
+        "0": 0.05,
+        "1": 0.18,
+        "2": 0.77,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.28,
+      "probabilities": {
+        "0": 0.28,
+        "1": 0.31,
+        "2": 0.28,
+        "3": 0.12,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.56,
+      "probabilities": {
+        "0": 0.6799999999999999,
+        "1": 0.14,
+        "2": 0.12,
+        "3": 0.04,
+        "4": 0.02,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.11,
+      "probabilities": {
+        "0": 0,
+        "1": 0.02,
+        "2": 0.86,
+        "3": 0.12,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.63,
+      "probabilities": {
+        "0": 0.07,
+        "1": 0.02,
+        "2": 0.01,
+        "3": 0.04,
+        "4": 0.84,
+        "5": 0.02
+      }
+    },
+    "anti_hype": {
+      "score": 1.85,
+      "probabilities": {
+        "0": 0.11,
+        "1": 0.16,
+        "2": 0.51,
+        "3": 0.21,
+        "4": 0.01,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.88,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 6994,
+    "outputTokens": 172,
+    "totalTokens": 7166
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "actionability": 0.73,
+        "anti_hype": 0.59,
+        "category": 0.6,
+        "decision_action": 0.62,
+        "evidence": 0.91,
+        "grounding": 0.44,
+        "relevance": 0.8
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "digitalocean",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "digitalocean",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179933455,
+                "endTime": 1791179933793,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000293748",
+      "marketCost": "0.000293748",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000293748",
+      "inferenceCost": "0.000293748",
+      "inputInferenceCost": "0.000293748",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A9HQ90EH2AK787E29WN1A"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:53 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::rvpsb-1791179933343-799281649135"
+    },
+    "body": {
+      "answers": {
+        "actionability": {
+          "type": "score",
+          "score": 3.63,
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.02,
+            "2": 0.01,
+            "3": 0.04,
+            "4": 0.84,
+            "5": 0.02
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 1.85,
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.16,
+            "2": 0.51,
+            "3": 0.21,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "irrelevant": 0.28,
+            "peripheral": 0.03,
+            "transfer_agent": 0.68,
+            "transfer_business": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.56,
+          "probabilities": {
+            "0": 0.6799999999999999,
+            "1": 0.14,
+            "2": 0.12,
+            "3": 0.04,
+            "4": 0.02,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.11,
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.86,
+            "3": 0.12,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.88
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.28,
+          "probabilities": {
+            "0": 0.28,
+            "1": 0.31,
+            "2": 0.28,
+            "3": 0.12,
+            "4": 0.01,
+            "5": 0
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.71,
+          "probabilities": {
+            "0": 0.05,
+            "1": 0.18,
+            "2": 0.77,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 6994,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "actionability": 0.73,
+            "anti_hype": 0.59,
+            "category": 0.6,
+            "decision_action": 0.62,
+            "evidence": 0.91,
+            "grounding": 0.44,
+            "relevance": 0.8
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: digitalocean(system) → typesafe-ai(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "digitalocean",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "digitalocean",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179933455,
+                    "endTime": 1791179933793,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000293748",
+          "marketCost": "0.000293748",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000293748",
+          "inferenceCost": "0.000293748",
+          "inputInferenceCost": "0.000293748",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A9HQ90EH2AK787E29WN1A"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:53.020Z"
+  }
+}

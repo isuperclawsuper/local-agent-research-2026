@@ -1,0 +1,331 @@
+{
+  "model": "typesafe-ai/jev",
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "267914957336593408",
+      "source": "大淘宝技术",
+      "feed_id": "187702008971600909",
+      "title": "卡片式对话的协议方案探索和思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk5OQ==&mid=2650543235&idx=1&sn=a7fee9a41d18ec154d103c6fc053651b",
+      "date": "2026-04-17T08:01:00.326Z",
+      "chars": 12883,
+      "text": "原创\n跨端技术团队\n2026-04-17 16:01\n浙江\n本文探讨了在智能助手对话流中实现卡片式交互的系统性工程方案。文章提出了一套包含Markdown标记、消息传输、UI渲染及事件通信的四层统一协议体系，为构建高效、标准化的卡片式对话系统提供了落地的架构参考。\n本文\n探讨了在智能助手对话流中实现卡片式交互的系统性工程方案。文章围绕卡片如何嵌入Markdown流、数据来源以及多团队协作规范三个核心问题，详细分析了代码块扩展、占位符替换及自定义标签等嵌入方案，并对比了模型直出、增量Patch及Tool驱动等数据获取模式。最终，文章提出了一套包含Markdown标记、消息传输、UI渲染及事件通信的四层统一协议体系，旨在解决Agent时代下多端一致性、数据实时性及跨团队协作混乱的问题，为构建高效、标准化的卡片式对话系统提供了落地的架构参考。\n引言\n当我们第一次在智能助手中看到一张可交互的商品卡片时，觉得这不过是\"在聊天框里塞了个组件\"。但真正实践下来才发现，这件事远比想象中复杂——它不是一个前端渲染问题，而是一个贯穿 Agent 设计、 模型输出、数据流转、协议设计、跨端一致性的系统工程。\n这篇文章不讲概念，讲我们探索过程中踩过的坑和沉淀的方案。\n文章将围绕三个问题展开：\n卡片如何嵌入对话流？\n——模型输出的是 Markdown 文本流，卡片怎么\"混\"进去？\n卡片数据从何而来？\n——模型不知道实时价格，数据该由谁提供、怎么填充？\n多团队协作怎么不乱？\n——当 N 个业务方都要接卡片时，如何用协议约束混乱？\n卡片如何嵌入对话流\n▐\n问题的本质\n大模型的输出本质上是一个 token 流，经过拼接后形成 Markdown 文本。Markdown 本身是一种排版标记语言，它能表达标题、列表、代码块、图片，但无法表达\"这里应该渲染一个商品卡片组件\"这件事。\n所以核心问题是：\n如何在不破坏 Markdown 流式解析的前提下，嵌入自定义 UI 组件的语义信息？\n我们调研和实践了三种方案，各有适用场景。\n▐\n方案一：代码块扩展\n这是我们最终在生产环境中采用的方案，原理非常直觉——Markdown 的代码块本身就有一个\nlanguage\n字段（用于语法高亮），我们把这个字段\"借用\"为组件类型标识。\n模型输出的 Markdown 长这样：\n为你推荐以下商品：\n```ProductCard\n{\n\"title\"\n:\n\"iPhone 15 Pro Max\"\n,\n\"description\"\n:\n\"全新钛金属设计，A17 Pro 芯片\"\n,\n\"itemPrice\"\n: 9999,\n\"imageUrl\"\n:\n\"\nhttps://example.com/iphone.jpg\n\"\n,\n\"discount\"\n:\n\"限时优惠 -10%\"\n}\n```\n以上商品支持分期免息，点击卡片可查看详情。\n前端 Markdown 渲染器拿到这段文本后，在解析代码块时检查\nlanguage\n字段：如果是\njavascript\n、\npython\n这种已知语言就做语法高亮；如果是\nProductCard\n这种自定义标识，就把代码体当作 JSON 解析，传给对应的 React 组件渲染。\n以\nreact-markdown\n为例，扩展逻辑如下：\nimport\nMarkdown\nfrom\n'react-markdown'\n;\nimport\n{\nProductCard\n}\nfrom\n'./components/ProductCard'\n;\n// 组件注册表：language 名 → React 组件的映射\nconst\nCARD_COMPONENTS\n= {\nProductCard\n:\nProductCard\n,\nUserProfile\n:\nUserProfile\n,\nFlightCard\n:\nFlightCard\n,\n};\nfunction\nChatMessage\n(\n{ markdown }\n) {\nreturn\n(\n<\nMarkdown\nchildren\n=\n{markdown}\ncomponents\n=\n{{\ncode\n(\nprops\n) {\nconst\n{\nchildren\n,\nclassName\n,\n...rest\n} =\nprops;\n//\nclassName\n格式为\n\"\nlanguage-xxx\n\"，\n提取\nxxx\n部分\nconst\nmatch\n=\n/language-(\\w+)/.exec(className\n|| '');\nconst\nlangName\n=\nmatch\n?\nmatch\n[\n1\n]\n:\nnull\n;\n//\n命中组件注册表\n→\n渲染业务卡片\nif\n(\nlangName\n&&\nCARD_COMPONENTS\n[\nlangName\n]) {\nconst\nCardComponent\n=\nCARD_COMPONENTS[langName];\nconst\ncardProps\n=\nJSON.parse(String(children));\nreturn\n<\nCardComponent\n{\n...cardProps\n} />;\n}\n// 未命中 → 走默认的代码高亮渲染\nreturn (\n<\ncode\n{\n...rest\n}\nclassName\n=\n{className}\n>\n{children}\n</\ncode\n>\n);\n},\n}}\n/>\n);\n}\n这里有几个实践细节值得展开：\n1. 为什么选代码块而不是其他 Markdown 元素？\n代码块有两个天然优势：一是所有 Markdown 解析器都支持 language 字段的提取，不需要写自定义 parser；二是代码块内部的内容不会被 Markdown 解析器二次处理（不会把\n{\n当成列表、把\n\"\n当成引号），JSON 数据可以安全传递。\n2. 流式渲染的兼容性\n代码块有明确的开始标记（\n```\n）和结束标记（\n```\n），流式解析器在遇到开始标记时就能知道\"接下来是一个代码块\"，在结束标记到来前持续缓冲内容。这意味着前端可以在代码块完整输出后再做 JSON 解析和组件渲染，不会出现半截 JSON 导致的 parse error。\n3. 模型输出约束\n大模型不会天然知道要输出\nProductCard\n格式的代码块。我们通过 System Prompt 给模型一份\"卡片生成规范\"：\n# 卡片生成规范\n当需要展示结构化信息（商品、航班、用户资料等）时，使用 Markdown 代码块格式：\n## 语法\n- 语言标识使用组件名（PascalCase），如 `ProductCard`、`FlightCard`\n- 代码体使用标准 JSON，属性名 camelCase\n- 确保 JSON 格式合法，属性名使用双引号\n## 示例\n```ProductCard\n{\n\"title\"\n:\n\"商品名称\"\n,\n\"itemPrice\"\n: 99,\n\"imageUrl\"\n:\n\"\nhttps://example.com/img.jpg\n\"\n}\n实际调试中发现，给模型 2-3 个 Few-Shot 示例就能稳定输出正确格式。如果对格式一致性要求极高，还可以在服务端加一层正则校验——代码块输出完毕后检查 JSON 是否合法，不合法就降级为纯文本展示。\n▐\n方案二：占位符替换\n占位符替换是一个更轻量的思路——模型在 Markdown 中输出一个特殊标记（比如\n__placeholder__ProductCard\n），前端识别到后替换为对应组件。\n推荐上午 10 点从杭州出发前往上海的高铁\n__placeholder__\nProductCard,早班直达。\n这个方案看起来简单，但在流式场景下有一个棘手的体验问题：模型是逐 token 输出的，当只输出到\n__place\n的时候，前端无法判断这是一个占位符还是普通文本。用户会先看到一串乱码般的占位符文字，然后突然跳变为卡片。\n我们尝试过一种优化方式：把占位符设计成类似超链接的语法\n[(ProductCard)]\n。利用 Markdown 解析器的已有机制——遇到\n[\n时暂存等待后续字符，如果后续不符合链接语法就回退为普通文本。在此基础上扩展：\n遇到 [( → 暂存，推测可能是卡片\n等待 )] 出现 → 匹配成功，渲染组件\n超过 buffer 上限仍未匹配 → 回退为普通文本\n在\nmarkdown-it\n中实现为一个 inline rule 插件：\nfunction componentPlugin(md) {\nmd.\ninline\n.ruler.before(\n'link'\n,\n'component'\n, (state, silent) => {\nconst\nstart = state.pos;\nconst\nmax = state.posMax;\n// 检查起始标记 [(\nif\n(state.src.charCodeAt(start) !==\n0x5B\n/* [ */\n||\nstate.src.charCodeAt(start +\n1\n) !==\n0x28\n/* ( */\n) {\nreturn\nfalse\n;\n}\n// 向前扫描，寻找结束标记 )]\nlet pos = start +\n2\n;\nwhile\n(pos < max -\n1\n) {\nif\n(state.src.charCodeAt(pos) ===\n0x29\n/* ) */\n&&\nstate.src.charCodeAt(pos +\n1\n) ===\n0x5D\n/* ] */\n) {\nbreak\n;\n}\npos++;\n}\nif\n(pos >= max -\n1\n)\nreturn\nfalse\n;\nconst\ncomponentName = state.src.slice(start +\n2\n, pos);\nif\n(!silent) {\nconst\ntoken = state.push(\n'component'\n,\n''\n,\n0\n);\ntoken.content = componentName;\n}\nstate.pos = pos +\n2\n;\nreturn\ntrue\n;\n});\nmd.renderer.rules.component = (tokens, idx) => {\nconst\nname = tokens[idx].content;\nreturn\n`<div\nclass\n=\n\"custom-component\"\ndata\n-component=\n\"\n${name}\n\"\n></div>`;\n};\n}\n占位符方案的优势是改造成本低（不需要模型生成完整 JSON），适合卡片数据完全由服务端异步填充的场景。但劣势也很明显：占位符本身不携带数据，卡片要么需要事后补数据（增加一次请求），要么需要约定好全局的组件-数据映射关系。\n实践建议：如果选择占位符方案，务必配合前端骨架屏。用户看到的应该是\"加载中的卡片轮廓\"，而不是一闪而过的占位符文本。\n▐\n方案三：自定义标签（XML-like）\n这个方案的灵感来自\nbolt.new\n。bolt.new 在模型输出中引入了类 HTML 的自定义标签来描述 Action：\n<boltArtifact title=\n\"Some title\"\nid\n=\n\"artifact_1\"\n>\n<boltAction\ntype\n=\n\"shell\"\n>npm install</boltAction>\n</boltArtifact>\n这种方式需要在 Markdown 解析之外单独写一个 XML parser，从文本流中提取\n<boltArtifact>\n标签及其属性和子元素（解析参考：\nhttps://github.com/stackblitz/bolt.new/blob/main/app/lib/runtime/message-parser.ts\n）。\n自定义标签的核心优势在于\n表达力最强\n——XML 天然支持嵌套结构、属性、事件绑定（如\non-click=\"run\"\n），可以描述比 JSON 更复杂的 UI 语义。而且它与模型无关，任何能生成合法 XML 的模型都可以接入，这对于需要同时对接多家模型（Qwen、Claude、GPT）的场景尤其有价值。\n但它的代价也很明显：需要维护一个独立的流式 XML parser，且必须处理好与 Markdown 解析器的协作关系（哪些部分走 Markdown 渲染，哪些部分走 XML 解析）。这个方案的诞生背景是部分模型厂商未提供 Tool Call API，需要通过 Prompt 工程来模拟工具调用。如果你的模型已经支持 Function Calling，这个方案的必要性就降低了。\n▐\n三种方案的选择建议\n总结一下：\n代码块扩展\n最稳健，复用现有解析链路、零额外依赖，适合大多数场景；\n占位符替换\n最轻量，适合卡片数据完全由服务端提供的场景；\n自定义标签\n表达力最强，适合需要多模型统一管控、或已有 XML 基础设施的团队。\n我们在生产中选择了代码块扩展，原因很朴素：改造成本最低、模型约束最简单、出问题时最容易排查。\n但到这里只解决了\"卡片怎么写进 Markdown\"的问题。紧接着的问题是——卡片里的 JSON 数据从哪来？模型自己编的商品价格能用吗？库存状态、用户偏好这些实时信息怎么办？\n卡片数据从何而来\n▐\n数据与 UI 必须解耦\n这是一个关键的架构决策。卡片的视觉结构（\"这是一个商品卡，有标题、价格、图片\"）和卡片的业务数据（\"iPhone 15 Pro Max, ¥9999, 库存 32\"）必须分开处理。\n原因很现实：大模型的预训练数据不可能涵盖所有商品，即使涵盖了，价格库存也在实时变化，更不用说千人千面的个性化推荐了。如果让模型直接生成完整的商品数据，你会得到一个\"看起来像回事但完全不能用\"的 JSON。\n这里我们归纳为三个阶段的方案演进。\n▐\n方案一：模型直出——能用，但不可靠\n最简单的方式：在 System Prompt 中告诉模型\"需要展示商品时，生成一个包含完整数据的代码块\"，模型直接把标题、价格、图片 URL 都填进 JSON 里。\n这在 Demo 阶段确实能跑通。但一上线就暴露了问题：\n模型编造了不存在的商品链接（胡编乱造）\n价格和实际售价不一致（训练数据过时）\n同一个商品对不同用户展示相同价格（无法做个性化）\n结论\n：模型直出只适合静态内容（如百科摘要、功能说明），不适合任何涉及实时业务数据的场景。\n▐\n方案二：增量 Patch 更新——先占位，后补数据\n既然模型不能直接生成可靠数据，那换一个思路：\n让模型只生成卡片的\"骨架\"（一个带 ID 的占位 JSON），服务端异步获取真实数据后通过 Patch 机制更新到前端。\n模型输出的内容是这样的——注意代码块里只有一个\nid\n，没有真实数据：\n为你推荐以下商品：\n```ProductCard\n{\n\"id\": \"xxx\"\n}\n`\n``\n这些商品不仅实用，而且价格便宜。\n然后前端和服务端各干各的事：\n前端\n：解析到\nProductCard\n代码块后，发现数据不完整，渲染一个骨架屏占位。\n服务端\n：在识别到模型输出中包含\nProductCard\n代码块时，立即异步发起 RPC 请求获取商品数据。数据回来后，通过我们在标准 JSON Patch 之上扩展的\nreplace-substring\n操作符，将占位 JSON 替换为完整数据。\n传输消息格式如下：\n[\n{\n\"type\"\n:\n\"full\"\n,\n\"data\"\n: {\n\"markdown\"\n:\n\"为你推荐以下商品：\n\\n\n```ProductCard\n\\n\n{\n\\n\nid:xxx\n\\n\n}\n\\n\n```\n\\n\n这些商品不\"\n}\n},\n{\n\"type\"\n:\n\"patch\"\n,\n\"patch\"\n: [\n{\n\"op\"\n:\n\"replace-substring\"\n,\n\"path\"\n:\n\"/markdown\"\n,\n\"substring\"\n:\n\"```ProductCard\n\\n\n{\n\\n\nid:xxx\n\\n\n}\n\\n\n```\"\n,\n\"replacement\"\n:\n\"```ProductCard\n\\n\n{\n\\n\n\\\"\nid\n\\\"\n:\n\\\"\n12345\n\\\"\n,\n\\n\n\\\"\ntitle\n\\\"\n:\n\\\"\n智能手环\n\\\"\n,\n\\n\n\\\"\nprice\n\\\"\n: 299,\n\\n\n\\\"\nimage\n\\\"\n:\n\\\"\nhttps://example.com/product.jpg\n\\\"\n,\n\\n\n\\\"\ndescription\n\\\"\n:\n\\\"\n健康监测，运动追踪\n\\\"\\n\n}\n\\n\n```\"\n}\n]\n},\n{\n\"type\"\n:\n\"patch\"\n,\n\"patch\"\n: [\n{\n\"op\"\n:\n\"add\"\n,\n\"path\"\n:\n\"/markdown\"\n,\n\"value\"\n:\n\"仅实用，而且价格便宜。\"\n}\n]\n}\n]\n整个时序是这样的：\n这个方案解决了数据准确性问题，但体验上有一个明显缺陷：\n用户会先看到骨架屏，等数据回来后才看到真实卡片，有一个可感知的\"跳变\"\n。如果 RPC 请求慢（比如跨地域调用），这个延迟会更明显。\n另外还有一个工程复杂度问题：\nreplace-substring\n需要在服务端精确匹配 Markdown 文本中的占位片段再做替换，如果模型输出的格式有微小偏差（多了个空格、换行不一致），替换就会失败。这在生产中需要做鲁棒性处理。\n▐\n方案三：Tool 驱动——让工具同时生产数据和 UI\n方案二的核心矛盾在于\"模型先返回，数据后补\"，数据和 UI 在时序上是割裂的。有没有可能让它们一步到位？\n答案是：\n把数据获取和 UI 描述都交给 Tool 来做。\nAgent 识别到用户意图后调用一个工具（比如\nsearch_products\n），工具直接返回结构化数据 + UI 描述，前端按约定渲染。模型不再需要\"编\"数据，它只负责意图理解和对话编排。\n社区中有两个代表性协议在探索这条路：\nMCP Apps\n和\nA2UI\n。它们解决的是同一个问题——Agent 如何驱动前端渲染 UI？但设计哲学截然不同。\nMCP Apps：工具驱动 UI\nMCP Apps\n是 Anthropic 在 MCP（Model Context Protocol）基础上的扩展。它的核心理念是：\nTool 返回的不只是纯数据，还附带一份 UI 描述\n。\n具体来说：\n每个 MCP Tool 在注册时就声明\"我的返回结果应该用什么 UI 来展示\"\nAgent 调用 Tool 后，前端根据\ntool_id\n匹配预注册的渲染器，自动渲染卡片\n卡片内的交互事件可以回调到 Agent，形成闭环\nMCP Apps 的设计隐喻是：\nUI 是 Tool 执行结果的附属产物\n。工具先把活干了（查商品、查航班），然后顺便告诉前端\"结果长这样\"，用什么 UI 地址渲染。这意味着 UI 和 Tool 是强绑定的——一个\nsearch_products\n工具对应一种\nProductList\n卡片。\nA2UI：Agent 驱动 UI\nA2UI（Agent to UI）\n是 Google 提出的通用声明式 UI 协议。它的设计哲学和 MCP Apps 完全不同：\n不绑定任何工具链，纯粹定义\"界面应该长什么样\"\n。\nA2UI 定义了一套 JSON Schema，涵盖布局、表单、列表、图表等常见 UI 组件。Agent 只需输出符合 Schema 的 JSON，各端（Web / iOS / Android）各自实现渲染器。Action 事件通过标准事件总线回传给 Agent。\n与 MCP Apps 相比，A2UI 更关注渲染层本身的标准化。它不关心数据是从 Tool来的还是模型直接生成的——它只管\"拿到一份 JSON，画出对应的 UI\"。\n两者的本质区别\n理解这两个协议的关键在于看它们的\n驱动方式\n：\nMCP Apps\n：工具驱动。UI 是 Tool 的附属，粒度是 Tool 级别（一个工具对应一种卡片）。适合卡片类型确定、交互模式固定的场景。\nA2UI\n：Agent 驱动。UI 由 Agent 自主组合，粒度是组件级别（可以任意拼装布局、表单、列表）。适合需要动态生成 UI、或者从预设卡片向 Agent 自主生成过渡的场景。\n两者在实践中并非互斥。一种可行的组合方式是：在 MCP Tool 层使用 MCP Apps 的绑定机制来管理 Tool 与 UI 的映射关系，同时用 A2UI 的 JSON Schema 作为 UI 描述的标准格式——这样既有 Tool 层的确定性，又有 UI 层的通用性。\nTool 驱动的整体流程\n无论选择哪种协议，Tool 驱动 UI 的核心时序是一致的，我们在实践的过程中采用 Tool 返回的数据 + UI 的方式：\nTool 驱动方案的优势非常明显：\n数据与 UI 在 Tool 层一步到位，没有\"先占位后补数据\"的体验断裂\n业务方自主维护 Tool 和对应的卡片，Agent 只做编排，职责清晰\n天然支持复杂交互——卡片内分页、筛选、表单提交都可以通过 Tool 回调实现\n▐\n三种方案的演进逻辑\n回顾这三种方案，它们不是简单的\"好坏之分\"，而是一条\n渐进式的架构演进路径\n：\n模型直出\n→ 最快出活，适合 Demo 和验证阶段\n增量 Patch\n→ 数据可靠了，但时序和工程复杂度上升\nTool 驱动\n→ 架构最干净，但需要 MCP 工具链和协议基础设施\n核心方向是：\n把数据生产的责任从模型转移到工具链，让模型专注于意图理解和对话编排\n。\n到这里，我们讨论了两个问题：卡片怎么嵌入 Markdown 流（第一部分的三种扩展方案），以及卡片数据从哪来（模型直出 → 增量 Patch → Tool 驱动）。\n但当我们要把这套方案推广到实际业务的时候，还需要考虑新的问题：A 团队用代码块扩展，B 团队用占位符；C 团队的消息格式和 D 团队不兼容；Web 端和 iOS 端对同一种卡片的事件约定完全不同。每接入一个新业务方，前端就要写一套新的解析和渲染逻辑。\n这其实会让我们去思考一个更根本的问题：\n如何用协议来收敛混乱？\n多团队协作怎么不乱——四层统一协议\n▐\n为什么需要协议\n\"协议\"这个词听起来很重，但它要解决的问题非常朴素：\n让不同团队、不同端的开发者面向同一套规范工作，减少重复建设和沟通成本。\n没有协议的时候，每个 Agent 团队都在各自定义 Markdown 扩展格式、消息传输结构、卡片事件约定。前端为每种 Agent 写一套解析器，iOS 和 Android 各自实现一遍，改一个字段要同步通知 N 个团队。这种\"自由\"的代价是系统迅速碎片化。\n我们把协议分成四层，每一层解决一个明确的问题：\n协议层\n解决什么问题\n一句话描述\n1. Markdown 标记协议\n卡片在文本流中怎么写\n约定使用哪种 Markdown 扩展方式、支持的组件类型\n2. 消息传输协议\n前后端之间传什么格式\n定义流式响应的数据包结构（全量 / 增量 / 推荐）\n3. UI 渲染协议\n卡片长什么样\n标准 JSON Schema，Web/iOS/Android 共用一份描述\n4. 事件通信协议\n用户点了卡片之后怎么办\n定义卡片可触发的 Action 及其响应方式\n四层协议的运作关系如下图所示：\n下面逐层展开。\n▐\n第一层：Markdown 标记协议\n回到第一部分的问题：我们列举了代码块扩展、占位符替换、自定义标签三种方案。如果不做约束，不同 Agent 团队各选各的，前端就要为每种格式维护一套解析器。\nMarkdown 标记协议就是做这个约束：\n统一选定一种扩展方式，定义支持的组件类型列表，规范 JSON 属性的命名和格式。\n有了这层协议后：\n所有 Agent 共用一份 System Prompt 中的\"卡片生成规范\"，只需调试一种输出格式\n前端只维护一套 Markdown 解析器，新增卡片类型只需注册组件，不需要改解析逻辑\n设计师可以提前预知每种标记渲染出来的样子，统一调整视觉规范\n▐\n第二层：消息传输协议\n模型输出经过 Agent 编排后，需要通过一个统一的消息格式传输给前端。我们约定每次传输的是一个\"动作组\"：\ndata: [\n{\"type\":\n\"text\"\n,\n\"content\"\n:\n\"第一条消息\"\n},\n{\"type\":\n\"recommend/prompt\"\n,\n\"content\"\n: [\n\"你可能喜欢1\"\n,\n\"你可能喜欢2\"\n]}\n]\ntype\n标识动作类型：\ntext\n是模型返回的 Markdown 消息，\nrecommend/prompt\n是追问推荐。第二部分讲到的增量 Patch 更新，其中的\ntype=full\n和\ntype=patch\n也属于消息传输协议的一部分——\n正是有了统一的数据包结构，前端才能用同一套逻辑处理全量消息和增量更新。\n统一消息格式之后，最大的收益是前端组件的可复用性。无论接入哪个 Agent，消息解析逻辑都是同一套代码。新业务方接入时，不需要前端配合\"定制消息格式\"，只要按协议传输就行。\n▐\n第三层：UI 渲染协议\n这一层定义的是：\n一张卡片的结构化描述应该长什么样？\n核心理念来自第二部分介绍的 A2UI 协议——Agent 输出一份标准 JSON，各端（Web / iOS / Android）各自实现渲染器。这种\"描述与渲染分离\"的设计，使得同一份 JSON 可以在三端呈现一致的 UI，而不需要 Agent 关心前端的技术实现。\n结合现状和对模型能力发展的期望， LUI（Language User Interface）的演进可以分为两个阶段：\n第一阶段：预设卡片。\n模型能力尚不稳定，通过预定义的卡片模板 + JSON 数据来保证产品对生成内容的把控力。每种卡片有固定的 Schema，Agent 只需要填数据。\n第二阶段：Agent 生成。\n随着模型能力提升，由 Agent 自主组合 UI 组件，实现千人千面的动态卡片。Agent 不再受限于预设模板，而是根据上下文自由拼装布局、表单、列表。\n这两个阶段的关键在于\n平滑过渡\n。A2UI 协议因为采用了框架无关的 JSON Schema，预设卡片和 Agent 动态生成可以共享同一套渲染器——切换时前端零改动。所以将 A2UI 作为 UI 渲染协议虽然先阶段艰难，但是长期看会是一个不错的选择。\n▐\n第四层：事件通信协议\n前三层解决了\"卡片怎么写、怎么传、怎么画\"，但还缺一环：\n用户和卡片交互之后，发生什么？\n我们的设计原则是\n：\n卡片 JSON 只描述\"是什么\"和\"能做什么\"，不包含\"怎么做\"\n。\n执行逻辑由端侧事件处理器统一承担。\n这样做有两个好处：一是 Agent 生成的 JSON 不包含可执行代码，降低安全风险（想想如果 Agent 可以往卡片里注入任意 JS 代码会怎样）；二是事件派发逻辑端侧统一实现，各业务方无需重复建设。\n举个具体的例子走一遍完整流程：\n1. 渲染阶段\n：Agent 返回一个商品卡片的 JSON，其中按钮声明了一个 Action：\n{\n\"type\"\n:\n\"button\"\n,\n\"text\"\n:\n\"加入购物车\"\n,\n\"action\"\n:\n{\n\"type\"\n:\n\"api\"\n,\n\"action\"\n:\n\"addToCart\"\n,\n\"params\"\n:\n{\n\"itemId\"\n:\n\"12345\"\n}\n}\n}\n2. 交互阶段\n：用户点击按钮，事件处理器接收到 Action，识别\ntype=api\n，发起网关请求调用加购接口。\n3. 反馈阶段\n：请求返回后，事件处理器根据结果更新卡片状态——成功则按钮变灰显示\"已加购\"，失败则弹出 Toast 提示错误原因。\n整个过程中，卡片 JSON 是\"纯声明\"的——它说\"我有一个按钮，点了之后应该调addToCart\"，但具体怎么调、调完怎么更新 UI，全部由端侧事件处理器负责。\nA2UI 本身已经定义了 Action 规范，在此基础上需要做的工作是：梳理业务中实际需要的事件类型（UI 事件：Toast、Dialog、页面跳转；API 事件：数据请求、收藏、加购），定义统一的事件格式和消费方式，让各业务方不需要自己发明事件协议，如果是 H5 那就是 uniapi。\n总结\n卡片式交互不是\"在聊天框里塞组件\"这么简单。它重新定义了 Agent 时代的前后端协作方式：\n模型从\"文本生成器\"变成\"界面规划师\"——它需要理解什么时候该展示卡片、展示什么类型的卡片；\n后端从\"数据提供者\"变成\"协议协调者\"——它需要在 Tool 层打通数据获取与 UI 描述；\n前端从\"页面渲染器\"变成\"协议执行引擎\"——它面向标准 JSON Schema 渲染，而非为每个业务方定制。\n四层协议体系（Markdown 标记 → 消息传输 → UI 渲染 → 事件通信）的价值，不在于技术有多先进，而在于为复杂系统建立了\n确定性\n——当每一层的输入输出都有明确约定，问题排查、能力复用、新业务接入的效率就会指数级提升。\n最后，值得关注的是社区中正在涌现的 Agentic 协议生态：\nAG-UI\n（Agent-用户交互协议）：基于事件的标准，连接 Agent 与面向用户的应用\nMCP\n（Anthropic）：Agent 安全连接外部工具、工作流和数据源的开放标准\nA2A\n（Google）：分布式 Agent 系统中 Agent 之间的协调协议\nA2UI\n（Google）/\nMCP Apps\n（Anthropic）/\nOpen-JSON-UI\n（OpenAI）：声明式 UI 规范，定义 Agent 响应的视觉组织方式\nWeb MCP\n：让网页本身作为 MCP Server，为 Agent 提供工具访问\n卡片式对话只是 Agentic 交互的起点。当协议足够成熟、模型能力持续提升，对话界面将真正成为用户与数字世界交互的统一入口。希望在真实的业务落地之后，能够有更多的分享。\n如果你也在探索类似方向，欢迎在评论区交流——协议设计、渲染器实现、Prompt 工程、MCP 工具封装，任何话题都行。\n参考资料\nhttps://github.com/stackblitz/bolt.new\nhttps://modelcontextprotocol.io/extensions/apps/overview\nhttps://a2ui.org/\nhttps://docs.copilotkit.ai/built-in-agent/generative-ui/a2ui\nhttps://remarkjs.github.io/react-markdown/\n团队介绍\n本文作者\n无二\n，来自淘天集团-跨端技术团队。本团队服务于淘宝基础用户产品，是淘宝重要的业务线之一。团队以前端、Weex、Native端的技术解决方案框架和研发模式不断完善自己，持续探索端智能等创新，打造极致的体验和工程技术，保障多端设备的适配和稳定运行，致力于让亿级规模的交付能够更丝滑、更稳定。\n¤\n拓展阅读\n¤\n3DXR技术\n|\n终端技术\n|\n音视频技术\n服务端技术\n|\n技术质量\n|\n数据算法\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "answers": {
+    "category": {
+      "choice": "transfer_agent",
+      "probabilities": {
+        "direct_local": 0,
+        "peripheral": 0.01,
+        "transfer_business": 0.02,
+        "transfer_agent": 0.65,
+        "irrelevant": 0.32
+      }
+    },
+    "relevance": {
+      "score": 1.93,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.05,
+        "2": 0.93,
+        "3": 0.01,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "grounding": {
+      "score": 1.67,
+      "probabilities": {
+        "0": 0.24,
+        "1": 0.17,
+        "2": 0.35,
+        "3": 0.16,
+        "4": 0.08,
+        "5": 0
+      }
+    },
+    "decision_action": {
+      "score": 0.84,
+      "probabilities": {
+        "0": 0.59,
+        "1": 0.17,
+        "2": 0.09,
+        "3": 0.12,
+        "4": 0.03,
+        "5": 0
+      }
+    },
+    "evidence": {
+      "score": 2.88,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.11,
+        "3": 0.89,
+        "4": 0,
+        "5": 0
+      }
+    },
+    "actionability": {
+      "score": 3.94,
+      "probabilities": {
+        "0": 0.01,
+        "1": 0,
+        "2": 0,
+        "3": 0.05,
+        "4": 0.91,
+        "5": 0.03
+      }
+    },
+    "anti_hype": {
+      "score": 3.23,
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.02,
+        "3": 0.73,
+        "4": 0.25,
+        "5": 0
+      }
+    },
+    "fulltext_usable": {
+      "probability": 0.95,
+      "threshold": 0.5,
+      "value": true
+    }
+  },
+  "usage": {
+    "inputTokens": 11273,
+    "outputTokens": 172,
+    "totalTokens": 11445
+  },
+  "warnings": [],
+  "providerMetadata": {
+    "typesafe": {
+      "confidence": {
+        "category": 0.56,
+        "relevance": 0.94,
+        "grounding": 0.35,
+        "decision_action": 0.44,
+        "evidence": 0.92,
+        "actionability": 0.91,
+        "anti_hype": 0.81
+      }
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "typesafe-ai/jev",
+        "resolvedProvider": "digitalocean",
+        "fallbacksAvailable": [
+          "typesafe-ai"
+        ],
+        "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+        "canonicalSlug": "typesafe-ai/jev",
+        "finalProvider": "typesafe-ai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "typesafe-ai/jev",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "typesafe-ai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1791179894327,
+                "endTime": 1791179894857,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.000473466",
+      "marketCost": "0.000473466",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000473466",
+      "inferenceCost": "0.000473466",
+      "inputInferenceCost": "0.000473466",
+      "outputInferenceCost": "0",
+      "generationId": "gen_01M45A8BGSRBNZY6G73Y9DYEQF"
+    }
+  },
+  "response": {
+    "modelId": "typesafe-ai/jev",
+    "headers": {
+      "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-image-model-specification-version, ai-embedding-model-specification-version, ai-decision-model-specification-version, ai-evaluation-model-specification-version, ai-language-model-streaming, ai-reporting-tags, ai-reporting-user, http-referer, x-title, x-ai-gateway-api-key, x-api-key, anthropic-beta, anthropic-version, idempotency-key, x-vercel-ai-gateway-team, x-vercel-gateway-extended-time, x-session-id, x-session-affinity",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "retry-after, x-should-retry",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-encoding": "br",
+      "content-type": "application/json",
+      "date": "Mon, 05 Oct 2026 05:58:14 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-matched-path": "/v4/ai/evaluation-model",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "iad1::iad1::jmnxt-1791179894123-9ecd13431c09"
+    },
+    "body": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "transfer_agent",
+          "probabilities": {
+            "direct_local": 0,
+            "peripheral": 0.01,
+            "transfer_business": 0.02,
+            "transfer_agent": 0.65,
+            "irrelevant": 0.32
+          }
+        },
+        "relevance": {
+          "type": "score",
+          "score": 1.93,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.05,
+            "2": 0.93,
+            "3": 0.01,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "grounding": {
+          "type": "score",
+          "score": 1.67,
+          "probabilities": {
+            "0": 0.24,
+            "1": 0.17,
+            "2": 0.35,
+            "3": 0.16,
+            "4": 0.08,
+            "5": 0
+          }
+        },
+        "decision_action": {
+          "type": "score",
+          "score": 0.84,
+          "probabilities": {
+            "0": 0.59,
+            "1": 0.17,
+            "2": 0.09,
+            "3": 0.12,
+            "4": 0.03,
+            "5": 0
+          }
+        },
+        "evidence": {
+          "type": "score",
+          "score": 2.88,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.11,
+            "3": 0.89,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "actionability": {
+          "type": "score",
+          "score": 3.94,
+          "probabilities": {
+            "0": 0.01,
+            "1": 0,
+            "2": 0,
+            "3": 0.05,
+            "4": 0.91,
+            "5": 0.03
+          }
+        },
+        "anti_hype": {
+          "type": "score",
+          "score": 3.23,
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.02,
+            "3": 0.73,
+            "4": 0.25,
+            "5": 0
+          }
+        },
+        "fulltext_usable": {
+          "type": "boolean",
+          "probability": 0.95
+        }
+      },
+      "model": "typesafe-ai/jev",
+      "rounding": {
+        "probabilityDecimals": 2,
+        "scoreDecimals": 2
+      },
+      "usage": {
+        "inputTokens": 11273,
+        "outputTokens": 172
+      },
+      "warnings": [],
+      "providerMetadata": {
+        "typesafe": {
+          "confidence": {
+            "category": 0.56,
+            "relevance": 0.94,
+            "grounding": 0.35,
+            "decision_action": 0.44,
+            "evidence": 0.92,
+            "actionability": 0.91,
+            "anti_hype": 0.81
+          }
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "typesafe-ai/jev",
+            "resolvedProvider": "digitalocean",
+            "fallbacksAvailable": [
+              "typesafe-ai"
+            ],
+            "planningReasoning": "System credentials planned for: digitalocean, typesafe-ai. Total execution order: typesafe-ai(system) → digitalocean(system)",
+            "canonicalSlug": "typesafe-ai/jev",
+            "finalProvider": "typesafe-ai",
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "canonicalSlug": "typesafe-ai/jev",
+                "success": true,
+                "providerAttemptCount": 1,
+                "providerAttempts": [
+                  {
+                    "provider": "typesafe-ai",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1791179894327,
+                    "endTime": 1791179894857,
+                    "statusCode": 200
+                  }
+                ]
+              }
+            ],
+            "totalProviderAttemptCount": 1
+          },
+          "cost": "0.000473466",
+          "marketCost": "0.000473466",
+          "surchargeCost": "0",
+          "gatewayCost": "0.000473466",
+          "inferenceCost": "0.000473466",
+          "inputInferenceCost": "0.000473466",
+          "outputInferenceCost": "0",
+          "generationId": "gen_01M45A8BGSRBNZY6G73Y9DYEQF"
+        }
+      }
+    },
+    "timestamp": "2026-10-05T05:58:14.084Z"
+  }
+}

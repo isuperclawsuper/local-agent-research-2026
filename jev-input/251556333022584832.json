@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "251556333022584832",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "200行代码实现Claude Code青春版",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694667&idx=1&sn=e94235a2fcac22b57a48fc57c64e599c",
+      "date": "2026-03-03T00:46:00.777Z",
+      "chars": 10519,
+      "text": "原创\n陈铭豪\n2026-03-03 08:46\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n01\n写在最前面的闲聊\n很早就开始尝试用AI辅助写代码，当时的感受是：对于一些不需要太多上下文的小需求（最终的产物是代码片段，直接复制粘贴改改输入一般就能用）还是非常好用的；但当用于完整项目中时就一言难尽了，早期我用cursor最常遇到的是AI\"小题大作\"，直接往项目里各种新增脚本，新增大量的代码，有被无语到，以至于使用频率降低到最后退订（当然这里还存在我自己的问题，对于让AI Coding的需求不够具体）\n下半年伴随着各种AI编程助手的进一步产品化，Spec Coding的大火，AI Coding成为了AI落地最快最大规模的领域之一，各种Coding Agent被迅速神化。由于带着前期的偏见，迟迟不愿尝试，直到近两个月看到各种大幅提效的案例后重新入坑，不得不说一句：真香！\n大量的市场营销和Coding Agent领域新名词、新技术的出现使其变得格外\"性感\"，容易给人一种错觉：它好像会思考、会规划、会自主完成复杂工程任务、10倍程序员、智能的跃迁等。然而，这种拟人化的叙事反而构成了理解其技术边界的认知迷雾。\n在帮助了几位开发or产品同学理解、科学使用AI Coding来解决一些问题后，决定写下这篇文章，希望能够帮忙大家理解Coding Agent本质，从而合理预期其能力边界、更有效地使用这些工具，真正做到从从容容、游刃有余（狗头）\n不太性感的事实\n即使是效果惊艳的Coding Agent的本质其实是\n一个 while 循环，加上一整套上下文工程\n，OVER\n02\n从产品体验总结规律\n为了避免被产品形态、UI 设计和营销语言干扰，我们先做一个极端抽象：忽略工具名字，忽略品牌，只看系统在做什么。不管是 Claude Code、Cursor 还是 Cline，当你连续使用它们一段时间后，会发现一个非常稳定的共同模式：\n- 你提出一个目标\n- 系统读取一些代码或环境信息\n- 模型输出一个\"下一步行动\"\n- 如果这个行动需要访问外部世界，就调用工具\n- 工具执行完后，把结果再交还给模型\n- 重复以上过程，中途也可以人工干预\n这个流程会一直持续，直到模型认为\"任务已经完成\"。这里有一个关键点：系统本身并不知道\"任务是否完成\"。\n结束条件并不是程序判断的，而是LLM在某一次输出中，选择不再调用工具。\n从工程实现角度看，你可以试着把任何一个 AI Coding Agent 的行为，用伪代码表达出来，几乎都会收敛到如下结构：\nwhile\nnot\ndone:\nobservation\n=\ncollect_context()\naction\n=\nllm(observation)\nif action\nis\ntool_call:\nresult\n=\nexecute\n(action)\nappend_to_context(\nresult\n)\nelse\n:\ndone\n=\nTrue\n这不是某一个产品的实现方式，而是所有这类系统的必然形态。\n原因也很简单：只要系统的\"决策逻辑\"在模型中，而\nLLM本身是无状态的\n，那么你就只能通过不断重放上下文，来模拟\"持续思考\"。\n所谓 Agent，其实就是\n用循环，模拟连续性\n。\n03\n真正的复杂性在哪里：不在循环，在上下文\n如果控制流如此简单，那为什么这些Coding Agent看起来仍然\"很聪明\"？\n答案在于：复杂性被转移了位置。\n在传统软件系统中，复杂性可能主要体现在：\n状态机设计\n数据结构\n算法与约束\n而在 AI Coding Agent 中，这些复杂性被大量挤压、甚至直接消失了。取而代之的，是一种新的工程重心：上下文工程（Context Engineering），上下文工程不是一个学术名词，而是一个非常工程化的事实描述：\n如何决定“这一轮模型调用时，让模型看到什么”。\n模型不会记住过去；模型也不会理解系统；\n模型只会基于当前输入文本，生成下一个输出。\n于是，Agent （在使用相同模型情况下）的能力高低，几乎完全取决于以下问题：\n你给它看了哪些文件？\n你如何压缩历史对话？\n你用什么方式表达规则？\n你是否让工具输出“可供下一轮使用”的结构化信息？\n04\n同样是while+context：以前做不到，现在能了？\n有个强大的LLM是展示Coding Agent能力不可或缺的，以前还没有足够强的LLM的时候，基于while循环的Agent，可能模型会乱来、状态会对不上、很快跑偏；随着LLM的长上下文能力、多步推理能力、可被 prompt 约束成\"角色 + 目标 + 工具使用规范\"不断提高，现在才“工程可用”。\n05\n重新理解那些“听起来很高级”的概念\n首先抓住请求LLM时的本质：每次请求其实就是把\n\"System Prompt + 对话历史\"\n作为输入发送给LLM，这输入就是上下文的全部。所有的优化和差异化都体现在如何构建这个上下文。\n5.1\nMCP连接万物\n有些信息对于很多使用者来说都是需要用到的上下文，MCP server的作用其实就是标准化的上下文提供者。听起来像是新一代 Agent 架构，但从工程角度看，它解决的仍然是同一个问题：如何把\n外部信息，稳定、可控地\n塞进模型上下文。\n5.2\nRules是系统提示词的补充\n很多人把 .cursorrules 当作配置文件，但它本质上是\n系统提示词的硬编码补丁\n。如果没有规则，模型必须从概率分布中“猜”你想用 TypeScript 还是 JavaScript。 当你在 .cursorrules 里写下“总是使用 Tailwind CSS”时，你实际上是在系统层面对模型的生成树进行了剪枝，\n减少熵增，防止模型在无限的可能性中跑偏。\n5.3\nSpecCoding是提示词的重复\n“Vibe Coding”最大的问题是：随着 while 循环的进行，早期的对话会被挤出上下文窗口，模型会“遗忘”最初的需求。Spec Coding 通过引入 AGENTS.md 或 spec.md，给 Agent 挂载了一块“只读存储器（ROM）”。无论循环跑了多少轮，Agent 被强制要求在行动前先读取这个文件，从而拥有持久化的上下文锚点。能够一定程度\n对抗“上下文漂移”（Context Drift）\n，解决长任务中的健忘症。\n5.4\nSKILLS还是提示词\n没有网上吹的那么神（也不是否认它对生态的重要性）！skills就是个markdown文件+tools，本质上进入大模型的也还是个prompt，并不能让你的agent起飞，它的智能来源于你原来的prompt+tools有多智能，并不能真的让agent更加智能。它的优势在于更像是\n上下文的动态链接库，用完即走\n，避免一开始就把所有文档塞进上下文撑爆窗口。\n5.5\n未来新名词也还是提示词\n比如这几天有些热度的Smart Forking号称永久记忆的工具，也还是通过一些策略把\n对话历史存档，然后检索到后贴进了上下文里。\n毕竟，现阶段的LLM都是无状态的，它给出的回答全部依赖\"System Prompt + 对话历史\"，因此，延伸出\n再多的新名词在做的事情都是在把一些提示让LLM能够看到。\n06\n丢掉幻想，掌控上下文才能用好编程助手\n理解了各种花里胡哨的新名词的本质都还是把一些提示喂给LLM后，我们可以来思考下自己拿Coding Agent做的一些事情是不是make sense，这里举两个使用不当的例子：\nX产品同学听说Coding Agent能帮忙分析各种数据，于是把一整个数据表塞给AI，然后就开始了vibe analysis。一些专用、定制化的Agent确实能够辅助做一些数据分析，但它们往往是依赖一些工具对原始数据进行了处理，AI并不能帮你把数据都读了来处理，先不说上下文够不够读下原始数据，一些分析能力它甚至不如excel。\nY开发同学听说Coding Agent辅助项目代码开发很方便，于是挂上整个代码仓库就开始了AI Coding，但是业务代码往往有很多的代码依赖，AI上下文没那么大，并不是真的把你的代码仓库都读进去了，那在缺失代码依赖信息的情况下你是不能指望AI写出满意的代码的。这也是为什么现在spec coding能够更加work的原因，把代码依赖（也就是需要的上下文信息）说明清楚，才能够创造有价值的内容。\n因此，大家在使用Coding Agent或其他AI时都建议要\n掌控上下文\n，才能抓住它的能力边界！祝大家都不要被AI幻觉所欺骗！\n07\nTalk is cheap，200行代码实现\n为了进一步加强大家的感受，我\n们来构建一个AI Coding Agent的最小实现\n工具定义：Agent 能做什么，完全由工具决定\ndef\nexecute_bash\n(\ncommand:\nstr\n) ->\nstr\n:\ndef\nread_file\n(\npath:\nstr\n) ->\nstr\n:\ndef\nwrite_file\n(\npath:\nstr\n, content:\nstr\n) ->\nstr\n:\ndef\nlist_files\n(\npath:\nstr\n=\n\".\"\n) ->\nstr\n:\nAgent 没有能力，只有工具。\n大模型不会“执行代码”，它只会决定要不要调用某个工具。\nTool Schema：MCP 的最小等价形式\nTOOLS_SCHEMA\n= [\n{\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"read_file\"\n,\n\"description\"\n:\n\"...\"\n,\n\"parameters\"\n: {...}\n}\n}\n]\n这正是 MCP 的本质：\n用结构化方式，\n把工具能力描述进 prompt。\n没有魔法。\nsystem prompt：Rules / Skills 的本体\nsystem_prompt\n=\n\"\"\"\n你是一个智能编程助手。\n工作原则：\n1. 修改前先读文件\n2. 修改后尽量运行测试\n\"\"\"\n这就是：Rules、Best Practices、Coding Guideline，\n全部都是 system prompt。\nAgent 主循环\nwhile\nTrue\n:\n# ← 内层循环：Agent 自主执行\n# Think: LLM 推理\nresponse = client.chat.completions.create(\nmessages=messages,\n# ← 完整的上下文历史\ntools=TOOLS_SCHEMA,\n# ← 可用工具列表\n)\n# Act: 执行工具\nif\nmessage.tool_calls:\nfor\ntool_call\nin\nmessage.tool_calls:\nresult = AVAILABLE_FUNCTIONS[func_name](**func_args)\n# Observe: 将结果反馈给 Agent\nmessages.append({\n\"role\"\n:\n\"tool\"\n,\n\"content\"\n: result,\n# ← 执行结果注入 context\n})\ncontinue\n# ← 继续循环\nelse\n:\nbreak\n# ← 没有工具调用，任务完成\n这就是 ReAct 模式（Reasoning + Acting）：\nReasoning：LLM 思考下一步该做什么\nActing：调用工具执行动作\nObserving：观察结果，更新上下文\n循环：重复上述过程直到任务完成\n这就是 AI Coding Agent 的完整控制流，无论是Claude Code、Cline、Cursor都万变不离其中。但是\n对于对AI来说：只有「下一轮 prompt」是什么\n完整代码实现，只要替换一个openai兼容的key就可以跑起来\nimport\nos\nimport\njson\nimport\nsubprocess\nfrom\nopenai\nimport\nOpenAI\n# =============================================================================\n# 1. 定义工具 (Define Tools)\n# =============================================================================\ndef\nexecute_bash\n(\ncommand:\nstr\n) ->\nstr\n:\n\"\"\"执行 Bash 命令\"\"\"\nprint\n(\nf\"  > [执行命令] \\033[93m\n{command}\n\\033[0m\"\n)\nprint\n(\nf\"  > [执行中]\n{command}\n\"\n)\nresult = subprocess.run(\ncommand, shell=\nTrue\n, capture_output=\nTrue\n, text=\nTrue\n, timeout=\n30\n)\noutput = result.stdout + result.stderr\nif\noutput:\nprint\n(\nf\"  > [输出]\\n\n{output.rstrip()}\n\"\n)\n# 截断过长的输出\nif\nlen\n(output) >\n2000\n:\noutput = output[:\n2000\n] +\n\"\\n... (输出过长已截断)\"\nreturn\noutput.strip()\nor\n\"(无输出)\"\ndef\nread_file\n(\npath:\nstr\n) ->\nstr\n:\n\"\"\"读取文件内容\"\"\"\nprint\n(\nf\"  > [读取文件]\n{path}\n\"\n)\nif\nnot\nos.path.exists(path):\nreturn\nf\"文件不存在:\n{path}\n\"\nwith\nopen\n(path,\n\"r\"\n, encoding=\n\"utf-8\"\n)\nas\nf:\ncontent = f.read()\n# 给代码加上行号，方便 Agent 指定修改位置\nlines = content.splitlines()\nnumbered_lines = [\nf\"\n{i+\n1\n:4d}\n|\n{line}\n\"\nfor\ni, line\nin\nenumerate\n(lines)]\nreturn\n\"\\n\"\n.join(numbered_lines)\ndef\nwrite_file\n(\npath:\nstr\n, content:\nstr\n) ->\nstr\n:\n\"\"\"写入文件内容\"\"\"\nprint\n(\nf\"  > [写入文件]\n{path}\n\"\n)\nos.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=\nTrue\n)\nwith\nopen\n(path,\n\"w\"\n, encoding=\n\"utf-8\"\n)\nas\nf:\nf.write(content)\nreturn\nf\"成功写入\n{\nlen\n(content)}\n字节到\n{path}\n\"\ndef\nlist_files\n(\npath:\nstr\n=\n\".\"\n) ->\nstr\n:\n\"\"\"列出当前目录下的文件结构\"\"\"\nprint\n(\nf\"  > [列出文件]\n{path}\n\"\n)\n# 简单的递归列出文件\nfile_list = []\nfor\nroot, dirs, files\nin\nos.walk(path):\nfor\nfile\nin\nfiles:\nif\nnot\nfile.startswith(\n'.'\n):\nrel_path = os.path.relpath(os.path.join(root, file), path)\nfile_list.append(rel_path)\nresult =\n\"\\n\"\n.join(file_list[:\n50\n])\n# 限制返回数量\nprint\n(\nf\"  > 包含文件:\\n\n{result}\n\"\n)\nreturn\nresult\n# =============================================================================\n# 2. 定义工具描述 (Define Tool Schemas)\n# =============================================================================\nTOOLS_SCHEMA = [\n{\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"execute_bash\"\n,\n\"description\"\n:\n\"执行 shell 命令。用于运行测试、安装依赖或文件操作。\"\n,\n\"parameters\"\n: {\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"command\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"要执行的 bash 命令\"\n}\n},\n\"required\"\n: [\n\"command\"\n],\n},\n},\n},\n{\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"read_file\"\n,\n\"description\"\n:\n\"读取文件内容。内容会包含行号。\"\n,\n\"parameters\"\n: {\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"path\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"文件路径\"\n}\n},\n\"required\"\n: [\n\"path\"\n],\n},\n},\n},\n{\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"write_file\"\n,\n\"description\"\n:\n\"创建或覆盖文件内容。\"\n,\n\"parameters\"\n: {\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"path\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"文件路径\"\n},\n\"content\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"要写入的完整内容\"\n},\n},\n\"required\"\n: [\n\"path\"\n,\n\"content\"\n],\n},\n},\n},\n{\n\"type\"\n:\n\"function\"\n,\n\"function\"\n: {\n\"name\"\n:\n\"list_files\"\n,\n\"description\"\n:\n\"列出当前项目的文件结构。\"\n,\n\"parameters\"\n: {\n\"type\"\n:\n\"object\"\n,\n\"properties\"\n: {\n\"path\"\n: {\n\"type\"\n:\n\"string\"\n,\n\"description\"\n:\n\"目录路径，默认为 '.'\"\n}\n},\n\"required\"\n: [],\n},\n},\n},\n]\nAVAILABLE_FUNCTIONS = {\n\"execute_bash\"\n: execute_bash,\n\"read_file\"\n: read_file,\n\"write_file\"\n: write_file,\n\"list_files\"\n: list_files,\n}\n# =============================================================================\n# 3. Agent 主循环 (The Agent Loop)\n# =============================================================================\ndef\nrun_toy_claude\n():\nclient = OpenAI()\n# 系统提示词：设定人设\nsystem_prompt =\n\"\"\"\n你是一个智能编程助手。\n你的目标是帮助用户编写、调试和理解代码。\n工作原则：\n1. 在修改代码前，先使用 list_files 查看项目结构，或使用 read_file 读取相关文件。\n2. 每次修改文件后，尽量运行代码或测试来验证修改（使用 execute_bash）。\n3. 保持回答简洁，专注于解决问题。\n\"\"\"\nmessages = [{\n\"role\"\n:\n\"system\"\n,\n\"content\"\n: system_prompt}]\nprint\n(\n\"🤖 Toy Claude Code 已启动 (输入 'exit' 退出)\"\n)\nprint\n(\n\"--------------------------------------------\"\n)\n# 外层循环：处理用户输入 (REPL)\nwhile\nTrue\n:\ntry\n:\nuser_input =\ninput\n(\n\"\\n👤 你: \"\n)\nif\nuser_input.lower()\nin\n[\n'exit'\n,\n'quit'\n]:\nprint\n(\n\"再见！\"\n)\nbreak\nmessages.append({\n\"role\"\n:\n\"user\"\n,\n\"content\"\n: user_input})\n# 内层循环：Agent 自主执行 (Think -> Act -> Observe)\n# 只要 Agent 还在调用工具，就一直在这个循环里\nwhile\nTrue\n:\nresponse = client.chat.completions.create(\nmodel=\n\"gpt-5-codex\"\n,\nmessages=messages,\ntools=TOOLS_SCHEMA,\n)\nmessage = response.choices[\n0\n].message\nmessages.append(message)\nif\nmessage.tool_calls:\nprint\n(\nf\"\\n🤖 思考:\n{message.content\nor\n'(准备调用工具...)'\n}\n\"\n)\nfor\ntool_call\nin\nmessage.tool_calls:\nfunc_name = tool_call.function.name\nfunc_args = json.loads(tool_call.function.arguments)\nif\nfunc_name\nin\nAVAILABLE_FUNCTIONS:\n# 执行工具\nresult = AVAILABLE_FUNCTIONS[func_name](**func_args)\nelse\n:\nresult =\nf\"错误: 未知工具\n{func_name}\n\"\n# 将结果反馈给 Agent\nmessages.append({\n\"role\"\n:\n\"tool\"\n,\n\"tool_call_id\"\n: tool_call.\nid\n,\n\"name\"\n: func_name,\n\"content\"\n: result,\n})\nelse\n:\n# 没有工具调用，说明是最终回复\nprint\n(\nf\"\\n🤖 回复:\\n\n{message.content}\n\"\n)\nbreak\nexcept\nKeyboardInterrupt:\nprint\n(\n\"\\n操作已取消。\"\n)\nbreak\nexcept\nException\nas\ne:\nprint\n(\nf\"\\n发生错误:\n{e}\n\"\n)\nbreak\nif\n__name__ ==\n\"__main__\"\n:\nrun_toy_claude()\n我们再来看一下这样一个简单的工具是不是真的能跑起来\n请帮我创建一个简单的 Python 脚本 fibonacci.py。1. 逻辑：计算并打印前 20 个斐波那契数列。2. 创建完成后，请运行它以验证结果。\n修改代码\n假设当前目录下有个脚本buggy_math.py\ndef\nadd\n(\na, b\n):\nreturn\na - b\n# 错误：应该是加法\nprint\n(\nf\"1 + 1 =\n{add(\n1\n,\n1\n)}\n\"\n)\n当前目录下的 buggy_math.py 运行结果不对，请帮我修复它。\n08\nFinally\n理解并实现一个Coding Agent并不难，但是把这样一个产品做好却是很艰难的。致敬各种AI Coding工具包括公司内的CodeBuddy（让白嫖了好多外部高级模型的token）。\n每一代工具，都会逼迫工程师重新理解自己的角色。AI Coding Agent 并没有消灭软件工程，它只是把一部分执行成本，压缩到了极低。\n在这个过程中，\n最重要的能力迁移发生在于\n：从“如何写代码”，转向“如何设计约束、上下文和验证机制”。\n理解 Agent 的本质是为了避免在幻觉中做错误决策。当你真正看清它只是一个 while 循环 + 上下文工程时，你反而会更清楚——\n哪些事情，仍然必须由人来完成。\n-End-\n原创作者｜\n陈铭豪\n感谢你读到这里，不如关注一下？\n👇\n你对本文内容有哪些看法？同意、反对、困惑的地方是？欢迎留言，我们将邀请作者针对性回复你的评论，\n欢迎评论留言补充。我们将选取1则优质的评论，送出腾讯云定制文件袋套装\n1个\n（见下图）。3月10日中午12点开奖。\n扫码领取腾讯云开发者专属服务器代金券！\n阅读原文\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}

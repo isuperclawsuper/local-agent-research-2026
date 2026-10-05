@@ -1,0 +1,106 @@
+{
+  "state": {
+    "research_context": "研究对象：美团面向本地生活商家的B端店铺经营Agent，目标是发现真实商家任务、可信经营诊断、决策与动作执行、商家授权和风险、经营效果反馈，而不是只做问数聊天或技术演示。只基于所给全文判断，不依据品牌、标题或模型热点加分。文章内数字为作者声称，不能当外部验证。区分内部平台BI/工程师Agent和外部中小商家Agent；电商经验需要解释适用边界。",
+    "article": {
+      "id": "1160082619547779073",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "日处理700万条告警的智能管家， OCManager 正式开源",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695941&idx=2&sn=177be7fb4b705d0dcb44e813426b9406",
+      "date": "2026-06-17T00:45:00.491Z",
+      "chars": 5535,
+      "text": "腾讯云开发者\n2026-06-17 08:45\n北京\n关注腾讯云开发者，一手技术干货提前解锁👇\n如果你管过几百甚至上千台的 Linux 服务器，下面这套组合拳应该不陌生：\n监控用 Prometheus/Grafana 拼一套\n日志用 ELK 拼一套\nCMDB 自己写一套\n主机批量执行用 Ansible/SaltStack\n出了问题，几个工具切来切去，凭经验拼凑现场\n这套打法在几台、几十机器规模下还能凑合。但当你的机器到了成千上万台量级——每天 700 万条软件包风险告警，2000 起宕机事件，上百种软件版本，几十个 OS 发行版本。人是不够用的，工具链是断的，知识是装在老员工脑子里的。\nOCManager 是 OpenCloudOS 团队为这件事给出的答案——一个把集群管理、整机监控、AI 智能运维整合在同一个 Web 控制台的一体化平台。今天我们正式把它开源了。\n01\nOCManager 是什么\nOCManager 是 OpenCloudOS 智能管家，核心解决大规模 Linux 集群\"看不全、管不住、查不出、修不快\"的闭环问题。\n如上图所示，OCManager 采用四层结构：\n被管主机运行 Agent 插件\n，通过 mTLS 通道上报数据；后端基于 tRPC-Go 微服务 + Footstone 基础服务（机器管理、权限校验等），存储依赖 MySQL / ClickHouse / Kafka / Redis；前端 Vue2 + TDesign 在 Web 控制台统一交付所有功能。\nOCManager 平台包含四大核心特性：\n一体化、开箱即用：\n各核心模块共享同一套机器视图、权限体系和 Agent 通道，无需再“手搓”或拼装。\n全 Web管理：\n从主机纳管到批量操作，从指标看板到异常诊断，从命令执行到 AI 对话，全部在 Web 控制台完成。这将大幅提升使用效率、统一操作入口、可审计可回溯。\n多 OS 适配，不锁死：\n一期支持 OpenCloudOS 9 / OpenCloudOS 8，及其商业版TencentOS 全系。二期会扩展到第三方主流开源 OS；机房里跑什么，OCManager 就能管什么。\n大规模业务场景验证：\n开源前，OCManager 已在腾讯内部跑了三年多，服务 300 万+台异构服务器，日处理 700 万条 CVE/软件包风险告警，自动分析 2000+ 起宕机事件。开源的第一天，它就带着 300 万台机器的生产经验上岗。\n02\n五大核心模块解读\n在平台一期能力建设中，我们开源了集群管理、整机监控、命令助手、OCAI（含智能诊断、智能问答助手） 五大核心模块。下面将逐一展开，方便你了解每个模块的应用场景及价值。\n2\n.1\n集群管理\n集群管理作为 OCManager 的底座，由 Footstone 基础服务承担。它通过微服务架构提供统一的主机纳管、标签化分组、大批量导入导出功能，并支持 RBAC 权限校验与全生命周期的操作审计日志。面对百万级以上机器的规模化纳管，Footstone 可通过云原生机制进行多 Pod 水平扩展，并基于双向证书认证（mTLS）通道与被管端建立高并发长连接。\n在控制台中，主机纳管、分组、标签、批量导出、批量命令执行等，全部在 Web 端完成。\n示例图：主机管理控制台 — 支持多条件筛选与批量操作\n（限于篇幅，更详细的分组、主机状态等功能暂未做截图展示）\n2\n.2\n整机监控\nOCManager 监控模块专为系统级排障设计，解决传统监控“只能看整机虚高、无法定位具体硬件瓶颈”的被动局面。单机指标采集深度覆盖CPU、内存、磁盘 I/O、网络四大维度的 26 项核心参数：\nCPU 负载解构：同步呈现 CPU 使用率与 CPU 平均负载（支持 1/5/15 分钟区间走势对比），并提供负载区间 TOP 排行，识别多核负载不均；\n内存精细画像：细化追踪物理内存使用量与反映系统实际内存分配的启用内存使用量，以 GB 级粒度提供四维统计，精准捕捉隐性内存泄漏；\n设备级磁盘 I/O：下钻至具体物理设备及逻辑分区维度（如 vda、vdb1），独立统计磁盘使用率与磁盘 I/O 读写占比，让慢盘与慢 I/O 无所遁形；\n网卡级流量测绘：以单物理/虚拟网卡维度（如 eth1、br0）精确定位入、出方向流量，快速捕获网络带宽瞬时毛刺。\n示例图：\n整体监控看板——重点覆盖系统层级亚健康状态\n2\n.3\n命令助手\n日常运维中充斥着大量高频、细碎且容错率极低的底层指令\n，批量执行不仅效率低，一旦出错结果不可预期。OCManager 命令助手\n将\n底层命令行操作\n重构为标准化、可复用的 Web 端作业模板，核心解决\"一条命令推给多少台机器\"的问题：\n批量目标选择\n：通过选择主机面板直接勾选已纳管机器，一次下发即\n可\n覆盖全量目标；\n参数化命令模板\n：命令内容以结构化卡片呈现，含名称、类型、作用范围、描述及带注释的示例命令，参数以 {arch} 等占位符标注，降低误输概率；\n安全闭环：\n命令经白名单审核后通过沙箱下发，执行结果实时回传 Web 控制台并自动归档，全程可追溯。\n示例图：\n命令助手命令模版&支持参数化命令批量下发\n2\n.4 OCAI\nOCAI是本次开源中升级幅度最大的模块。\n在\n去年的\n功能开源基础上\n（\nOC 放出 DeepSeek 满血版运维工具，输入中文秒变运维代码的神器来了\n）\n，我们我们新增了除 Shell 端以外的\nWeb 端交互\n，\n并将「通用问答助手」与「智能诊断」能力整合\n到同一入口\n，\n内置 OpenCloudOS 专属知识库，具备完整的推理与执行链路\n：\n诊断结论与执行建议一体化\n：用户描述异常现象（如\"内存使用率 98% 紧急排查\"），\nOCAI\n自动完成多维度分析，输出结构化诊断报告——包括基线负载判定、异常事件归因（如\"凌晨 2 点 ~ 7 点 CPU 飙高 76%~99%，结合 ClickHouse 用户活跃，判断为 Merge/Mutation 后台任务\"）、离线机器告警汇总，以及按优先级排序的总结与建议格，每行附带可直接执行的操作命令\n。\n运维\n/开发者\n面对异常时，拿到\n的\n是一份带推理过程、带优先级的诊断报告，以及可直接执行的修复建议。\n可解释的推理过程\n：诊断结论\n不是\n黑盒，\nOCAI\n会展示完整的分析链路——从验证接入状态（如 systemctl status oc\nm\n-agent）、到逐条确认需要排查的事项（接入文档、安装包路径、服务端地址），再到最终归因，每一步推理过程均对用户可见；\n通用问答与深度诊断统一入口\n：日常技术咨询（如版本特性、兼容性）走对话式问答；需要根因分析的场景自动创建诊断任务，由底层 LangGraph + MCP 工具链驱动，调用平台日志、指标、配置等数据源完成深度排查；\n多轮上下文与知识沉淀\n：对话历史自动归档，新的故障处理经验可持续补充进 OS 专属知识库，供后续诊断复用。\n示例图：OCA\nI\n对话界面 & 诊断报告— 含异常归因、分级修复建议、知识输出\n03\n如何部署OCManager\n由于公众号篇幅受限，详细部署流程请见：\nhttps://gitee.com/OpenCloudOS/ocmanager/blob/master/docs/QUICKSTART.md\n3\n.1\nDocker 一键部署（官方推荐方式）：\n1）\n前置依赖\n与环境要求\nDocker 20.10+\n（含 Compose v2）\n、\nGo 1.24+\n（\ndeploy.sh\n会在本机静态编译后端二进制，再 COPY 进镜像）\n当前用户能直接调用 docker（root 或在 docker 组里\n，\n非 docker 组用户可执行：\nsudo usermod -aG docker $(id -un) && newgrp docker\n）\n当前用户能 sudo\n硬件量级（经验级、非 SLA）：\n建议服务器配置至少在\n4\n核\n/ 8 G\n；含 MySQL、Redis、Kafka、ZooKeeper、ClickHouse、manager 三进程、\n数据通道\n七服务时，更稳妥从 8\n核\n/ 16 G起做功能验证。\n不要在 docker 数据目录的挂载目录里跑脚本\n——脚本会在\nmanager/backend/bin/\n写入临时二进制并清理。\n2）\n执行\n步骤\n# clone 仓库\ngit\nclone\nhttps://gitee.com/OpenCloudOS/ocmanager.git\n# 进到仓库根目录\ncd\nocmanager\n# 复制配置文件\ncp\nconfig/env.example config/.env\n# 更改配置\n备注：至少确认 SERVER_HOST。本地体验可直接用默认值，无需修改。如需其他配置，如OCAI-Service要使用的模型时，请注意配置，详见4）\nvi config/.env\n# 一键构建镜像并启动全部服务，脚本会自动构建前后端镜像，并拉起 MySQL / Redis / Kafka / ClickHouse 等所有依赖\nbash scripts/deploy.sh\n完成后访问：\nhttp:\n//127.0.0.1:13070\n默认账号/密码： admin / Admin123456@\n# 登录后请立即修改密码\n备注：\n上述一键构建\n脚本\n，将\n按 infra →\n数据通道\n→ manager 顺序拉起全栈（manager 业务侧的 sysdiagnose 通过 .env 里 TMS= 调用 tms/api，所以\n数据通道\n必须先于 manager\n启动\n；制品上传也安排在两者之间，让 MD5 在 manager 启动前已经回写到 .env\n。\n3\n.\n2 OCAI-Service部署（可选）\nOCAI\n-Service\n是控制台内嵌的 AI 助手（详见\ndocs/architecture/frontend-app.md · OpenCloudOS/OCManager - Gitee.com\n）。前端已默认集成；AI 后端由独立仓库\nocai-\nservice\n提供。若暂不部署\nOCAI\n-Service\n，保持\nENABLE_OCAI_DEPLOY=false\n（默认）即可；也可在\nHeader.vue\n中隐藏\n<Chatbot/>\n。\n一键启用\n（需先克隆\nocai-\nservice\n到 oc-manager 同级目录）：\n# config/.env\nENABLE_OCAI_DEPLOY=true\nOCAI_JWT_SECRET=your-jwt-secret\nOCAI_LLM_DEFAULT_API_KEY=sk-your-key\nbash scripts/deploy.sh up\n# 自动拉起 ocai-service + nginx 反代\n3\n.\n3\n被关节点上部署Agent\n控制平面（infra + 数据通道 + manager）跑起来后只是 服务端——要让被管节点上报数据 / 接收命令，需要在每台目标主机上部署 Agent。Agent 与控制平面（具体是 tms/gateway）走 mTLS 长连接互信，所以必须先把 控制平面对外可达地址 签进 server 证书的 SAN。\n详细部署流程见：\nhttps://gitee.com/OpenCloudOS/ocmanager#%E6%96%B9%E5%BC%8F%E4%B8%89%E5%9C%A8%E8%A2%AB%E7%AE%A1%E8%8A%82%E7%82%B9%E4%B8%8A%E9%83%A8%E7%BD%B2-agent\n如需更多部署方式，如本地开发部署，请见项目Quickstart 文档：\nhttps://gitee.com/OpenCloudOS/ocmanager/blob/master/docs/QUICKSTART.md\n04\nComing Soon · 二期开源规划\n本次我们重点解决了\"看到机器、监控机器、问机器、诊断机器\"的闭环，二期将继续开源 OCManager 在深度运维场景上的能力：\n实例信息 — 更细粒度的实例画像与资产视图\n健康检查 — 定期主动巡检与基线管理\n性能平台 — 性能基线、回归、调优工具集\nDmesg 日志 — 内核日志智能化采集与分析\nCrashBuddy — 内核宕机分析平台（自动分析 + 批量修复 + 失败重试）\nMCP 工具集 — 更多 OS 能力以 MCP 协议暴露给 Agent 生态\n同时还将扩展更多第三方主流开源 OS 的适配。\n欢迎大家部署、体验 OCManager，同时也欢迎大家来 OCManager 主仓库和各分支项目仓库提PR/Issue，参与各类技术共建。\nOCManager开源代码仓库：\nhttps://gitee.com/OpenCloudOS/ocmanager\nOCM-Agent开源代码仓库：\nhttps://gitee.com/OpenCloudOS/ocm-agent\nOCAI-Service开源代码仓库：\nhttps://gitee.com/OpenCloudOS/ocai-service\nOCAI-Agent开源代码仓库：\nhttps://gitee.com/OpenCloudOS/ocai-agent\n-End-\n跳转微信打开",
+      "fulltext_obtained": true
+    }
+  },
+  "questions": {
+    "category": {
+      "type": "choice",
+      "instructions": "按文章实际主体选择主要类别。直接本地生活应确有到店、商家、本地生活分析经营主体，不是泛指本地文件。",
+      "criteria": {
+        "direct_local": "直接讨论本地生活或到店商家相关经营/分析Agent",
+        "transfer_business": "电商经营、商业决策、业务数据分析Agent可迁移实践",
+        "transfer_agent": "其他行业Agent评测、记忆、工程闭环、上下文等可迁移工程实践",
+        "peripheral": "产品新闻、广告、活动或泛AI科普，实质有限",
+        "irrelevant": "与店铺经营Agent研究基本无关"
+      }
+    },
+    "relevance": {
+      "type": "score",
+      "instructions": "与美团B端店铺经营Agent业务问题的关联程度。不要因为用了Agent一词就给高分。",
+      "criteria": [
+        "无关联",
+        "仅通用AI背景",
+        "可迁移工程能力但不谈经营任务",
+        "业务分析/决策场景可迁移但商家侧有明显差异",
+        "本地生活或高度可比经营分析，具体任务明确",
+        "直接面向本地生活商家日常经营任务且角色与目标匹配"
+      ]
+    },
+    "grounding": {
+      "type": "score",
+      "instructions": "真实用户任务与痛点 grounding：角色、工作流、约束、例子与非模型问题有多具体。",
+      "criteria": [
+        "无真实任务",
+        "口号/泛场景",
+        "有例子但缺角色或现状",
+        "真实流程与痛点具体",
+        "流程、约束、用户反馈或失败案例充分",
+        "有现场用户研究/行为证据和反例，明确哪些需求不该Agent化"
+      ]
+    },
+    "decision_action": {
+      "type": "score",
+      "instructions": "从可信数据到解释、决策、执行、经营反馈的闭环，尚未建设的能力不能按已实现打分。",
+      "criteria": [
+        "不涉及",
+        "仅生成/回答",
+        "分析或建议，缺行动",
+        "明确决策/人机协作但执行反馈不完整",
+        "有实际动作与反馈设计/实践及权限风险",
+        "实际闭环有量化业务效果，反证/归因与权限风控清晰"
+      ]
+    },
+    "evidence": {
+      "type": "score",
+      "instructions": "文中证据强度：实装细节、失败取舍、验证方法及业务结果。宣传和自报数字不等于因果证明。",
+      "criteria": [
+        "纯口号",
+        "介绍或营销，少细节",
+        "有实现示例但验证弱",
+        "实现与取舍/失败细节充分",
+        "方法、评测数据、基线或量化结果充分但仍有局限",
+        "强业务效果验证，基线/对照/样本与局限明确，支持因果或可靠改进判断"
+      ]
+    },
+    "actionability": {
+      "type": "score",
+      "instructions": "读者能否转为具体产品/实验/工程动作。",
+      "criteria": [
+        "不可落地",
+        "概念启发",
+        "有方向缺方法",
+        "方法/组件可直接形成设计检查表",
+        "细节丰富可形成可执行实验或实现步骤",
+        "可复用方法、边界和验收指标完备"
+      ]
+    },
+    "anti_hype": {
+      "type": "score",
+      "instructions": "是否能纠正闭门造车：揭示适用边界、失败和成本，区分demo指标与真实业务价值。",
+      "criteria": [
+        "纯宣传",
+        "主要堆概念",
+        "提到局限但浅",
+        "有具体失败或权衡",
+        "清楚讲边界、无效路径、人工职责与验证",
+        "系统性反证并证明不做/少做Agent的条件与真实需求"
+      ]
+    },
+    "fulltext_usable": {
+      "type": "boolean",
+      "instructions": "正文是否足以对文章主要论点进行评估（非只有标题/摘要/图像且缺文字）？"
+    }
+  },
+  "maxRetries": 2
+}
