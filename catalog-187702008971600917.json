@@ -1,0 +1,1306 @@
+{
+  "source": "腾讯云开发者",
+  "feed_id": "187702008971600917",
+  "count": 162,
+  "boundary": "2025-11-06T00:46:00.089Z",
+  "exhausted": false,
+  "pages": 4,
+  "articles": [
+    {
+      "id": "1307940856891703296",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "还没放假吗？                                  各位彦祖亦菲们，祝大家国庆中秋双节快乐！  时间悄无声息，转眼就到了10月。这一年最后...",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697636&idx=1&sn=21b4aa6be30c4d19883bf1e6c4eaaeeb",
+      "date": "2026-09-27T00:45:00.438Z"
+    },
+    {
+      "id": "1303597337104351232",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "JEV：一个不会写代码的模型，为什么拿下4000万美元？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697634&idx=1&sn=022fbaed7d8c0612ad874c717c92419e",
+      "date": "2026-09-24T00:45:00.215Z"
+    },
+    {
+      "id": "1302173164771475456",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI写得快 ≠ 真正提效：一文讲清Harness“记忆”和“验证闭环”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697619&idx=1&sn=24b9b00aeb06f6a9d348f01c3b9688e6",
+      "date": "2026-09-23T00:30:00.541Z"
+    },
+    {
+      "id": "1300386108118401024",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "边开飞机边换引擎：Harness如何解决验证难题",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697613&idx=1&sn=4c178e5576c825739bb225fc8b4ab87e",
+      "date": "2026-09-22T00:45:00.233Z"
+    },
+    {
+      "id": "1296384871370850304",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "WorkBuddy官方频道来了！专属于你的交流社区",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697555&idx=1&sn=68c24e69e423eba96d13d8de6bfe5e05",
+      "date": "2026-09-19T00:45:00.948Z"
+    },
+    {
+      "id": "1294582991711895552",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "换一套 Harness，比换两代模型还管用",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697554&idx=1&sn=78f66fec6cc85f3fbe642283b7d91cc2",
+      "date": "2026-09-18T00:45:00.738Z"
+    },
+    {
+      "id": "1294582991711895553",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "定档10.29丨2026腾讯全球数字生态大会来了！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697554&idx=2&sn=4785cd690312ca646070b93c220ad6ac",
+      "date": "2026-09-18T00:45:00.207Z"
+    },
+    {
+      "id": "1293078324460912640",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "真正烧Token的不是代码，而是模型反复看同一份上下文",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697526&idx=1&sn=efff2282c10d13b5d5fdbea6a8c24c43",
+      "date": "2026-09-17T00:45:00.070Z"
+    },
+    {
+      "id": "1291683991178444800",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "干了 15 年产品，我把自己“外包”给了 WorkBuddy",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697473&idx=1&sn=7b27d23658338ed71794a0f94cbd5ead",
+      "date": "2026-09-16T00:45:00.061Z"
+    },
+    {
+      "id": "1290219368826798080",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Prompt越长越好吗？研究告诉你何时该停手",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697464&idx=1&sn=809c710e2b0a2392b16ebb5635121d6d",
+      "date": "2026-09-15T00:45:00.497Z"
+    },
+    {
+      "id": "1284435799621763072",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "2分钟到20秒！AI Agent让工单处理可提效9倍",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697427&idx=1&sn=8a0abdf2e3970eb3a5db760645548377",
+      "date": "2026-09-11T00:45:00.982Z"
+    },
+    {
+      "id": "1283328874377117696",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "48小时数百万浏览：Graph Engineering是真趋势还是又一轮造词？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697420&idx=1&sn=5ce86628c0ceb8cb9df0e3027192de3d",
+      "date": "2026-09-10T00:45:00.313Z"
+    },
+    {
+      "id": "1281813665799995392",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "5分钟烧掉1000块！Agent token成本如何治理",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697414&idx=1&sn=3672d692ba91de5791a6cff902c4484d",
+      "date": "2026-09-09T00:45:00.373Z"
+    },
+    {
+      "id": "1280369414545342464",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "OpenClaw 2.0：欠下的技术债，这次连本带利还清",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697390&idx=1&sn=40ecd2699a6b707996e262b662b25d53",
+      "date": "2026-09-08T00:45:00.455Z"
+    },
+    {
+      "id": "1274626392364941312",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一篇AI味100%的文章是怎样炼成的？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697330&idx=1&sn=226d7aaafa37d0021f92581b58afb826",
+      "date": "2026-09-04T00:45:00.795Z"
+    },
+    {
+      "id": "1272829711495462912",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Agent每次接新任务都像新人第一天入职？带你告别“一次性智能”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697297&idx=1&sn=9f3932deb893f278976ebb473721b616",
+      "date": "2026-09-03T00:45:00.744Z"
+    },
+    {
+      "id": "1271335973526962176",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文讲透确定性Harness",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697293&idx=1&sn=70581f21d0bbf985b485d3fc98ef979e",
+      "date": "2026-09-02T00:45:00.962Z"
+    },
+    {
+      "id": "1271335973526962177",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "删掉80%的Prompt规则，Agent交付成功率反而更高了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697286&idx=1&sn=65d6dbb523f04f06b83088e7a2ba978c",
+      "date": "2026-09-01T00:45:00.717Z"
+    },
+    {
+      "id": "1271335973526962178",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "CubeSandbox v0.7.0 发布：沙箱跨机流动，集群平滑演进",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697286&idx=2&sn=1a9c1d0d103007c9a7a352efe75176fd",
+      "date": "2026-09-01T00:45:00.650Z"
+    },
+    {
+      "id": "1264191324387540992",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI工程范式的跃迁，一文讲透Context Engineering！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697260&idx=1&sn=bbda847cb4e895e1ea99caf5acec9923",
+      "date": "2026-08-28T02:39:00.212Z"
+    },
+    {
+      "id": "1262707172383391744",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文搞懂个人AI记忆系统构建全流程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697254&idx=1&sn=4c6c7051662b7a92a77ce80bec68af16",
+      "date": "2026-08-27T00:45:00.364Z"
+    },
+    {
+      "id": "1261660128814301184",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "从Prompt到Harness，给反馈分类装上方向盘",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697102&idx=1&sn=c5f8e6c86d98caed81f32bf357be22a4",
+      "date": "2026-08-26T00:46:00.428Z"
+    },
+    {
+      "id": "1261113778892701696",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一个Skill搞定服务重构：从链路分析到测试自动化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697075&idx=1&sn=0811fc825e510ea62db8152d453d6008",
+      "date": "2026-08-25T00:45:00.381Z"
+    },
+    {
+      "id": "1255115719440334848",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI时代不吐不快的12条判断",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697030&idx=1&sn=961b696054ae4d9c0f9eda068564203e",
+      "date": "2026-08-21T00:45:00.363Z"
+    },
+    {
+      "id": "1252975038718541824",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "大规模分布式训练的稳定性工程：自动驾驶千卡集群的毛刺理论与优化实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697013&idx=1&sn=a9df1463ea815eb3f256986c7785d4d7",
+      "date": "2026-08-20T00:45:00.355Z"
+    },
+    {
+      "id": "1251115301085380608",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI Coding时代，研发项目管理新范式探索与实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247697007&idx=1&sn=f12d0ba52354af093099ab3c6c7c28f3",
+      "date": "2026-08-19T00:45:00.176Z"
+    },
+    {
+      "id": "1250182152482455552",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Agent的命门是上下文：关键不在少给，而在给对",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696974&idx=1&sn=7b3e885c64e10a944ea85e4018348a13",
+      "date": "2026-08-18T00:45:00.786Z"
+    },
+    {
+      "id": "1244574524330999809",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "参会指南 | 错过再等一年 8.15 大湾区架构师峰会席位告急",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696970&idx=2&sn=3066e3e33ff600ca37c41e97bab29809",
+      "date": "2026-08-14T00:45:00.837Z"
+    },
+    {
+      "id": "1244574524330999808",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "企业内Agent工具落地实践：统一Harness、Skill与虚拟文件系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696970&idx=1&sn=5f7777dfa41a0a08c6d9e4d1feab6336",
+      "date": "2026-08-14T00:45:00.024Z"
+    },
+    {
+      "id": "1242352328065941505",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "完整议程出炉！本周六一天怎么逛，看这一张图就够了！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696960&idx=2&sn=30375f8194928b2da11520b7c8789288",
+      "date": "2026-08-13T00:45:00.362Z"
+    },
+    {
+      "id": "1242352328065941504",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文读懂：FDE的12项核心能力",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696960&idx=1&sn=1e5a8676382190f22a1c1cadb0419c5c",
+      "date": "2026-08-13T00:45:00.253Z"
+    },
+    {
+      "id": "1241054188629131264",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "4周上线鸿蒙电脑，WorkBuddy团队用AI给自己造了个“捷径”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696941&idx=1&sn=4ab2e9d01758ee75b0220db42f7f90c2",
+      "date": "2026-08-12T00:45:00.552Z"
+    },
+    {
+      "id": "1239792088950767616",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "把59位技术人装进一艘船里，8月15日在前海启航！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696914&idx=1&sn=85b3e7f48d6971118a2251b1ccff93a7",
+      "date": "2026-08-10T10:04:00.139Z"
+    },
+    {
+      "id": "1234470368299712513",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "腾讯云Team Memory来了！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696836&idx=2&sn=32911b1613b2bb2cd3b2c93af4ccdfa0",
+      "date": "2026-08-07T00:45:00.898Z"
+    },
+    {
+      "id": "1234470368299712512",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "十年后端烧光积分，学会了在WorkBuddy当甲方",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696836&idx=1&sn=ec9528dc40e2f5f0eb4bdd03c06d6839",
+      "date": "2026-08-07T00:45:00.823Z"
+    },
+    {
+      "id": "1232704691876397056",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "模型越来越强， harness该留下什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696815&idx=1&sn=273c44cd529f4ae4cac7328bb19e54b8",
+      "date": "2026-08-06T00:45:00.464Z"
+    },
+    {
+      "id": "1231249562694320128",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Claude Code神级技巧：让AI编程更省心",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696809&idx=1&sn=e7e00717c8a296b8e0d92558f032edf8",
+      "date": "2026-08-05T00:45:00.428Z"
+    },
+    {
+      "id": "1229718189269581824",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Loop Engineering就凉了？一文看懂Graph Engineering的“新范式”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696757&idx=1&sn=3e44206309c2d8da1499253fba663304",
+      "date": "2026-08-04T00:45:00.251Z"
+    },
+    {
+      "id": "1225319774196596736",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "报名中！2026架构师峰会倒计时14天｜潮起潮落，你我仍在",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696746&idx=1&sn=b8b216e9b7f36ce5cf51befe98f73060",
+      "date": "2026-08-01T02:00:00.463Z"
+    },
+    {
+      "id": "1223867855754231808",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一个鹅厂程序员，用AI给自己造了10个\"外挂\"",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696719&idx=1&sn=f406837b72765fac8c52a276811d382e",
+      "date": "2026-07-31T00:45:00.097Z"
+    },
+    {
+      "id": "1222591150452375552",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "对Loop Engineering的思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696703&idx=1&sn=cb00711eb63b1969763dff76b0e51729",
+      "date": "2026-07-30T00:45:00.351Z"
+    },
+    {
+      "id": "1221512515838541824",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "当所有人都在给AI造缰绳，马厩正在消失",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696672&idx=1&sn=f4a3d52f16695828fe67a37ef68ce575",
+      "date": "2026-07-29T00:45:00.618Z"
+    },
+    {
+      "id": "1219765491468337152",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "欠了两年的文档债，我让WorkBuddy用30分钟还清了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696600&idx=1&sn=8c63c56d0936656877b02fba7c713bfe",
+      "date": "2026-07-28T00:45:00.470Z"
+    },
+    {
+      "id": "1219765491468337153",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Cube Sandbox v0.6.0：K8s 部署、Volume 框架领衔，六大能力全面走向生产",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696600&idx=2&sn=3dd5b52b59bde9158821c014f7d442dd",
+      "date": "2026-07-28T00:45:00.416Z"
+    },
+    {
+      "id": "1214053712842981376",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Token降本50%：Harness工作流的成本优化实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696537&idx=1&sn=ef936fe6264b635df4423ea8cc60614b",
+      "date": "2026-07-24T00:45:00.310Z"
+    },
+    {
+      "id": "1212305842213224448",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文讲透Agent三件套：MCP、Skill、Hook如何给大模型装上护栏",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696507&idx=1&sn=03d92475ccf4209d8b1409ec42ca404b",
+      "date": "2026-07-23T00:45:00.913Z"
+    },
+    {
+      "id": "1210975259298103297",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "7 月 25 日｜杭州·腾讯 AI 公开课走进书博会！现场玩转 AI 阅读新体验",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696478&idx=2&sn=d8291e96103d217573507c554bc460db",
+      "date": "2026-07-22T00:45:00.699Z"
+    },
+    {
+      "id": "1210975259298103296",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI时代最贵的岗位FDE，其实一个人用WorkBuddy就能干",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696478&idx=1&sn=3fef9506455305b5350e42b5ca0c43dc",
+      "date": "2026-07-22T00:45:00.482Z"
+    },
+    {
+      "id": "1209394954233708544",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "删掉80%的Skill，Agent反而更听话了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696426&idx=1&sn=e0376dfaa3494b7c06f3e6d9fb8840e7",
+      "date": "2026-07-21T00:45:00.468Z"
+    },
+    {
+      "id": "1203785275554136064",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "独立开发者、顶级开源项目PMC是怎么用WorkBuddy的？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696416&idx=1&sn=ebb3c52b2bdcc699da2afc8d060d03be",
+      "date": "2026-07-17T00:45:00.813Z"
+    },
+    {
+      "id": "1202598492673933312",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文讲透Skill",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696407&idx=1&sn=99394049f6a8ab40966f9116cf56c0e2",
+      "date": "2026-07-16T00:45:00.929Z"
+    },
+    {
+      "id": "1200682989923598336",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "如何将本地CodeBuddy/Cursor嵌入在线应用",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696401&idx=1&sn=d7ae12fb6298a719d8b17f3855124707",
+      "date": "2026-07-15T00:45:00.943Z"
+    },
+    {
+      "id": "1200682989923598337",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Cube Sandbox GitHub Star 突破 10K！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696401&idx=2&sn=f6c96e94fbf2edfedfbf2451a22b2068",
+      "date": "2026-07-15T00:45:00.077Z"
+    },
+    {
+      "id": "1197830809113853952",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "全国首个WorkBuddy OPC合作社区成立！社区合作计划在全国开放申请",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696391&idx=1&sn=f80cfa1b09880c39e053b7a8fb112a25",
+      "date": "2026-07-13T08:00:00.020Z"
+    },
+    {
+      "id": "1193013843907837952",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "当K8s遇见Ray：大模型时代AI Workload调度的通用范式",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696261&idx=1&sn=b1ddd752e3e7b20d4e27de5505e28e37",
+      "date": "2026-07-10T00:30:00.394Z"
+    },
+    {
+      "id": "1192063421130997760",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文读懂Harness Engineering！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696218&idx=1&sn=6fdeed9f45504aede19989f68d0c6cd9",
+      "date": "2026-07-09T00:45:00.791Z"
+    },
+    {
+      "id": "1190588987194998784",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "WorkBuddy 首个OPC社区启动，首期训练营开放招募",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696187&idx=1&sn=139750ae24383bf39543a7873e73e54f",
+      "date": "2026-07-08T00:45:00.062Z"
+    },
+    {
+      "id": "1189122642662129664",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "契约化多端架构：基于领域模型的Harness实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696163&idx=1&sn=a06a9d22e50e1c099620a7f41a028ed2",
+      "date": "2026-07-07T00:45:00.427Z"
+    },
+    {
+      "id": "1183311265590673408",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "架构师深度测评WorkBuddy：办公Agent的新范式已来！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696127&idx=1&sn=ba912eebb8eae61f879460add1832a77",
+      "date": "2026-07-03T00:45:00.553Z"
+    },
+    {
+      "id": "1181976400693821440",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Loop Engineering又是啥？一文讲清企业Agent落地的四层工程进化论",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696119&idx=1&sn=ae1b830002ae285cd1cd67970194ab34",
+      "date": "2026-07-02T00:45:00.779Z"
+    },
+    {
+      "id": "1180480558812102656",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "业务架构、应用架构、数据架构、技术架构……架构到底是什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696073&idx=1&sn=8a58b4f5c3d9dabe8c097a7cedb93138",
+      "date": "2026-07-01T00:45:00.789Z"
+    },
+    {
+      "id": "1180480558812102657",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "「腾讯云 NoSQL」技术之 Redis 篇：针对集群选举投票冲突的优化方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696073&idx=2&sn=f8de16a6bf962ded8f3f87d4c17ffe82",
+      "date": "2026-07-01T00:45:00.156Z"
+    },
+    {
+      "id": "1179043422355324929",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "「腾讯云 NoSQL」 技术之 MongoDB 篇：物理备份磁盘膨胀率减少 90% 的内核优化实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696065&idx=2&sn=937a114aefb9c40f80d9858740341034",
+      "date": "2026-06-30T00:45:00.421Z"
+    },
+    {
+      "id": "1179043422355324928",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "万字长文推演Claude的代码统治力从何而来",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696065&idx=1&sn=80018ee5728e292b5f4af6d463ee73c9",
+      "date": "2026-06-30T00:45:00.109Z"
+    },
+    {
+      "id": "1173163448784125952",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "程序员趁早想通为好",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696058&idx=1&sn=56a4b24526926c90b6e5c786b3c94753",
+      "date": "2026-06-26T00:45:00.965Z"
+    },
+    {
+      "id": "1171758121022914560",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "8本醍醐灌顶的AI好书！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696043&idx=1&sn=2a0c21bfdb2bd232e3c2c7f308092e66",
+      "date": "2026-06-25T00:45:00.353Z"
+    },
+    {
+      "id": "1170344408411799553",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "2026腾讯犀牛鸟开源人才培养计划正式开启",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696004&idx=2&sn=ff41712086d53d162e16a735c12aec83",
+      "date": "2026-06-24T00:45:00.852Z"
+    },
+    {
+      "id": "1170344408411799552",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "每天10万行AI代码，人肉Code Review的崩塌是Infra工程的范式拐点",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247696004&idx=1&sn=ad92d5f29ad82113916c858524a618eb",
+      "date": "2026-06-24T00:45:00.575Z"
+    },
+    {
+      "id": "1168785006198259712",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "从Harness架构到Token经济学的探索",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695963&idx=1&sn=29f18a2db784e1ddb56796af76543688",
+      "date": "2026-06-23T00:45:00.317Z"
+    },
+    {
+      "id": "1161548054453551104",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "20年架构老兵的AI探索，让WorkBuddy帮你超越身边的人",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695957&idx=1&sn=9b0b6956f078f79196bd515d301d56ec",
+      "date": "2026-06-18T00:45:00.568Z"
+    },
+    {
+      "id": "1160082619547779073",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "日处理700万条告警的智能管家， OCManager 正式开源",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695941&idx=2&sn=177be7fb4b705d0dcb44e813426b9406",
+      "date": "2026-06-17T00:45:00.491Z"
+    },
+    {
+      "id": "1160082619547779072",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文搞懂Token经济学：同样额度多干3倍活，只需理解消耗机制",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695941&idx=1&sn=94403a902e95852eb72979e495410907",
+      "date": "2026-06-17T00:45:00.262Z"
+    },
+    {
+      "id": "1158729133971210240",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "读完Agent Loop工程手册，我有8个还没想明白的问题",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695921&idx=1&sn=05cbb8d43adefc7b95ba859a02de3145",
+      "date": "2026-06-16T00:45:00.712Z"
+    },
+    {
+      "id": "1152361135714861056",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Harness Engineering落地前，先想清楚这几个问题",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695914&idx=1&sn=862b690b99a6036703617043ac4474cb",
+      "date": "2026-06-12T00:45:00.278Z"
+    },
+    {
+      "id": "1151539169789476864",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "鹅厂程序员初试Claude Fable 5：被吓到眩晕瘫坐的最强模型？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695909&idx=1&sn=0a13452c881570effac36e9d26a098a7",
+      "date": "2026-06-11T00:45:00.905Z"
+    },
+    {
+      "id": "1149981053197221888",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "设计模式已死？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695865&idx=1&sn=d300189a3247bb4da82e03c2c1d9e772",
+      "date": "2026-06-10T00:45:00.729Z"
+    },
+    {
+      "id": "1148409980215361536",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "4000行代码撑起一个Agent框架？nanobot架构深度解析",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695857&idx=1&sn=7c2f39eed5649d1ef2ddc47fd767b1fe",
+      "date": "2026-06-09T00:45:00.372Z"
+    },
+    {
+      "id": "1142557410783657984",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "两个字符让Django接口快了8倍：一次险些翻车的线上性能排查实录",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695850&idx=1&sn=ecfbc2739caa6d9ebda151aadc400c8a",
+      "date": "2026-06-05T00:45:00.974Z"
+    },
+    {
+      "id": "1142557410783657985",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Cube Sandbox v0.3.0 来了：让 AI Agent 拥有“时光机”和“分身术”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695850&idx=2&sn=47a9b811c5a1b30f388630fbf7b54c0d",
+      "date": "2026-06-05T00:45:00.226Z"
+    },
+    {
+      "id": "1140005208357601280",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "为Agent重新设计云：Vibe Coding平台背后的基础设施",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695805&idx=1&sn=f100ca4bb61e5ae6890f2667bfeeb185",
+      "date": "2026-06-03T00:45:00.346Z"
+    },
+    {
+      "id": "1137851636677345280",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI软件工程范式革命的思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695774&idx=1&sn=ddc13bdf2e1f9b3b18e8978d81f3fb81",
+      "date": "2026-06-02T00:45:00.032Z"
+    },
+    {
+      "id": "1132047577240305664",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Agentic Engineering六条最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695703&idx=1&sn=a7fe5648293a3475d2e2541f1f3410d7",
+      "date": "2026-05-29T00:45:00.718Z"
+    },
+    {
+      "id": "1130643733272854528",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "大模型的Agent Skill功能，在LLM HTTP底层交互流中是怎么承载的？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695701&idx=1&sn=a8b5dfd8cee58567104bcccc39af6947",
+      "date": "2026-05-28T00:45:00.905Z"
+    },
+    {
+      "id": "1130643733272854529",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "5月30日·腾讯AI公开课到杭州！0基础也能拥有「能动手干活」的AI！名额有限，全程免费！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695701&idx=2&sn=301af26601a74df0ee689fc198061b72",
+      "date": "2026-05-28T00:45:00.163Z"
+    },
+    {
+      "id": "1129265674108010496",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "万字入门AI Infra：深入理解大模型中的数学与Infra优化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695676&idx=1&sn=6c01642b9eaa5ee518ce99c355522ec3",
+      "date": "2026-05-27T00:45:00.007Z"
+    },
+    {
+      "id": "1127815221742665728",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "平平无奇的源码，竟藏着Agent的核心秘密？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695603&idx=1&sn=1753f7e5a63067c16db284bc22fbe238",
+      "date": "2026-05-26T00:45:00.917Z"
+    },
+    {
+      "id": "1127815221742665729",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "腾讯云Agent Memory节省61% Token提升52%成功率的诀窍：Mermaid无限画布×上下文卸载",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695603&idx=2&sn=d0dc08cafa650f04116c408661df3435",
+      "date": "2026-05-26T00:45:00.558Z"
+    },
+    {
+      "id": "1122006365095591936",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Harness落地的五大问题及其解法",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695583&idx=1&sn=f3a8dfc305392e781837363f6bc17a37",
+      "date": "2026-05-22T00:45:00.064Z"
+    },
+    {
+      "id": "1120502479914532864",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "QQ音乐Harness Engineering实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695581&idx=1&sn=08aacd344637c9eba04e75e9fae2354c",
+      "date": "2026-05-21T00:45:00.706Z"
+    },
+    {
+      "id": "1119036940822249472",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "从Prompt、Context到Harness，工程的三次进化与终局之战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695574&idx=1&sn=5a72299143649e58cc510ab1b50480b4",
+      "date": "2026-05-20T00:45:00.855Z"
+    },
+    {
+      "id": "1117950888783118336",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "让Skill自己训练自己：8阶段Loop、3层评测、5维AND门控，从此实现自进化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695568&idx=1&sn=492ca1e98155a9fea668213173cab654",
+      "date": "2026-05-19T00:46:00.750Z"
+    },
+    {
+      "id": "1117950888783118337",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "TencentDB Agent Memory 全球正式开源：让 Agent 沉淀经验，让人专注创造",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695568&idx=2&sn=000c9b3c8c00fe6e2fd675360a016edb",
+      "date": "2026-05-19T00:46:00.030Z"
+    },
+    {
+      "id": "1111777949083762688",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "上下文，才是Agent的命门",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695554&idx=1&sn=dc7510c4a23d8238014e97f3fe1b997e",
+      "date": "2026-05-15T00:46:00.064Z"
+    },
+    {
+      "id": "1111013234451677184",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "只加两行代码，为什么要两天？一文深度理解业务系统的复杂性",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695552&idx=1&sn=aed9efb35983a89194ea583074ee8dcc",
+      "date": "2026-05-14T00:46:00.037Z"
+    },
+    {
+      "id": "1108977670990856192",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "从零设计生产级 Multi-Agent Harness：架构、评估、记忆、成本与 MCP 工具接入全拆解",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695544&idx=1&sn=865fb183130b2851900b9f4eda62da9c",
+      "date": "2026-05-13T00:46:00.764Z"
+    },
+    {
+      "id": "1107857566655840256",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "拆完Hermes源码，我发现Agent的\"自我进化\"根本不需要训练模型",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695500&idx=1&sn=57de8c7c4889ace8c6c1e15ab460447a",
+      "date": "2026-05-12T00:46:00.452Z"
+    },
+    {
+      "id": "1101634358105604096",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI Infra 其实没有多少新东西",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695494&idx=1&sn=85ccbd62f18105968a195314e86ece43",
+      "date": "2026-05-08T00:46:00.172Z"
+    },
+    {
+      "id": "1100239394889007104",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "程序员越早想通这些越好",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695482&idx=1&sn=7f8b7e7f9a759e5b5d95eea286fd6a71",
+      "date": "2026-05-07T00:46:00.598Z"
+    },
+    {
+      "id": "1090036676354375680",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "RAG已死？不，是Grep回归了！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695473&idx=1&sn=517ef2bad8a85f2f31c1ef309c1eae76",
+      "date": "2026-04-30T00:46:00.439Z"
+    },
+    {
+      "id": "272157405034315776",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "深入浅出Harness Engineerring之核心模式与理念",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695469&idx=1&sn=9ba77be5cdb4a9031a708c7361d7a026",
+      "date": "2026-04-29T00:46:00.136Z"
+    },
+    {
+      "id": "271802567423426561",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "5月10日·西安｜免费安装「能动手干活」的AI！名额有限，速速报名！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695462&idx=2&sn=a0b70e0e942475ed7de079c7e14fd7ad",
+      "date": "2026-04-28T00:46:00.693Z"
+    },
+    {
+      "id": "271802567423426560",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Harness Engineering实践心得：如何高效驾驭AI？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695462&idx=1&sn=639d83e3bacb5cf2e040dad911bbde61",
+      "date": "2026-04-28T00:46:00.227Z"
+    },
+    {
+      "id": "270714795283447808",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "好用的Token Plan凭啥不能便宜？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695442&idx=1&sn=75ccd4bfd0bcb6da1121d4c63fcaed07",
+      "date": "2026-04-24T09:37:00.300Z"
+    },
+    {
+      "id": "269990952512258049",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "9 大领域24 项能力：TencentOS AI增强版正式上线",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695386&idx=2&sn=5e7bd0bbb3ea4f8f9171428eb763c29e",
+      "date": "2026-04-23T00:46:00.911Z"
+    },
+    {
+      "id": "269990952512258048",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "从第一性原理思考 Agentic Engineering",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695386&idx=1&sn=7b4ec46bedf2b841680912d6be029a81",
+      "date": "2026-04-23T00:46:00.518Z"
+    },
+    {
+      "id": "269609616836395008",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "万字干货！Harness Engineering如何工程化落地？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695342&idx=1&sn=9e3b38d4ea0d20c2ec1e46aa87a5fba3",
+      "date": "2026-04-22T01:31:00.643Z"
+    },
+    {
+      "id": "269609616836395009",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "腾讯云开源OpenAI、Manus同款Agent底座",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695342&idx=2&sn=e20b805f235b3a75eee749714e9dccf5",
+      "date": "2026-04-22T01:31:00.288Z"
+    },
+    {
+      "id": "269243781550702592",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "全方位对比：Hermes VS OpenClaw",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695306&idx=1&sn=32df2774f14188f50ccfb9daf943d043",
+      "date": "2026-04-21T00:47:00.563Z"
+    },
+    {
+      "id": "267809301183070208",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文讲透：Harness Engineering即控制论！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695294&idx=1&sn=63a246504edde73b337f15ad72bed3b1",
+      "date": "2026-04-17T00:46:00.473Z"
+    },
+    {
+      "id": "267431511904493568",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "神级开源插件！一句话让QClaw变3D小镇，Agent工作可视化，赛博云监工",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695289&idx=1&sn=a2aed60923f784bde036f9b062f829ef",
+      "date": "2026-04-16T00:46:00.977Z"
+    },
+    {
+      "id": "267087169536925696",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文搞懂Hermes：新顶流Agent如何从经验中自我进化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695259&idx=1&sn=30ef327bcbbb3e349abd812da627c5f2",
+      "date": "2026-04-15T00:46:00.046Z"
+    },
+    {
+      "id": "266713855601680384",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "腾讯正式发布面向Agent设计的命令行工具：CloudBase CLI V3",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695216&idx=1&sn=5b7603357bed357d756bf908a59991d7",
+      "date": "2026-04-14T00:46:00.144Z"
+    },
+    {
+      "id": "265272278815612928",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "自掏腰包一万元，拥抱AI这一年，我的工具、实践和思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695194&idx=1&sn=030591ea76020210c5f06692fb30243f",
+      "date": "2026-04-10T00:46:00.628Z"
+    },
+    {
+      "id": "264900331900510208",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "办公Agent的CI/CD时刻到来了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695184&idx=1&sn=f48d917721d119b4634ca01619b8bcd8",
+      "date": "2026-04-09T00:46:00.003Z"
+    },
+    {
+      "id": "264531338857553920",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "4亿token买来5个教训：让6个AI Agent连写4天代码发生了什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695151&idx=1&sn=d00ab30cbefa36f0f860ef37f059600e",
+      "date": "2026-04-08T00:46:00.023Z"
+    },
+    {
+      "id": "262721928850055168",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "赛博斗蛐蛐：9大模型决战三国志，天命在谁？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695142&idx=1&sn=af2cfe933dd06f9e49243b5a957e3e1f",
+      "date": "2026-04-03T00:46:00.825Z"
+    },
+    {
+      "id": "262721928850055169",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "啃下 Linux 内核最难动的代码：腾讯工程师重构Swap子系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695142&idx=2&sn=472a19c5c28b7e7f4581e5d36c4c9cf9",
+      "date": "2026-04-03T00:46:00.475Z"
+    },
+    {
+      "id": "262353249763336192",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Claude Code是怎么知道你在骂他的？这 12 条发现值得关注",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695116&idx=1&sn=aec392550a85ccd91bd8a9cae7221bb2",
+      "date": "2026-04-02T00:46:00.912Z"
+    },
+    {
+      "id": "261994665737199616",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文讲透如何构建Harness——六大组件全解析",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695065&idx=1&sn=d5b7af6f4c96167e4a57ceb6065b9d5e",
+      "date": "2026-04-01T00:46:00.735Z"
+    },
+    {
+      "id": "261633732682719232",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Harness Engineering 来了，SDD 还有意义吗？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247695017&idx=1&sn=e37650a0f3334a69646fea9959c0297e",
+      "date": "2026-03-31T00:46:00.360Z"
+    },
+    {
+      "id": "260182907603132416",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "斗胆聊聊OpenClaw的历史意义",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694993&idx=1&sn=e181d91d960e4d43fbe724dbcfb12b72",
+      "date": "2026-03-27T00:46:00.756Z"
+    },
+    {
+      "id": "259836960956227585",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "告别“黑箱”养虾！腾讯云可观测平台给您的 OpenClaw 装上“透视眼”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694979&idx=2&sn=f74f6231126c8d373ab73549c144559a",
+      "date": "2026-03-26T00:46:00.942Z"
+    },
+    {
+      "id": "259836960956227584",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "零废话！一文讲透从0构建AI Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694979&idx=1&sn=569b414bdfd11c1685727730d20a27c5",
+      "date": "2026-03-26T00:46:00.540Z"
+    },
+    {
+      "id": "259452075489894400",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "距离AI把小编我裁掉还有72小时",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694931&idx=1&sn=04b3d107079084b37bb6dd9183b9f54d",
+      "date": "2026-03-25T00:46:00.703Z"
+    },
+    {
+      "id": "259105581515677696",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "龙虾盛宴下的冷思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694912&idx=1&sn=91591aff71737e548cfe33b649950194",
+      "date": "2026-03-24T00:46:00.818Z"
+    },
+    {
+      "id": "257639560267177984",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "又被偷家了！\n\n \n                                              \n\n\n2022年：ChatGPT将在未来取代很多人的工作\n\n2023年：ChatGPT将在未来取代很多人的工作\n\n2024年：ChatGPT将在未来取代很多人的工作\n\n2025年H1：DeepSeek取代了ChatGPT的工作\n\n2026年Q1：OpenClaw（Agent）取代了chatbox（llm）的工作\n\nOpenClaw的火爆超出预期，GitHub飞速登顶的star数（324k），腾讯大厦下近千人排队安装的长龙，和各类自研虾、云端虾、安全虾的产品如雨后春笋般冒出。\n\n一部分人在问，它为什么没有场景。另一部分人在拼命证明，它到处都有场景。\n\n前者的问题在于，他习惯了把 AI 当工具箱里的一个按钮，却还没有适应“把事情交出去”这个动作。\n\n后者的问题在于，他太急着证明新范式的伟大，连给爸妈点外卖、让AI替自己回一句微信都能包装成生产力革命，多少有点魔怔。\n\nOpenClaw现阶段最大的意义，是让大量原本停留在chatbox阶段的用户，第一次开始认真接触Agent这个新东西。\n\n有些人今天装上OpenClaw，可能最后什么也没跑通。\n有些人今天研究半天，可能得出的结论是这玩意现阶段还很鸡肋。\n有些人甚至会觉得自己被互联网又耍了一次。\n\n但这不妨碍他们在这个过程中，第一次真正理解了Agent的轮廓。\n\n一个新范式真正开始扩散的奇点，技术成熟度并非决定因素，而是用户心智的松动。\n\n用户得先开始讨论它\n得先误解它\n得先对它抱有夸张期待\n得先在使用中碰壁\n得先经历一轮幻灭\n然后才有可能进入更真实的采用阶段\n\n他们开始知道，AI 不只是一个陪你聊天、帮你写几段文案的输入框。\n它还可以是一个会读取状态、触发动作、接管流程、连接外部系统的执行体。\n \n这种认知迁移一旦发生，就很难再退回去了。\n \n与其做一个旧时代的残党，不如主动驶向 AI时代的伟大航路，让Agent们成为你的索隆、香吉士、乌索普、娜美、乔巴，你说对吧王路飞？\n\n最后照例推荐一下自家产品，QClaw：\n\n基于OpenClaw极简封装， 是一款人人都能轻松使用的AI Agent。不用配环境、不用写命令、也不用调模型，下载、安装、开工，三步就能在微信里远程操作，让电脑帮你干活。\n\n本周重磅更新，微信入口升级为小程序，支持上传或接收电脑端文件；「灵感广场」全新上线，预置常用任务与skills，用户无需编写指令即可一键使用。\n\n不限量放码公测中，下载请认准官方网站：qclaw.qq.com\n\n拓展阅读：QClaw重磅来袭，微信入口全面升级，码管够！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694890&idx=1&sn=db831cef1638c6b4fe8e70a4bf619770",
+      "date": "2026-03-20T00:46:00.280Z"
+    },
+    {
+      "id": "257302610268135424",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "从架构到代码：深入理解 OpenClaw 的双源记忆系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694887&idx=1&sn=192feccb73717c5ecbd3a2c886c9a5e8",
+      "date": "2026-03-19T00:46:00.007Z"
+    },
+    {
+      "id": "257302610268135425",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "QClaw重磅来袭，微信入口全面升级，码管够！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694883&idx=1&sn=9d9622d647863336cbdba0a861f595c0",
+      "date": "2026-03-18T03:14:00.032Z"
+    },
+    {
+      "id": "256568980797399040",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "兄弟！你真的懂 Skill 吗？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694816&idx=1&sn=5d796cf823344314aa4dd99163ceef5c",
+      "date": "2026-03-17T00:46:00.554Z"
+    },
+    {
+      "id": "255177835836055552",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一文搞懂爆火的SKills原理及实践案例",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694809&idx=1&sn=e42c180cf660e9d16b8a37c43c75b2ba",
+      "date": "2026-03-13T00:46:00.482Z"
+    },
+    {
+      "id": "254813656134426624",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "刚刚，腾讯发布OpenClaw办公网防护方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694807&idx=1&sn=ab459c10a7ead719048aa1e30692d961",
+      "date": "2026-03-12T00:46:00.998Z"
+    },
+    {
+      "id": "254469971937042432",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "全网最细！OpenClaw本地部署教程和常见问题汇总",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694782&idx=1&sn=d48ab6ac92c3558598ab8d7405280656",
+      "date": "2026-03-11T00:45:00.715Z"
+    },
+    {
+      "id": "254469971937042433",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "刚刚，腾讯云Coding Plan全新上架！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694776&idx=1&sn=050b6d416bd1f90ccd89dd1484a591c5",
+      "date": "2026-03-10T06:48:00.798Z"
+    },
+    {
+      "id": "252636722503852032",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "一个坏消息和一个好消息\n\n                    \n坏消息是：\n\n如果你只会写代码甚至只会CRUD，那么AI 100%可以取代你，AI在写局部代码方面已经超越了90%的程序员。写得快的没有AI写得好，写得好的没有AI写得快。\n \n好消息是：\n \nAI目前还无法取代程序员的两类关键技能。\n \n业务理解能力。AI对于特定公司的特定业务的理解程度远不如团队内的程序员。涉及到需求讨论和方案设计，AI无法准确判断合理性。形象点说：AI没法和产品经理PK需求合理性和实现细节。\n \n架构设计能力。AI对于特定公司特定团队的利益关系网络无法正确理解。虽然AI可以给出很多可选方案，但是无法代替你做出多方利益相关的最终决策，无法理解不同利益优先级和重要程度。形象点说：AI不知道你做的架构设计项目，是你为了明年晋升而做的项目；还是为了让你的leader赶在绩效考核截止前一定要上线的KPI项目。\n \n因此，对于程序员来说，在AI时代如果要避免被替代，需要扬长避短，朝业务和架构两个方向提升自己。不是和AI比谁写代码更好更快，而是向业务理解与系统架构两个高维方向跃迁。\n \n这需要主动跳跃3重龙门：1重认知龙门，2重实践龙门，3重机会龙门。不要坐等机会降临，要以架构师的标准要求自己，从现在开始行动。\n \n首先，系统学习架构设计方法论。\n \n学习完整的架构设计方法论，掌握架构设计思路、架构设计原则、架构设计流程、架构设计原则和理论（CAP、FMEA、BASE等），在此基础上结合业界实践和经验，形成自己的架构设计技能体系。\n \n其次，选择有架构设计机会的职位。\n \n新业务有较多从0到1的机会；持续发展的业务有较多重构机会；快速发展的业务可能有架构演进的机会。在转岗、换岗的时候，如果目标是寻找架构设计的机会（刚开始不一定是主导，有机会参与也不错），可以优先考虑这些机会。\n \n最后，创造自己的架构设计机会。\n \n如果加入了成熟团队，合适时机也可以提出“架构重构”想法。关注这类系统问题：经常出线上问题/开发效率低/性能差/技术老旧等。\n \n发生问题后思考是否可以通过架构重构来解决或者优化。\n \n祝各位彦祖亦菲成功。延展阅读：大厂P9：为什么大部分程序员成不了架构师？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694723&idx=1&sn=f9607e1ce1e647203830978b1fe44e3b",
+      "date": "2026-03-06T00:46:13.903Z"
+    },
+    {
+      "id": "252206110575927297",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "FlagOS 镜像登陆腾讯云 HAI社区，快速部署OpenClaw 实现“养虾”自由",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694687&idx=2&sn=c8885f24b1f1a95e018da38b34cc24b0",
+      "date": "2026-03-05T00:45:00.977Z"
+    },
+    {
+      "id": "252206110575927296",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "RAG优化字典：20种RAG优化方法全解析",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694687&idx=1&sn=933681fb58bd38e6af584388def1516a",
+      "date": "2026-03-05T00:45:00.362Z"
+    },
+    {
+      "id": "251941229066952704",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "深入解析OpenClaw上下文窗口压缩方案 ：一切都是为了效果与省钱",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694674&idx=1&sn=acae1fec749562f39219e2b13af9f065",
+      "date": "2026-03-04T00:45:00.105Z"
+    },
+    {
+      "id": "251556333022584832",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "200行代码实现Claude Code青春版",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694667&idx=1&sn=e94235a2fcac22b57a48fc57c64e599c",
+      "date": "2026-03-03T00:46:00.777Z"
+    },
+    {
+      "id": "251012936859885568",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI 工程化落地实践：推翻\"完美架构\"，回归提示词本质",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694655&idx=1&sn=63bbdd3d44df9dd42dc283f8c749d077",
+      "date": "2026-02-27T00:46:00.485Z"
+    },
+    {
+      "id": "249672737229935616",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "如何从零开始实现一个 AI Agent 框架（理论+实践）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694641&idx=1&sn=dff67991264624bf2e7615bd637f4cf6",
+      "date": "2026-02-26T00:46:00.398Z"
+    },
+    {
+      "id": "249309602751401984",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "2026 AI趋势预测，全球科技巨头与顶尖机构研判",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694634&idx=1&sn=1cc86d5e6ac59df5b73303e1f1a4a8f6",
+      "date": "2026-02-25T01:10:00.133Z"
+    },
+    {
+      "id": "244231423616420864",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "马上领！6666个春节红包封面",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694523&idx=1&sn=df9c9f2f634e69f8e413eca29bb172a0",
+      "date": "2026-02-11T01:00:00.658Z"
+    },
+    {
+      "id": "242433192951614464",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "程序员如何吹牛？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694505&idx=1&sn=e655f47b4b8ffd53c019345b7cc12a4d",
+      "date": "2026-02-06T00:45:38.162Z"
+    },
+    {
+      "id": "242064878031606784",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "王炸组合！OpenClaw+Skills可以做什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694374&idx=1&sn=dde9f8bab936caa961e6cf8546e190a1",
+      "date": "2026-02-05T00:45:00.369Z"
+    },
+    {
+      "id": "241696563309038592",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "用Go重构C++老系统，一次降本82%的极致之旅",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694348&idx=1&sn=9e955e9aec449ec3245339142575cd1e",
+      "date": "2026-02-04T00:46:00.294Z"
+    },
+    {
+      "id": "241696563309038593",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "言出法随 -- Chaterm如何通过ASR精准操作K8S",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694348&idx=2&sn=688269877d325a9b032e387d98ab7cb9",
+      "date": "2026-02-04T00:46:00.257Z"
+    },
+    {
+      "id": "241349742173686784",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "解构Clawdbot：本地架构、记忆管理、Agent 编排与上下文组装原理",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694343&idx=1&sn=8974e62e0c74a0011c6fdf6d037f957c",
+      "date": "2026-02-03T00:45:00.879Z"
+    },
+    {
+      "id": "239896868005090304",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Clawdbot首发支持四大国内主流IM！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694299&idx=1&sn=d2e83da627846a41171e18c19852b17b",
+      "date": "2026-01-29T03:23:00.456Z"
+    },
+    {
+      "id": "238811670272053248",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "万字详解大模型推理加速核心原理：分形规律与资源计算公式",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694196&idx=1&sn=151b34f31e6a5cdfe4cc8600668b57cb",
+      "date": "2026-01-27T00:45:00.881Z"
+    },
+    {
+      "id": "237347449767601152",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI协同编程黄金四步法",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694142&idx=1&sn=cc3a6dc135f10855878dd9b7cb6a6db9",
+      "date": "2026-01-23T00:46:00.707Z"
+    },
+    {
+      "id": "237059949072334848",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "腾讯技术面：数据库核心八股终极典藏版",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694140&idx=1&sn=fe8377e7d14a51c666b82568826c945a",
+      "date": "2026-01-22T00:45:00.275Z"
+    },
+    {
+      "id": "236623115634026496",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "反思软件工程，超越Vibe Coding",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694132&idx=1&sn=bf1650133e607135bd489be0bda27c24",
+      "date": "2026-01-21T00:45:00.812Z"
+    },
+    {
+      "id": "236271614937788416",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "万字详解大模型应用发展：RAG、MCP、Agent的爆发之旅",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694097&idx=1&sn=26aa1b7ba79a8359af3d88642d246ea1",
+      "date": "2026-01-20T00:45:00.751Z"
+    },
+    {
+      "id": "234825864572133376",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "天天写业务代码，如何成为技术大牛？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694037&idx=1&sn=bae63314ed696e5bac80052565cfa8b4",
+      "date": "2026-01-16T00:46:00.639Z"
+    },
+    {
+      "id": "234449661897204736",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "什么是技术架构、数据架构、业务架构、应用架构和代码架构？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247694025&idx=1&sn=a308b1c530baf655fff51886b1cf5261",
+      "date": "2026-01-15T00:45:00.721Z"
+    },
+    {
+      "id": "234449661897204737",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "提示词技巧分享：一劳永逸版！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247693989&idx=1&sn=aab8bb5f9fd0084532812ccd50ca1907",
+      "date": "2026-01-14T00:45:00.417Z"
+    },
+    {
+      "id": "237347449767601159",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "微信小程序送补贴！手把手教你薅免费云开发资源+混元Token（附使用教程）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247693989&idx=2&sn=95056524a61d0c686fb973815b10298e",
+      "date": "2026-01-14T00:45:00.157Z"
+    },
+    {
+      "id": "233719668091887616",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "大模型狂飙2025：一篇文理清从模型到智能体的架构演进",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247693948&idx=1&sn=3e557a7e45c7f8cea9600a2373591d83",
+      "date": "2026-01-13T00:46:00.253Z"
+    },
+    {
+      "id": "232282285869981696",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Promt设计常见错误与解决方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247693902&idx=1&sn=fa6ef07fe0834acad4cbc39b0c4a1313",
+      "date": "2026-01-09T00:45:00.746Z"
+    },
+    {
+      "id": "231928212753998848",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "如何画好一张架构图丨终极典藏版",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247693900&idx=1&sn=7e890fd029de9f976146041b57e54b6d",
+      "date": "2026-01-08T00:46:00.326Z"
+    },
+    {
+      "id": "231551998873542656",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "Agent全面爆发！万字长文详解上下文工程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247693869&idx=1&sn=ff878dc84e4a1a2c2436659c0146a3d6",
+      "date": "2026-01-07T00:46:00.653Z"
+    },
+    {
+      "id": "231198242758976512",
+      "source": "腾讯云开发者",
+      "feed_id": "187702008971600917",
+      "title": "AI 辅助重构 20 万行代码：渐进式重建代码秩序",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzI2NDU4OTExOQ==&mid=2247693845&idx=1&sn=2dea63bb9b06c0eeb606d06609973921",
+      "date": "2026-01-06T00:45:00.788Z"
+    }
+  ]
+}

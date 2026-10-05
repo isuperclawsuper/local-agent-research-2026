@@ -1,0 +1,1306 @@
+{
+  "source": "千问AI平台",
+  "feed_id": "187702008971600900",
+  "count": 162,
+  "boundary": "2025-11-10T00:30:00.746Z",
+  "exhausted": false,
+  "pages": 4,
+  "articles": [
+    {
+      "id": "1305066561597317120",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "为Agent而生，千问AI平台发布全新服务方式",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562466&idx=1&sn=5e7f953ce9f4d70b52108432474318b0",
+      "date": "2026-09-25T08:33:00.383Z"
+    },
+    {
+      "id": "1302132467724951552",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "阿里文征：面向Agent全面升级模型服务、Agent服务、AI应用",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562437&idx=1&sn=a97c04361677ea8b140e891fff08e79e",
+      "date": "2026-09-23T04:39:00.834Z"
+    },
+    {
+      "id": "1299278971547918336",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "2026 云栖大会技术主论坛·Maas & Agent 等你来看！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562427&idx=1&sn=87f2896f3ebaa633e48dc8d595cb2ad4",
+      "date": "2026-09-21T10:12:00.900Z"
+    },
+    {
+      "id": "1296405699965722624",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "云栖大会 Skill 上线：带着你的Agent来参会",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562423&idx=1&sn=fd4d5fc3fa8fd7e370403839473f2bcf",
+      "date": "2026-09-19T02:33:00.519Z"
+    },
+    {
+      "id": "1290561945199419392",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "云栖大会，千问AI平台与你一起开造！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562407&idx=1&sn=4fc562a268ac8103d4e99a3e3025bc52",
+      "date": "2026-09-15T04:00:00.225Z"
+    },
+    {
+      "id": "1289081929399771136",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "DeepSeek-V4.1-Flash上线千问AI平台，API与Token Plan同步开放",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562398&idx=1&sn=34f5c3b7d6d20e44e6bd31a12738bcea",
+      "date": "2026-09-14T06:41:00.546Z"
+    },
+    {
+      "id": "1286193021016055808",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "重磅产品首发、Qwen共创计划发布——千问AI平台分论坛，邀您云栖见",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562390&idx=1&sn=fdeef6cd7a4bb535a84df96c831eace1",
+      "date": "2026-09-12T02:00:00.196Z"
+    },
+    {
+      "id": "1284768158032306176",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "阿里云Token Plan个人版升级：加量不加价，新增12类Agent Harness工具",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562377&idx=1&sn=b255ee28969ca20c56c41eb262a0e976",
+      "date": "2026-09-11T06:26:00.311Z"
+    },
+    {
+      "id": "1283348490197377024",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Agent如何自己变强？从Skill到模型权重的进化全景图",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562373&idx=1&sn=b2afbd481dd9cbddc533641633f4bbe3",
+      "date": "2026-09-10T05:59:00.118Z"
+    },
+    {
+      "id": "1281833929992544256",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "【AI 创新实践】“架构师 Agent” 系统化落地",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562372&idx=1&sn=3e8ea44766d7900fd4e55777cf24610b",
+      "date": "2026-09-09T05:48:00.610Z"
+    },
+    {
+      "id": "1274626576830406656",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "【CIKM'2026】CQ-SID：LLM生成式检索在手猫搜索召回中的探索与应用",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562306&idx=1&sn=7377e0911a66a68752c933ed3f01f247",
+      "date": "2026-09-04T02:44:00.818Z"
+    },
+    {
+      "id": "1271702597622800384",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qwen3.8-Max更强了！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562297&idx=1&sn=420b67c29646788c40605bb9445947b5",
+      "date": "2026-09-02T03:15:00.458Z"
+    },
+    {
+      "id": "1271286601804128256",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从 Loop 到 Graph Engineering 的演进思考与实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562254&idx=1&sn=77b80c213b5e45ae40cdb09a0a6c15dd",
+      "date": "2026-09-01T02:03:00.549Z"
+    },
+    {
+      "id": "1271286601804128257",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从 ReAct 到 Agent Teams：一个工程师视角的 Agent 协作机制思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562213&idx=1&sn=b5d701423e4bcb9c5775a7c6af19e234",
+      "date": "2026-08-31T01:47:00.468Z"
+    },
+    {
+      "id": "1264920426392297472",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "场景营销互动&体验 AI Coding— AI Native 视觉还原的两个支点：上下文工程与循环工程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562152&idx=1&sn=45c3da2ca63c5dfea6e76f2d95d18c4f",
+      "date": "2026-08-28T05:00:00.034Z"
+    },
+    {
+      "id": "1263161986082906112",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "极致性价比！Qwen3.8-Flash上线千问AI平台",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247562051&idx=1&sn=47ea31d72039e043bae7c0a79add001e",
+      "date": "2026-08-27T05:38:00.933Z"
+    },
+    {
+      "id": "1258629852487983104",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Wan3.0正式上线千问AI平台：稳定、真实、有质感",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561968&idx=1&sn=187673f3940572472498763db7a31d09",
+      "date": "2026-08-24T04:13:00.589Z"
+    },
+    {
+      "id": "1254756537063153664",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "再上新！GLM-5.3、Deepseek-V4-Pro等多款模型上线千问AI平台",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561963&idx=1&sn=bfd5c60400266b10df52920cfb3001d0",
+      "date": "2026-08-21T03:45:00.712Z"
+    },
+    {
+      "id": "1248712425511821312",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qwen-Audio-3.0系列语音模型正式上线千问AI平台",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561890&idx=1&sn=9ef07932c013aa647d11056b74bf52a6",
+      "date": "2026-08-17T07:56:00.932Z"
+    },
+    {
+      "id": "1241249802662944768",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "千问AI Arena上线：给Agent一个真实的战场",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561885&idx=1&sn=c2debdbc284ae35755f55e1f301d8376",
+      "date": "2026-08-12T08:03:00.809Z"
+    },
+    {
+      "id": "1232925253160640512",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI Native 下的混沌工程：Agent 军团如何重新定义系统韧性验证",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561873&idx=1&sn=0233d0ba23aad4cc225a712963826343",
+      "date": "2026-08-06T05:12:00.323Z"
+    },
+    {
+      "id": "1231126095403655168",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qwen-Image-3.0正式上线千问AI平台，权威榜单国内第一！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561872&idx=1&sn=034e114b5f6cf6b3c2a58473042e0d91",
+      "date": "2026-08-05T02:36:00.225Z"
+    },
+    {
+      "id": "1229742114535874560",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "理解归 AI，正确归引擎：从一句话到一条实时数据链路（0代码搭建实时任务）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561813&idx=1&sn=ab456cb346cf6fcdf95aab7ffedfd524",
+      "date": "2026-08-04T01:56:00.567Z"
+    },
+    {
+      "id": "1228199409292910592",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qwen3.8-Max首发上线阿里千问AI平台，API服务与Token Plan同步开放",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561812&idx=1&sn=a864f8ca207e730d072bc1d2beab2c19",
+      "date": "2026-08-03T03:34:00.877Z"
+    },
+    {
+      "id": "1220827096956248064",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "模型好不好用，谁说了算？从榜单崇拜到自建评测",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561804&idx=1&sn=e959f4b48e17357bd89431be20dbcceb",
+      "date": "2026-07-29T06:54:00.645Z"
+    },
+    {
+      "id": "1219572224214671360",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "最新！Kimi K3上线阿里千问AI平台",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561792&idx=1&sn=45ffc0171cf9ef44b5790f711ecba375",
+      "date": "2026-07-28T02:39:00.819Z"
+    },
+    {
+      "id": "1212306026175373312",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "【重要公告】焕新启航！“阿里云开发者”正式更名为“千问AI平台”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561745&idx=1&sn=d24cb979b15bbd2fa0df9f08f476dbb7",
+      "date": "2026-07-23T01:31:00.702Z"
+    },
+    {
+      "id": "1210975208060461056",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "让 Agent 越用越准、成本越来越低：AgentLoop 的 Agent 经验自进化闭环",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561726&idx=1&sn=50147a9760380a36c86650bb835577ff",
+      "date": "2026-07-22T00:30:00.182Z"
+    },
+    {
+      "id": "1209395039797485568",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "端到端交付2.0：像工业流水线一样的生产和交付需求",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561690&idx=1&sn=7ad0c558471ab5669a63f949a552f412",
+      "date": "2026-07-21T00:30:00.516Z"
+    },
+    {
+      "id": "1208842092504129536",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从 Prompt 到 Harness：企业级 Agent 工程的完整演进之路",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561689&idx=1&sn=bb7d379ffd983081f81048e4813d524b",
+      "date": "2026-07-20T02:34:00.105Z"
+    },
+    {
+      "id": "1206609019167285248",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qwen3.8抢先体验！正式版即将发布并开源！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561683&idx=1&sn=91c6c87422eb6e7aebdeeb9b3b623f9f",
+      "date": "2026-07-19T09:23:00.883Z"
+    },
+    {
+      "id": "1205048750678974464",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "千问AI平台亮相 WAIC：当 Agent 成为新用户",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561678&idx=1&sn=5f218385d1d12edfca4b8715b315631b",
+      "date": "2026-07-18T06:03:00.133Z"
+    },
+    {
+      "id": "1204495218095661056",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "PagePilot — PC端AI测试Skill设计与实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561535&idx=1&sn=49b536f842ef9b433f56cb0d8c2c5bac",
+      "date": "2026-07-17T01:00:00.747Z"
+    },
+    {
+      "id": "1202424239693471744",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "淘宝闪购-爆品团精排Scaling Up迭代实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561530&idx=1&sn=27ecc399bc4f778f0eeb5be5f49bac01",
+      "date": "2026-07-16T00:30:00.544Z"
+    },
+    {
+      "id": "1200859843808698368",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "数据研发Multi-Agent架构的Harness工程实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561511&idx=1&sn=0561f27f340cd19d280dc5543780965b",
+      "date": "2026-07-15T00:30:00.011Z"
+    },
+    {
+      "id": "1200309401806675968",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从超级个体到超级组织：1688 数据中心 Multi-Agent 研发小队实录",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561481&idx=1&sn=fc2b915c55510ec99e9cf609720e378f",
+      "date": "2026-07-14T00:30:00.136Z"
+    },
+    {
+      "id": "1194931826917875712",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "限流比降 10 倍：百炼网关如何用 RocketMQ LiteTopic 重构大模型限流",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561434&idx=1&sn=f93af04c3958ccf69d495d3296503a29",
+      "date": "2026-07-10T03:35:00.828Z"
+    },
+    {
+      "id": "1192063593164546048",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "淘宝内容生态：GrowBrain - 淘宝Agentic内容成长引擎",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561428&idx=1&sn=037c032be851bffa7adf403e63bc0486",
+      "date": "2026-07-09T00:51:00.221Z"
+    },
+    {
+      "id": "1190588638732197888",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从日志学习到风洞验证：构建 GPU 集群的 AI Native 稳定性闭环",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561417&idx=1&sn=b4e0570993dfe513713f01b66ac5020c",
+      "date": "2026-07-08T00:30:00.400Z"
+    },
+    {
+      "id": "1189073291457830912",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Loop Engineering 实战：实现从日志扫描到预发部署的全自主闭环",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561365&idx=1&sn=dc15df2935aac46f3c1369a7d10bb95a",
+      "date": "2026-07-07T00:30:00.683Z"
+    },
+    {
+      "id": "1187663343939198976",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AutoResearch-LLM：让 Agent 接手 LLM 训练优化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561366&idx=1&sn=d50229e8d5ebdc40a628493d218f43ab",
+      "date": "2026-07-06T00:30:00.377Z"
+    },
+    {
+      "id": "1183341025419042816",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Code is cheap. Don't write any.——AI Native，程序员如何提升五倍coding效率",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561335&idx=1&sn=43b0eb7b517339a21c88ebb152e3d088",
+      "date": "2026-07-03T00:30:00.331Z"
+    },
+    {
+      "id": "1181859324985581568",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "相比层出不穷的 Agent 框架，不变的 Agent Protocol 是什么",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561317&idx=1&sn=cfeecd649d2312d5331e2b5ffb03a8d0",
+      "date": "2026-07-02T03:05:00.299Z"
+    },
+    {
+      "id": "1180370240530259968",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Harness 工程之道：Skill 原理与最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561307&idx=1&sn=db2094d35c1d7e91bee65acb69a3bbb9",
+      "date": "2026-07-01T00:30:00.468Z"
+    },
+    {
+      "id": "1178920191371747328",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "给野马套上缰绳：Agent Harness 工程实践 ——从范式理论到钉钉AI招聘的真实落地",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561292&idx=1&sn=2998894f7f2c9e845adc7bb4912b53b3",
+      "date": "2026-06-30T00:51:00.775Z"
+    },
+    {
+      "id": "1177536629531713536",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "火种&起源：一个运营从0到1搭建CI自动化流水线的实战记录",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561273&idx=1&sn=83a787fddc51bbd9a0b2b268a9f3f00d",
+      "date": "2026-06-29T00:30:00.705Z"
+    },
+    {
+      "id": "1172731537729232896",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "构建 AI 时代的知识底座：直播数据 LLM Wiki 实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561257&idx=1&sn=d664dbf2543b9d4b772b4b3d87c3def7",
+      "date": "2026-06-26T02:49:00.798Z"
+    },
+    {
+      "id": "1169897677891018752",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "阿里重磅开源！Open Code Review：一周 5k star，为你的代码保驾护航",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561229&idx=1&sn=edf43caeaaf1f167136b9c5c25359fa2",
+      "date": "2026-06-24T01:00:00.048Z"
+    },
+    {
+      "id": "1168355286734315520",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "当 Agent 替你值班：基于 Devix 构建 7x24 自动化运维 Harness Engineering",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561199&idx=1&sn=c62b6db6dcc2bd3e63bc8bc4aa7498bf",
+      "date": "2026-06-23T01:47:00.162Z"
+    },
+    {
+      "id": "1161547692032106496",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI 时代，实时入湖正在告别 ETL：从 Kafka 到 Iceberg 的架构减法",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561192&idx=1&sn=125069c1fabd3e8d3295c00eb13f8236",
+      "date": "2026-06-18T06:33:00.025Z"
+    },
+    {
+      "id": "1159654244660256768",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "更可靠的主播助理：淘宝主播Agent的Harness工程实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561174&idx=1&sn=dbc62f1f8688bac841edb9c3829a88cf",
+      "date": "2026-06-17T00:30:00.597Z"
+    },
+    {
+      "id": "1158195398519529472",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI 不缺智商缺纪律：我的 Harness 工程化实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561121&idx=1&sn=82faa885d7d73f4e398dd1e186325b3d",
+      "date": "2026-06-16T00:30:00.208Z"
+    },
+    {
+      "id": "1156750947884441600",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "如何搭建一个端到端业务需求专家 Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247561033&idx=1&sn=a9f9a3ac3dce5aee757e0033f55dfd3f",
+      "date": "2026-06-15T00:30:00.047Z"
+    },
+    {
+      "id": "1152361505249796096",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AgentForge —— 让一句话变成一个生产可用的 Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560806&idx=1&sn=14e1c53672873e8df6bfbee80b2760db",
+      "date": "2026-06-12T00:30:00.640Z"
+    },
+    {
+      "id": "1150972083295985664",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "云原生 - AI Native 多智能体数字人架构实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560807&idx=1&sn=5b0681fdf88398b3eec92c20d897fb31",
+      "date": "2026-06-11T00:30:00.718Z"
+    },
+    {
+      "id": "1149471723427438592",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "知识库分层编排：从 RAG 到 Agent-native Knowledge Context Layer",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560713&idx=1&sn=fd6b0f4e8ce2b3bd20da9e0189170023",
+      "date": "2026-06-10T00:30:00.797Z"
+    },
+    {
+      "id": "1148092909472423936",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "如何更科学、方向可控的实现 Skill 的“自进化”?",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560712&idx=1&sn=8c34bc7fe0e1213ec696996dc34f9fba",
+      "date": "2026-06-09T00:30:00.723Z"
+    },
+    {
+      "id": "1142275772900155392",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "基于顶级 Agent（Claude Code）的 Harness 工程搭建式业务 Agent 评测方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560657&idx=1&sn=cfae16a1ec0158fe9a406b0ccf4185ca",
+      "date": "2026-06-05T00:30:00.034Z"
+    },
+    {
+      "id": "1140820879320522752",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI研发自动化：Wiki知识库+技能包",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560656&idx=1&sn=8356107d3ca18c5a4dd40918d4478813",
+      "date": "2026-06-04T00:30:00.777Z"
+    },
+    {
+      "id": "1140820879320522753",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qwen3.7-Plus：想得深，看得懂，做得到",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560655&idx=1&sn=d671e979d6c22c97946c2857857d20bc",
+      "date": "2026-06-03T06:26:00.646Z"
+    },
+    {
+      "id": "1137887676955860992",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "基于钉钉机器人的 Qoder CLI / Claude Code 双引擎 AI 助手实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560568&idx=1&sn=e5bfe190f1773e5bf610b05f11767952",
+      "date": "2026-06-02T00:30:00.066Z"
+    },
+    {
+      "id": "1136672993146019840",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "全是 Web 没 CLI 怎么行：一次把 StarAgent WebTerminal 改造成",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560436&idx=1&sn=c020c04dfd864fcb0791d47822e9df0c",
+      "date": "2026-06-01T00:30:00.389Z"
+    },
+    {
+      "id": "1132535850446331904",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Tair 联手 SGLang 共建 DeepSeekV4 分层缓存架构",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560437&idx=1&sn=c67264f9a52d40a160a703be91e54609",
+      "date": "2026-05-29T00:30:00.236Z"
+    },
+    {
+      "id": "1130643863933788160",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Claude code云端部署 & 魔改sdk实现http流式调用保姆级教程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560355&idx=1&sn=c7c83c7bf352322ee7221ca404468fb6",
+      "date": "2026-05-28T00:30:00.027Z"
+    },
+    {
+      "id": "1129158195269312512",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "verify-data：一个端到端的数据验数 Agent Skill",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560354&idx=1&sn=7f27739c5166be3e08890a75756e5811",
+      "date": "2026-05-27T00:30:00.785Z"
+    },
+    {
+      "id": "1127674137938993152",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Harness Engineering: C 端 AIGC 内容生产自优化实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560353&idx=1&sn=939768570beeacd145b5c1c91ae7827b",
+      "date": "2026-05-26T00:30:00.892Z"
+    },
+    {
+      "id": "1126199528781750272",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "让 AI 自己做增长：基于OPC和Harness思想的自主增长系统探索",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560242&idx=1&sn=37875b95003fe7c3c95e2966e48878f7",
+      "date": "2026-05-25T00:30:00.958Z"
+    },
+    {
+      "id": "1121901004279750656",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Agent核心技术概念与范式发生了哪些演变以及背后的思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560220&idx=1&sn=72a83c5317c93a91f78daf6b203d308d",
+      "date": "2026-05-22T00:30:00.800Z"
+    },
+    {
+      "id": "1120431612635357184",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "都是 AI Coding，为什么 Java 体验差了一个量级？五条方法论帮你构建自己的 Harness 环境",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560145&idx=1&sn=ae14d8af22600c85a92201ef28517016",
+      "date": "2026-05-21T00:30:00.816Z"
+    },
+    {
+      "id": "1117548308563206144",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "基于浏览器请求录制与AI代码生成的E2E接口自动化测试实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560132&idx=1&sn=9cc6429ef4d08a0f4d207cecf56671fd",
+      "date": "2026-05-19T00:32:00.453Z"
+    },
+    {
+      "id": "1116052965132574720",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "重新定义Skill开发：保姆级教程&一站式开发助手发布",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560111&idx=1&sn=d90140ce9a63a953c990c1696a01beef",
+      "date": "2026-05-18T00:30:00.922Z"
+    },
+    {
+      "id": "1111702621615267840",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "首个 Java Harness Framework 来了｜AgentScope 把 OpenClaw 带到企业分布式场景",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560070&idx=1&sn=e1589f74f2fae81901f2dac4b06322c1",
+      "date": "2026-05-15T00:31:00.431Z"
+    },
+    {
+      "id": "1110943261196787712",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Skill Factory：三天手搓面向Harness设计的技能工厂（附AI coding实践）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247560012&idx=1&sn=82fc5e59d725c31336c928586d5f2e8e",
+      "date": "2026-05-14T00:32:00.566Z"
+    },
+    {
+      "id": "1108805854682914816",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深度解析LLM Wiki / Obsidian-Wiki / GBrain：Agent时代知识的“自组织”与“自进化”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559971&idx=1&sn=e93c802829515223ad1dbb15de073b59",
+      "date": "2026-05-13T00:30:00.084Z"
+    },
+    {
+      "id": "1107385495710572544",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Agent Skill规范、构建与设计模式",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559942&idx=1&sn=08953bb9fff5a3594e80a381157c5c11",
+      "date": "2026-05-12T00:31:00.569Z"
+    },
+    {
+      "id": "1106300551622008832",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "0.07% 的\"幽灵\"丢包：一次 LB VIP 访问超时排查实录",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559921&idx=1&sn=dd4fa1ac94912766389bea15cfd4c1d0",
+      "date": "2026-05-11T00:30:00.430Z"
+    },
+    {
+      "id": "1102997249979293696",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "5 人 7 天干完 20 人数周的活：Spec-Driven Development 如何重新定义 AI 编程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559877&idx=1&sn=bc1f8fef9cb91d8e52aece383040d265",
+      "date": "2026-05-09T00:31:00.028Z"
+    },
+    {
+      "id": "1102563717322612736",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Agent 时代的生产力悖论：当协作本身成为最大的瓶颈",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559869&idx=1&sn=090e317702f999b3b4b50f8582d2a453",
+      "date": "2026-05-08T00:31:00.235Z"
+    },
+    {
+      "id": "1100128487508779008",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Harness Engineering：耗时一周，我是如何将应用的AI Coding率提升至90%的",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559842&idx=1&sn=71ee08bf0421ad2f1aa4dd7a58901c5f",
+      "date": "2026-05-07T00:32:00.971Z"
+    },
+    {
+      "id": "1098835468226633728",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "一个文件让 AI Coding 效率翻倍：AGENTS.md 实践指南",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559836&idx=1&sn=7fa79653cd7704d663ab7afc7a4b8eed",
+      "date": "2026-05-06T00:30:00.778Z"
+    },
+    {
+      "id": "1090122419068182528",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qoder Skills 完全指南：从零开始，让 AI 按你的标准执行",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559803&idx=1&sn=b098d8dafccc26b9352b3f93edfbf292",
+      "date": "2026-04-30T00:31:00.439Z"
+    },
+    {
+      "id": "272157402731636736",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Harness Engineering实践，做了一个平台让AI一晚上自动评测和优化你的系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559787&idx=1&sn=d17999288e104cfb22985cc29812bb0d",
+      "date": "2026-04-29T00:31:00.427Z"
+    },
+    {
+      "id": "271786515398387712",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "你不知道的 Agent：原理、架构与工程实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559745&idx=1&sn=31903f96e842d95a2fa2f6b5a5a012cc",
+      "date": "2026-04-28T00:32:00.257Z"
+    },
+    {
+      "id": "271431736809744384",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "工作流的 Skill 怎么写？从 7 个顶级 Skill 中提炼的模式与最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559690&idx=1&sn=fed34d2ade198ea8fb75ad5b768c9229",
+      "date": "2026-04-27T00:54:00.012Z"
+    },
+    {
+      "id": "270398750609893376",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深度解析 Hermes Agent 如何实现“自进化”及其 Prompt / Context / Harness 的设计实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559664&idx=1&sn=2c26ac0a4898e4c986d289a543808dd7",
+      "date": "2026-04-24T00:30:00.560Z"
+    },
+    {
+      "id": "269991070397360128",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深入源码：Hermes Agent 如何实现 \"Self-Improving\"",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559661&idx=1&sn=ca9426f948819f172ec44f671127aa29",
+      "date": "2026-04-23T00:30:00.081Z"
+    },
+    {
+      "id": "269641728369092608",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI实践｜基于 Spring AI 从0到1构建 AI Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559646&idx=1&sn=1abc5788cfe44b9820e5a0f4dfb3a336",
+      "date": "2026-04-22T00:32:00.966Z"
+    },
+    {
+      "id": "269264054312232960",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从玩具到生产力：用真实项目讲透 AI Agent 的 Harness Engineering",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559631&idx=1&sn=13935cb98e1b389c3afa8a10a17e9c3a",
+      "date": "2026-04-21T00:31:00.427Z"
+    },
+    {
+      "id": "268890304098068480",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深度解析 Claude Code 在 Prompt / Context / Harness 的设计与实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559627&idx=1&sn=7847089f5135e5060953f013fa56fd4f",
+      "date": "2026-04-20T00:32:00.392Z"
+    },
+    {
+      "id": "267809208413448192",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "赛博鸡生蛋，7小时用Claude Vibe Coding一个Mini-Claude",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559624&idx=1&sn=fc5df385231f0b0418ecfd127158faf2",
+      "date": "2026-04-17T00:30:00.725Z"
+    },
+    {
+      "id": "267464284287531008",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从聊天窗口到多 Agent 控制台：一次 AI 编程协作范式的转移",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559601&idx=1&sn=dca715222390e89a63a45ad54b1c9d7d",
+      "date": "2026-04-16T00:31:00.676Z"
+    },
+    {
+      "id": "267097314081896448",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Claude Code 源码拆解：从启动到多 Agent 扩展层",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559548&idx=1&sn=e6a3f5d3b01eb32e14743130fb3a6d2a",
+      "date": "2026-04-15T00:31:00.689Z"
+    },
+    {
+      "id": "266785193670473728",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "浏览器自动化：从GUI到OpenCLI",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559535&idx=1&sn=8eb95438291e8594d674652f6bb7c1df",
+      "date": "2026-04-14T00:30:00.034Z"
+    },
+    {
+      "id": "266352063352403968",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深度解析 OpenClaw 在 Prompt / Context / Harness 三个维度中的设计哲学与实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559511&idx=1&sn=64e933b0264e47f0940e693e315e0c82",
+      "date": "2026-04-13T00:30:00.210Z"
+    },
+    {
+      "id": "265262379167643648",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "OpenClaw 实战：一个人、一台 Mac、六个 AI Agent — 从\"能聊天\"到\"能干活\"的工程实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559481&idx=1&sn=ee2dd74d42080dcd8ae1024f3a46a480",
+      "date": "2026-04-10T00:31:00.861Z"
+    },
+    {
+      "id": "264920213744515072",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "SDD-RIPER 团队落地指南：如何让整个团队在一周内跑通大模型编程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559431&idx=1&sn=e62c3abeaf14878527e5afbd5ca86a30",
+      "date": "2026-04-09T00:31:00.063Z"
+    },
+    {
+      "id": "264550218418092032",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI数据工程师在应用中如何\"返璞归真\"",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559430&idx=1&sn=73b361c0a8ad5623a48b67da01dae3fc",
+      "date": "2026-04-08T00:31:00.630Z"
+    },
+    {
+      "id": "264186910368331776",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "「纯干货」几万字都讲不明白的Memory架构与思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559363&idx=1&sn=461e525a0373ccfed0a7638cc1c51906",
+      "date": "2026-04-07T00:30:00.895Z"
+    },
+    {
+      "id": "262731942952171520",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "OpenClaw 为什么越用越好用？本质就是一堆 md 文件",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559355&idx=1&sn=def05b645d71962cd938c20213fb5e12",
+      "date": "2026-04-03T00:31:00.202Z"
+    },
+    {
+      "id": "262363659925190656",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "2026 年 AI 编码的“渐进式 Spec”实战指南",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559315&idx=1&sn=5c1f9df548e912354b5b5e25ec4bcbb5",
+      "date": "2026-04-02T00:31:00.447Z"
+    },
+    {
+      "id": "262026522642085888",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Agent Skills：打通可复用专业领域知识的最后一公里",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559277&idx=1&sn=e52adeb87d78b837edc01fb1f6391f65",
+      "date": "2026-04-01T00:31:00.302Z"
+    },
+    {
+      "id": "261665037201963008",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "CoPaw深度解析：源码架构和功能实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559269&idx=1&sn=a87c6b0f00c2ccee4a25901df995c65b",
+      "date": "2026-03-31T00:30:00.005Z"
+    },
+    {
+      "id": "261299106751707136",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "学习笔记：从 Agent 到 Skills — AI 智能体架构的范式转变",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559249&idx=1&sn=7cda1453a5f7f51c39f43b76027696a1",
+      "date": "2026-03-30T00:31:00.680Z"
+    },
+    {
+      "id": "260212767994148864",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "OpenClaw构建自我迭代AI助手笔记",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559203&idx=1&sn=ab438f6cfddc61d0bf9c6048d9bb7616",
+      "date": "2026-03-27T00:32:00.415Z"
+    },
+    {
+      "id": "259836923161344000",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深入理解OpenClaw技术架构与实现原理（下）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559102&idx=1&sn=ba40fd3db6ed2f61db180b25d72cd30b",
+      "date": "2026-03-26T00:32:00.812Z"
+    },
+    {
+      "id": "259488235985565696",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "MySQL复制延迟终结者：AliSQL 高效AI诊断和四大内核级优化",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559101&idx=1&sn=00a250ea95a424a51f8d463ba1c59dfd",
+      "date": "2026-03-25T00:31:00.741Z"
+    },
+    {
+      "id": "259131297426831360",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "业务逻辑的“坍塌”：当应用层只剩下胶水代码，在 AI Agent 时代，我们该构建什么",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559085&idx=1&sn=088f736a32f31c2b54a534886d492453",
+      "date": "2026-03-24T00:32:00.320Z"
+    },
+    {
+      "id": "258753392410621952",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "拒绝重复造轮子！抽象 80% 工作场景，打造可复用的\"AI 助手工厂”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558977&idx=1&sn=dcf5e1258edd06e555cc9bff963f133a",
+      "date": "2026-03-23T00:32:00.532Z"
+    },
+    {
+      "id": "257697810396215296",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "企业级 Agent 多智能体架构与选型指南 -- 来自1000+行业应用实践积累",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558948&idx=1&sn=91740771339567d7bbf31aa9b697a2c8",
+      "date": "2026-03-20T00:31:00.430Z"
+    },
+    {
+      "id": "257302641633130496",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "深入理解OpenClaw技术架构与实现原理（上）",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558933&idx=1&sn=926e244c855c44c818d83c6c7d57d4d3",
+      "date": "2026-03-19T00:32:00.643Z"
+    },
+    {
+      "id": "256938861870970880",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "我给 OpenClaw 杀了 47 次僵尸进程，终于想明白了一些事",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558931&idx=1&sn=daa49b88ccebc097b00b35d91c730667",
+      "date": "2026-03-18T00:31:00.502Z"
+    },
+    {
+      "id": "256569059818076160",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Agent/Skills/Teams 架构演进过程及技术选型之道",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558921&idx=1&sn=3fddd356f8f072b31742f0e8be772b63",
+      "date": "2026-03-17T00:31:00.288Z"
+    },
+    {
+      "id": "256222974817859584",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "如何定义“人味儿”？——HeartBench评测体系建设实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558896&idx=1&sn=f921e42175ae76b9a9e7771676c000b0",
+      "date": "2026-03-16T00:31:00.819Z"
+    },
+    {
+      "id": "255177840722425856",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "你的 AI Agent 真的在受控运行吗？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558894&idx=1&sn=66e97f3df165135113bc3ea000873f1b",
+      "date": "2026-03-13T00:31:00.457Z"
+    },
+    {
+      "id": "254952439072929792",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "做AI产品三年复盘，我看到的变与不变",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558816&idx=1&sn=87b815f28a6bb92939c83d7b84f42872",
+      "date": "2026-03-12T00:31:00.400Z"
+    },
+    {
+      "id": "254407919700785152",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "构建会思考的测试Agent：从自动化到自主智能的演进",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558791&idx=1&sn=1c17fc2013bd157f9816e401a853679a",
+      "date": "2026-03-11T00:30:00.193Z"
+    },
+    {
+      "id": "254041225794926592",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "我们做了比你更懂 Java 的 AI-Agent -- Arthas Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558779&idx=1&sn=b528bc344afbf76933f5b1b13041ff67",
+      "date": "2026-03-10T00:32:00.320Z"
+    },
+    {
+      "id": "253743037787650048",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "给“氛围编程”系上安全带：阿里集团 AI 代码评审实践与 Benchmark 开源",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558718&idx=1&sn=cdc0820c4421c05351328a5a5e145619",
+      "date": "2026-03-09T00:31:00.798Z"
+    },
+    {
+      "id": "252670434733963264",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "阿里开源 Team 版 OpenClaw，5分钟完成本地安装",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558717&idx=1&sn=f0da24160b18a384f21eba5e9bd8b85f",
+      "date": "2026-03-06T00:32:00.336Z"
+    },
+    {
+      "id": "252304514324871168",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Skills：从编程工具的配角到Agent研发的核心",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558666&idx=1&sn=5c7df3f5568be3c1cd9fa720feca1862",
+      "date": "2026-03-05T00:30:00.081Z"
+    },
+    {
+      "id": "251858154375067648",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "让问题不过夜：交易领域“问诊”Agent实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558623&idx=1&sn=335f209f636161c2aabfe03e8894ab6f",
+      "date": "2026-03-04T00:30:00.601Z"
+    },
+    {
+      "id": "251501506246719488",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Skills 真的可以帮我干活了：把工单分析变成一个可复用的 Skill",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558554&idx=1&sn=239e1d2c63c0a9a7eb0be1ced653db00",
+      "date": "2026-03-03T00:33:00.842Z"
+    },
+    {
+      "id": "251138225002756096",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "打造高可靠 AI 助手：Skill 编排、Workflow 设计与 Spec Coding 的深度实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558537&idx=1&sn=1130404dec68871f8d34de4e5168b29f",
+      "date": "2026-03-02T00:32:00.764Z"
+    },
+    {
+      "id": "250899369187850240",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "揭秘 Claude Code 前沿技巧与 Qoder CLI 日常开发实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558503&idx=1&sn=13829559963528253296ee8954cf7d0b",
+      "date": "2026-02-28T00:31:00.941Z"
+    },
+    {
+      "id": "250899369187850241",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "ABACI内核缺陷智能体：让模糊测试真正“自动化”",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558458&idx=1&sn=a35806880318fa898087fba186753d54",
+      "date": "2026-02-27T00:31:00.190Z"
+    },
+    {
+      "id": "249685212268631040",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI Agent系列｜深入解析Function Calling、MCP和Skills的本质差异与最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558457&idx=1&sn=088df2d9371481bb54961b09688c6796",
+      "date": "2026-02-26T00:31:00.748Z"
+    },
+    {
+      "id": "249337878611530752",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI Agent系列｜深入了解智能体工作流核心：Agent vs 传统编程 vs Workflow 的本质区别",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558448&idx=1&sn=c8e6b35103ed82f7e4689c8b5f910c68",
+      "date": "2026-02-25T00:30:00.866Z"
+    },
+    {
+      "id": "249075404486251520",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI Agent系列｜什么是 ReAct Agent？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558441&idx=1&sn=f856bc1bf23341b6c7e1cf249d0f522e",
+      "date": "2026-02-24T00:31:00.001Z"
+    },
+    {
+      "id": "249075404486251521",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "上新！阿里云Coding Plan支持千问3.5、GLM-4.7、Kimi-K2.5等模型",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558445&idx=1&sn=9ad45971cfa80fa50a107452a2da68f1",
+      "date": "2026-02-22T09:50:00.306Z"
+    },
+    {
+      "id": "246409328134675456",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "以小胜大！千问Qwen3.5重磅发布，每百万Token仅0.8元",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558440&idx=1&sn=f24285af4b6d915247e8124be8e766f1",
+      "date": "2026-02-16T11:40:00.599Z"
+    },
+    {
+      "id": "245316099138083840",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "准确率提升至 90%，阿里商旅基于 AgentScope 构建多智能体差旅助手最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558374&idx=1&sn=df986ec3bd155c4bdb0be357501c162f",
+      "date": "2026-02-14T00:31:00.984Z"
+    },
+    {
+      "id": "244966328927325184",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "用Spring AI Alibaba把MultiAgent实现从5天压到5小时",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558373&idx=1&sn=edc6314dd8b386cb4d5f9d92985a1479",
+      "date": "2026-02-13T00:31:00.554Z"
+    },
+    {
+      "id": "244593986577435648",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "灵码+Qwen3-Coder——使用Skill机制实现代码审核",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558354&idx=1&sn=032b02687e785e2bf6468dfd61f7294c",
+      "date": "2026-02-12T00:32:00.552Z"
+    },
+    {
+      "id": "244240372906396672",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "当我们谈论 AI 推理的 KV Cache，我们在说什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558315&idx=1&sn=836e95d31ae6e6927b0fa829a7bfcc3d",
+      "date": "2026-02-11T00:30:00.928Z"
+    },
+    {
+      "id": "243864670113696768",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "别再让语音机器人“答非所问”：AI Force任务型语音对话技术总结",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558288&idx=1&sn=1e34f7eae3421e09e8f2f78baeb5f066",
+      "date": "2026-02-10T00:32:00.979Z"
+    },
+    {
+      "id": "243511047844124672",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "借助 AI Coding 快速打造 AI Agent 系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558316&idx=1&sn=6a53c77fe9bdb8b35a1d513897c4a472",
+      "date": "2026-02-09T00:31:00.990Z"
+    },
+    {
+      "id": "242428119047539712",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "告别“伪智能”代码：用 Spec + RAG 打造真正懂你的AI程序员",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558194&idx=1&sn=ece018ca2921b2d51176c37a91bd23f3",
+      "date": "2026-02-06T00:32:00.470Z"
+    },
+    {
+      "id": "242052400657143808",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "自动化评测的九九归一——评测agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558178&idx=1&sn=eaa639c6255e7dd20e13f07bc9bf4670",
+      "date": "2026-02-05T00:30:00.760Z"
+    },
+    {
+      "id": "242052400657143809",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI 原生研发范式：从“代码中心”到“文档驱动”的演进",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558173&idx=1&sn=a510f5608a758b601b342d7c8920af39",
+      "date": "2026-02-04T00:30:00.500Z"
+    },
+    {
+      "id": "241322889861991424",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从传统编程转向大模型编程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558172&idx=1&sn=4352d94bba884ceac8f3f231a9074910",
+      "date": "2026-02-03T00:30:00.817Z"
+    },
+    {
+      "id": "240969124528904192",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "生产级Prompt自动化推理评估A/B实验结果的工程实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558131&idx=1&sn=73317842c9c513c3bde07efac9cee952",
+      "date": "2026-02-02T00:31:00.661Z"
+    },
+    {
+      "id": "239885732757575680",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI Agent 记忆系统：从短期到长期的技术架构与实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558130&idx=1&sn=c88706eec46d802425ea5197389b0bb5",
+      "date": "2026-01-30T00:31:00.103Z"
+    },
+    {
+      "id": "239531901074543616",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "自建一个 Agent 很难吗？一语道破，万语难明",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247558093&idx=1&sn=3d4fa83eec6c4c882927ce9aac4bb121",
+      "date": "2026-01-29T00:32:00.976Z"
+    },
+    {
+      "id": "239155617563216896",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "模型训练篇｜多阶段ToolRL打造更可靠的AI导购助手",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557989&idx=1&sn=3df011f66ccd6852d74b8e22a025b395",
+      "date": "2026-01-28T00:31:00.399Z"
+    },
+    {
+      "id": "238801511115961344",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从 ReAct 到 Ralph Loop：AI Agent 的持续迭代范式",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557988&idx=1&sn=b70b03f87eedda96f43a8dc7ec05047b",
+      "date": "2026-01-27T00:30:00.601Z"
+    },
+    {
+      "id": "238424934530062336",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "RTP-LLM 在相关性大模型中的推理优化最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557780&idx=1&sn=bbaf1e9d79687368594c706c1afd9f39",
+      "date": "2026-01-26T00:31:00.661Z"
+    },
+    {
+      "id": "237350147362504704",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI编码实践：从Vibe Coding到SDD",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557778&idx=1&sn=fcacb22b8790b169d70a6eb56e643313",
+      "date": "2026-01-23T00:31:00.331Z"
+    },
+    {
+      "id": "237050712541959168",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "别再手写提示词！需求澄清 + 50多专业提示词框架自动匹配，效率提升10倍！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557769&idx=1&sn=25073739d70b5443176974b3925d4670",
+      "date": "2026-01-22T00:30:00.188Z"
+    },
+    {
+      "id": "236617593659811840",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "多 AI 协同 + SDD 编程实践：一个 AI 全流程交付实录",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557693&idx=1&sn=a904d94029bc877eb7319d096308fb7b",
+      "date": "2026-01-21T00:31:00.904Z"
+    },
+    {
+      "id": "236258608375573504",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "Qoder @database功能上线！自动关联数据库 Schema，后端 AI Coding 效率拉满",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557678&idx=1&sn=a295dee2a4bd58af957843591f763185",
+      "date": "2026-01-20T00:31:00.201Z"
+    },
+    {
+      "id": "235899699505398784",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "SDD 如何在复杂业务系统中真正落地？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557558&idx=1&sn=6e4699216ea6be3a5c2f784887a66ce1",
+      "date": "2026-01-19T00:31:00.580Z"
+    },
+    {
+      "id": "234818246319700992",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "极速开发出一个高质量 Claude Agent Skills 最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557538&idx=1&sn=2ae6648085081892642b6bde75b5cc51",
+      "date": "2026-01-16T00:31:00.779Z"
+    },
+    {
+      "id": "234454370666144768",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "阿里 Assistant Agent 开源，助力开发者快速构建答疑、诊断智能助手",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557465&idx=1&sn=76a5a8c192cf450955cea5c89dab32e9",
+      "date": "2026-01-15T00:30:00.428Z"
+    },
+    {
+      "id": "234090646755337216",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "告别传统 Text-to-SQL：基于 Spring AI Alibaba 的数据分析智能体 DataAgent 深度解析",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557400&idx=1&sn=60549eb6870e72c0d8130f6cbc01f5be",
+      "date": "2026-01-14T00:31:00.662Z"
+    },
+    {
+      "id": "233726950389407744",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI工程vs传统工程 —「道法术」中的变与不变",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557348&idx=1&sn=b5f56806e4071ec21186d1829a020b50",
+      "date": "2026-01-13T00:30:00.602Z"
+    },
+    {
+      "id": "233363177434603520",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "CodeGenius Memory：构建面向代码生成的可控上下文系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557330&idx=1&sn=782f98f8d7199b31d4fa2a192615bdff",
+      "date": "2026-01-12T00:31:00.988Z"
+    },
+    {
+      "id": "232271927298056192",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "告别碎片化日志：一套方案采集所有主流 AI 编程工具",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557222&idx=1&sn=1a31ba26e3407af3e1a67eb7d0388798",
+      "date": "2026-01-09T00:31:00.854Z"
+    },
+    {
+      "id": "231907852440216576",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "从HITL(Human In The Loop) 实践出发看Agent与设计模式的对跖点",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557122&idx=1&sn=1c7abefc4b557ca040dd62c45280227b",
+      "date": "2026-01-08T00:30:00.830Z"
+    },
+    {
+      "id": "231543750900342784",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI Coding后端开发实战：解锁AI辅助编程新范式",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557066&idx=1&sn=c9ea3b12a5e31e76d28c42115f3e21e8",
+      "date": "2026-01-07T00:30:00.209Z"
+    },
+    {
+      "id": "231180057001330688",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "数据合成篇｜多轮ToolUse数据合成打造更可靠的AI导购助手",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247557014&idx=1&sn=f3d44dce244d03c16c13033a1a9a0faf",
+      "date": "2026-01-06T00:31:00.294Z"
+    },
+    {
+      "id": "230835126170805248",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "AI Coding 长文分享：如何真正把工具用起来，从原理到实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247556975&idx=1&sn=09a9dd4374567d0b416b2637baa446bb",
+      "date": "2026-01-05T00:30:00.189Z"
+    },
+    {
+      "id": "230464903156589568",
+      "source": "千问AI平台",
+      "feed_id": "187702008971600900",
+      "title": "库存合并扣减：一种基于分布式缓存的强一致性热点库存扣减方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247556956&idx=1&sn=71861533b18d95d2f7f4ece75ca776b5",
+      "date": "2026-01-04T00:31:00.076Z"
+    }
+  ]
+}

@@ -1,0 +1,1154 @@
+{
+  "source": "腾讯技术工程",
+  "feed_id": "187702008971600897",
+  "count": 143,
+  "boundary": "2025-12-19T09:46:00.212Z",
+  "exhausted": false,
+  "pages": 3,
+  "articles": [
+    {
+      "id": "1303652322617888768",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "好看的2026中秋红包封面来抢！！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804240&idx=1&sn=6cf94a9aedf58c1e90ad2b630e00f009",
+      "date": "2026-09-24T09:36:00.908Z"
+    },
+    {
+      "id": "1302333931554639872",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "错误码排查从 3～8 小时到分钟级，Agent怎么做到的？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804239&idx=1&sn=877bddfed68e73a327c4c25e836d8258",
+      "date": "2026-09-23T09:30:00.948Z"
+    },
+    {
+      "id": "1300889317509468160",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯15年资深后台工程师，转战大模型推理的抉择",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804238&idx=1&sn=5071d1c07d4c99fac83cbfe0a3860344",
+      "date": "2026-09-22T10:55:00.280Z"
+    },
+    {
+      "id": "1299379682977812480",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "聊聊最近爆火的Jev 模型，到底是个啥？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804208&idx=1&sn=42392abb524c9a6d137042a4adbc903b",
+      "date": "2026-09-21T02:23:00.708Z"
+    },
+    {
+      "id": "1293576866313048064",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "WorkBuddy资料库：从三大场景开始，让多人多Agent轻松协作",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804152&idx=1&sn=1308322cdbdff9930ff39d2108099ece",
+      "date": "2026-09-17T09:50:00.569Z"
+    },
+    {
+      "id": "1292167522136657920",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "看完我的AGENTS.md，你将看到我和不说人话且over-engineering的模型搏斗的这一生",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804100&idx=1&sn=bce397be1020053865a4ec471848e589",
+      "date": "2026-09-16T10:25:00.222Z"
+    },
+    {
+      "id": "1289288444748533760",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "别再只卷Prompt 了，真正拉开Agent差距的是Context Engineering",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804088&idx=1&sn=bbe53279f2c8fe79fea751faca5a264f",
+      "date": "2026-09-14T09:36:00.751Z"
+    },
+    {
+      "id": "1283429410552188928",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "iPhone Duo来了，腾讯 Kuikly 助 App 从容适配",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804073&idx=1&sn=cb50dfd70925eaa04a791e9a1b03b382",
+      "date": "2026-09-10T04:03:00.909Z"
+    },
+    {
+      "id": "1282040319898062848",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "10个技巧，让你的Workbuddy比别人好用！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649804002&idx=1&sn=87e1bb073eab81af45c12f054b430b17",
+      "date": "2026-09-09T10:22:00.771Z"
+    },
+    {
+      "id": "1280511835962904576",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "我用腾讯 Kuikly，把 DeepSeek Harness装进了口袋",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803972&idx=1&sn=f8a3ce4b624eaba417331b2ece4cba4e",
+      "date": "2026-09-08T09:57:00.057Z"
+    },
+    {
+      "id": "1279070511158038528",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从一次 LLM 调用到完整 Harness，Agent 到底经历了什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803963&idx=1&sn=ec0730b1274a0b52382df956d8583215",
+      "date": "2026-09-07T09:36:00.387Z"
+    },
+    {
+      "id": "1274727760169832448",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "DeepSeek Harness背后的“心脏”：Cordis 到底是什么",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803959&idx=1&sn=9d18ecc2139e8ab90a44515ca64b0db5",
+      "date": "2026-09-04T09:36:00.298Z"
+    },
+    {
+      "id": "1271899366868684800",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工都是怎么被AI“糊弄”的？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803958&idx=1&sn=9ffde51b32770be812fd7d9743ae7f7f",
+      "date": "2026-09-02T10:20:00.873Z"
+    },
+    {
+      "id": "1271401709997953024",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从Vibe Coding到Vibe Worlding：AI开始自己“造世界”了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803909&idx=1&sn=86e196bd070ef323abc0b62f99bd4cac",
+      "date": "2026-08-31T09:36:00.673Z"
+    },
+    {
+      "id": "1271401709997953025",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "CubeSandbox v0.7.0 发布：沙箱跨机流动，集群平滑演进",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803909&idx=2&sn=75a522e38308f9634ebaf54d7355af29",
+      "date": "2026-08-31T09:36:00.509Z"
+    },
+    {
+      "id": "1271401709997953026",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元 Hy4 preview 发布，稳居开源模型第一梯队",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803888&idx=1&sn=d8d6ffd2c6caf69c7f740a238d0f1619",
+      "date": "2026-08-28T07:18:00.985Z"
+    },
+    {
+      "id": "1263151179509043200",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "两万字长文｜手把手带你趟过 AI Coding 深水区：编码让位，人退到哪里",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803848&idx=1&sn=d61f1e7642a93c81c86fba2cf799f4b3",
+      "date": "2026-08-27T09:38:00.998Z"
+    },
+    {
+      "id": "1262022689502040064",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "一篇讲透Agent自进化飞轮怎么搭：评测→记忆→落地→控制",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803847&idx=1&sn=abe5cab137aac47cb042b6baa1a24191",
+      "date": "2026-08-26T09:36:00.345Z"
+    },
+    {
+      "id": "1258916766973726720",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "DeepSeek Harness规模化踩坑实录：耗时、成本、失败到底该怎么查",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803822&idx=1&sn=82b4c1b6735d5757e5e0a3288312c73e",
+      "date": "2026-08-24T09:36:00.582Z"
+    },
+    {
+      "id": "1254924744944291840",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "靠这10个优化点，我们把Multi-Agent工作流成本降了50%以上",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803728&idx=1&sn=e5958d1c5d52e82bbe693b932d07492f",
+      "date": "2026-08-21T09:36:00.614Z"
+    },
+    {
+      "id": "1253021671091113984",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯大数据 SuperSQL 刷新 TPC-DS 世界纪录，性能、性价比双料第一",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803712&idx=1&sn=515b0c05169da477cb32db81d692715b",
+      "date": "2026-08-20T09:34:00.847Z"
+    },
+    {
+      "id": "1251573615955054592",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "微信AI来了？又有这13个新变化！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803711&idx=1&sn=769cdeea7696c94fe4488827a6a41211",
+      "date": "2026-08-19T11:03:29.537Z"
+    },
+    {
+      "id": "1250349598392750080",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "任何错误只犯一次：TencentDB Agent Memory 的团队记忆实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803679&idx=1&sn=910b29493df93cadf43078846d630cef",
+      "date": "2026-08-18T09:36:00.249Z"
+    },
+    {
+      "id": "1248676663349252096",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Agent的上限，可能不在模型，而在团队知识",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803612&idx=1&sn=13be122cb61484933486e146d5724e37",
+      "date": "2026-08-17T09:36:00.842Z"
+    },
+    {
+      "id": "1245800498754260992",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "DeepSeek Harness 实测｜模型之外的那一半，到底带来了什么",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803588&idx=1&sn=36499841c1cc38ba9ccae6380a90aec9",
+      "date": "2026-08-15T01:30:00.544Z"
+    },
+    {
+      "id": "1244574647073148928",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "DeepSeek Harness 拆解：一套能拼装的 Agent 架构",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803587&idx=1&sn=a5ac30af9c015db111b60f947eb4e240",
+      "date": "2026-08-14T09:20:00.882Z"
+    },
+    {
+      "id": "1241760314538627072",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "3万字长文带你WorkBuddy 从入门到精通",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803569&idx=1&sn=325170a0e2bd7117d51dfabbbd79539b",
+      "date": "2026-08-12T10:24:00.712Z"
+    },
+    {
+      "id": "1238606258479599616",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "10万+Skill 背后：腾讯SkillHub如何帮用户找到真正好用的那20%",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803078&idx=1&sn=13cad02f15d9addef06e2a31fb3a3f93",
+      "date": "2026-08-10T09:36:00.827Z"
+    },
+    {
+      "id": "1234468325354934272",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从胡言乱语到精准改代码：我是如何让 AI 读懂老项目的",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803058&idx=1&sn=f3ed1b512d61666ebc7d4852a33911b5",
+      "date": "2026-08-07T09:36:00.109Z"
+    },
+    {
+      "id": "1232704662767964160",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Linux 内核藏了 18 年的漏洞，这次 AI 比所有人先找到",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803040&idx=1&sn=a0b7458e9bcc381edcbca4dbc1769f85",
+      "date": "2026-08-06T09:37:00.599Z"
+    },
+    {
+      "id": "1231192956334018560",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI Infra进阶：如何让大模型输出确定的结果",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649803028&idx=1&sn=ec45ae12b64c5baf8a27a4f1121abe5d",
+      "date": "2026-08-05T09:25:00.064Z"
+    },
+    {
+      "id": "1228400951002435584",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯Omega：下一代“AI BI”的答案？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802990&idx=1&sn=dc5352efb04594f6eb0bf8644be49cad",
+      "date": "2026-08-03T10:48:00.290Z"
+    },
+    {
+      "id": "1226084712200572928",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工有哪些小众的 AI 玩法？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802968&idx=1&sn=2d2ebd6412b2698bc6e5cb18446a13b9",
+      "date": "2026-07-31T13:48:00.655Z"
+    },
+    {
+      "id": "1223131863950856192",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI Coding的下一站，不是更会写代码，而是更懂团队",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802960&idx=1&sn=c62698da543f3bd37ba36b617bc92b80",
+      "date": "2026-07-30T09:36:00.746Z"
+    },
+    {
+      "id": "1219589869148344320",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Loop Engineering 已死？ 一文带你了解Graph Engineering",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802937&idx=1&sn=3ecdb58a929806962d1b2455575d6b4a",
+      "date": "2026-07-28T10:33:00.638Z"
+    },
+    {
+      "id": "1218362900893175808",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Agent开始“自我进化”：会出题、会反思，还会自己长出新技能",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802932&idx=1&sn=7d3d0536a3433b8848942c2a58b945ca",
+      "date": "2026-07-27T09:27:00.161Z"
+    },
+    {
+      "id": "1214019718596300800",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯WorkBuddy实践：如何把Agent做成可用产品",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802931&idx=1&sn=d1a09a7e393f439886c13f84ea8dcde4",
+      "date": "2026-07-24T09:36:00.989Z"
+    },
+    {
+      "id": "1212404817335455744",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工都碰到过哪些Token刺客？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802928&idx=1&sn=98b6bc4e64f5936316f262d627453c38",
+      "date": "2026-07-23T09:44:00.654Z"
+    },
+    {
+      "id": "1210975308807704576",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI改代码的那几分钟，你在做什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802917&idx=1&sn=dd6d58f349f4058ccc2ea90468092566",
+      "date": "2026-07-22T11:20:00.706Z"
+    },
+    {
+      "id": "1210194882816151552",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从 Vibe Coding 到 AI 原生研发团队：一套能落地的工程实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802812&idx=1&sn=732df4944b3cb1543cc4cfe666e6f47a",
+      "date": "2026-07-21T10:03:00.999Z"
+    },
+    {
+      "id": "1208842203217039360",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI代码生成率94%：我们用一个 Skill 跑通需求开发全流程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802727&idx=1&sn=631188a7c6711314ff2febbe5cb721e5",
+      "date": "2026-07-20T09:36:00.195Z"
+    },
+    {
+      "id": "1205103534329073664",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯发布多款具身智能基座模型与智能体，钛螺丝平台迎来全面升级",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802692&idx=1&sn=8c5db3c47928f6353929767373052e81",
+      "date": "2026-07-18T08:29:00.075Z"
+    },
+    {
+      "id": "1204453219405697024",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "驾驭AI Coding：一份面向团队的Harness Engineering落地规范",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802660&idx=1&sn=2b36909c6f4a6d563addd1f7f8c9f266",
+      "date": "2026-07-17T09:36:00.173Z"
+    },
+    {
+      "id": "1202424015851917312",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Agent 治理：用 Hook 堵住 LLM 的偷懒、越权与失忆",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802659&idx=1&sn=8c2b4c6e4501a69632fe05b2e6e8e3b0",
+      "date": "2026-07-16T09:52:00.883Z"
+    },
+    {
+      "id": "1202424015851917313",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯PCG联合深圳河套学院：在全双工语音大模型领域取得重要突破，获 ACL 2026 杰出论文奖",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802659&idx=2&sn=d7eb836cbf1c5d47f8d6c2ea645375d8",
+      "date": "2026-07-16T09:52:00.171Z"
+    },
+    {
+      "id": "1200859574685437952",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "上线后差点“挤爆”服务器，Marvis凭什么让用户追着6只小马“上班”？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802628&idx=1&sn=e187a512c344ea924c370abb91b8962f",
+      "date": "2026-07-15T11:11:00.784Z"
+    },
+    {
+      "id": "1197861097978236928",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯Ray团队实践：K8s + Ray如何支撑超大规模AI Workload",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802581&idx=1&sn=6853e0881c8ef7e87dac7baf5ad82d22",
+      "date": "2026-07-13T09:36:00.331Z"
+    },
+    {
+      "id": "1193595632057618432",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "【揭秘】如何打造一支凌晨3点还在交付的AI军团",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802528&idx=1&sn=2a38aa36abe5401b21ec718ccc60260a",
+      "date": "2026-07-10T09:36:00.540Z"
+    },
+    {
+      "id": "1192063288440033280",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "大圆实测 : 你真的需要一个长在企业微信中的AI",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802499&idx=1&sn=5428fc3fdfc06b974e550f75d225d70a",
+      "date": "2026-07-09T11:18:00.297Z"
+    },
+    {
+      "id": "1190713972488179712",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "精打细算虾养成指南： 省 Token 和把 AI 用好，从来就是一件事",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802494&idx=1&sn=b9882f78a98dd26657b573d0f14eea8a",
+      "date": "2026-07-08T09:36:00.449Z"
+    },
+    {
+      "id": "1189183447252373504",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从Vibe Coding到Harness—— 一套大仓AI工程化实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802486&idx=1&sn=1d3872e7495a2a69857e9dcb5eb9c625",
+      "date": "2026-07-07T09:39:00.602Z"
+    },
+    {
+      "id": "1187775632453439488",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元Hy3发布：Agent能力和产品体验跃升",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802443&idx=1&sn=0d38771c47e94c4108453b12184fac88",
+      "date": "2026-07-06T08:05:00.067Z"
+    },
+    {
+      "id": "1183450767302889472",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从AI Coding到Harness Engineering的端到端工程开发实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802407&idx=1&sn=b6f398b8185a9862db73237cd076a3ce",
+      "date": "2026-07-03T09:36:00.726Z"
+    },
+    {
+      "id": "1180480626977968128",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "五块钱如何花三天...      horsley，一位腾讯应用开发高级工程师  从token 焦虑到系统化治理，horsley这次想分享的不是几个省 token 小技...",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802390&idx=1&sn=509449770a62d5427b3154525c1a9445",
+      "date": "2026-07-01T09:54:00.065Z"
+    },
+    {
+      "id": "1179043463409209344",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI+ Kuikly：7.5小时落地三端「多模态聊天 App」实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802388&idx=1&sn=de0a692908a858fefb435599a9476a42",
+      "date": "2026-06-30T09:44:00.236Z"
+    },
+    {
+      "id": "1177715770872860672",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "开启Harness Engineering探索之旅",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802377&idx=1&sn=ac71d992c0feeea2d7611a2e1cc6f9dc",
+      "date": "2026-06-29T09:36:00.215Z"
+    },
+    {
+      "id": "1173274406361796608",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元AI Infra如何优化Hy3 Preview：一次大模型推理性能提升的技术拆解",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802370&idx=1&sn=933bed02fa58d278084e12946d3fa8ce",
+      "date": "2026-06-26T09:36:00.613Z"
+    },
+    {
+      "id": "1171757911056093184",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工当年高考都考了多少分？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802369&idx=1&sn=15cfdd4bef27d2bc08bf0af8d44eac5b",
+      "date": "2026-06-25T11:36:00.748Z"
+    },
+    {
+      "id": "1171757911056093186",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "2026腾讯犀牛鸟开源人才培养计划正式开启",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802248&idx=2&sn=192920746656c75f76d8fc634989642c",
+      "date": "2026-06-24T12:20:00.861Z"
+    },
+    {
+      "id": "1171757911056093185",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从0到1带你速通 Marvis马维斯",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802248&idx=1&sn=5091aa9c4be79a49c871a5503386135f",
+      "date": "2026-06-24T12:20:00.064Z"
+    },
+    {
+      "id": "1168945864601800704",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "你讲卫生吗？ \n \n \n \n\n\nEnri，一位腾讯AI产品工程师，\n过去半年Enri和大模型打交道，最大收获就两个字：卫生。 \n不是物理卫生，是交互习惯的卫生。Token 越来越便宜，但你的注意力和决策带宽不会。脏活干多了，模型变傻，脑子也跟着乱。 \n\n以下七条实战经验：\n\n一、锁死模型配置 \n很多工具默认\"自适应思考\"，实际上它会让Token 消耗失控。正确做法是固定配置：推理档位锁死 high，关掉自适应，思考预算设上限 32K，关掉超长上下文，设定 200K 自动压缩。降智是你没把档位锁死，不是模型变笨。  \n \n二、固定内容别动，利用缓存 \n模型对完全相同的输入前缀有缓存命中机制，重复使用只需十分之一的费用。长期不变的内容（如身份、业务、输出偏好、原则、约束）固定下来，不要每次重新组织语言。临时放本次任务、材料、目标、截止时间。变动的成本远高于你想象。 \n \n三、别喂 PPT \nPPT、Word 这类复杂格式文件包含大量排版控制信息，喂给模型会消耗 80% 以上的无效 Token。先转成 Markdown 再喂。格式是给人看的，Markdown 是给模型看的。 \n \n四、别让会话变垃圾桶 \n超长会话堆积历史日志和工具调用记录，模型翻旧账，又贵又慢。换任务就开新对话，跑偏了重开重说背景，距上一条超一小时也重开。只有同一任务连续推进且不足一小时，留原对话才划算。 \n \n五、让 AI 看一段，别扫一片 \n用 @ 精准指定文件或函数，别让 AI 自己扫描整个项目。@文件名引用文件，@函数名引用函数，选中代码直接改。改一个验证规则从扫几十个文件降到几百 Token，差距是几十倍。能 @ 函数不 @ 文件，能 @ 文件不靠扫描。 \n \n六、让模型先问 \n告诉模型\"你一次问我一个问题，帮我把思路理清\"，等它问完再整理成文档，产出的 AI 感会弱很多。或先问\"你需要我给你什么信息才能完成得更好？\"，让模型主动暴露你的盲区。让模型先问，比让模型先猜便宜。 \n \n七、把想和干拆开 \n用顶配模型讨论方案，只出方案不动文件；然后交给便宜模型机械执行。顶配模型不需要读取整个项目，消耗降 3-5 倍；便宜模型不思考只管干，Token 极便宜。机械的活交给机器，思考留给最贵的脑子。 \n\n这些习惯不是为了省钱。Token 会继续变便宜，但你的思考带宽和注意力不会。AI 太便宜反而容易滥用——一十个 Agent 全开，扫整个项目，无限试错无限返工。 \n你的决策带宽有限。对自己前额叶好点，注意 AI 时代的工作卫生。",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802164&idx=1&sn=cbd6e39ed31765be87a5a97846dab9a8",
+      "date": "2026-06-23T10:45:00.270Z"
+    },
+    {
+      "id": "1167511084874108928",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Loop Engineering 实践指南：在 Code Buddy 中构建自主循环系统",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802117&idx=1&sn=a91a32e0b00305c1a30f4a6684c3c6b2",
+      "date": "2026-06-22T09:22:00.710Z"
+    },
+    {
+      "id": "1161653252832399360",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "你的 Harness 工作流真的在进步吗？我们用一场考试撕掉了遮羞布",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802116&idx=1&sn=8886f8c0078cc85a39ac97fa2deff22a",
+      "date": "2026-06-18T10:20:00.402Z"
+    },
+    {
+      "id": "1160189583023968257",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI 真的能帮你微信下单了！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802115&idx=2&sn=f27fb69af23cbed1d814390a84147742",
+      "date": "2026-06-17T09:33:00.942Z"
+    },
+    {
+      "id": "1160189583023968256",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "拆解大模型几项核心操作背后的数学与 Infra 优化逻辑",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802115&idx=1&sn=30424274c8e7e355c2ee62e70b058d52",
+      "date": "2026-06-17T09:33:00.647Z"
+    },
+    {
+      "id": "1158729028291563521",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "谁是 Agent 最强守门员？首个 Agent 技能安全评测基准 SkillTrustBench 正式发布",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802062&idx=2&sn=ce7da8c7786c043c56d64e23c92b2544",
+      "date": "2026-06-16T09:33:00.955Z"
+    },
+    {
+      "id": "1158729028291563520",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI Agent & Skill 测评方案及落地实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802062&idx=1&sn=a5983c28a6df652c9873b577a493571f",
+      "date": "2026-06-16T09:33:00.130Z"
+    },
+    {
+      "id": "1157359627478798336",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "一篇搞懂 AI Coding Agent 的 Token 成本控制",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802024&idx=1&sn=14ebabcd0d270ae39c6d9cd1d12fca84",
+      "date": "2026-06-15T09:27:00.259Z"
+    },
+    {
+      "id": "1153001128137363456",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "微信测试团队斩获 CVPR 2026 NTIRE RAIM挑战赛冠军",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649802000&idx=1&sn=e98b528060a2ae5d34b6f9eeb6e517ce",
+      "date": "2026-06-12T09:36:00.953Z"
+    },
+    {
+      "id": "1151539124340035584",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元AI Infra进化：HPC-Ops推理核心算子全面升级",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801982&idx=1&sn=25fb653637a2fbac015d46c265f8266e",
+      "date": "2026-06-11T08:20:00.101Z"
+    },
+    {
+      "id": "1150086374519508992",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "跨端页面秒开，腾讯开源框架Kuikly是怎么做到的？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801924&idx=1&sn=319b28177b03a56e9d63b61285e5606b",
+      "date": "2026-06-10T09:37:00.489Z"
+    },
+    {
+      "id": "1148626220259250176",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "高考那几天，鹅厂员工遇到过什么至今难忘的事？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801918&idx=1&sn=02b1729b29e056bca66a3861ca724a34",
+      "date": "2026-06-09T09:41:00.675Z"
+    },
+    {
+      "id": "1147136810174943232",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "横向拆解Claude Code、Codex等六大Agent上下文压缩策略后，我们做了第 7 个",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801845&idx=1&sn=25c1772d233048ad058811b25ff90a5b",
+      "date": "2026-06-08T09:36:00.586Z"
+    },
+    {
+      "id": "1142874518587478016",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "如何写好 Skill：一份终极实战经验手册",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801836&idx=1&sn=f01a69e0c012eafde5f8bc76804bc5fb",
+      "date": "2026-06-05T09:36:00.764Z"
+    },
+    {
+      "id": "1140216453857841152",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "还在好奇鹅厂人Vibe Coding了什么东西？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801828&idx=1&sn=8a039db77b364696448024073e7d25be",
+      "date": "2026-06-03T11:03:00.898Z"
+    },
+    {
+      "id": "1137005411518418944",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "深入解析Chromium的 AI Coding 开发体系",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801806&idx=1&sn=174aba5e6556049d7729e9e11f39ab8d",
+      "date": "2026-06-01T09:36:00.866Z"
+    },
+    {
+      "id": "1132646940832468992",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "OpenClaw与Hermes：源码里的 AI Agent 架构知识大复盘",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801805&idx=1&sn=9c7e3936218bba9c8d0ee6c04afb1615",
+      "date": "2026-05-29T09:36:00.904Z"
+    },
+    {
+      "id": "1131271981912592384",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Harness 的尽头不是缰绳，是镜子：AI 时代最沉默的那场革命",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801799&idx=1&sn=bfc162fcfd7607063940ca400285d9ef",
+      "date": "2026-05-28T09:38:00.669Z"
+    },
+    {
+      "id": "1129802871034908672",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Marvis 实测：6 个 AI“牛马”扎根桌面之后",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801679&idx=1&sn=2970beaa578390610e3f2271ab4efba6",
+      "date": "2026-05-27T10:02:00.854Z"
+    },
+    {
+      "id": "1128382000407810048",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从3632个漏洞看AI时代的评测基准重构！VulnGym基准发布",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801631&idx=1&sn=4d1c5bb6cd33aa8f38f6b902f5231065",
+      "date": "2026-05-26T09:32:00.177Z"
+    },
+    {
+      "id": "1127438012951597056",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI Infra入门干货总结：大模型是如何高效推理的",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801625&idx=1&sn=7c7a7d2148c6907f65c9f747717b3197",
+      "date": "2026-05-25T09:36:00.354Z"
+    },
+    {
+      "id": "1125429749158547456",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "斩获冠军！清华 x 腾讯混元登顶 MLSys 2026 MoE 模型推理优化竞赛",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801607&idx=1&sn=568d1ea0afab3bf69ac123852cadea3f",
+      "date": "2026-05-24T04:00:00.934Z"
+    },
+    {
+      "id": "1122494553073422336",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯云Agent Memory节省61% Token提升52%成功率的诀窍：Mermaid无限画布×上下文卸载",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801594&idx=1&sn=531dcf350ad906e4b4de0a671a4e1977",
+      "date": "2026-05-22T09:36:00.988Z"
+    },
+    {
+      "id": "1119665923616182272",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "三个关键词，2026谷歌 I/O大会全说透了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801563&idx=1&sn=31ffe905a1be1e5ddb9594b9fef76fa5",
+      "date": "2026-05-20T07:25:00.759Z"
+    },
+    {
+      "id": "1118166687787552768",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "给程序员送什么，会让他炫耀三天三夜？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801557&idx=1&sn=6f39e3a707ec56f1fdab7c1ff9466885",
+      "date": "2026-05-19T11:16:00.790Z"
+    },
+    {
+      "id": "1116782408738312192",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从0开发大模型的17种Agent架构演进详细拆解",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801545&idx=1&sn=b2d15c583715f519cbec484e8b10abdf",
+      "date": "2026-05-18T09:40:00.316Z"
+    },
+    {
+      "id": "1112405053987131392",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元推出轻量翻译大模型，无需联网，手机直接运行！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801544&idx=1&sn=2577b3e0d9118e271227e5bfd3e76f8a",
+      "date": "2026-05-15T09:37:00.027Z"
+    },
+    {
+      "id": "1109554839903309824",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "当我把 AI 变成一个\"算法\"：Skill 工程化设计的心路历程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801516&idx=1&sn=673c6ef9bc4022d29f48f753a3f1509a",
+      "date": "2026-05-13T09:24:00.639Z"
+    },
+    {
+      "id": "1106630736108097536",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Harness不是目的，知识才是护城河 —— 一个AI工程交付团队的知识沉淀实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801507&idx=1&sn=c4ac5ce38024ade94b8bfa1fdc0062ad",
+      "date": "2026-05-11T09:37:00.986Z"
+    },
+    {
+      "id": "1103640916494684160",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工觉得好的code模型应该具备什么能力？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801505&idx=1&sn=ff1a96f9cd216cbafdafa8d4df45130b",
+      "date": "2026-05-09T11:22:00.823Z"
+    },
+    {
+      "id": "1100772735556030464",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "十年老技术开发的 AI Agent 探索之路",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801477&idx=1&sn=b4b4e51cf60abaa7bc00cc667ccca247",
+      "date": "2026-05-07T09:34:00.681Z"
+    },
+    {
+      "id": "1090624096934334464",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯员工公寓曝光，竟是这样的布置！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801473&idx=1&sn=b8ede18d708d1fdbee4df09a48e660f1",
+      "date": "2026-04-29T12:42:00.945Z"
+    },
+    {
+      "id": "271936324855931904",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "读完这篇，你就搞懂 DeepSeek v4 了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801469&idx=1&sn=6d9db2b546577d488b24c3a185d49d8f",
+      "date": "2026-04-28T09:24:00.588Z"
+    },
+    {
+      "id": "271572939735835648",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Harness不是目的，知识才是护城河 —— 一个AI工程交付团队的知识沉淀实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801437&idx=1&sn=c5e13bae6cc04ef21f1ef819128e50e9",
+      "date": "2026-04-27T09:37:00.599Z"
+    },
+    {
+      "id": "270493112983364608",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工，最近看的一本书是什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801374&idx=1&sn=7c1dac7972442d0c045a1178f5d861b3",
+      "date": "2026-04-24T09:24:00.997Z"
+    },
+    {
+      "id": "269401090910331904",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Harness Engineering：AI 能在真正\"出事会炸\"的后端系统里写代码吗？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801331&idx=1&sn=7dfd93b1754a4f80c993347c4b57adb1",
+      "date": "2026-04-21T10:26:00.574Z"
+    },
+    {
+      "id": "269014736934282240",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从提需求到部署发布，全AI全自动化后，研发效能全面跃升",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801307&idx=1&sn=ca2c68447c2abe444b2bdda380b7c849",
+      "date": "2026-04-20T09:37:00.414Z"
+    },
+    {
+      "id": "267955165255967744",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "从Vibe Coding到Agentic Engineering：重构后台开发全流程",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801233&idx=1&sn=6e6eaf8a0e94e8349bbbef4b734dc5c0",
+      "date": "2026-04-17T09:36:00.254Z"
+    },
+    {
+      "id": "267202388900709376",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "装了N个skills之后，鹅厂员工觉得“最香”的是哪一个？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801199&idx=1&sn=6e8aaa294cae62786e1cd73e98e82ad6",
+      "date": "2026-04-15T09:32:00.597Z"
+    },
+    {
+      "id": "266474158833009664",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "详尽地带你从零开始设计实现一个AI Agent框架",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801169&idx=1&sn=0158c8b66288f1d0043f6e87363b9a4a",
+      "date": "2026-04-13T09:37:00.778Z"
+    },
+    {
+      "id": "266113028327474176",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "这大概是我读过最硬核的一次 Linux 内核重构文章了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801153&idx=1&sn=4e89b5dd7a0f02f12a5f8b2536507b99",
+      "date": "2026-04-12T09:51:00.447Z"
+    },
+    {
+      "id": "265406172353266688",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "“龙虾”也需要看病？一张旧病历，引出三个新确诊",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801121&idx=1&sn=1ae8448fe401127fbe42090329d9339a",
+      "date": "2026-04-10T09:35:00.414Z"
+    },
+    {
+      "id": "265045107618612224",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "技术教科书：顶级开发团队设计的Harness工程项目源码什么样",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801110&idx=1&sn=27dac2e66ec72e89e07eeddcaa4614d8",
+      "date": "2026-04-09T09:37:00.425Z"
+    },
+    {
+      "id": "264703953521869824",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工那些“需求很大，却没人做”的小程序？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801069&idx=1&sn=dd51e63c10410fbfb0a5ce0f5a975cbd",
+      "date": "2026-04-08T09:38:00.239Z"
+    },
+    {
+      "id": "263249327668855808",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "当整个团队开始 0 人工Coding：一份万字AI Native研发实战手册",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801035&idx=1&sn=08b72c3dcdb56de5922466bc17c67038",
+      "date": "2026-04-03T11:07:00.952Z"
+    },
+    {
+      "id": "262156776304018432",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "3.3万个Skills，为什么大多数都死在“安装”这一步？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801034&idx=1&sn=d9f6a4770318dc57ac119b24ce4a40ff",
+      "date": "2026-04-01T09:36:00.046Z"
+    },
+    {
+      "id": "261430993608508416",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "认知重建之后，步入Agentic Engineering的工程革命",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649801026&idx=1&sn=3e12f0888b3c232ed7218caf90df5f0a",
+      "date": "2026-03-30T09:37:00.859Z"
+    },
+    {
+      "id": "260357545595503616",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯广泛使用的跨端开发框架——Kuikly在搜狗输入法中的AI Coding实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800994&idx=1&sn=dca6eacb9cae1459e30a2b23d0ae758f",
+      "date": "2026-03-27T09:36:00.557Z"
+    },
+    {
+      "id": "259644266933912576",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工的龙虾都长什么样？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800975&idx=1&sn=f4afc2d3a589e86f1641adbb3972bc17",
+      "date": "2026-03-25T09:35:00.255Z"
+    },
+    {
+      "id": "259251483031110656",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "\"将注意力旋转90°\"：深入浅出解读 Kimi 最新出圈成果",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800970&idx=1&sn=9c6c05a18ed6a1fed491b7829c4ec30b",
+      "date": "2026-03-24T09:49:00.451Z"
+    },
+    {
+      "id": "258913217497007104",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "让AI变成Super员工的秘密：高效训练Skills",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800926&idx=1&sn=23e36dbedf9052459137075c7ef9733e",
+      "date": "2026-03-23T09:37:00.058Z"
+    },
+    {
+      "id": "257798683872986112",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "英伟达GPU全系列硬核科普手册：一文读懂NVIDIA芯片的定位、规格与应用场景",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800902&idx=1&sn=38323b9e55613e92145c904cb1eae74c",
+      "date": "2026-03-20T09:37:00.969Z"
+    },
+    {
+      "id": "257798683872986113",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "探索 GPU 加速向量检索：NVDIA Cagra 在微信大规模推荐系统中的应用实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800902&idx=2&sn=1a1be219c59d8160d87b50d41cf27e5a",
+      "date": "2026-03-20T09:37:00.332Z"
+    },
+    {
+      "id": "257424721854858240",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工都Vibe Coding出了什么好玩的东西？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800857&idx=1&sn=3c347f08cdcc6e73a0c1cd8cd7de115d",
+      "date": "2026-03-19T09:27:00.507Z"
+    },
+    {
+      "id": "257080055280174080",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "微信直联小龙虾！QClaw这四个功能别错过",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800784&idx=1&sn=93c895671db2fc332eb367ba82809c6a",
+      "date": "2026-03-18T03:33:09.904Z"
+    },
+    {
+      "id": "256335049560949760",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "重磅！腾讯QQ机器人接入OpenClaw，官方“养虾”指南来了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800749&idx=1&sn=81457fa979262f0a230b4ebba2a9aa7c",
+      "date": "2026-03-16T09:37:00.959Z"
+    },
+    {
+      "id": "255247204180018176",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Skills开发技能指南：OpenClaw也好，Skills也好，都别脱离具体场景谈方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800696&idx=1&sn=228bef9f5b56ee57f272dfb6204c9b41",
+      "date": "2026-03-13T09:37:00.161Z"
+    },
+    {
+      "id": "254594489498190848",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "警惕！“养龙虾”风险，一键给你的Openclaw做安全体检",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800667&idx=1&sn=829e2103ca6256fcb3dcec1936e84b74",
+      "date": "2026-03-11T11:47:00.775Z"
+    },
+    {
+      "id": "254395994828948480",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "玩转OpenClaw，你需要了解的：核心架构、运作原理、Agent部署步骤",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800637&idx=1&sn=ea01e0f19b2749deda2f6ff67ab6f104",
+      "date": "2026-03-09T09:27:00.802Z"
+    },
+    {
+      "id": "252712553259451392",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "揭秘！腾讯女程序员的上下班生活",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800595&idx=1&sn=1c00c2040ffcbd78745e6732daaf73fd",
+      "date": "2026-03-06T09:16:00.944Z"
+    },
+    {
+      "id": "252293220515431424",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工怎么看Agent自动持续进化？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800512&idx=1&sn=39495794598597587bb783b651b1fe3e",
+      "date": "2026-03-04T10:00:00.924Z"
+    },
+    {
+      "id": "251261867686609920",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "AI编程的下半场来了？学会用Agent Skill解决编程的痛点问题",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800483&idx=1&sn=080b2791ddb9b01088722831fc04acdc",
+      "date": "2026-03-02T09:37:00.918Z"
+    },
+    {
+      "id": "251120552848114688",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "2026年AI趋势全面预测，全球科技巨头与顶尖机构研判",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800448&idx=1&sn=5de78e382a2029bd8a8d31813f2f1e90",
+      "date": "2026-02-27T09:36:00.513Z"
+    },
+    {
+      "id": "249068069527626752",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "刮！刮！刮！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800436&idx=1&sn=550e1b614d8d8223de94ae2d4c45d469",
+      "date": "2026-02-24T01:50:00.366Z"
+    },
+    {
+      "id": "244745838997625856",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "马斯克说到做到：开源X平台核心推荐算法",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800086&idx=1&sn=ecf2702e487f771cf5470dc74d94032e",
+      "date": "2026-02-12T09:39:00.632Z"
+    },
+    {
+      "id": "244394310142990336",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "微信WFS传统TCP网络Fio跑满200Gb网卡实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800087&idx=1&sn=6a467f41f32841821dc3065cb08e27b5",
+      "date": "2026-02-11T09:36:00.087Z"
+    },
+    {
+      "id": "244019807763368960",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "速接！2026新年红包封面",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649800037&idx=1&sn=9d0113b949c2f6a83bd200c8e79bd295",
+      "date": "2026-02-10T08:46:00.715Z"
+    },
+    {
+      "id": "242565762506886144",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "推理速度提升5倍+：腾讯TRS团队首创列表级生成式推荐HiGR",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649799848&idx=1&sn=bc1dd78dbea5b89c5e778b9f0b83f213",
+      "date": "2026-02-06T09:36:00.230Z"
+    },
+    {
+      "id": "241838503379080192",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "元宝派七大热门玩法！赠大波专属邀请码",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649799502&idx=1&sn=f9819d0b7d93397e36b15cca1758575b",
+      "date": "2026-02-04T10:45:40.847Z"
+    },
+    {
+      "id": "241132629673580544",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "这大概是我读过关于AI大模型最全面、好读又易懂的文章了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798683&idx=1&sn=8319ed2ef27f74711c611c72f7a0e2ec",
+      "date": "2026-02-02T09:41:00.326Z"
+    },
+    {
+      "id": "240757499201590272",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "派！派！ 派！ \n\n\n\n\n刚刚，元宝派新功能上线！\n限量邀请码已放出，见文末与评论区，别错过！\n \n这一次，元宝派带来了全新重磅体验\nQQ音乐海量曲库，免费畅听\n腾讯视频会员精选电影，免费看\n而且不只是你一个人在刷内容\n你可以邀请派友一起加入\n一起看、一起听、一起聊\n边看边互动，体验完全不一样\n \n如何体验元宝派？\n\n体验方式很简单：\n 1️⃣ 更新至最新版【元宝 APP】\n 2️⃣ 进入【我们】-【派邀请码】\n 3️⃣ 使用邀请码即可创建元宝派，可直接成为派主，邀请好友加入；\n 没有邀请码，也可以通过派号或链接加入已有的派\n \n在元宝派里，你还能体验更多有趣功能：\n● 问元宝\n● 共享屏幕\n● 二创图片\n● 一起看电影\n● 一起听音乐\n●更多玩法持续解锁中\n \n好了重点来了！ \n\n【腾讯技术工程】专属限量邀请码【BAGP0】\n粉丝专属福利，数量有限，先到先得，没抢到的也别灰心，评论区不定时放送限量激活码，欢迎多多转发分享",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798682&idx=1&sn=af525341096f9dfcf27d45b0f67ae85f",
+      "date": "2026-02-01T08:42:00.271Z"
+    },
+    {
+      "id": "240029248891718657",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "大模型思维链推理速度倍增！——RoT新框架把思维链「画」进隐空间",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798677&idx=2&sn=772a84999b3ed984298fb2cf17e7518c",
+      "date": "2026-01-30T09:08:00.549Z"
+    },
+    {
+      "id": "240029248891718656",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "打造Jarvis，OpenClaw很野，但Agent Studio简直变态",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798677&idx=1&sn=39706f3291fe46f93da13e5f84893fdf",
+      "date": "2026-01-30T09:08:00.189Z"
+    },
+    {
+      "id": "239300791333819392",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "一夜爆火，Clawdbot是否才是真正的AI入口产品？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798552&idx=1&sn=6458c715d87bf396a667465f26974a49",
+      "date": "2026-01-28T03:01:00.422Z"
+    },
+    {
+      "id": "238947714331695104",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯混元AI Infra核心技术重磅开源：推理吞吐提升30%！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798546&idx=1&sn=2a832bbfe5448299c27b5bf683b9c92f",
+      "date": "2026-01-27T09:36:00.261Z"
+    },
+    {
+      "id": "237501317680109568",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "读懂 AI Infra，看这六个关键词就够了",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798528&idx=1&sn=7be16951d971ceb1e63930982569c70d",
+      "date": "2026-01-23T09:15:00.844Z"
+    },
+    {
+      "id": "236872955598711808",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工都玩过哪些技术恶作剧？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798510&idx=1&sn=e972410ab6e9ba093861d25f80e0e008",
+      "date": "2026-01-21T09:36:00.160Z"
+    },
+    {
+      "id": "236056937137958912",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "有手就行，教你从0到1快速手搓搭建个GUI Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798478&idx=1&sn=6bfaffaee1d5aec526aa33e3879cd6bc",
+      "date": "2026-01-19T09:37:00.181Z"
+    },
+    {
+      "id": "234599227439178752",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "鹅厂员工都用AI Coding捅过多少篓子？",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798448&idx=1&sn=bd059dce01c08ee5a81773852877b25a",
+      "date": "2026-01-15T09:52:00.481Z"
+    },
+    {
+      "id": "233874495169356800",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "腾讯AngelSlim重磅升级！面向全模态的大模型压缩算法工具包，推理速度飙升 1.8倍！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798429&idx=1&sn=da961ed5b12ae12e685ce2fee7767ae8",
+      "date": "2026-01-13T08:56:00.532Z"
+    },
+    {
+      "id": "232425956061831168",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "认知重建：Speckit 用了三个月，我放弃了——走出工具很强但用不好的困境",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798388&idx=1&sn=e0312f3b4b60675a40411281e86c4469",
+      "date": "2026-01-09T09:37:00.992Z"
+    },
+    {
+      "id": "231701476796620800",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "Ray异构融合底座重构数据管道：架构演进与万卡落地实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798275&idx=1&sn=a07b366ac400e591ca360ff8a97433b9",
+      "date": "2026-01-07T11:10:00.338Z"
+    },
+    {
+      "id": "230975585874600960",
+      "source": "腾讯技术工程",
+      "feed_id": "187702008971600897",
+      "title": "拥抱大模型：深入剖析ReAct的核心原理、技术架构及其对AI领域的深远影响",
+      "url": "https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649798179&idx=1&sn=d3cff266926c5cf4ebff97a7a73897a5",
+      "date": "2026-01-05T09:37:00.664Z"
+    }
+  ]
+}

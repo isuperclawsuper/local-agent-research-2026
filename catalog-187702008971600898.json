@@ -1,0 +1,706 @@
+{
+  "source": "阿里技术",
+  "feed_id": "187702008971600898",
+  "count": 87,
+  "boundary": "2025-10-24T00:30:00.824Z",
+  "exhausted": false,
+  "pages": 2,
+  "articles": [
+    {
+      "id": "1312429981741121536",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "高德本地生活分析 Agent 的 AI Native 实践全景（万字长文回顾）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511846&idx=1&sn=e281c6ff590a8209e7d6e2719ee4e58a",
+      "date": "2026-09-30T10:08:00.329Z"
+    },
+    {
+      "id": "1310960977717526528",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "AI Native 回忆录：稳定性前端 S1 实践复盘",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511817&idx=1&sn=5284ab741c2a5ccd9520c86e9261770d",
+      "date": "2026-09-29T12:02:00.305Z"
+    },
+    {
+      "id": "1309526250770956288",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从榜单走向真实业务负载：Kernel Agent 刷新 Qwen3.8-Max 核心推理算子性能",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511604&idx=1&sn=a0132c351d49f0508db1e20e3952d4dd",
+      "date": "2026-09-28T10:54:00.902Z"
+    },
+    {
+      "id": "1309526250770956289",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "实现高质量数据闭环，RoboFlywheel驱动具身智能自衍进",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511604&idx=2&sn=e86e3982aecd1e77775c6759f38c5a17",
+      "date": "2026-09-28T10:54:00.007Z"
+    },
+    {
+      "id": "1303692773425184768",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "代码生成越来越快，软件交付真正的瓶颈转向了哪里？",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511569&idx=1&sn=ca79c9f4d04fde0b3d550d8cb46c8d90",
+      "date": "2026-09-24T10:02:00.530Z"
+    },
+    {
+      "id": "1303692773441961984",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "百万级仿真资产，正在重构机器人训练场：阿里巴巴RoboFlywheel首发",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511569&idx=2&sn=2572283725cf86c25f42f32a134cfb71",
+      "date": "2026-09-24T10:02:00.512Z"
+    },
+    {
+      "id": "1302273774195867648",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "《AI Native 研发范式实践手册》重磅发布",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511562&idx=1&sn=489d57fcf7c339c36e0cbfad429fcd1e",
+      "date": "2026-09-23T06:49:00.153Z"
+    },
+    {
+      "id": "1300889330629246977",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "云栖首发｜Logics-Parsing-V3 重磅升级：贯通全文，长文无界",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511554&idx=2&sn=bb63ca216e344e7ab783a06ef3dacd39",
+      "date": "2026-09-22T04:30:00.902Z"
+    },
+    {
+      "id": "1300889330629246976",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "当 AI 开始真正“做事”，基础设施准备好了吗？",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511554&idx=1&sn=709aafe1436bfd58a283b058a8949248",
+      "date": "2026-09-22T04:30:00.426Z"
+    },
+    {
+      "id": "1299781819893317632",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "倒计时 2 天！阿里巴巴集团 AI Native 研发实践论坛诚邀开发者共话未来",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511534&idx=1&sn=cae842ca326feb5109605684838628c3",
+      "date": "2026-09-21T12:14:00.158Z"
+    },
+    {
+      "id": "1293576720854581248",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "把「达标判定」从大模型手里收回来：Graph Engineering实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511523&idx=1&sn=a78781dc2ab31142b71033d962b257a9",
+      "date": "2026-09-17T10:18:00.538Z"
+    },
+    {
+      "id": "1292167809949794304",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "垂类业务如何落地生产级 Agent",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511474&idx=1&sn=6f3f3e26c57b0796571649939b295123",
+      "date": "2026-09-16T10:18:00.998Z"
+    },
+    {
+      "id": "1282020077750747136",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Apache Paimon C++ ：从阿里数据湖走向开源社区",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511420&idx=1&sn=c2f443c3f1b8fd5d034671cc8de2c0f8",
+      "date": "2026-09-09T10:18:00.763Z"
+    },
+    {
+      "id": "1274728431174582272",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "5 人 7 天干完 20 人数周的活：Spec-Driven Development 如何重新定义 AI 编程",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511376&idx=1&sn=24f1d3ed57ccb6b4faad4a1aaac091bd",
+      "date": "2026-09-04T10:08:00.534Z"
+    },
+    {
+      "id": "1271899237063360512",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "AI Agent 应用精细化评测：评测体系设计与工程实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511370&idx=1&sn=c9f4ff1d054cb229ac2f8c1462fcb05e",
+      "date": "2026-09-02T10:11:00.267Z"
+    },
+    {
+      "id": "1271134288942759936",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "zg 正式开源：本地检索，不止于关键词",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511367&idx=1&sn=7a7ea589cdf19b68dc5eb8b9f04e8030",
+      "date": "2026-08-31T10:40:00.953Z"
+    },
+    {
+      "id": "1263140756999143425",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "全新 Qoder，正式发布",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511307&idx=2&sn=624a79c221ecff44407766522a6a70be",
+      "date": "2026-08-27T10:06:00.780Z"
+    },
+    {
+      "id": "1263140756999143424",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "AI 创新实践｜「架构师 Agent」系统化落地",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511307&idx=1&sn=a61beaf9d8ec073581a91674d90649f0",
+      "date": "2026-08-27T10:06:00.777Z"
+    },
+    {
+      "id": "1254440018374590464",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Agent 终章（Harness 成本篇）：一次百炼账单降低 88% 实战",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511201&idx=1&sn=4af859e8a065ac8c1fa687ace0ea5feb",
+      "date": "2026-08-21T10:18:00.340Z"
+    },
+    {
+      "id": "1251573625971048448",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里巴巴 12 篇论文入选全球网络顶会 SIGCOMM 2026（内附下载）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511193&idx=1&sn=985ceca884ea702ec12963d8041ef80d",
+      "date": "2026-08-19T10:25:00.865Z"
+    },
+    {
+      "id": "1248676767502204928",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Harness 工程之道：Skill 原理与最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511112&idx=1&sn=279ba391d62489b0226d94570388ac8d",
+      "date": "2026-08-17T11:05:00.892Z"
+    },
+    {
+      "id": "1246135854146027520",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Qwen3.8，正式开源",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511110&idx=1&sn=6c53830215ef70752c8abdb8982b297d",
+      "date": "2026-08-14T15:39:00.652Z"
+    },
+    {
+      "id": "1243185257482584064",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Agent 越改越乱之后，我用评测和轨迹把它拉回来了",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511106&idx=1&sn=e3e481953f140ab1a9afb73f7c40221f",
+      "date": "2026-08-13T11:21:00.651Z"
+    },
+    {
+      "id": "1241760294724730880",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Qoder CLI 上运行 Qwen3.8-Max：5 个硬核任务实测",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511066&idx=1&sn=2abf64c9e90df880bdf02446965b4a5e",
+      "date": "2026-08-12T10:18:00.647Z"
+    },
+    {
+      "id": "1240009303633461248",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "连续五天登上 GitHub Trending 首页的思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511052&idx=1&sn=ec738e92d8018fb50fac9fa16e9d54fc",
+      "date": "2026-08-11T10:18:00.825Z"
+    },
+    {
+      "id": "1234262770652839937",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "最后15天初赛冲刺！首届阿里AI创意广告大赛评委天团曝光",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511041&idx=2&sn=a9524d2817984d53414c272198ddcc19",
+      "date": "2026-08-07T10:18:00.255Z"
+    },
+    {
+      "id": "1234262770652839936",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "参数化 Memory 漫谈（纯干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247511041&idx=1&sn=037ffb3529df30ea5b8b30b966a526bf",
+      "date": "2026-08-07T10:18:00.229Z"
+    },
+    {
+      "id": "1231260989639393280",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从 Agent Flow 到 AI Native：为什么通用 Agent 是“饮鸩止渴”",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510883&idx=1&sn=1988e51340f0d9a22b2e6908fc60eddc",
+      "date": "2026-08-05T10:18:00.998Z"
+    },
+    {
+      "id": "1228381903611002880",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "面向生产力的 Qwen3.8、“千问办公”已同步上线",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510872&idx=1&sn=147d7bfeca0f79d93bb231fae1f0a74b",
+      "date": "2026-08-03T03:18:00.744Z"
+    },
+    {
+      "id": "1224288301310050304",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从 Spec 驱动转向环境与验证驱动——我对 AI Coding 的一点思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510868&idx=1&sn=42f0a3414a57983b491bca0c68f3d171",
+      "date": "2026-07-31T10:18:00.086Z"
+    },
+    {
+      "id": "1223131841939144705",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "前端 Skill 驱动的团队 AI Coding 实践：从个人提效到整体赋能",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510834&idx=2&sn=5a5b4047a438b8499f36792f06686618",
+      "date": "2026-07-30T11:55:00.410Z"
+    },
+    {
+      "id": "1223131841939144704",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "面向监控场景的无订阅异常发现：问题、思路与边界",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510834&idx=1&sn=9e785f8e33b7a2e4f0f53e52671023dd",
+      "date": "2026-07-30T11:55:00.328Z"
+    },
+    {
+      "id": "1221501577009856512",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "相关性 ≠ 因果性：因果推断在 AI 评测归因中的方法与实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510590&idx=1&sn=0e9bf34c8fa0c5f4249679ecd716865c",
+      "date": "2026-07-29T10:18:00.709Z"
+    },
+    {
+      "id": "1219845457719623680",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "当理解成为瓶颈：AI 编程时代的认知债与意图债",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510586&idx=1&sn=2131d6e991d3db144d3d06b636093e59",
+      "date": "2026-07-28T10:18:00.804Z"
+    },
+    {
+      "id": "1219845457719623681",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "灵骏真武M890超节点实例 Day0 适配 Kimi K3",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510586&idx=2&sn=e5e4e61dcdd7afe0315c7653c524f0d4",
+      "date": "2026-07-28T10:18:00.472Z"
+    },
+    {
+      "id": "1214135555072229376",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "分解一座冰山：后端系统「AI 知识库体系」建设实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510536&idx=1&sn=ac2faaa2e060546ce38e96c56d773aae",
+      "date": "2026-07-24T10:18:00.424Z"
+    },
+    {
+      "id": "1212404798310088704",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里开源 skill-up：让 Agent Skill 可评测可回归",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510426&idx=1&sn=77717225ccb946c19752a93e9681d8d1",
+      "date": "2026-07-23T10:18:00.330Z"
+    },
+    {
+      "id": "1209627450175160320",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "NL2SQL 在超大规模数仓场景的架构突破与工程实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510392&idx=1&sn=cd9903f9a3a898baa1070dfd011b7556",
+      "date": "2026-07-21T10:18:00.465Z"
+    },
+    {
+      "id": "1205354710559653888",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "真武 AI 芯片 T-Head SAIL® 软件栈正式开源开放",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510380&idx=1&sn=f7d2327132fef5bdb38d1639cb652337",
+      "date": "2026-07-18T04:40:00.280Z"
+    },
+    {
+      "id": "1203785306894008320",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "面向复杂业务场景的智能分析 Skills 架构设计与演进实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510370&idx=1&sn=495a768ea1114242651ff29b211e2c98",
+      "date": "2026-07-17T10:18:00.845Z"
+    },
+    {
+      "id": "1201646898830671872",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里荣膺 ACL 2026 最佳资源论文 | HSCodeComp 揭开智能体「分层规则应用」的能力鸿沟",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510248&idx=1&sn=bf7c5cc932df692cbf3ba61e3bfc973e",
+      "date": "2026-07-15T10:08:00.881Z"
+    },
+    {
+      "id": "1200308551587758080",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从 Coder 到 Designer ：电商团队数据研发的 Harness Engineering 实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510241&idx=1&sn=04d54633f1d91d27be6580eda8b503b2",
+      "date": "2026-07-14T10:08:00.601Z"
+    },
+    {
+      "id": "1200308551587758081",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "一个小模型意图识别系统的 5 天进化实录｜支付宝618",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510088&idx=1&sn=ceb536a3507268c3b0f6fec609b233bb",
+      "date": "2026-07-13T12:17:00.885Z"
+    },
+    {
+      "id": "1200308551587758082",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "上交 x 阿里：让机器人闭眼先学动作，vla 成功率涨 43%",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510088&idx=2&sn=18a09c3f6d3794079544b9907335b527",
+      "date": "2026-07-13T12:17:00.052Z"
+    },
+    {
+      "id": "1193608357190074368",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "意识 × Loop：让 Loop 跨 Session 自进化的最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510011&idx=1&sn=dde47100c92c8264e667c27d7d52f41a",
+      "date": "2026-07-10T10:18:00.164Z"
+    },
+    {
+      "id": "1192171884926500865",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里云发布 AgentTeams 与 AgentLoop",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510000&idx=2&sn=5f98b8388f28b455b3d1e1d208c96803",
+      "date": "2026-07-09T10:08:00.251Z"
+    },
+    {
+      "id": "1192171884926500864",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Cloud Use：当 Agent 开始真正使用云",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247510000&idx=1&sn=f055ab32a27f479101b8c0f65c79dde9",
+      "date": "2026-07-09T10:08:00.185Z"
+    },
+    {
+      "id": "1190678971289731072",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Harness 工程实践：如何让 Agent 完成自主迭代",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509988&idx=1&sn=077f18a5e969437efceb13f31d13bf73",
+      "date": "2026-07-08T11:37:00.523Z"
+    },
+    {
+      "id": "1190678971289731073",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "硬核少年技术节5.0抢鲜看！四大AI成果首发，报名即将截止",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509988&idx=2&sn=d9bf2c3466714c8c59fd844419f90d88",
+      "date": "2026-07-08T11:37:00.456Z"
+    },
+    {
+      "id": "1189219512411521024",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从「不敢发」到「天天发」：AI Agent 时代的 CI/CD 生存指南",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509947&idx=1&sn=7d2cc8a374fb1454aeab9ca90ef28f5d",
+      "date": "2026-07-07T10:08:00.332Z"
+    },
+    {
+      "id": "1187741804770918400",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "为什么 Agent 时代，大家都在做 CLI ？",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509924&idx=1&sn=c2fae18bbccf057f1ed4664fee85b1e7",
+      "date": "2026-07-06T10:08:00.791Z"
+    },
+    {
+      "id": "1184791652384931840",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "为什么大模型的缓存命中率能到 90%？",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509914&idx=1&sn=504b17755ea40067d8e4f460a367cbb4",
+      "date": "2026-07-03T11:19:00.629Z"
+    },
+    {
+      "id": "1183269394390745088",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Agent 评测：方法论与体系设计",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509900&idx=1&sn=557d016ca3f5fa287840dbb2a18cf499",
+      "date": "2026-07-02T10:09:00.410Z"
+    },
+    {
+      "id": "1173163547719401472",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "OpenSandbox 再进化：Credential Vault 让真实密钥不再进入沙箱",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509853&idx=1&sn=ddffff2caf6f9e08a10dba04a8adb384",
+      "date": "2026-06-26T08:07:00.037Z"
+    },
+    {
+      "id": "1170343226104643584",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里开源 Open Code Review：一周揽下 5k star，更专业的代码评审 CLI",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509844&idx=1&sn=a26fe2b44bd7b281619ef09013d7f355",
+      "date": "2026-06-24T01:07:00.347Z"
+    },
+    {
+      "id": "1170343226104643585",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "HappyHorse 1.1来了，现已登陆千问云、百炼",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509838&idx=1&sn=0cc367fe6ad5f4efcaf331d66b08c8e2",
+      "date": "2026-06-23T10:13:00.992Z"
+    },
+    {
+      "id": "1163027446744776704",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Loop Engineering 概念解析、思考与实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509834&idx=1&sn=b514f1bc2616df514cb218a5bad28296",
+      "date": "2026-06-18T10:21:00.998Z"
+    },
+    {
+      "id": "1158729366318907392",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "后端架构 AI Friendly 的标准与路径：面向无人值守开发时代的系统重构",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509820&idx=1&sn=c6bfc1326933573566b4e13f14625390",
+      "date": "2026-06-15T11:27:00.709Z"
+    },
+    {
+      "id": "1154481249801240576",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Qoder 工程实践：当瓶颈从模型转移到人",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509780&idx=1&sn=510914e2f03e6b3d26d57ff593310e79",
+      "date": "2026-06-12T09:55:00.562Z"
+    },
+    {
+      "id": "1151539060804714496",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "AI 不缺智商缺纪律：一场 Harness 工程化实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509774&idx=1&sn=02c8d0506c7d6ebc8fd58669160f1db3",
+      "date": "2026-06-10T12:24:00.827Z"
+    },
+    {
+      "id": "1149980934867550208",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Harness Engineering：长程自动化 AI Coding / Skills 开发实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509738&idx=1&sn=15fcaaa7949c28593c2f6231ebe68748",
+      "date": "2026-06-09T12:43:00.101Z"
+    },
+    {
+      "id": "1139829672540930048",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "重新思考研发基础设施：当 Agent 成为第一公民",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509639&idx=1&sn=bac09af0c76f4383f03c0d96cb48bd0a",
+      "date": "2026-06-03T10:09:00.641Z"
+    },
+    {
+      "id": "1138345030407192576",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Agent核心技术概念与范式发生了哪些演变以及背后的思考",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509628&idx=1&sn=6a31cc7a478c2bba91b1eaf405176dfe",
+      "date": "2026-06-01T10:18:00.304Z"
+    },
+    {
+      "id": "1132535637459632128",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "让项目管理也 AI Native —— 两个 Git 仓库干掉了周报、洞察和效能报表",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509622&idx=1&sn=1fcb4838aac320dd7365ba534e8bc696",
+      "date": "2026-05-28T11:06:00.969Z"
+    },
+    {
+      "id": "1131060947520094208",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从语言涌现到协作涌现：如何让 AI 产生高质量决策",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509605&idx=1&sn=45be5e8b0426154f4dc4d4b6b56d52dc",
+      "date": "2026-05-27T10:30:00.550Z"
+    },
+    {
+      "id": "1129696659094142976",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "近9倍训练加速：DiT里的残差流，正在成为收敛瓶颈",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509566&idx=1&sn=ace75be905d15523692f57dcd02142a4",
+      "date": "2026-05-26T10:50:00.019Z"
+    },
+    {
+      "id": "1122389543639613440",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从0到1搭建 Agent ：Agent 原理分析及个人助手实践（长文干货）",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509516&idx=1&sn=0ffc19c81f807e83e59bae292205bdf9",
+      "date": "2026-05-21T11:29:00.727Z"
+    },
+    {
+      "id": "1121026156301156352",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "真武M890 AI芯片首次亮相，构建Agentic算力芯底座",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509491&idx=1&sn=8e06097c0e673efab4b6c2886a7d4dcd",
+      "date": "2026-05-20T11:04:00.871Z"
+    },
+    {
+      "id": "1112252968087879680",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Qoder 1.0正式发布！从AI IDE迈向智能体自主开发工作台",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509360&idx=1&sn=6d017a91cc184f80d2fc5642702d4ab8",
+      "date": "2026-05-15T06:22:00.802Z"
+    },
+    {
+      "id": "1109329184167067648",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里巴巴&蚂蚁 LoongSuite GenAI 可观测语义规范：从统一数据语言到规模化落地",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509356&idx=1&sn=b4b26f0b4332fe031b751b750e935ebe",
+      "date": "2026-05-12T10:58:00.003Z"
+    },
+    {
+      "id": "1103570713123520512",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "AI Native 时代 —— 研发组织何去何从",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509351&idx=1&sn=628125e60d7350335699eaddfaf30fef",
+      "date": "2026-05-08T11:18:00.408Z"
+    },
+    {
+      "id": "270736116230922240",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "elasticpp：重塑Elasticsearch查询性能的C++内核引擎",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509344&idx=1&sn=175b485d1285fe82f6efae54e6ee2fae",
+      "date": "2026-04-24T10:31:00.313Z"
+    },
+    {
+      "id": "270398736970031104",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "世界读书日｜AI时代，我们该读什么？",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509340&idx=1&sn=7812a424eb68e9d56b1276cbe3c1b71d",
+      "date": "2026-04-23T12:28:00.922Z"
+    },
+    {
+      "id": "264920250742472704",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "为OpenClaw配置网盘空间的最佳实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509234&idx=1&sn=37a27184fd66d5d7dcefaf9ec7e094d6",
+      "date": "2026-04-08T10:08:00.016Z"
+    },
+    {
+      "id": "263836927597215744",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "从多智能体编排到AI自主决策：资损防控体系的架构演进",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509229&idx=1&sn=5f7352bb8eec781aaa64d22d3ab0a23e",
+      "date": "2026-04-06T01:30:00.182Z"
+    },
+    {
+      "id": "263105866844078080",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Ingress Nginx已退役，Higress如何平滑替代",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509228&idx=1&sn=4476daa440189938b650711128ac5225",
+      "date": "2026-04-03T10:03:00.572Z"
+    },
+    {
+      "id": "257737860764925952",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "别让格式杀死思想：Logics-Parsing V2定义文档解析新边界",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509201&idx=1&sn=39647c4f8adc9500be2db02d2102c7e0",
+      "date": "2026-03-20T00:32:00.810Z"
+    },
+    {
+      "id": "255166537270280192",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "给“氛围编程”系上安全带：阿里集团 AI 代码评审实践与 Benchmark 开源",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509195&idx=1&sn=612b82d4bc6b1bca8610e4284b0f6151",
+      "date": "2026-03-13T00:31:00.765Z"
+    },
+    {
+      "id": "252582147549806592",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里云联合上海交大荣膺 FAST'26 最佳论文：揭秘云上本地存储的演进与未来发展",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509188&idx=1&sn=13d89ea9e6fad38c1ccc3adb8dafb0f4",
+      "date": "2026-03-06T00:31:00.585Z"
+    },
+    {
+      "id": "244977550498270208",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里巴巴诚邀学界伙伴共同研究AI前沿课题",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509178&idx=1&sn=b1e9a5e2b3713bc3b05a9a0cc8921568",
+      "date": "2026-02-13T00:32:00.079Z"
+    },
+    {
+      "id": "244607869044659200",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里ALake数据湖：多模态数据存储处理方案",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509171&idx=1&sn=e219f087e21348abe25e6fad82d48946",
+      "date": "2026-02-12T00:30:00.075Z"
+    },
+    {
+      "id": "244256861793817600",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Fluss在阿里双11万亿规模场景下的落地实践",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509154&idx=1&sn=11652959f94704b4604b429b996e7bfc",
+      "date": "2026-02-11T00:30:00.797Z"
+    },
+    {
+      "id": "242439895869297664",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Zvec: 开箱即用、高性能的嵌入式向量数据库",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509153&idx=1&sn=715acff1350136af1654b2400718b653",
+      "date": "2026-02-06T00:31:00.565Z"
+    },
+    {
+      "id": "241717359291993089",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里云上线Clawdbot全套云服务！",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509125&idx=2&sn=5e4edc02fb3400f9136a98314ecb1900",
+      "date": "2026-02-04T00:31:00.981Z"
+    },
+    {
+      "id": "241717359291993088",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Paimon-cpp：阿里高性能Paimon读写库正式开源",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509125&idx=1&sn=ad04f363ef2170e9c51f94dba37e763d",
+      "date": "2026-02-04T00:31:00.173Z"
+    },
+    {
+      "id": "239548896444683264",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "阿里重磅开源！OpenSandbox：专为 AI Agent 打造的下一代沙箱",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509113&idx=1&sn=a8caab8fdc270626c1e3e56a0813d20f",
+      "date": "2026-01-29T00:31:00.391Z"
+    },
+    {
+      "id": "238825898223046656",
+      "source": "阿里技术",
+      "feed_id": "187702008971600898",
+      "title": "Logics-STEM：错题驱动练就8B参数STEM推理模型新 SOTA！",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzg4NTczNzg2OA==&mid=2247509088&idx=1&sn=71efb2a8b983d6af9f08d18d0e0f374a",
+      "date": "2026-01-27T00:31:00.803Z"
+    }
+  ]
+}
